@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#8a4b2a" />
+    <title>Thực đơn</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/customer.css" />
+  </head>
+  <body class="customer">
+    <!-- S-02 Menu + S-03 Giỏ hàng (FEATURE-002, FEATURE-003) -->
+    <header class="c-header">
+      <div>
+        <div class="c-shop" id="shop">&nbsp;</div>
+        <div class="c-table" id="table">&nbsp;</div>
+      </div>
+      <a class="btn btn-sm" id="orders-link" hidden>Đơn của bạn</a>
+    </header>
+    <div class="banner offline" id="offline" hidden>Mất kết nối — đang kết nối lại…</div>
+    <nav class="c-tabs" id="tabs" aria-label="Danh mục"></nav>
+    <main class="c-menu" id="menu" aria-live="polite">
+      <div class="skeleton" style="height: 82px; margin: 1rem 0 0.6rem"></div>
+      <div class="skeleton" style="height: 82px; margin-bottom: 0.6rem"></div>
+      <div class="skeleton" style="height: 82px"></div>
+    </main>
+    <div class="c-cartbar" id="cartbar" hidden>
+      <button class="btn btn-primary btn-lg btn-block" id="open-cart" type="button">
+        <span class="cart-count" id="cart-count">0</span>
+        <span>Xem giỏ · Gửi đơn</span>
+        <span id="cart-total">0đ</span>
+      </button>
+    </div>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script type="module" src="/js/pages/t-menu.js"></script>
+  </body>
+</html>

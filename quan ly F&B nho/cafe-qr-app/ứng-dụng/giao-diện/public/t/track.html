@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#8a4b2a" />
+    <title>Đơn của bạn</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/customer.css" />
+  </head>
+  <body class="customer">
+    <!-- S-05 Theo dõi đơn + S-04 Gọi thanh toán (FEATURE-004, FEATURE-005) -->
+    <header class="c-header">
+      <div>
+        <div class="c-shop">Đơn của bạn</div>
+        <div class="c-table" id="table">&nbsp;</div>
+      </div>
+      <a class="btn btn-sm" id="menu-link">Thực đơn</a>
+    </header>
+    <div class="banner offline" id="offline" hidden>Mất kết nối — đang kết nối lại…</div>
+    <main class="c-track" id="main" aria-live="polite">
+      <div class="skeleton" style="height: 120px; margin-bottom: 0.75rem"></div>
+      <div class="skeleton" style="height: 120px"></div>
+    </main>
+    <div class="c-actions" id="actions" hidden>
+      <a class="btn btn-lg" id="more">Gọi thêm món</a>
+      <button class="btn btn-primary btn-lg" id="pay" type="button">Gọi thanh toán</button>
+    </div>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script type="module" src="/js/pages/t-track.js"></script>
+  </body>
+</html>

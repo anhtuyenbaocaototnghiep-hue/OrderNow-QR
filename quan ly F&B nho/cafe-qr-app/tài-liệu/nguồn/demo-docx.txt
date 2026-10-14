@@ -1,0 +1,385 @@
+[NormalWeb] 1. Mô tả ý tưởng
+[NormalWeb] Hệ thống làm gì: Một ứng dụng web (Web-App) khép kín cho phép khách hàng chủ động quét mã QR tại bàn để xem menu và gọi món trực tiếp trên trình duyệt điện thoại. Đồng thời, hệ thống cung cấp giao diện quản trị cho thu ngân tính tiền, màn hình cập nhật luồng đơn hàng theo thời gian thực (real-time) cho bếp, và tự động đối soát trừ kho nguyên liệu.
+[NormalWeb] Giải quyết vấn đề gì: Khắc phục tình trạng khách hàng phải chờ đợi nhân viên đến ghi order trong giờ cao điểm, giảm thiểu sai sót do ghi chép thủ công. Giải quyết bài toán thất thoát nguyên liệu và lệch kho thông qua cơ chế tự động trừ định lượng (BOM) ngay khi món được hoàn tất.
+[NormalWeb] 2. Mục tiêu chung
+[NormalWeb] Số hóa toàn diện quy trình vận hành của một mô hình F&B nhỏ (quán cà phê), tạo ra một luồng giao tiếp liền mạch, không độ trễ giữa ba đối tượng: Khách hàng – Quầy Thu ngân – Quầy Pha chế.
+[NormalWeb] Xây dựng một hệ thống phần mềm có tính ứng dụng thực tiễn cao, đủ độ ổn định để có thể triển khai chạy thử nghiệm tại một quán cà phê thực tế.
+[NormalWeb] 3. Mục tiêu chi tiết
+[NormalWeb] Về trải nghiệm khách hàng: Xây dựng giao diện Web Mobile-first siêu nhẹ, cho phép quét QR định danh bàn và order trong dưới 3 thao tác vuốt chạm.
+[NormalWeb] Về luồng nghiệp vụ (Real-time): Tích hợp công nghệ Socket.io hoặc SignalR để đơn hàng từ khách lập tức nảy số trên màn hình Bếp và Thu ngân mà không cần tải lại trang.
+[NormalWeb] Về xử lý dữ liệu: Thiết kế Schema cơ sở dữ liệu SQL Server tối ưu. Xây dựng các Stored Procedure và Transaction chặt chẽ để xử lý bài toán trừ hao hụt nguyên liệu, đảm bảo không xảy ra âm kho khi có hiện tượng tranh chấp dữ liệu (nhiều bàn cùng order một lúc).
+[NormalWeb] Về phần cứng ngoại vi: Tích hợp thành công lệnh in hóa đơn trực tiếp từ trình duyệt ra máy in nhiệt mini và hỗ trợ mã thanh toán MOMO động.
+[NormalWeb] 4. Kết quả mong đợi (Chỉ số và Sản phẩm bàn giao)
+[NormalWeb] Sản phẩm phần mềm: 01 Ứng dụng Web hoàn chỉnh (bao gồm cả Front-end Next.js và Back-end Node.js/C#) được deploy chạy online trên server thực.
+[NormalWeb] Chỉ số hiệu năng (Định lượng):
+[NormalWeb] Thời gian đồng bộ luồng đơn hàng (từ lúc bấm gửi đến khi bếp nhận) dưới 2 giây.
+[NormalWeb] Xử lý thành công 100% các kịch bản test ép tải (cùng lúc nhiều user order) mà dữ liệu tồn kho nguyên liệu không bị sai lệch.
+[NormalWeb] ----------------------------------------------------------------
+I. Ý TƯỞNG BÀI TOÁN
+1. Mô tả ý tưởng Hệ thống là một Ứng dụng Web (Web-App) quản lý khép kín dành cho mô hình quán cà phê vừa và nhỏ, tập trung vào việc số hóa quy trình gọi món và quản lý vận hành. Hệ thống cho phép khách hàng chủ động quét mã QR tại bàn để định danh, xem thực đơn và gọi món trực tiếp trên trình duyệt điện thoại di động mà không cần tải ứng dụng. Đồng thời, hệ thống cung cấp giao diện quản trị đồng bộ cho Thu ngân và màn hình xử lý đơn hàng theo thời gian thực (Real-time) cho Bếp, kết hợp với cơ chế tự động đối soát và trừ kho nguyên liệu.
+2. Bài toán giải quyết
+Về phía khách hàng: Khắc phục tình trạng chờ đợi nhân viên ghi order trong giờ cao điểm, hạn chế sai sót món do giao tiếp thủ công.
+Về phía vận hành: Giải quyết vấn đề nghẽn luồng thông tin giữa khu vực bàn khách và quầy pha chế.
+Về phía quản lý: Giải quyết bài toán thất thoát nguyên vật liệu và khó khăn trong việc kiểm soát định lượng (BOM) thông qua cơ chế tự động trừ kho chính xác ngay khi hoàn tất món.
+II. MỤC TIÊU CỐT LÕI (DÀI HẠN)
+Số hóa toàn diện và tối ưu hóa luồng vận hành của quán cà phê, tạo ra một chu trình giao tiếp liền mạch, không độ trễ giữa ba mắt xích: Khách hàng – Thu ngân – Pha chế.
+Xây dựng một hệ thống phần mềm có tính ứng dụng thực tiễn cao, kiến trúc cơ sở dữ liệu chặt chẽ để đảm bảo tính toàn vẹn dữ liệu (không âm kho, không sai lệch báo cáo doanh thu), đủ độ ổn định để triển khai chạy thử nghiệm tại một mô hình F&B thực tế.
+III. KẾT QUẢ MONG ĐỢI
+1. Mục tiêu chi tiết cần đạt (Tính năng)
+Module Tự phục vụ qua QR: Xây dựng giao diện Web Mobile-first siêu nhẹ, cho phép quét mã QR (tự sinh) để định danh bàn, gọi món và tích hợp hình thức thanh toán VietQR động trong dưới 3 thao tác vuốt chạm.
+Module Xử lý Real-time: Tích hợp giao thức (Socket.io/SignalR) đảm bảo thông tin order mới, trạng thái hoàn thành món được cập nhật tức thời trên màn hình Thu ngân và Bếp (KDS) mà không cần tải lại trang.
+Module Định lượng và Kho: Xây dựng cơ sở dữ liệu xử lý đồng thời bằng Transaction/Stored Procedure. Tự động tính toán định lượng (BOM) và trừ hao hụt nguyên liệu trong kho an toàn ngay cả khi nhiều bàn gửi yêu cầu cùng một thời điểm.
+Module Ngoại vi: Tích hợp thành công lệnh in hóa đơn trực tiếp từ trình duyệt ra máy in nhiệt mini và kết nối mở ngăn kéo đựng tiền.
+2. Sản phẩm bàn giao định lượng
+01 Ứng dụng Web hoàn chỉnh (Front-end Next.js, Back-end Node.js/C#) triển khai thành công trên môi trường Internet.
+Chỉ số hiệu năng: Thời gian đồng bộ trạng thái đơn hàng giữa các thiết bị dưới 2 giây; Hệ thống Database xử lý thành công 100% kịch bản kiểm thử tranh chấp dữ liệu tồn kho.
+01 Bộ tài liệu đồ án tốt nghiệp chuẩn hóa (Đặc tả yêu cầu, Thiết kế UI/UX, Sơ đồ cơ sở dữ liệu).
+IV. ĐÁNH GIÁ TÍNH KHẢ THI (Trong 8 tuần)
+Dự án được đánh giá có tính khả thi ở mức Khá - Tốt, với nguồn lực nhân sự là điểm mạnh lớn nhất, tuy nhiên cần kiểm soát chặt chẽ phạm vi để đối phó với áp lực thời gian.
+1. Khả thi về kỹ thuật (Tốt)
+Công nghệ sử dụng (Next.js, Node.js/C#, SQL Server) là các nền tảng ổn định, tài liệu phong phú, hoàn toàn đáp ứng được luồng nghiệp vụ.
+Kiến trúc đẩy logic xử lý kho (Transaction) xuống SQL Server giảm tải cho Back-end, giải quyết triệt để bài toán đồng thời (Concurrency).
+Tính năng QR định danh tự tạo bằng thư viện, QR thanh toán sử dụng hàm mã hóa kết hợp API Webhook bên thứ 3 (PayOS/SePay) là khả thi và không đòi hỏi can thiệp phần cứng sâu.
+2. Khả thi về nguồn lực (Rất Tốt)
+Cấu trúc nhóm 3 người (Tuyến - Front-end, Nhật Anh - Back-end/Database, Sáng - Testing) là mô hình Agile chuẩn mực, phân vai rõ ràng giúp tối ưu hóa năng suất.
+Chi phí duy trì hệ thống thấp, có thể tận dụng các dịch vụ hosting và API miễn phí cho mục đích học tập. Đã thiết lập sẵn Skill AI (do-an-cafe-reviewer) hỗ trợ rà soát mã nguồn.
+3. Khả thi về thời gian (Trung bình - Yêu cầu kỷ luật)
+Quỹ thời gian 2 tháng là thách thức lớn nhất đối với một hệ thống tích hợp Realtime và trừ kho.
+Chiến lược ứng phó: Áp dụng chiến lược MVP (Minimum Viable Product). Kiên quyết cắt giảm các tính năng phụ (Quản lý nhân sự, CRM khách hàng, chuỗi chi nhánh) để tập trung xây dựng hoàn chỉnh luồng cốt lõi (Order QR -> Realtime Bếp -> Trừ kho -> In Bill). Dành tối thiểu 2 tuần cuối cho công tác kiểm thử (Testing) kịch bản ép tải
+---------------------------------------------------------------------------
+[NormalWeb] 
+[Heading3] 1. Primary Actors (Tác nhân chủ động)
+[NormalWeb] 1.1. Khách hàng (Customer)
+[NormalWeb] Định nghĩa: Người sử dụng dịch vụ tại bàn (không cần tài khoản đăng nhập).
+[NormalWeb] Hành vi (Behavior):
+[NormalWeb] Quét mã QR tại bàn để truy cập Web-App.
+[NormalWeb] Xem thực đơn và thêm món vào giỏ hàng.
+[NormalWeb] Gửi yêu cầu đặt món (Order).
+[NormalWeb] Thanh toán qua mã VietQR động.
+[NormalWeb] Theo dõi trạng thái đơn trên điện thoại (Chờ xác nhận -> Đang chuẩn bị -> Đã phục vụ).
+[NormalWeb] 1.2. Nhân viên Quầy (Staff - Gộp Thu ngân & Pha chế)
+[NormalWeb] Định nghĩa: Nhân viên trực quầy (có tài khoản đăng nhập), chịu trách nhiệm tiếp nhận order, thu tiền và điều phối làm món.
+[NormalWeb] Hành vi (Behavior):
+[NormalWeb] Đăng nhập hệ thống (Dashboard dành cho Nhân viên).
+[NormalWeb] Nhận thông báo Realtime khi có đơn hàng mới hoặc khách đã thanh toán thành công qua QR.
+[NormalWeb] Xem chi tiết đơn hàng (bàn nào, món gì, lưu ý ít đường/nhiều đá) để đọc order cho người pha chế làm.
+[NormalWeb] Tạo đơn hàng thủ công cho khách vãng lai mua mang đi (Take-away).
+[NormalWeb] Bấm nút "Hoàn tất / Đã phục vụ" trên hệ thống khi món làm xong. (Lưu ý: Đây chính là hành vi kích hoạt Stored Procedure gọi xuống Database để tự động trừ định lượng nguyên liệu trong kho).
+[NormalWeb] In hóa đơn ra máy in nhiệt.
+[NormalWeb] 1.3. Quản lý (Manager / Admin)
+[NormalWeb] Định nghĩa: Người quản trị cao nhất của hệ thống.
+[NormalWeb] Hành vi (Behavior):
+[NormalWeb] Quản lý thực đơn (Menu) và danh sách bàn (QR Code).
+[NormalWeb] Thiết lập công thức định lượng (BOM) cho từng món.
+[NormalWeb] Kiểm tra tồn kho nguyên liệu.
+[NormalWeb] Xem báo cáo doanh thu và lịch sử đơn hàng.
+[NormalWeb] Cấp tài khoản cho Nhân viên Quầy.
+[Heading3] 2. Secondary System Actors (Tác nhân hệ thống phụ trợ)
+[NormalWeb] (Phần này giữ nguyên không đổi)
+[NormalWeb] 2.1. Cổng thanh toán VietQR (Ví dụ: PayOS / SePay)
+[NormalWeb] Hành vi: Nhận request tạo mã QR, trả về ảnh QR động, và tự động bắn Webhook về hệ thống khi khách chuyển khoản thành công.
+[NormalWeb] 2.2. Database Server (SQL Server)
+[NormalWeb] Hành vi: Thực thi Transaction trừ kho nguyên liệu ngay khi Nhân viên Quầy bấm "Hoàn tất" đơn hàng, tự động Rollback cảnh báo nếu kho hết đồ.
+[NormalWeb] 
+<<TABLE>>
+| STT | Actor | Loại | Hành vi chính |
+| 1 | Khách hàng (Customer) | Primary | Quét mã QR tại bàn, xem thực đơn, chọn món, gửi yêu cầu đặt hàng (order), thanh toán qua VietQR động, theo dõi trạng thái đơn. |
+| 2 | Nhân viên Quầy (Staff) | Primary | Đăng nhập, nhận thông báo đơn hàng realtime, tạo đơn thủ công (take-away), bấm hoàn tất món, kích hoạt lệnh in hóa đơn. |
+| 3 | Quản lý (Admin) | Primary | Đăng nhập, quản lý menu và QR bàn, thiết lập định lượng nguyên liệu (BOM), kiểm kho, xem báo cáo, cấp quyền nhân viên. |
+| 4 | Cổng thanh toán (External Service) | Secondary System | Nhận yêu cầu thanh toán, tạo mã VietQR động chứa sẵn số tiền, tự động bắn Webhook về hệ thống khi khách chuyển khoản thành công. |
+| 5 | Cơ sở dữ liệu (SQL Server) | Secondary System | Tiếp nhận lệnh "Hoàn tất món", tự động thực thi Transaction và Stored Procedure trừ hao hụt nguyên liệu, từ chối giao dịch nếu kho rỗng. |
+| 6 | Hệ thống Realtime (SignalR / Socket.io) | Secondary System | Quản lý kết nối (WebSocket), phát (broadcast) sự kiện đơn hàng mới/trạng thái món ăn đến các thiết bị của khách và nhân viên ngay lập tức. |
+| 7 | Máy in hóa đơn (Printer) | Secondary System | Tiếp nhận lệnh in (window.print()) từ trình duyệt của nhân viên quầy để xuất hóa đơn giấy định dạng 58mm/80mm. |
+| 8 | Trình lên lịch (Cron Job) | Secondary System | Chạy ngầm định kỳ để tự động chốt ca, tổng hợp doanh thu cuối ngày, hoặc dọn dẹp các giỏ hàng "rác" khách tạo nhưng không thanh toán. |
+| 9 | Hệ thống lưu trữ (Storage) | Secondary System | Lưu trữ, nén và phân phối hình ảnh của các món ăn trong thực đơn để giao diện menu web tải nhanh hơn trên điện thoại khách hàng. |
+<</TABLE>>
+[NormalWeb] ----------------------------------------------------------------------------
+[Heading3] 1. Tác nhân: Khách hàng (Customer)
+[NormalWeb] User Story 1: Tách/Gộp hóa đơn khi quét QR (Ghép bàn)
+[NormalWeb] Story: Là Khách hàng, tôi muốn tùy chọn "Gộp chung nhóm" hoặc "Tạo đơn cá nhân" khi quét mã QR tại bàn đã có người ngồi, để tôi có thể linh hoạt thanh toán chung với bạn bè hoặc tự trả riêng mà không bị nhầm bill.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Bàn số 05 đang có một phiên đặt hàng (Session A) chưa thanh toán. Khách hàng B đến ngồi cùng bàn và quét mã QR.
+[NormalWeb] When: Điện thoại tải xong dữ liệu từ mã QR.
+[NormalWeb] Then: Hệ thống hiển thị hộp thoại: "Bàn 05 đang có đơn. Bạn muốn Gộp chung nhóm hay Tạo đơn cá nhân?". Nếu chọn "Gộp chung", Khách B được đưa vào Session A và xem chung giỏ hàng. Nếu chọn "Cá nhân", hệ thống tạo Session B độc lập trên cùng Bàn 05.
+[NormalWeb] User Story 2: Xem thực đơn và đặt món
+[NormalWeb] Story: Là Khách hàng, tôi muốn xem thực đơn trực tuyến và thêm món vào giỏ hàng ngay trên điện thoại, để có thể gọi món nhanh chóng mà không cần chờ nhân viên đến tận bàn.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Khách hàng đang ở giao diện Menu của hệ thống.
+[NormalWeb] When: Khách hàng chọn món, tùy chỉnh (ít đường/nhiều đá) và bấm "Gửi đơn hàng".
+[NormalWeb] Then: Đơn hàng được lưu vào hệ thống, chuyển sang trạng thái "Chờ xác nhận" và giỏ hàng hiển thị danh sách món đã đặt.
+[NormalWeb] User Story 3: Thanh toán chuyển khoản VietQR tự động
+[NormalWeb] Story: Là Khách hàng, tôi muốn thanh toán bằng mã VietQR động chứa sẵn số tiền, để không phải nhập tay số tiền, số tài khoản và tránh sai sót.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Khách hàng ở bước thanh toán giỏ hàng và chọn "Chuyển khoản".
+[NormalWeb] When: Khách hàng dùng app ngân hàng quét mã VietQR và chuyển tiền thành công.
+[NormalWeb] Then: Cổng thanh toán (Webhook) báo về hệ thống. Màn hình điện thoại của khách hàng tự động chuyển sang trạng thái "Thanh toán thành công" lập tức mà không cần khách F5 tải lại trang.
+[NormalWeb] User Story 4: Theo dõi trạng thái đơn hàng (Realtime)
+[NormalWeb] Story: Là Khách hàng, tôi muốn theo dõi trạng thái đơn hàng trực tiếp trên điện thoại, để biết chính xác khi nào đồ uống của tôi được làm xong.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Khách hàng đang mở màn hình theo dõi đơn hàng sau khi thanh toán.
+[NormalWeb] When: Nhân viên quầy bấm nút "Hoàn tất món" trên hệ thống của họ.
+[NormalWeb] Then: Giao diện điện thoại của khách ngay lập tức cập nhật trạng thái từ "Đang chuẩn bị" sang "Đã xong, vui lòng nhận tại quầy" kèm theo một hiệu ứng pop-up thông báo.
+[Heading3] 2. Tác nhân: Nhân viên Quầy (Staff)
+[NormalWeb] User Story 5: Nhận thông báo đơn hàng mới theo thời gian thực
+[NormalWeb] Story: Là Nhân viên Quầy, tôi muốn nhận được thông báo ngay lập tức khi có khách đặt món qua QR, để kịp thời tiếp nhận và tiến hành pha chế.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Nhân viên đang trực tại màn hình quản lý (Dashboard) máy POS.
+[NormalWeb] When: Khách hàng ở bất kỳ bàn nào hoàn tất việc gửi đơn hàng.
+[NormalWeb] Then: Màn hình POS phát ra âm thanh thông báo và thẻ đơn hàng mới tự động nảy lên danh sách "Cần xử lý" mà nhân viên không cần phải làm mới (reload) trang.
+[NormalWeb] User Story 6: Cập nhật "Hoàn tất món" và trừ kho tự động
+[NormalWeb] Story: Là Nhân viên Quầy, tôi muốn bấm "Hoàn tất" món ăn trên hệ thống, để thông báo cho khách và kích hoạt hệ thống tự động trừ kho nguyên liệu.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Nhân viên đã pha chế xong đơn hàng của Bàn 05.
+[NormalWeb] When: Nhân viên bấm nút "Hoàn tất món".
+[NormalWeb] Then: Đơn hàng được lưu vào lịch sử "Đã phục vụ". Ngầm bên dưới, hệ thống gọi Stored Procedure xuống cơ sở dữ liệu để trừ chính xác số lượng nguyên liệu (theo công thức BOM) của các món vừa hoàn tất.
+[NormalWeb] User Story 7: In hóa đơn thanh toán
+[NormalWeb] Story: Là Nhân viên Quầy, tôi muốn in hóa đơn từ hệ thống web, để giao cho khách hàng lưu đối soát và dán lên ly đồ uống.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Một đơn hàng đã được đánh dấu thanh toán thành công.
+[NormalWeb] When: Nhân viên bấm nút "In hóa đơn".
+[NormalWeb] Then: Hệ thống mở giao diện in của trình duyệt, áp dụng CSS ẩn các nút bấm/menu của web, chỉ hiển thị đúng form hóa đơn để in vừa vặn khổ giấy máy in nhiệt (58mm/80mm).
+[NormalWeb] User Story 8: Tạo đơn hàng thủ công (Khách Take-away)
+[NormalWeb] Story: Là Nhân viên Quầy, tôi muốn tạo đơn hàng trực tiếp trên máy POS, để phục vụ những khách hàng vãng lai đến mua mang đi mà không quét mã QR.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Nhân viên đang ở màn hình tạo đơn hàng mới.
+[NormalWeb] When: Nhân viên chọn món, xác nhận thanh toán tiền mặt/chuyển khoản và chốt đơn.
+[NormalWeb] Then: Hệ thống ghi nhận đơn hàng loại "Take-away", in hóa đơn và đẩy dữ liệu món vào luồng màn hình chờ pha chế.
+[Heading3] 3. Tác nhân: Quản lý (Admin)
+[NormalWeb] User Story 9: Thiết lập công thức định lượng (BOM)
+[NormalWeb] Story: Là Quản lý, tôi muốn cấu hình công thức nguyên liệu cho từng món trong thực đơn, để hệ thống có cơ sở tính toán trừ kho và chống thất thoát.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Quản lý đăng nhập vào phân hệ "Quản lý Thực đơn" và chọn một món bất kỳ (VD: Cà phê đen).
+[NormalWeb] When: Quản lý thêm định lượng: "25ml cốt cà phê, 10g đường" và bấm Lưu.
+[NormalWeb] Then: Hệ thống lưu cấu hình BOM. Từ thời điểm này, mỗi ly "Cà phê đen" bán ra sẽ tự động trừ đúng 25ml cốt cà phê và 10g đường trong kho nguyên liệu tương ứng.
+[NormalWeb] User Story 10: Xử lý ngoại lệ "Chống âm kho" (Race Condition)
+[NormalWeb] Story: Là Quản lý, tôi muốn hệ thống tự động từ chối đơn đặt món nếu kho không đủ nguyên liệu, để đảm bảo tồn kho thực tế không bao giờ hiển thị số âm.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Kho chỉ còn đủ nguyên liệu pha 1 ly Trà đào. Bàn 01 và Bàn 02 gửi yêu cầu đặt Trà đào vào cùng 1 mili-giây.
+[NormalWeb] When: Database nhận lệnh trừ kho cùng lúc từ hai luồng API.
+[NormalWeb] Then: Hệ thống dùng cơ chế Transaction (Row-lock) khóa dòng dữ liệu. 1 đơn hàng được xử lý thành công. Đơn hàng còn lại bị Rollback và hệ thống trả về thông báo lỗi: "Món Trà đào tạm thời hết nguyên liệu" cho khách không mua được.
+[NormalWeb] User Story 11: Xem báo cáo doanh thu và lịch sử đơn hàng
+[NormalWeb] Story: Là Quản lý, tôi muốn xem biểu đồ doanh thu và lịch sử đơn hàng theo ca/ngày, để đánh giá hiệu quả kinh doanh của quán.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] Given: Quản lý truy cập vào Dashboard báo cáo quản trị.
+[NormalWeb] When: Quản lý lọc dữ liệu theo bộ lọc "Hôm nay".
+[NormalWeb] Then: Hệ thống truy xuất và hiển thị chính xác tổng doanh thu, tổng số hóa đơn, danh sách các món bán chạy nhất và cảnh báo các nguyên liệu sắp hết trong kho.
+[Heading3] ------------------------------------------------------------------------------------------------------
+[Heading3] 1. Tác nhân: Khách hàng (Customer)
+[NormalWeb] User Story 1: Tách/Gộp hóa đơn khi quét QR (Ghép bàn)
+[NormalWeb] Story: Là Khách hàng, tôi muốn tùy chọn "Gộp chung nhóm" hoặc "Tạo đơn cá nhân" khi quét mã QR tại bàn đã có người ngồi, để linh hoạt thanh toán chung hoặc riêng.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path - Luồng chuẩn):
+[NormalWeb] Given: Bàn 05 đang có một đơn chưa thanh toán. Khách B quét QR.
+[NormalWeb] When: Khách B chọn "Gộp chung nhóm".
+[NormalWeb] Then: Hệ thống đưa Khách B vào chung phiên làm việc với người trước và hiển thị giỏ hàng chung.
+[NormalWeb] AC 2 (Exception Path - Luồng lỗi):
+[NormalWeb] Given: Bàn 05 có đơn cũ nhưng người trước vừa thanh toán xong cách đó vài giây.
+[NormalWeb] When: Khách B bấm "Gộp chung nhóm".
+[NormalWeb] Then: Hệ thống báo lỗi "Đơn hàng nhóm đã được thanh toán, hệ thống sẽ tạo phiên đặt bàn mới cho bạn" và tự động chuyển sang luồng tạo đơn cá nhân.
+[NormalWeb] User Story 2: Xem thực đơn và đặt món
+[NormalWeb] Story: Là Khách hàng, tôi muốn chọn món và gửi order trực tiếp trên điện thoại để tiết kiệm thời gian chờ đợi.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path):
+[NormalWeb] Given: Khách hàng có 2 món hợp lệ trong giỏ hàng.
+[NormalWeb] When: Khách hàng bấm "Gửi đơn hàng".
+[NormalWeb] Then: Hệ thống lưu đơn, hiện thông báo "Đặt món thành công" và chuyển sang màn hình theo dõi đơn.
+[NormalWeb] AC 2 (Exception Path):
+[NormalWeb] Given: Khách hàng để màn hình giỏ hàng lâu, trong lúc đó một món trong giỏ (VD: Trà đào) vừa hết nguyên liệu.
+[NormalWeb] When: Khách hàng bấm "Gửi đơn hàng".
+[NormalWeb] Then: Hệ thống từ chối lưu đơn, báo lỗi "Rất tiếc, Trà đào vừa hết món. Vui lòng chọn món khác" và tự động cập nhật lại trạng thái hết hàng trên menu.
+[NormalWeb] User Story 3: Thanh toán chuyển khoản VietQR
+[NormalWeb] Story: Là Khách hàng, tôi muốn thanh toán bằng mã VietQR động để không phải nhập tay số tiền và số tài khoản.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path):
+[NormalWeb] Given: Màn hình đang hiển thị mã VietQR của đơn hàng.
+[NormalWeb] When: Khách hàng chuyển khoản thành công và Webhook báo về.
+[NormalWeb] Then: Giao diện lập tức hiện pop-up "Thanh toán thành công" và cập nhật trạng thái đơn mà không cần F5.
+[NormalWeb] AC 2 (Exception Path):
+[NormalWeb] Given: Màn hình đang hiển thị mã VietQR của đơn hàng.
+[NormalWeb] When: Khách hàng quét mã nhưng sửa sai số tiền hoặc nội dung chuyển khoản khiến Webhook không khớp.
+[NormalWeb] Then: Sau 5 phút, hệ thống tự động báo "Giao dịch chưa được ghi nhận. Nếu bạn đã chuyển khoản, vui lòng gặp thu ngân để đối soát."
+[Heading3] 2. Tác nhân: Nhân viên Quầy (Staff)
+[NormalWeb] User Story 4: Nhận thông báo đơn hàng mới
+[NormalWeb] Story: Là Nhân viên Quầy, tôi muốn nhận thông báo realtime khi có đơn order mới để kịp thời pha chế.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path):
+[NormalWeb] Given: Dashboard máy POS đang hoạt động bình thường.
+[NormalWeb] When: Khách hàng chốt đơn thành công.
+[NormalWeb] Then: Hệ thống phát âm thanh "Ting" và hiển thị thẻ đơn hàng ngay lập tức.
+[NormalWeb] AC 2 (Exception Path):
+[NormalWeb] Given: Máy POS của nhân viên bị rớt mạng WiFi trong 2 phút.
+[NormalWeb] When: Có đơn hàng mới phát sinh trong lúc rớt mạng.
+[NormalWeb] Then: Hệ thống hiển thị icon "Mất kết nối". Khi có WiFi lại, hệ thống tự động fetch (kéo) lại các đơn bị nhỡ và hiển thị cảnh báo "Có đơn hàng bị trễ".
+[NormalWeb] User Story 5: Cập nhật "Hoàn tất món" và in hóa đơn
+[NormalWeb] Story: Là Nhân viên Quầy, tôi muốn bấm "Hoàn tất" để thông báo cho khách và in bill giao cho khách.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path):
+[NormalWeb] Given: Nhân viên chọn một đơn hàng đang ở trạng thái "Đang chuẩn bị".
+[NormalWeb] When: Nhân viên bấm "Hoàn tất & In Bill".
+[NormalWeb] Then: Đơn hàng đổi trạng thái, kích hoạt Stored Procedure trừ kho, và gọi hộp thoại in của trình duyệt.
+[NormalWeb] AC 2 (Exception Path):
+[NormalWeb] Given: Có hai nhân viên cùng dùng chung một tài khoản trên hai máy khác nhau.
+[NormalWeb] When: Cả hai cùng bấm "Hoàn tất" cho cùng 1 đơn hàng vào cùng 1 thời điểm.
+[NormalWeb] Then: Máy bấm sau sẽ bị chặn lại, hiện thông báo "Đơn hàng này đã được nhân viên khác xử lý" để tránh bị trừ kho 2 lần.
+[NormalWeb] User Story 6: Tạo đơn hàng thủ công (Take-away)
+[NormalWeb] Story: Là Nhân viên Quầy, tôi muốn tạo đơn hàng trực tiếp trên hệ thống cho khách vãng lai mua mang đi.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path):
+[NormalWeb] Given: Nhân viên mở giao diện Tạo đơn mới.
+[NormalWeb] When: Điền món, chọn thanh toán tiền mặt và bấm "Chốt đơn".
+[NormalWeb] Then: Đơn hàng được tạo thành công vào luồng chờ pha chế.
+[NormalWeb] AC 2 (Exception Path):
+[NormalWeb] Given: Nhân viên mở giao diện Tạo đơn mới.
+[NormalWeb] When: Nhân viên quên chọn phương thức thanh toán và bấm "Chốt đơn".
+[NormalWeb] Then: Hệ thống chặn lại, bôi đỏ trường Phương thức thanh toán và báo lỗi "Vui lòng chọn hình thức thanh toán".
+[Heading3] 3. Tác nhân: Quản lý (Admin)
+[NormalWeb] User Story 7: Thiết lập công thức định lượng (BOM)
+[NormalWeb] Story: Là Quản lý, tôi muốn cấu hình nguyên liệu cho từng món để hệ thống tự động trừ kho chuẩn xác.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path):
+[NormalWeb] Given: Quản lý đang ở giao diện chỉnh sửa món ăn.
+[NormalWeb] When: Nhập định lượng hợp lệ (VD: 25ml cốt cà phê) và lưu.
+[NormalWeb] Then: Hệ thống lưu thành công và áp dụng công thức này cho các order tiếp theo.
+[NormalWeb] AC 2 (Exception Path):
+[NormalWeb] Given: Quản lý đang ở giao diện chỉnh sửa món ăn.
+[NormalWeb] When: Nhập định lượng bị âm (VD: -10ml) hoặc bỏ trống nguyên liệu bắt buộc.
+[NormalWeb] Then: Hệ thống từ chối lưu, highlight ô lỗi và hiện cảnh báo "Định lượng không hợp lệ, phải lớn hơn 0".
+[NormalWeb] User Story 8: Quản lý tài khoản nhân viên (CRUD)
+[NormalWeb] Story: Là Quản lý, tôi muốn tạo mới, khóa hoặc phân quyền tài khoản cho nhân viên để đảm bảo an ninh hệ thống.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path):
+[NormalWeb] Given: Quản lý đang ở trang Quản lý Nhân sự.
+[NormalWeb] When: Điền thông tin nhân viên mới, cấp quyền "Staff" và Lưu.
+[NormalWeb] Then: Tài khoản được tạo, nhân viên có thể đăng nhập lập tức.
+[NormalWeb] AC 2 (Exception Path):
+[NormalWeb] Given: Quản lý đang ở trang Quản lý Nhân sự.
+[NormalWeb] When: Điền tên đăng nhập đã trùng với một nhân viên cũ đang tồn tại trong Database.
+[NormalWeb] Then: Hệ thống chặn lại, báo lỗi "Tên đăng nhập đã tồn tại, vui lòng chọn tên khác".
+[NormalWeb] User Story 9: Xem báo cáo doanh thu
+[NormalWeb] Story: Là Quản lý, tôi muốn xem biểu đồ doanh thu theo khoảng thời gian để đánh giá hiệu quả kinh doanh.
+[NormalWeb] Acceptance Criteria:
+[NormalWeb] AC 1 (Happy Path):
+[NormalWeb] Given: Quản lý ở Dashboard báo cáo.
+[NormalWeb] When: Chọn mốc thời gian "01/10/2026 - 10/10/2026" (mốc quá khứ hợp lệ).
+[NormalWeb] Then: Hệ thống load biểu đồ và dữ liệu tương ứng.
+[NormalWeb] AC 2 (Exception Path):
+[NormalWeb] Given: Quản lý ở Dashboard báo cáo.
+[NormalWeb] When: Chọn mốc thời gian tương lai "01/12/2026 - 10/12/2026" (hoặc Ngày bắt đầu lớn hơn Ngày kết thúc).
+[NormalWeb] Then: Hệ thống vô hiệu hóa nút xem báo cáo và báo lỗi "Khoảng thời gian không hợp lệ".
+[NormalWeb] 
+[NormalWeb] 
+MÔ HÌNH HÓA USER FLOW: LUỒNG QUÉT QR & ĐẶT MÓN
+1. BẮT ĐẦU: Quét mã QR
+Hành động: Khách hàng đến Bàn 05 và dùng camera điện thoại quét mã QR.
+Hệ thống: Trích xuất TableID = 05 từ URL và truy vấn CSDL.
+2. QUYẾT ĐỊNH 1: Bàn có đang trống không?
+So khớp: Hệ thống kiểm tra xem Bàn 05 có Session (phiên đặt hàng) nào đang mở chưa thanh toán không.
+[ĐÚNG] Nhánh Trống: Bàn chưa có ai. Tự động tạo Session mới và chuyển thẳng tới Bước 4.
+[SAI] Nhánh Có khách: Bàn đang có đơn hàng dở dang. Hiển thị Modal pop-up: "Bàn đang có người. Bạn đi cùng nhóm hay đi lẻ?"
+3. QUYẾT ĐỊNH 2: Tách hay Gộp bill? (Chỉ xảy ra nếu Quyết định 1 là SAI)
+Hành động: Người dùng bấm chọn trên màn hình.
+[Chọn "Gộp chung"]: Hệ thống gán user vào Session hiện tại. Load lại giỏ hàng cũ của nhóm.
+[Chọn "Cá nhân"]: Hệ thống tạo một Session mới hoàn toàn độc lập nhưng vẫn gắn với Bàn 05.
+4. HÀNH ĐỘNG: Xem Menu và Đặt món
+Hành động: Khách hàng xem danh sách món, thêm món vào giỏ (VD: Trà đào, Cà phê sữa).
+Hành động: Nhấn nút "Gửi đơn hàng".
+5. QUYẾT ĐỊNH 3: Kho có đủ nguyên liệu không? (Check BOM)
+So khớp: Database gọi Transaction kiểm tra số lượng nguyên liệu tồn kho so với công thức của các món trong giỏ.
+[SAI] Nhánh Lỗi & Lặp lại:
+Hệ thống Rollback giao dịch.
+Hiển thị thông báo: "Món [Trà đào] vừa hết nguyên liệu".
+Vòng lặp: Đẩy người dùng quay ngược lại bước HÀNH ĐỘNG (Xem Menu) để chọn món khác. Vòng lặp này giúp app không bị crash.
+[ĐÚNG] Nhánh Thành công: Đủ nguyên liệu.
+6. KẾT THÚC: Chốt đơn
+Hệ thống: Lưu đơn hàng vào Database, khóa nguyên liệu, phát sự kiện Realtime (Socket.io/SignalR) sang màn hình của Nhân viên quầy.
+Màn hình khách: Chuyển sang giao diện "Thanh toán VietQR / Theo dõi trạng thái đơn".
+Tặng bạn mã sơ đồ Mermaid (Tự động vẽ)
+Nếu bạn dùng các công cụ hỗ trợ Markdown như Notion, Obsidian, hoặc paste đoạn code này vào trang web mermaid.live, nó sẽ tự động vẽ ra sơ đồ luồng cho bạn:
+Đoạn mã
+																graph TD
+																    A[BẮT ĐẦU: Quét mã QR Bàn] --> B{Bàn đang trống?}
+																    B -- ĐÚNG --> D[Tạo Session mới]
+																    B -- SAI --> C{Chọn Gộp hay Tách bill?}
+																    C -- Gộp chung --> E[Vào Session hiện tại]
+																    C -- Cá nhân --> D
+																    D --> F[Xem Menu & Thêm món vào giỏ]
+																    E --> F
+																    F --> G[Bấm Gửi đơn hàng]
+																    G --> H{Đủ nguyên liệu kho?}
+																    H -- SAI: Hết món --> I[Báo lỗi & Xóa món khỏi giỏ]
+																    I -. Quay lại vòng lặp .-> F
+																    H -- ĐÚNG --> J[KẾT THÚC: Lưu đơn & Bắn Realtime cho Bếp]
+																    J --> K[Chuyển sang màn hình Thanh toán/Chờ món]
+[Heading3] Module 1: Quản lý Đặt món & Định danh (Order & Identity Module)
+[NormalWeb] Nhóm các User Stories liên quan đến việc khách hàng tương tác với bàn và gửi yêu cầu đặt món vào một module độc lập. 
+[NormalWeb] Chức năng 1.1: Khởi tạo phiên làm việc qua QR (Tách/Gộp bàn)
+[NormalWeb] Actor: Khách hàng.
+[NormalWeb] Input (Dữ liệu vào): TableID (từ URL của QR code), Lựa chọn rẽ nhánh (Gộp chung / Tạo mới). 
+[NormalWeb] Processing (Quy tắc xử lý): Hệ thống kiểm tra trạng thái bàn. Nếu bàn trống, khởi tạo SessionID mới. Nếu bàn đang có người, dựa vào lựa chọn của khách để gán user vào SessionID hiện tại hoặc sinh ra SessionID mới hoạt động song song trên cùng một bàn. 
+[NormalWeb] Output (Dữ liệu trả về): Trạng thái phiên làm việc (Session) và quyền truy cập vào giao diện Thực đơn. 
+[NormalWeb] Chức năng 1.2: Xử lý giỏ hàng và Chốt đơn
+[NormalWeb] Actor: Khách hàng.
+[NormalWeb] Input: Danh sách mã món (ItemID), Số lượng, Tùy chỉnh (Ghi chú), SessionID. 
+[NormalWeb] Processing: Kiểm tra tính hợp lệ của giỏ hàng, tính tổng tiền. Tạo bản ghi đơn hàng mới với trạng thái "Chờ thanh toán". 
+[NormalWeb] Output: Mã đơn hàng (OrderID) và Tổng tiền (Total Amount). 
+[NormalWeb] Chức năng 1.3: Tạo đơn hàng thủ công (Take-away)
+[NormalWeb] Actor: Nhân viên Quầy.
+[NormalWeb] Input: Danh sách món, Phương thức thanh toán (Tiền mặt/Chuyển khoản). 
+[NormalWeb] Processing: Tạo lập đơn hàng không cần gán TableID. Cập nhật trạng thái "Đã thanh toán" nếu chọn tiền mặt. 
+[NormalWeb] Output: Bản ghi OrderID được lưu và đẩy thẳng vào luồng màn hình chờ pha chế. 
+[Heading3] Module 2: Xử lý Thanh toán (Payment Module)
+[NormalWeb] Module này được tách rời (Decoupling) để chuyên xử lý giao tiếp với các cổng API bên thứ ba và xuất hóa đơn. 
+[NormalWeb] Chức năng 2.1: Khởi tạo mã VietQR động
+[NormalWeb] Actor: Khách hàng.
+[NormalWeb] Input: OrderID, Tổng tiền. 
+[NormalWeb] Processing: Mã hóa thông tin đơn hàng và gửi Request lên API của cổng thanh toán (PayOS/SePay) để sinh mã QR chuẩn NAPAS. 
+[NormalWeb] Output: Hình ảnh hoặc chuỗi văn bản chứa mã VietQR động. 
+[NormalWeb] Chức năng 2.2: Lắng nghe và Xử lý Webhook
+[NormalWeb] Actor: Hệ thống (External Service).
+[NormalWeb] Input: Payload dữ liệu từ ngân hàng (Mã giao dịch, Số tiền nhận, Nội dung chuyển khoản). 
+[NormalWeb] Processing: Bóc tách nội dung chuyển khoản để tìm OrderID tương ứng. Kiểm tra số tiền nhận có khớp với tổng hóa đơn không. Nếu hợp lệ, đổi trạng thái đơn thành "Đã thanh toán". 
+[NormalWeb] Output: Trạng thái đơn hàng được cập nhật, kích hoạt luồng thông báo Realtime. 
+[NormalWeb] Chức năng 2.3: Xuất lệnh in hóa đơn
+[NormalWeb] Actor: Nhân viên Quầy.
+[NormalWeb] Input: OrderID. 
+[NormalWeb] Processing: Truy xuất chi tiết đơn hàng, định dạng layout HTML/CSS theo đúng khổ giấy máy in nhiệt (58mm/80mm), loại bỏ các thành phần UI dư thừa. 
+[NormalWeb] Output: Trình duyệt thực thi lệnh window.print(). 
+[Heading3] Module 3: Vận hành & Đồng bộ Realtime (Operation Module)
+[NormalWeb] Chịu trách nhiệm đồng bộ trạng thái tức thời giữa các thiết bị mà không cần tải lại trang. 
+[NormalWeb] Chức năng 3.1: Phát (Broadcast) thông báo trạng thái
+[NormalWeb] Actor: Hệ thống (SignalR/Socket.io).
+[NormalWeb] Input: Sự kiện phát sinh (Ví dụ: "Đơn hàng mới tạo", "Đã thanh toán", "Món làm xong"). 
+[NormalWeb] Processing: Định tuyến gói tin đến đúng các Client đang kết nối (Màn hình POS của Nhân viên hoặc Điện thoại của Khách hàng theo SessionID). 
+[NormalWeb] Output: Giao diện Client tự động nạp lại danh sách dữ liệu cục bộ. 
+[NormalWeb] Chức năng 3.2: Xác nhận hoàn tất món
+[NormalWeb] Actor: Nhân viên Quầy.
+[NormalWeb] Input: OrderID, ItemID. 
+[NormalWeb] Processing: Thay đổi trạng thái của món ăn sang "Đã phục vụ". Kích hoạt ngầm chức năng trừ kho ở Module 4. 
+[NormalWeb] Output: Cập nhật trạng thái thành công trên Database. 
+[Heading3] Module 4: Quản lý Kho & Định lượng (Inventory & BOM Module)
+[NormalWeb] Module lõi xử lý tính toán nguyên liệu, được thiết kế độc lập cao (High Cohesion) để bảo vệ toàn vẹn dữ liệu. 
+[NormalWeb] Chức năng 4.1: Thiết lập cấu hình định lượng (BOM)
+[NormalWeb] Actor: Quản lý (Admin).
+[NormalWeb] Input: ItemID, Danh sách IngredientID (Mã nguyên liệu) kèm Số lượng hao hụt. 
+[NormalWeb] Processing: Validate số liệu đầu vào (phải > 0). Ánh xạ và lưu công thức vào bảng BOM trong CSDL. 
+[NormalWeb] Output: Cấu hình định lượng được lưu trữ thành công. 
+[NormalWeb] Chức năng 4.2: Trừ kho tự động & Xử lý tranh chấp (Race Condition)
+[NormalWeb] Actor: Hệ thống (Database Server).
+[NormalWeb] Input: Lệnh kích hoạt từ Chức năng 3.2, Danh sách nguyên liệu cần trừ. 
+[NormalWeb] Processing: Mở SQL Transaction và khóa dòng (Row-lock). Tính toán Tồn kho hiện tại - Số lượng yêu cầu. Nếu kết quả >= 0, thực thi lệnh Update và Commit. Nếu < 0, thực thi lệnh Rollback để bảo vệ kho. 
+[NormalWeb] Output: Cập nhật số liệu kho mới hoặc ném ra Exception "Hết nguyên liệu". 
+[Heading3] Module 5: Quản trị & Báo cáo (Admin & Reporting Module)
+[NormalWeb] Nhóm các tính năng dành riêng cho quyền quản trị viên cao nhất. 
+[NormalWeb] Chức năng 5.1: Truy xuất biểu đồ doanh thu
+[NormalWeb] Actor: Quản lý (Admin).
+[NormalWeb] Input: Mốc thời gian (Ngày bắt đầu, Ngày kết thúc). 
+[NormalWeb] Processing: Validate mốc thời gian hợp lệ. Truy vấn tổng doanh thu, đếm số lượng đơn hàng và nhóm các món bán chạy nhất từ bảng Orders trong khoảng thời gian đã cho. 
+[NormalWeb] Output: Cấu trúc dữ liệu JSON/Mảng chứa số liệu để Front-end vẽ biểu đồ. 
+[NormalWeb] Chức năng 5.2: Quản lý phân quyền tài khoản (CRUD)
+[NormalWeb] Actor: Quản lý (Admin).
+[NormalWeb] Input: Thông tin nhân viên (Tên đăng nhập, Mật khẩu, Vai trò). 
+[NormalWeb] Processing: Kiểm tra tính duy nhất của tên đăng nhập, băm (hash) mật khẩu để bảo mật và cấp quyền truy cập hệ thống tương ứng. 
+[NormalWeb] Output: Bản ghi tài khoản nhân sự được lưu vào hệ thống. 
+[NormalWeb] 
+[NormalWeb] 
+[NormalWeb] 

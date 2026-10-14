@@ -1,0 +1,48 @@
+{
+  "name": "cafe-qr-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web-app quán cà phê: gọi món QR, realtime, trừ kho BOM, thu tiền mặt (HTML/CSS/JS thuần + Node.js + SQL Server)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env ứng-dụng/máy-chủ/src/server.js",
+    "dev": "node --env-file-if-exists=.env --watch-path=ứng-dụng/máy-chủ/src ứng-dụng/máy-chủ/src/server.js",
+    "setup": "node kịch-bản/setup.js",
+    "db:migrate": "node --env-file-if-exists=.env kịch-bản/db-migrate.js",
+    "db:seed": "node --env-file-if-exists=.env kịch-bản/db-seed.js",
+    "db:seed:demo": "node --env-file-if-exists=.env kịch-bản/db-seed.js --demo",
+    "qr:links": "node --env-file-if-exists=.env kịch-bản/qr-links.js",
+    "test": "node --env-file-if-exists=.env --test --test-concurrency=1 ứng-dụng/máy-chủ/tests/*.test.js",
+    "load": "node --env-file-if-exists=.env kịch-bản/load-concurrency.js",
+    "lint": "node node_modules/eslint/bin/eslint.js .",
+    "format": "node node_modules/prettier/bin/prettier.cjs --write \"ứng-dụng/**/*.{js,css,html}\" \"kịch-bản/**/*.js\" \"kiểm-thử/**/*.js\"",
+    "format:check": "node node_modules/prettier/bin/prettier.cjs --check \"ứng-dụng/**/*.{js,css,html}\" \"kịch-bản/**/*.js\" \"kiểm-thử/**/*.js\"",
+    "skills:sync": "bash kịch-bản/sync-skills.sh",
+    "skills:check": "bash kịch-bản/sync-skills.sh --check",
+    "test:e2e": "node node_modules/@playwright/test/cli.js test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mssql": "^12.7.6",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.64.0",
+    "eslint": "^9.39.5",
+    "globals": "^16.5.0",
+    "prettier": "^3.9.10",
+    "socket.io-client": "^4.8.4",
+    "supertest": "^7.3.1"
+  }
+}

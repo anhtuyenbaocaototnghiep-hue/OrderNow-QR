@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hóa đơn</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/print.css" />
+  </head>
+  <body class="receipt-page">
+    <!-- S-12 Trang in hóa đơn khổ 58/80mm: window.print() + @media print (DEC-007, BR-014) -->
+    <div class="receipt-toolbar no-print" id="toolbar">
+      <button class="btn btn-primary" id="print" type="button">In hóa đơn</button>
+      <label class="check"><input type="radio" name="w" value="80" /> 80mm</label>
+      <label class="check"><input type="radio" name="w" value="58" /> 58mm</label>
+      <button class="btn" id="close" type="button">Đóng</button>
+    </div>
+    <style id="page-size"></style>
+    <main id="receipt" class="receipt" aria-live="polite"><p>Đang tải hóa đơn…</p></main>
+    <script type="module" src="/js/pages/pos-receipt.js"></script>
+  </body>
+</html>

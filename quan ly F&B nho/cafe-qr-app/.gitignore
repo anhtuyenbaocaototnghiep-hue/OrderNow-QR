@@ -1,0 +1,23 @@
+# Secrets — chỉ commit .env.example
+.env
+.env.*
+!.env.example
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+
+# .NET
+bin/
+obj/
+
+# Test output
+playwright-report/
+test-results/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log

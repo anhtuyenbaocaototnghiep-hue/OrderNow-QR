@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quầy — Bán mang đi</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/pos.css" />
+    <link rel="stylesheet" href="/css/customer.css" />
+  </head>
+  <body class="pos">
+    <!-- S-13 Bán mang đi — mục riêng, thu tiền mặt ngay tại quầy (FEATURE-008, ADR-000 D-3) -->
+    <div class="banner offline" id="offline-banner" hidden>Mất kết nối</div>
+    <div class="takeaway">
+      <section aria-label="Chọn món">
+        <nav class="c-tabs" id="tabs" style="position: static; padding-left: 0; background: transparent; border: 0"></nav>
+        <div class="tiles" id="tiles"><p class="muted">Đang tải thực đơn…</p></div>
+        <div class="card" style="margin-top: 1rem">
+          <div class="row between">
+            <h2 style="margin: 0; font-size: 1.05rem">Đơn mang đi hôm nay</h2>
+            <button class="btn btn-sm" id="reload-today" type="button">Tải lại</button>
+          </div>
+          <div id="today" style="margin-top: 0.6rem"></div>
+        </div>
+      </section>
+      <aside class="card cart-panel" aria-label="Giỏ mang đi">
+        <h2 style="font-size: 1.1rem">Giỏ mang đi</h2>
+        <div id="lines"></div>
+        <div class="due"><span>Tổng</span><span id="total">0đ</span></div>
+        <form id="pay-form" novalidate>
+          <label for="received">Tiền khách đưa</label>
+          <div id="received-slot"></div>
+          <div class="quick-cash" id="quick"></div>
+          <div class="change" id="change"><span>Tiền thừa</span><span>—</span></div>
+          <div id="pay-error"></div>
+          <button class="btn btn-success btn-lg btn-block" id="pay" type="submit" disabled>Thu tiền &amp; In bill</button>
+          <button class="btn btn-ghost btn-sm btn-block" id="clear" type="button" style="margin-top: 0.4rem">Xóa giỏ</button>
+        </form>
+      </aside>
+    </div>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script type="module" src="/js/pages/pos-takeaway.js"></script>
+  </body>
+</html>

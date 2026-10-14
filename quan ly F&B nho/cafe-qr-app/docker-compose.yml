@@ -1,0 +1,18 @@
+# SQL Server cho máy dev CÓ Docker (máy dùng để thiết lập repo không có Docker — xem tài-liệu/vận-hành/local-development.md).
+# docker compose up -d mssql
+# Sau đó: đặt DB_USER=sa, DB_PASSWORD=<MSSQL_SA_PASSWORD> trong .env rồi
+#   npm run db:migrate -- --create && npm run db:seed
+#   npm run db:migrate -- --db CafeQrTest --create
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Cafe_Dev_Passw0rd!}
+      MSSQL_COLLATION: Vietnamese_CI_AS
+    ports:
+      - '1433:1433'
+    volumes:
+      - mssql-data:/var/opt/mssql
+volumes:
+  mssql-data:

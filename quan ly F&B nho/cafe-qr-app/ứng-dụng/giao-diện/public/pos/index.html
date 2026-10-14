@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quầy — Đơn hàng</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/pos.css" />
+  </head>
+  <body class="pos">
+    <!-- S-10 Dashboard quầy, S-11 chi tiết đơn, S-14 thu tiền bàn (FEATURE-006, FEATURE-007) -->
+    <div class="banner offline" id="offline-banner" hidden>Mất kết nối — đơn mới sẽ được tải lại khi có mạng</div>
+    <div class="banner late" id="late" hidden></div>
+    <section class="pay-strip" id="pay-strip" hidden aria-label="Bàn gọi thanh toán"></section>
+    <div class="pos-main">
+      <div class="board" id="board">
+        <section class="column col-pending" aria-label="Đơn mới">
+          <h2>Mới <span class="count" id="count-PENDING">0</span></h2>
+          <div id="col-PENDING"></div>
+        </section>
+        <section class="column col-preparing" aria-label="Đang pha">
+          <h2>Đang pha <span class="count" id="count-PREPARING">0</span></h2>
+          <div id="col-PREPARING"></div>
+        </section>
+        <section class="column col-completed" aria-label="Đã xong hôm nay">
+          <h2>Đã xong hôm nay <span class="count" id="count-COMPLETED">0</span></h2>
+          <div id="col-COMPLETED"></div>
+        </section>
+      </div>
+      <aside class="card tables-panel" aria-label="Bàn đang phục vụ">
+        <h2>Bàn đang phục vụ</h2>
+        <div id="tables"><p class="muted small">Đang tải…</p></div>
+      </aside>
+    </div>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script type="module" src="/js/pages/pos-dashboard.js"></script>
+  </body>
+</html>

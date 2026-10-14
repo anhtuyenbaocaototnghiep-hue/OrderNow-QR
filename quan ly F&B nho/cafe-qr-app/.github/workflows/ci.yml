@@ -1,0 +1,45 @@
+# CI: lint + format + skills drift + test SP/API trên SQL Server thật (service container) + E2E Chromium.
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: Ci_Test_Passw0rd!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P Ci_Test_Passw0rd! -Q 'SELECT 1' || exit 1"
+          --health-interval 10s --health-timeout 5s --health-retries 12
+    env:
+      DB_SERVER: 127.0.0.1
+      DB_PORT: '1433'
+      DB_USER: sa
+      DB_PASSWORD: Ci_Test_Passw0rd!
+      DB_TRUST_SERVER_CERT: 'true'
+      DB_NAME: CafeQrTest
+      TEST_DB_NAME: CafeQrTest
+      JWT_SECRET: ci-only-secret
+      SHOP_NAME: CI Cafe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: bash kịch-bản/sync-skills.sh --check
+      - run: node kịch-bản/db-migrate.js --db CafeQrTest --create
+      - run: npm test
+      - run: npm run load -- --rounds 5
+      - run: node node_modules/@playwright/test/cli.js install --with-deps chromium
+      - run: npm run test:e2e

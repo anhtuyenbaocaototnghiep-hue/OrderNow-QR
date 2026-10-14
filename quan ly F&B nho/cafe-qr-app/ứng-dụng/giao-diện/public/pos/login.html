@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đăng nhập — Quầy</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/pos.css" />
+  </head>
+  <body class="pos">
+    <!-- S-09 Đăng nhập nhân viên (FEATURE-009) -->
+    <div class="login-wrap">
+      <form class="card login-card" id="form" novalidate>
+        <div class="logo" aria-hidden="true">☕</div>
+        <h1 class="center">Đăng nhập quầy</h1>
+        <p class="muted center small">Dành cho nhân viên và quản lý</p>
+        <div id="msg"></div>
+        <div class="field">
+          <label for="username">Tên đăng nhập</label>
+          <input class="input" id="username" name="username" autocomplete="username" required maxlength="50" autofocus />
+        </div>
+        <div class="field">
+          <label for="password">Mật khẩu</label>
+          <input class="input" id="password" name="password" type="password" autocomplete="current-password" required maxlength="100" />
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" id="submit" type="submit">Đăng nhập</button>
+      </form>
+    </div>
+    <script type="module" src="/js/pages/pos-login.js"></script>
+  </body>
+</html>
