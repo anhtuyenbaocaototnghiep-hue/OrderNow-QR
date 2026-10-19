@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đơn đặt hàng</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+  </head>
+  <body class="admin po-print">
+    <!-- In / chép đơn đặt hàng gửi nhà cung cấp (FEATURE-030) — "Gửi" = in, PDF (In → Lưu PDF) hoặc chép nội dung gửi Zalo -->
+    <div class="po-sheet" id="sheet"><p class="muted">Đang tải…</p></div>
+    <div class="row no-print po-actions">
+      <button class="btn btn-primary" id="print" type="button">In / Lưu PDF</button>
+      <button class="btn" id="copy" type="button">Chép nội dung (gửi Zalo)</button>
+    </div>
+    <script type="module" src="/js/pages/admin-po-print.js"></script>
+  </body>
+</html>

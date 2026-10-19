@@ -1,12 +1,17 @@
 // S-10 Dashboard quầy (FEATURE-007): 3 cột Mới / Đang pha / Đã xong; dải Gọi thanh toán; bàn đang phục vụ.
 // S-11 chi tiết đơn, S-14 thu tiền bàn (FEATURE-006). Mất kết nối → tải lại + "Có đơn hàng bị trễ" (REQ-017, AC-007-05).
+// ADR-005: dải Gọi nhân viên (F-021), thu tiền có hội viên (F-014) + giảm giá tay (F-022) xem trước bằng số server tính, cần ca mở (F-018).
+// F-024: ghi chú bàn (chỉ nhân viên thấy), nút "Gọi món" sang trang gọi món tại bàn, phiếu ghi nhân viên nhập đơn.
+// ADR-006: hàng chờ + thời gian chờ ước tính ở cột Mới (F-025); bàn chia bill → thu từng phần, in bill từng phần, "Thu chung" (F-026).
 import { staffApi } from '../api.js';
+import { billingControls } from '../billing-controls.js';
 import { mountPosShell } from '../pos-shell.js';
 import { printUrl } from '../print.js';
 import { connectRealtime } from '../socket.js';
 import { getToken } from '../auth.js';
 import {
   $,
+  breakdownRows,
   clear,
   confirmDialog,
   el,
@@ -28,7 +33,7 @@ import {
 
 const shell = await mountPosShell('orders');
 
-const state = { orders: new Map(), sessions: [], fresh: new Set(), drawer: null };
+const state = { orders: new Map(), sessions: [], calls: [], fresh: new Set(), drawer: null };
 const COLUMNS = ['PENDING', 'PREPARING', 'COMPLETED'];
 
 // ---------- Tải ảnh chụp ----------
@@ -41,11 +46,16 @@ async function loadSessions() {
   state.sessions = await staffApi('/api/sessions?status=OPEN,PAYMENT_REQUESTED');
 }
 
+async function loadCalls() {
+  state.calls = await staffApi('/api/staff-calls');
+}
+
 async function loadAll({ detectLate = false } = {}) {
   const knownOrders = new Set(state.orders.keys());
   const knownPayReq = new Set(state.sessions.filter((s) => s.status === 'PAYMENT_REQUESTED').map((s) => s.sessionId));
+  const knownCalls = new Set(state.calls.map((c) => c.callId));
   try {
-    await Promise.all([loadOrders(), loadSessions()]);
+    await Promise.all([loadOrders(), loadSessions(), loadCalls()]);
   } catch (err) {
     toast(errorMessage(err), 'error');
     return;
@@ -53,10 +63,12 @@ async function loadAll({ detectLate = false } = {}) {
   if (detectLate) {
     const lateOrders = [...state.orders.values()].filter((o) => !knownOrders.has(o.orderId) && o.status === 'PENDING');
     const latePays = state.sessions.filter((s) => s.status === 'PAYMENT_REQUESTED' && !knownPayReq.has(s.sessionId));
-    if (lateOrders.length || latePays.length) {
+    const lateCalls = state.calls.filter((c) => !knownCalls.has(c.callId));
+    if (lateOrders.length || latePays.length || lateCalls.length) {
       const parts = [];
       if (lateOrders.length) parts.push(`${lateOrders.length} đơn mới`);
       if (latePays.length) parts.push(`${latePays.length} bàn gọi thanh toán`);
+      if (lateCalls.length) parts.push(`${lateCalls.length} bàn gọi nhân viên`);
       const banner = $('#late');
       clear(
         banner,
@@ -65,12 +77,30 @@ async function loadAll({ detectLate = false } = {}) {
       );
       banner.hidden = false;
       lateOrders.forEach((o) => state.fresh.add(o.orderId));
-      playSound(latePays.length ? 'chime' : 'ting');
+      playSound(latePays.length ? 'chime' : lateCalls.length ? 'bell' : 'ting');
     }
   }
   renderBoard();
   renderSessions();
+  renderCalls();
+  refreshQueueEta();
   if (state.drawer) state.drawer.reload();
+}
+
+// F-025: "Hàng chờ: 6 món · ~9 phút" (khách gọi lúc này chờ khoảng bao lâu)
+let etaTimer = null;
+function refreshQueueEta() {
+  clearTimeout(etaTimer);
+  etaTimer = setTimeout(async () => {
+    try {
+      const e = await staffApi('/api/queue/eta');
+      $('#queue-eta').textContent = e.queueLength
+        ? `Hàng chờ: ${e.queueLength} món · khách mới chờ ~${e.minMinutes}–${e.maxMinutes} phút`
+        : 'Không có món đang chờ';
+    } catch {
+      /* lần sau */
+    }
+  }, 400);
 }
 
 let sessionsTimer = null;
@@ -88,6 +118,13 @@ function refreshSessionsSoon() {
 
 // ---------- Bảng đơn ----------
 const whereLabel = (o) => (o.type === 'TAKE_AWAY' ? 'Mang đi' : (o.table?.name ?? 'Bàn ?'));
+
+/** Dòng món trên phiếu: tùy chọn (F-013) và thành phần combo (F-015) để người pha làm đúng. */
+const itemDetail = (i) => [
+  i.options?.length ? el('span', { class: 'opts' }, i.options.map((o) => o.name).join(', ')) : null,
+  i.children?.length ? el('span', { class: 'opts' }, i.children.map((c) => `${c.quantity}× ${c.name}`).join(' + ')) : null,
+  i.note ? el('span', { class: 'note' }, i.note) : null,
+];
 
 function ticket(o) {
   const actions = [];
@@ -118,9 +155,10 @@ function ticket(o) {
     el(
       'ul',
       {},
-      o.items.map((i) => el('li', {}, el('span', { class: 'qty' }, `${i.quantity}×`), i.name, i.note ? el('span', { class: 'note' }, i.note) : null)),
+      o.items.map((i) => el('li', {}, el('span', { class: 'qty' }, `${i.quantity}×`), i.name, itemDetail(i))),
     ),
     o.note ? el('div', { class: 'small', style: { color: '#b4530a', fontWeight: 700 } }, `Ghi chú đơn: ${o.note}`) : null,
+    o.type === 'DINE_IN' && o.createdBy ? el('div', { class: 'by-staff' }, `Nhân viên nhập: ${o.createdBy.fullName}`) : null,
     el('div', { class: 'ticket-foot' }, el('strong', {}, money(o.totalAmount)), paymentBadge(o.paymentStatus)),
     actions.length ? el('div', { class: 'ticket-actions' }, actions) : null,
   );
@@ -185,7 +223,7 @@ async function run(button, fn, okMessage) {
 
 function upsert(order) {
   if (!order) return;
-  if (order.status === 'CANCELLED') state.orders.delete(order.orderId);
+  if (order.status === 'CANCELLED' || order.status === 'VOIDED') state.orders.delete(order.orderId);
   else state.orders.set(order.orderId, order);
   renderBoard();
 }
@@ -269,7 +307,15 @@ function openOrder(orderId) {
               el(
                 'tr',
                 {},
-                el('td', {}, i.name, i.note ? el('div', { class: 'small', style: { color: '#b4530a' } }, i.note) : null),
+                el(
+                  'td',
+                  {},
+                  i.name,
+                  i.promotionName ? el('span', { class: 'badge danger', style: { marginLeft: '0.35rem' } }, i.promotionName) : null,
+                  i.options?.length ? el('div', { class: 'small opts' }, i.options.map((x) => x.name).join(', ')) : null,
+                  i.children?.length ? el('div', { class: 'small muted' }, i.children.map((c) => `${c.quantity}× ${c.name}`).join(' + ')) : null,
+                  i.note ? el('div', { class: 'small', style: { color: '#b4530a' } }, i.note) : null,
+                ),
                 el('td', { class: 'num' }, i.quantity),
                 el('td', { class: 'num' }, money(i.lineTotal)),
               ),
@@ -277,13 +323,14 @@ function openOrder(orderId) {
           ),
         ),
       ),
+      o.orderPromotion ? el('div', { class: 'small' }, `Khuyến mãi đơn "${o.orderPromotion.name}": −${money(o.orderPromotion.discount)}`) : null,
       el('div', { class: 'due' }, el('span', {}, 'Tổng'), el('span', {}, money(o.totalAmount))),
     ),
     actions,
   });
 }
 
-// ---------- Dải gọi thanh toán + bàn đang phục vụ ----------
+// ---------- Dải gọi thanh toán + gọi nhân viên + bàn đang phục vụ ----------
 function renderSessions() {
   const requested = state.sessions
     .filter((s) => s.status === 'PAYMENT_REQUESTED')
@@ -323,12 +370,17 @@ function renderSessions() {
         el(
           'div',
           { class: 'muted small' },
-          `${s.orderCount} đơn · ${money(s.amountDue)} · mở ${time(s.openedAt)}`,
+          `${s.orderCount} đơn · ${money(s.amountDue)} · mở ${time(s.openedAt)}${s.openedBy ? ` bởi ${s.openedBy.fullName}` : ''}`,
           s.pendingCount ? ` · ${s.pendingCount} chờ tiếp nhận` : '',
+          s.splitCount ? el('div', { class: 'split-info' }, `🧾 Chia ${s.splitCount} phần${s.paidAmount ? ` · đã thu ${money(s.paidAmount)}` : ''}`) : null,
+          s.member ? el('div', {}, `⭐ ${s.member.fullName} (${s.member.tierName})`) : null,
         ),
+        s.note ? el('div', { class: 'table-note' }, `📝 ${s.note}`) : null,
         el(
           'div',
-          { class: 'row', style: { marginTop: '0.35rem' } },
+          { class: 'row wrap', style: { marginTop: '0.35rem', gap: '0.3rem' } },
+          el('a', { class: 'btn btn-sm', href: tableOrderUrl(s) }, 'Gọi món'),
+          el('button', { class: 'btn btn-sm', type: 'button', onclick: () => editNote(s) }, s.note ? 'Sửa ghi chú' : 'Ghi chú'),
           s.orderCount > 0
             ? el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => openSettle(s.sessionId) }, 'Thu tiền')
             : el('button', { class: 'btn btn-sm', type: 'button', onclick: () => closeEmpty(s) }, 'Đóng bàn trống'),
@@ -336,6 +388,76 @@ function renderSessions() {
       ),
     ),
   );
+}
+
+function renderCalls() {
+  const strip = $('#call-strip');
+  strip.hidden = state.calls.length === 0;
+  clear(
+    strip,
+    el('span', { class: 'label' }, '🙋 Gọi nhân viên'),
+    state.calls.map((c) =>
+      el(
+        'div',
+        { class: 'pay-card call-card' },
+        el('strong', {}, c.table.name),
+        el('span', {}, c.message || 'Cần hỗ trợ'),
+        el('span', { class: 'wait', dataset: { since: c.requestedAt } }, elapsed(c.requestedAt)),
+        el('button', { class: 'btn btn-sm btn-success', type: 'button', onclick: (e) => handleCall(c, e.currentTarget) }, 'Đã xử lý'),
+      ),
+    ),
+  );
+}
+
+async function handleCall(c, button) {
+  setBusy(button, true);
+  try {
+    await staffApi(`/api/staff-calls/${c.callId}/handle`, { method: 'POST' });
+  } catch (err) {
+    if (err.code !== 'ALREADY_PROCESSED') toast(errorMessage(err), 'error');
+  }
+  state.calls = state.calls.filter((x) => x.callId !== c.callId);
+  renderCalls();
+}
+
+const tableOrderUrl = (s) => `/pos/table-order?table=${s.table.tableId}&session=${s.sessionId}`;
+
+/** F-024: ghi chú bàn — chỉ nhân viên thấy; để trống = xóa. */
+async function editNote(s) {
+  const input = el('textarea', {
+    class: 'input',
+    maxlength: 200,
+    rows: 3,
+    'aria-label': 'Ghi chú bàn',
+    placeholder: 'Ví dụ: chờ thêm 2 người, khách quen ít ngọt, sinh nhật…',
+  });
+  input.value = s.note ?? '';
+  const msg = el('div');
+  const ok = await modal({
+    title: `Ghi chú ${s.table.name}`,
+    body: el('div', { class: 'stack' }, el('p', { class: 'muted small' }, 'Chỉ nhân viên thấy, khách không thấy. Để trống rồi Lưu = xóa ghi chú.'), input, msg),
+    actions: [
+      { label: 'Hủy', value: false },
+      {
+        label: 'Lưu ghi chú',
+        class: 'btn-primary',
+        onClick: async (close) => {
+          try {
+            await staffApi(`/api/sessions/${s.sessionId}/note`, { method: 'PUT', body: { note: input.value.trim() || null } });
+            close(true);
+          } catch (err) {
+            clear(msg, el('div', { class: 'field-error' }, errorMessage(err)));
+          }
+          return false;
+        },
+      },
+    ],
+  }).result;
+  if (ok !== true) return;
+  toast(`Đã lưu ghi chú ${s.table.name}`, 'success');
+  await loadSessions();
+  renderSessions();
+  if (state.drawer?.sessionId === s.sessionId) state.drawer.reload();
 }
 
 async function closeEmpty(s) {
@@ -350,38 +472,297 @@ async function closeEmpty(s) {
   renderSessions();
 }
 
+// ---------- F-046 Sửa / xóa món đã gọi, xóa đơn, hủy bàn (ADR-007) ----------
+const VOID_REASONS = ['Khách đổi ý', 'Gọi nhầm món', 'Quán hết món', 'Pha sai món', 'Khách bỏ về', 'Mở nhầm bàn'];
+const LIVE = ['PENDING', 'PREPARING', 'COMPLETED'];
+const isStaffOnly = () => shell.user.role === 'STAFF';
+const editable = (o) => LIVE.includes(o.status) && o.paymentStatus === 'UNPAID';
+
+/**
+ * Hộp thoại chung: số lượng mới (sửa món) + lý do bắt buộc + xử lý kho món đã pha (D-34: ghi hủy / hoàn kho)
+ * + tài khoản trưởng ca / quản lý khi nhân viên sửa đơn đã tiếp nhận (D-33; hiện thêm nếu server báo cần duyệt).
+ */
+async function voidDialog({ title, intro, qty = null, completed = false, needApproval = false, okLabel, submit }) {
+  const reason = el('input', { class: 'input', maxlength: 200, placeholder: 'Ví dụ: khách đổi ý, gọi nhầm, hết món…', 'aria-label': 'Lý do' });
+  const chips = el(
+    'div',
+    { class: 'reason-chips' },
+    VOID_REASONS.map((r) => el('button', { type: 'button', class: 'chip', onclick: () => ((reason.value = r), reason.focus()) }, r)),
+  );
+  const count = qty ? el('input', { class: 'input', type: 'number', min: 0, max: qty - 1, step: 1, value: qty - 1, 'aria-label': 'Số lượng mới' }) : null;
+  const radio = (value, label, checked) => el('label', { class: 'check' }, el('input', { type: 'radio', name: 'void-stock', value, checked }), label);
+  const stock = completed
+    ? el(
+        'fieldset',
+        { class: 'opt-group' },
+        el('legend', { class: 'small' }, 'Món đã pha xong — nguyên liệu xử lý thế nào?'),
+        radio('WASTE', 'Ghi hủy hàng (đã đổ bỏ / đã đưa khách)', true),
+        radio('RESTOCK', 'Hoàn kho (chưa dùng, còn dùng lại được)', false),
+      )
+    : null;
+  const adminUser = el('input', {
+    class: 'input',
+    placeholder: 'Tên đăng nhập trưởng ca / quản lý',
+    autocomplete: 'off',
+    'aria-label': 'Tên đăng nhập người duyệt',
+  });
+  const adminPass = el('input', {
+    class: 'input',
+    type: 'password',
+    placeholder: 'Mật khẩu',
+    autocomplete: 'new-password',
+    'aria-label': 'Mật khẩu người duyệt',
+  });
+  const approval = el(
+    'div',
+    { class: 'approval', hidden: !needApproval },
+    el('div', { class: 'small' }, 'Đơn đã tiếp nhận / đã pha — cần trưởng ca / quản lý nhập tài khoản để duyệt:'),
+    el('div', { class: 'row' }, adminUser, adminPass),
+  );
+  const msg = el('div');
+  const m = modal({
+    title,
+    body: el(
+      'div',
+      { class: 'stack' },
+      intro,
+      count ? [el('label', {}, 'Số lượng mới (0 = xóa món)'), count] : null,
+      el('label', {}, 'Lý do (bắt buộc)'),
+      reason,
+      chips,
+      stock,
+      approval,
+      msg,
+    ),
+    actions: [
+      { label: 'Không', value: false },
+      {
+        label: okLabel,
+        class: 'btn-danger',
+        onClick: async (close, e) => {
+          const btn = e.currentTarget; // currentTarget về null sau await
+          clear(msg);
+          const body = { reason: reason.value.trim() };
+          if (!body.reason) {
+            clear(msg, el('div', { class: 'field-error' }, 'Nhập lý do'));
+            reason.focus();
+            return false;
+          }
+          if (count) {
+            body.quantity = Number(count.value);
+            if (!Number.isInteger(body.quantity) || body.quantity < 0 || body.quantity >= qty) {
+              clear(msg, el('div', { class: 'field-error' }, `Số lượng mới từ 0 đến ${qty - 1} (thêm món dùng "Gọi thêm món")`));
+              return false;
+            }
+          }
+          if (stock) body.stockMode = stock.querySelector('input:checked')?.value ?? 'WASTE';
+          if (!approval.hidden && adminUser.value.trim()) Object.assign(body, { adminUsername: adminUser.value.trim(), adminPassword: adminPass.value });
+          setBusy(btn, true);
+          try {
+            close(await submit(body));
+          } catch (err) {
+            if (err.code === 'ADMIN_APPROVAL_REQUIRED') approval.hidden = false;
+            clear(msg, el('div', { class: 'alert danger' }, errorMessage(err)));
+          } finally {
+            setBusy(btn, false);
+          }
+          return false;
+        },
+      },
+    ],
+  });
+  if (count) {
+    const okBtn = m.root.querySelector('.modal-foot .btn-danger');
+    count.addEventListener('input', () => (okBtn.textContent = Number(count.value) === 0 ? 'Xóa món' : okLabel));
+    okBtn.textContent = qty === 1 ? 'Xóa món' : okLabel;
+  }
+  (count ?? reason).focus();
+  const r = await m.result;
+  return r && typeof r === 'object' ? r : null;
+}
+
+/** Giảm số lượng / xóa một dòng món chưa thu (SL mới 0 = xóa, kèm thành phần combo + tùy chọn). */
+async function editLine(o, item) {
+  const r = await voidDialog({
+    title: `Sửa món — ${item.name}`,
+    intro: el(
+      'p',
+      { class: 'small muted' },
+      `#${o.orderCode} · `,
+      statusBadge(o.status),
+      ` · đang gọi ${item.quantity} × ${money(item.unitPrice)}. Muốn thêm món dùng "Gọi thêm món".`,
+    ),
+    qty: item.quantity,
+    completed: o.status === 'COMPLETED',
+    needApproval: isStaffOnly() && o.status !== 'PENDING',
+    okLabel: 'Lưu số lượng',
+    submit: (body) => staffApi(`/api/order-items/${item.orderItemId}/void`, { method: 'POST', body }),
+  });
+  if (!r) return;
+  upsert(r.order);
+  toast(r.cancelled ? `Đã xóa hết món — đơn #${o.orderCode} chuyển Đã hủy` : `Đã sửa ${item.name} · đơn còn ${money(r.order.totalAmount)}`, 'success');
+  if (r.sessionClosed) toast('Các món còn lại đã thu đủ — bàn đã đóng', 'info', 5000);
+}
+
+/** Xóa cả một đơn tại bàn chưa thu (đã tiếp nhận / đã pha; đơn chờ dùng nút Hủy cũ). */
+async function voidWholeOrder(o) {
+  const r = await voidDialog({
+    title: `Xóa đơn #${o.orderCode}?`,
+    intro: el(
+      'p',
+      {},
+      `${whereLabel(o)} · ${money(o.totalAmount)} · `,
+      statusBadge(o.status),
+      el('br'),
+      el('span', { class: 'small muted' }, `${o.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}. Đơn chuyển sang Đã hủy, giữ lại làm lịch sử.`),
+    ),
+    completed: o.status === 'COMPLETED',
+    needApproval: isStaffOnly() && o.status !== 'PENDING',
+    okLabel: 'Xóa đơn',
+    submit: (body) => staffApi(`/api/orders/${o.orderId}/void`, { method: 'POST', body }),
+  });
+  if (!r) return;
+  upsert(r.order);
+  toast(`Đã xóa đơn #${o.orderCode}`, 'success');
+  if (r.sessionClosed) toast('Các đơn còn lại đã thu đủ — bàn đã đóng', 'info', 5000);
+}
+
+/** D-35 Hủy lượt phục vụ: hủy mọi đơn chưa thu + đóng phiên, bàn trống lại (không tạo lượt thu). */
+async function cancelTable(session) {
+  const live = session.orders.filter(editable);
+  const r = await voidDialog({
+    title: `Hủy bàn — ${session.table.name}?`,
+    intro: el(
+      'p',
+      {},
+      `Hủy ${live.length} đơn chưa thu (${money(live.reduce((s, o) => s + o.totalAmount, 0))}) và đóng bàn — không tạo lượt thu. `,
+      el('span', { class: 'small muted' }, 'Dùng khi khách bỏ về / mở nhầm bàn. Phần nguyên liệu đang giữ được trả lại kho.'),
+    ),
+    completed: live.some((o) => o.status === 'COMPLETED'),
+    needApproval: isStaffOnly() && live.some((o) => o.status !== 'PENDING'),
+    okLabel: 'Hủy bàn',
+    submit: (body) => staffApi(`/api/sessions/${session.sessionId}/cancel`, { method: 'POST', body }),
+  });
+  if (!r) return;
+  toast(`Đã hủy ${session.table.name} · ${r.cancelledOrders} đơn`, 'success');
+  state.drawer?.close();
+  await loadAll();
+}
+
+const STOCK_LABEL = { RELEASE: 'trả phần giữ', WASTE: 'ghi hủy hàng', RESTOCK: 'hoàn kho' };
+
+/** Lịch sử sửa / xóa món của phiên (mới nhất trước). */
+function voidHistory(voids) {
+  if (!voids.length) return null;
+  return el(
+    'details',
+    { class: 'void-history' },
+    el('summary', { class: 'small' }, `Đã sửa / xóa món (${voids.length})`),
+    el(
+      'ul',
+      { class: 'small' },
+      voids.map((v) =>
+        el(
+          'li',
+          {},
+          `${time(v.createdAt)} · −${v.qty} × ${v.itemName} (${money(v.amount)}) · #${v.orderCode} · ${v.reason}`,
+          el(
+            'span',
+            { class: 'muted' },
+            ` — ${v.createdBy}${v.approvedBy && v.approvedBy !== v.createdBy ? `, duyệt: ${v.approvedBy}` : ''} · ${STOCK_LABEL[v.stockMode]}`,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 // ---------- S-14 Thu tiền bàn ----------
 function openSettle(sessionId) {
   state.drawer?.close();
   const body = el('div', {}, el('p', { class: 'muted' }, 'Đang tải…'));
   const amount = moneyInput({ id: 'amount-received', 'aria-label': 'Tiền khách đưa' });
   const changeBox = el('div', { class: 'change' });
+  const breakdown = el('div', { class: 'breakdown' });
   const settleBtn = el('button', { class: 'btn btn-success btn-lg', type: 'button' }, 'Đã thu tiền & In bill');
   const provisionalBtn = el('button', { class: 'btn', type: 'button' }, 'In tạm tính');
   const closeBtn = el('button', { class: 'btn', type: 'button', hidden: true }, 'Đóng bàn trống');
   let session = null;
+  let preview = null;
   let busy = false;
+  let seq = 0;
+  let splitData = null; // F-026: bàn đã chia bill
+  let partId = null; // phần đang thu
 
+  // Hội viên của cả phiên (gắn vào phiên) hoặc của một phần (chỉ áp cho lượt thu phần đó)
+  const sessionBilling = billingControls({ sessionId, onChange: () => loadPreview() });
+  const partBilling = billingControls({ onChange: () => loadPreview() });
+  let billing = sessionBilling;
   const m = modal({ title: 'Thu tiền bàn', drawer: true, body, onClose: () => (state.drawer = null) });
   m.root.append(el('div', { class: 'modal-foot' }, closeBtn, provisionalBtn, settleBtn));
 
+  const due = () => preview?.totals.amountDue ?? session?.amountDue ?? 0;
+
   const updateChange = () => {
     if (!session) return;
-    const due = session.amountDue;
     const got = moneyValue(amount);
     const pending = session.orders.some((o) => o.status === 'PENDING');
     if (got === null) clear(changeBox, el('span', {}, 'Tiền thừa'), el('span', {}, '—'));
-    else if (got < due) {
+    else if (got < due()) {
       changeBox.classList.add('short');
-      clear(changeBox, el('span', {}, 'Còn thiếu'), el('span', {}, money(due - got)));
+      clear(changeBox, el('span', {}, 'Còn thiếu'), el('span', {}, money(due() - got)));
     } else {
       changeBox.classList.remove('short');
-      clear(changeBox, el('span', {}, 'Tiền thừa trả khách'), el('span', {}, money(got - due)));
+      clear(changeBox, el('span', {}, 'Tiền thừa trả khách'), el('span', {}, money(got - due())));
     }
-    if (got !== null && got >= due) changeBox.classList.remove('short');
-    settleBtn.disabled = busy || pending || got === null || got < due || session.status === 'CLOSED';
+    settleBtn.disabled = busy || !preview || !shell.shift || pending || got === null || got < due() || session.status === 'CLOSED';
+    settleBtn.title = shell.shift ? '' : 'Chưa mở ca — bấm "⚠ Chưa mở ca" trên thanh trên để mở ca';
   };
   amount.addEventListener('input', updateChange);
+
+  /** Số phải thu do server tính (khuyến mãi đã khóa + hội viên + giảm tay + làm tròn). */
+  async function loadPreview() {
+    if (!session || session.status === 'CLOSED') return;
+    const my = ++seq;
+    try {
+      const url = splitData?.hasSplits ? (partId ? `/api/splits/${partId}/settle/preview` : null) : `/api/sessions/${sessionId}/settle/preview`;
+      if (!url) {
+        preview = null;
+        clear(breakdown);
+        renderQuick();
+        updateChange();
+        return;
+      }
+      const p = await staffApi(url, { method: 'POST', body: billing.body() });
+      if (my !== seq) return;
+      preview = p;
+      billing.setApproval(p.needsApproval);
+      billing.showEarn(p.totals);
+      clear(
+        breakdown,
+        breakdownRows(
+          p.totals.breakdownLines.filter((b) => b.key !== 'total'),
+          'due-row',
+        ),
+        p.includeCommon ? el('p', { class: 'small muted' }, 'Phần cuối — đã gộp các món Chung chưa ai nhận.') : null,
+        el('div', { class: 'due' }, el('span', {}, partId ? 'Phần này phải thu' : 'Tổng phải thu'), el('span', {}, money(p.totals.amountDue))),
+      );
+    } catch (err) {
+      if (my !== seq) return;
+      preview = null;
+      clear(breakdown, el('div', { class: 'field-error' }, errorMessage(err)));
+    }
+    renderQuick();
+    updateChange();
+  }
+
+  /** F-046: nút ✎ trên dòng món chưa thu → sửa số lượng / xóa món. */
+  const editButton = (o, i) =>
+    el(
+      'button',
+      { class: 'line-edit', type: 'button', title: 'Sửa / xóa món', 'aria-label': `Sửa ${i.name}`, onclick: () => editLine(o, i).then(() => reload()) },
+      '✎',
+    );
 
   async function reload() {
     try {
@@ -396,12 +777,19 @@ function openSettle(sessionId) {
       provisionalBtn.disabled = true;
       return;
     }
-    const active = session.orders.filter((o) => o.status !== 'CANCELLED');
+    const [splits, voids] = await Promise.all([
+      session.splitCount > 0 ? staffApi(`/api/sessions/${sessionId}/splits`).catch(() => null) : null,
+      staffApi(`/api/sessions/${sessionId}/voids`).catch(() => []),
+    ]);
+    splitData = splits;
+    const splitMode = Boolean(splitData?.hasSplits);
+    if (splitMode && partId && !splitData.splits.some((s) => s.splitId === partId && (s.isCommon || s.status === 'OPEN'))) partId = null;
+    billing = splitMode ? partBilling : sessionBilling;
+    if (!splitMode) billing.showMember(session.member);
+    const active = session.orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
     const pending = active.filter((o) => o.status === 'PENDING');
     closeBtn.hidden = active.length > 0;
     provisionalBtn.disabled = active.length === 0;
-    const due = session.amountDue;
-    const quick = [...new Set([due, 50000, 100000, 200000, 500000].filter((v) => v >= due && v > 0))];
     clear(
       body,
       el(
@@ -413,11 +801,24 @@ function openSettle(sessionId) {
           : el('span', { class: 'badge preparing' }, 'Đang phục vụ'),
       ),
       el('p', { class: 'muted small' }, `Mở lúc ${time(session.openedAt)} · ${active.length} đơn`),
+      session.note ? el('div', { class: 'table-note', style: { marginBottom: '0.4rem' } }, `📝 ${session.note}`) : null,
+      el(
+        'div',
+        { class: 'row', style: { gap: '0.3rem', marginBottom: '0.5rem' } },
+        el('a', { class: 'btn btn-sm', href: tableOrderUrl(session) }, 'Gọi thêm món'),
+        el('button', { class: 'btn btn-sm', type: 'button', onclick: () => editNote(session) }, session.note ? 'Sửa ghi chú' : 'Ghi chú bàn'),
+        // F-046 D-35: bàn đã thu một phần (chia bill) thì xóa từng món chưa thu thay vì hủy bàn
+        active.length && !session.paidAmount
+          ? el('button', { class: 'btn btn-sm btn-danger', type: 'button', onclick: () => cancelTable(session) }, 'Hủy bàn')
+          : null,
+      ),
+      shell.shift ? null : el('div', { class: 'alert warning' }, 'Chưa mở ca — hãy mở ca trước khi thu tiền (F-018).'),
       pending.length
         ? el('div', { class: 'alert warning' }, `Còn ${pending.length} đơn chưa tiếp nhận — hãy Tiếp nhận hoặc Hủy trước khi thu tiền (BR-019).`)
         : null,
       active.length === 0 ? el('div', { class: 'alert info' }, 'Phiên chưa có đơn nào. Có thể "Đóng bàn trống".') : null,
-      active.map((o) =>
+      splitMode ? splitsBlock() : null,
+      (splitMode ? [] : active).map((o) =>
         el(
           'div',
           { class: `mini-order ${o.status === 'PENDING' ? 'pending' : ''}` },
@@ -425,7 +826,17 @@ function openSettle(sessionId) {
           el(
             'ul',
             { class: 'small' },
-            o.items.map((i) => el('li', {}, `${i.quantity} × ${i.name}`, i.note ? ` (${i.note})` : '', ` — ${money(i.lineTotal)}`)),
+            o.items.map((i) =>
+              el(
+                'li',
+                {},
+                `${i.quantity} × ${i.name}`,
+                i.options?.length ? ` [${i.options.map((x) => x.name).join(', ')}]` : '',
+                i.note ? ` (${i.note})` : '',
+                ` — ${money(i.lineTotal)}`,
+                editable(o) && !i.paidAt ? editButton(o, i) : null,
+              ),
+            ),
           ),
           o.status === 'PENDING'
             ? el(
@@ -456,40 +867,192 @@ function openSettle(sessionId) {
                   'Hủy',
                 ),
               )
-            : null,
+            : editable(o)
+              ? el(
+                  'div',
+                  { class: 'row', style: { marginTop: '0.35rem' } },
+                  el('button', { class: 'btn btn-sm btn-danger', type: 'button', onclick: () => voidWholeOrder(o).then(reload) }, 'Xóa đơn'),
+                )
+              : null,
         ),
       ),
-      el('div', { class: 'due' }, el('span', {}, 'Tổng phải thu'), el('span', {}, money(due))),
-      active.length
+      voidHistory(voids),
+      active.length && (!splitMode || partId) ? billing.node : null,
+      breakdown,
+      active.length && (!splitMode || partId)
         ? el(
             'div',
             {},
             el('label', { for: 'amount-received' }, 'Tiền khách đưa'),
             amount,
-            el(
-              'div',
-              { class: 'quick-cash' },
-              quick.map((v) =>
-                el(
-                  'button',
-                  {
-                    class: 'btn btn-sm',
-                    type: 'button',
-                    onclick: () => {
-                      setMoney(amount, v);
-                      updateChange();
-                    },
-                  },
-                  v === due ? `Đủ tiền (${num(v / 1000)}k)` : `${num(v / 1000)}k`,
-                ),
-              ),
-            ),
+            el('div', { class: 'quick-cash', id: 'quick-cash' }),
             changeBox,
             el('p', { class: 'muted small' }, 'Chỉ thu tiền mặt. Không hỗ trợ ghi nợ / trả thiếu.'),
           )
         : null,
     );
-    updateChange();
+    await loadPreview();
+  }
+
+  /** F-026: các phần của bàn — chọn phần để thu, đổi món giữa các phần, "Thu chung". */
+  function splitsBlock() {
+    const splits = splitData.splits;
+    const open = splits.filter((s) => !s.isCommon && s.status === 'OPEN');
+    const common = splits.find((s) => s.isCommon);
+    const commonUnpaid = common?.lines.filter((l) => !l.paid) ?? [];
+    const options = [{ value: '', label: 'Chung' }, ...open.map((s) => ({ value: String(s.splitId), label: s.label }))];
+    const lineEdit = (l) => {
+      const o = session.orders.find((x) => x.items.some((i) => i.orderItemId === l.orderItemId));
+      const item = o?.items.find((i) => i.orderItemId === l.orderItemId);
+      return o && editable(o) ? editButton(o, item) : null;
+    };
+    const lineRow = (l, s) =>
+      el(
+        'li',
+        { class: l.paid ? 'muted' : '' },
+        `${l.quantity} × ${l.name}`,
+        l.options.length ? ` [${l.options.join(', ')}]` : '',
+        ` — ${money(l.amount)}`,
+        l.paid ? null : lineEdit(l),
+        l.paid
+          ? ' ✓'
+          : el(
+              'select',
+              {
+                class: 'input input-sm split-move',
+                'aria-label': `Chuyển ${l.name} sang phần`,
+                onchange: async (e) => {
+                  try {
+                    await staffApi(`/api/sessions/${sessionId}/items/${l.orderItemId}/split`, {
+                      method: 'PUT',
+                      body: { splitId: e.target.value ? Number(e.target.value) : null },
+                    });
+                  } catch (err) {
+                    toast(errorMessage(err), 'error');
+                  }
+                  reload();
+                },
+              },
+              options.map((o) => el('option', { value: o.value, selected: o.value === (s.isCommon ? '' : String(s.splitId)) }, o.label)),
+            ),
+      );
+    const card = (s) =>
+      el(
+        'div',
+        { class: `mini-order split-card ${partId === s.splitId ? 'selected' : ''}` },
+        el(
+          'div',
+          { class: 'row between' },
+          el('strong', {}, s.isCommon ? 'Chung (chưa ai nhận)' : s.label),
+          s.status === 'PAID' && !s.isCommon
+            ? el(
+                'span',
+                { class: 'row' },
+                el('span', { class: 'badge completed' }, `Đã thu ${money(s.paidAmount ?? 0)}`),
+                el('button', { class: 'btn btn-sm', type: 'button', onclick: () => printUrl(`/pos/payments/${s.paymentId ?? ''}/receipt`) }, 'In lại'),
+              )
+            : el('span', {}, `~${money(s.unpaidAmount)}`),
+        ),
+        el(
+          'ul',
+          { class: 'small' },
+          s.lines.map((l) => lineRow(l, s)),
+        ),
+        s.status === 'OPEN' && (!s.isCommon || (commonUnpaid.length && open.length))
+          ? el(
+              'button',
+              {
+                class: `btn btn-sm ${partId === s.splitId ? 'btn-primary' : ''}`,
+                type: 'button',
+                onclick: () => {
+                  partId = s.splitId;
+                  partBilling.reset();
+                  reload();
+                },
+              },
+              s.isCommon ? 'Thu riêng phần Chung' : partId === s.splitId ? 'Đang thu phần này' : 'Thu phần này',
+            )
+          : null,
+      );
+    return el(
+      'div',
+      { class: 'split-block' },
+      el(
+        'div',
+        { class: 'row between' },
+        el('strong', {}, `Bàn chia bill: ${splits.filter((s) => !s.isCommon).length} phần`),
+        el(
+          'span',
+          { class: 'row' },
+          el(
+            'button',
+            {
+              class: 'btn btn-sm',
+              type: 'button',
+              onclick: async () => {
+                const label = prompt('Tên phần mới (ví dụ: Anh C)');
+                if (!label?.trim()) return;
+                try {
+                  await staffApi(`/api/sessions/${sessionId}/splits`, { method: 'POST', body: { label: label.trim() } });
+                } catch (err) {
+                  toast(errorMessage(err), 'error');
+                }
+                reload();
+              },
+            },
+            '+ Thêm phần',
+          ),
+          el(
+            'button',
+            {
+              class: 'btn btn-sm',
+              type: 'button',
+              id: 'merge-splits',
+              onclick: async () => {
+                if (!(await confirmDialog('Thu chung?', 'Gộp các phần chưa thu thành một để thu một lần.', { okLabel: 'Gộp lại' }))) return;
+                try {
+                  const r = await staffApi(`/api/sessions/${sessionId}/splits/merge`, { method: 'POST' });
+                  toast(r.unsplit ? 'Đã bỏ chia bill — thu cả bàn như bình thường' : 'Đã gộp các phần còn lại vào phần Chung', 'success');
+                  partId = null;
+                } catch (err) {
+                  toast(errorMessage(err), 'error');
+                }
+                reload();
+              },
+            },
+            'Thu chung',
+          ),
+        ),
+      ),
+      open.map(card),
+      splits.filter((s) => !s.isCommon && s.status === 'PAID').map(card),
+      common && common.lines.length ? card(common) : null,
+      partId ? null : el('p', { class: 'small muted' }, 'Chọn "Thu phần này" để thu từng người. Phần cuối tự gộp các món Chung.'),
+    );
+  }
+
+  function renderQuick() {
+    const box = $('#quick-cash', m.root);
+    if (!box) return;
+    const d = due();
+    const quick = [...new Set([d, 50000, 100000, 200000, 500000].filter((v) => v >= d && v > 0))];
+    clear(
+      box,
+      quick.map((v) =>
+        el(
+          'button',
+          {
+            class: 'btn btn-sm',
+            type: 'button',
+            onclick: () => {
+              setMoney(amount, v);
+              updateChange();
+            },
+          },
+          v === d ? `Đủ tiền (${num(v / 1000)}k)` : `${num(v / 1000)}k`,
+        ),
+      ),
+    );
   }
 
   provisionalBtn.addEventListener('click', () => printUrl(`/pos/sessions/${sessionId}/receipt?mode=provisional`));
@@ -502,13 +1065,37 @@ function openSettle(sessionId) {
     busy = true;
     setBusy(settleBtn, true);
     try {
-      const r = await staffApi(`/api/sessions/${sessionId}/settle`, { method: 'POST', body: { amountReceived: got, expectedAmountDue: session.amountDue } });
+      if (splitData?.hasSplits) {
+        const r = await staffApi(`/api/splits/${partId}/settle`, {
+          method: 'POST',
+          body: { amountReceived: got, expectedAmountDue: due(), ...billing.body() },
+        });
+        printUrl(`/pos/payments/${r.payment.paymentId}/receipt`);
+        toast(`Đã thu phần ${r.split.label}: ${money(r.payment.amountReceived)} · tiền thừa ${money(r.payment.changeGiven)}`, 'success', 6000);
+        partId = null;
+        setMoney(amount, null);
+        partBilling.reset();
+        if (r.sessionClosed) {
+          m.close();
+          await loadAll();
+        } else await reload();
+        return;
+      }
+      const r = await staffApi(`/api/sessions/${sessionId}/settle`, {
+        method: 'POST',
+        body: { amountReceived: got, expectedAmountDue: due(), ...billing.body() },
+      });
       printUrl(`/pos/sessions/${sessionId}/receipt?mode=final`);
       toast(`Đã thu ${money(r.payment.amountReceived)} · tiền thừa ${money(r.payment.changeGiven)}`, 'success', 6000);
       m.close();
       await loadAll();
     } catch (err) {
-      toast(errorMessage(err), err.code === 'AMOUNT_CHANGED' || err.code === 'HAS_PENDING_ORDERS' ? 'warning' : 'error', 6000);
+      toast(
+        errorMessage(err),
+        ['AMOUNT_CHANGED', 'HAS_PENDING_ORDERS', 'ADMIN_APPROVAL_REQUIRED', 'SPLIT_PAID', 'SESSION_HAS_SPLITS'].includes(err.code) ? 'warning' : 'error',
+        6000,
+      );
+      if (err.code === 'ADMIN_APPROVAL_REQUIRED') billing.setApproval(true);
       if (err.code === 'ALREADY_SETTLED') m.close();
       else await reload();
     } finally {
@@ -519,6 +1106,7 @@ function openSettle(sessionId) {
   });
 
   state.drawer = { sessionId, close: m.close, reload: () => !busy && reload() };
+  shell.onShiftChange(() => state.drawer?.sessionId === sessionId && updateChange());
   reload();
 }
 
@@ -532,6 +1120,7 @@ function onOrderEvent(payload) {
     playSound('ting');
   }
   upsert(order);
+  refreshQueueEta();
   if (order.sessionId) refreshSessionsSoon();
   if (state.drawer && order.sessionId === state.drawer.sessionId) state.drawer.reload();
 }
@@ -542,15 +1131,25 @@ function onSessionEvent(payload) {
 }
 
 await loadAll();
+// Từ trang Gọi món tại bàn: /pos?settle=<sessionId> → mở ngay drawer thu tiền
+const settleParam = new URLSearchParams(location.search).get('settle');
+if (settleParam) {
+  history.replaceState(null, '', location.pathname);
+  openSettle(settleParam);
+}
 const socket = connectRealtime({
   token: getToken(),
   onOnline: (reconnected) => {
     shell.setOnline(true);
-    if (reconnected) loadAll({ detectLate: true });
+    if (reconnected) {
+      loadAll({ detectLate: true });
+      shell.reloadShift();
+    }
   },
   onOffline: () => shell.setOnline(false),
   onAuthError: () => (location.href = '/pos/login?reason=expired'),
 });
+shell.attach(socket);
 socket?.on('order.created', onOrderEvent);
 socket?.on('order.status_changed', onOrderEvent);
 socket?.on('order.cancelled', onOrderEvent);
@@ -562,6 +1161,20 @@ socket?.on('session.payment_requested', (p) => {
 socket?.on('session.payment_cancelled', onSessionEvent);
 socket?.on('session.settled', onSessionEvent);
 socket?.on('session.closed', onSessionEvent);
+socket?.on('session.member_changed', onSessionEvent);
+socket?.on('session.opened', onSessionEvent);
+socket?.on('session.note_changed', onSessionEvent);
+socket?.on('session.split_changed', onSessionEvent);
+socket?.on('session.staff_called', (c) => {
+  playSound('bell');
+  toast(`${c.table?.name ?? 'Một bàn'} gọi nhân viên: ${c.message || 'cần hỗ trợ'}`, 'warning', 6000);
+  if (!state.calls.some((x) => x.callId === c.callId)) state.calls.push(c);
+  renderCalls();
+});
+socket?.on('session.staff_call_handled', (c) => {
+  state.calls = state.calls.filter((x) => x.callId !== c.callId);
+  renderCalls();
+});
 socket?.on('inventory.low', (p) => toast(`Nguyên liệu sắp hết: ${p.name} (còn ${num(p.available)} ${p.unit ?? ''})`, 'warning', 6000));
 
 // Cập nhật đồng hồ chờ mỗi giây

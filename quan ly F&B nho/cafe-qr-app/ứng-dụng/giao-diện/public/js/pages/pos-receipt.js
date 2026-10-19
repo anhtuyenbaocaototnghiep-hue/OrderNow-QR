@@ -1,8 +1,9 @@
-// S-12 In hóa đơn: /pos/sessions/{id}/receipt?mode=final|provisional (phiên) hoặc /pos/orders/{id}/receipt (mang đi).
+// S-12 In hóa đơn: /pos/sessions/{id}/receipt?mode=final|provisional (phiên), /pos/orders/{id}/receipt (mang đi),
+// /pos/payments/{id}/receipt (một phần chia bill — F-026).
 // Bản tạm tính có chữ TẠM TÍNH (BR-014). ?autoprint=1 → tự gọi window.print(); ?embed=1 → báo trang cha qua postMessage.
 import { staffApi } from '../api.js';
 import { receiptWidth, setReceiptWidth } from '../print.js';
-import { $, clear, dateTime, el, errorMessage, money } from '../ui.js';
+import { $, clear, dateOnly, dateTime, el, errorMessage, money, voucherValue } from '../ui.js';
 
 const params = new URLSearchParams(location.search);
 const [, , kind, id] = location.pathname.split('/'); // /pos/sessions/:id/receipt | /pos/orders/:id/receipt
@@ -24,7 +25,10 @@ function kv(label, value, cls = '') {
 
 function render(data) {
   const provisional = data.mode === 'provisional';
-  const where = data.kind === 'session' ? `${data.table.name} · Phiên ${data.session.code}` : `Mang đi · Đơn #${data.order.orderCode}`;
+  const where =
+    data.kind === 'session'
+      ? `${data.table.name} · Phiên ${data.session.code}${data.splitLabel ? ` · Phần: ${data.splitLabel}` : ''}`
+      : `Mang đi · Đơn #${data.order.orderCode}`;
   clear(
     $('#receipt'),
     provisional ? el('div', { class: 'watermark', 'aria-hidden': 'true' }, 'TẠM TÍNH') : null,
@@ -45,21 +49,54 @@ function render(data) {
         {},
         data.lines.map((l) => [
           el('tr', {}, el('td', {}, l.name), el('td', { class: 'q' }, `x${l.quantity}`), el('td', { class: 'm' }, money(l.lineTotal))),
+          l.options?.length ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  + ${l.options.join(', ')}`)) : null,
+          (l.children ?? []).map((c) =>
+            el('tr', { class: 'child' }, el('td', {}, `  · ${c.name}`), el('td', { class: 'q' }, `x${c.quantity}`), el('td', { class: 'm' }, money(0))),
+          ),
+          l.listPrice > l.unitPrice
+            ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  ${l.promotionName ?? 'Khuyến mãi'} (giá gốc ${money(l.listPrice)})`))
+            : null,
           l.note ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  (${l.note})`)) : null,
         ]),
       ),
     ),
     el('hr'),
-    kv('TỔNG CỘNG', money(data.amountDue), 'total'),
+    // ADR-005: tạm tính − khuyến mãi − hội viên − giảm giá − làm tròn (số do server tính)
+    (data.breakdown ?? []).filter((b) => b.key !== 'total' && !b.info && data.breakdown.length > 2).map((b) => kv(b.label, money(b.amount))),
+    kv(provisional && data.breakdown?.length > 2 ? 'TỔNG CỘNG (dự kiến)' : 'TỔNG CỘNG', money(data.amountDue), 'total'),
+    // F-039: điểm / tem vừa tích
+    (data.breakdown ?? []).filter((b) => b.info).map((b) => kv(b.label, '')),
     data.payment
       ? [
           kv('Tiền khách đưa', money(data.payment.amountReceived)),
           kv('Tiền thừa', money(data.payment.changeGiven)),
           kv('Thanh toán', 'Tiền mặt'),
           kv('Thu ngân', data.payment.receivedBy.fullName),
+          data.payment.member ? kv('Hội viên', data.payment.member.fullName) : null,
+          data.payment.refunded > 0 ? kv('Đã hoàn tiền', money(data.payment.refunded)) : null,
           kv('Thời gian', dateTime(data.payment.paidAt)),
         ]
-      : el('div', { class: 'center' }, 'Chưa thanh toán — thanh toán bằng tiền mặt'),
+      : data.splitPayments
+        ? [
+            kv('Đã thu theo phần', `${data.splitPayments.length} lượt`),
+            data.splitPayments.map((p, i) => kv(`  Phần ${i + 1} · ${dateTime(p.paidAt)}`, money(p.amountDue))),
+          ]
+        : el('div', { class: 'center' }, 'Chưa thanh toán — thanh toán bằng tiền mặt'),
+    // F-047 (ADR-008 D-38): quyền lợi hội viên lúc in — điểm hiện có, thẻ tem, voucher còn hạn
+    data.memberCard
+      ? [
+          el('hr'),
+          el('div', { class: 'center' }, 'THẺ THÀNH VIÊN (lúc in)'),
+          kv('Điểm hiện có', `${data.memberCard.points} điểm`),
+          data.memberCard.stampCards.map((t) => el('div', { class: 'note' }, t)),
+          data.memberCard.vouchers.length
+            ? [
+                el('div', {}, `Voucher còn hạn (${data.memberCard.vouchers.length}):`),
+                data.memberCard.vouchers.map((v) => el('div', { class: 'note' }, `  ${voucherValue(v)} · HSD ${dateOnly(v.expiresAt)}`)),
+              ]
+            : null,
+        ]
+      : null,
     el('hr'),
     el('div', { class: 'center' }, provisional ? 'Phiếu này không phải hóa đơn thanh toán' : 'Cảm ơn quý khách! Hẹn gặp lại.'),
     el('div', { class: 'center' }, `In lúc ${dateTime(data.printedAt)}`),
@@ -69,7 +106,8 @@ function render(data) {
 async function main() {
   applyWidth();
   try {
-    const url = kind === 'sessions' ? `/api/sessions/${id}/receipt?mode=${mode}` : `/api/orders/${id}/receipt`;
+    const url =
+      kind === 'sessions' ? `/api/sessions/${id}/receipt?mode=${mode}` : kind === 'payments' ? `/api/payments/${id}/receipt` : `/api/orders/${id}/receipt`;
     const data = await staffApi(url);
     render(data);
     applyWidth();

@@ -9,6 +9,10 @@ Mỗi câu hỏi Q-xxx khi được chốt sẽ thành một ADR ngắn. Sau đ�
 | [ADR-002](ADR-002-stack-html-node-sqlserver.md) | Q-002 | Stack: HTML/CSS/JS thuần + Node.js/Express + SQL Server + Socket.io (D-4) | ACCEPTED (14/10/2026) |
 | [ADR-003](ADR-003-cac-de-xuat-con-lai.md) | Q-004b, Q-005, Q-006, Q-007, Q-010…Q-018 | Áp dụng các phương án đề xuất khi triển khai hoàn chỉnh | ACCEPTED (14/10/2026) |
 | [ADR-004](ADR-004-xoa-du-lieu-quan-ly.md) | (phản hồi chủ dự án) | Có nút Xóa trong Quản lý: xóa hẳn nếu chưa có lịch sử, ngược lại xóa mềm; chặn khi đang dùng | ACCEPTED (14/10/2026) |
+| [ADR-005](ADR-005-mo-rong-giai-doan-2.md) | (skill `extend-features` của chủ dự án) | Mở rộng giai đoạn 2: mặc định D-5…D-16 (hội viên, combo, khuyến mãi, gợi ý, tùy chọn, ca, giảm tay, hoàn tiền…) + thích nghi theo repo | ACCEPTED (16/10/2026) |
+| [ADR-006](ADR-006-mo-rong-giai-doan-4-8.md) | (skill `advanced-features` của chủ dự án) | Mở rộng giai đoạn 4–8: mặc định D-17…D-32 (chia bill, kho nâng cao, trưởng ca, sổ quỹ, chấm công, lãi/lỗ, điểm/tem/voucher, chiến dịch, phân tích, dashboard) + thích nghi theo repo; lệch docs ghi Q-022 | ACCEPTED (17/10/2026), triển khai xong 18/10/2026 |
+| [ADR-007](ADR-007-sua-xoa-mon-huy-ban.md) | (yêu cầu chủ dự án 18/10/2026) | Sửa / xóa món đã gọi, xóa đơn, hủy lượt phục vụ bàn: phân cấp quyền + lý do bắt buộc (D-33), ghi hủy hàng / hoàn kho món đã pha (D-34), "xóa bàn" = hủy lượt phục vụ (D-35). Mở rộng ADR-003 Q-010 | ACCEPTED (18/10/2026), triển khai xong 18/10/2026 |
+| [ADR-008](ADR-008-hoi-vien-tai-ban-the-thanh-vien.md) | (yêu cầu chủ dự án 18/10/2026) | Gắn / đăng ký hội viên ở Gọi món tại bàn (D-36); "Thẻ thành viên" trên điện thoại khách — chỉ khi SĐT đang gắn vào phiên, không mã voucher (D-37); bill thanh toán in điểm, tem, voucher còn hạn (D-38) | ACCEPTED (18/10/2026), triển khai xong 18/10/2026 |
 
 Còn mở: **Q-000** (người ký chốt) và **Q-008** (hosting online). Mỗi khi nhóm đổi một quyết định trong ADR-003, tạo ADR mới (ADR-005…) ghi rõ "thay thế mục Q-xxx của ADR-003".
 

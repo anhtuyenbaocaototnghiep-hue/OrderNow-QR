@@ -1,5 +1,10 @@
 // Cấu hình đọc từ biến môi trường (.env được nạp bằng `node --env-file-if-exists=.env`). Danh sách biến: .env.example
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const env = process.env;
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
 function required(name) {
   const value = env[name];
@@ -38,4 +43,8 @@ export const config = {
   },
   rateLimitEnabled: env.RATE_LIMIT !== 'off',
   trustProxy: bool(env.TRUST_PROXY, false),
+  // Ảnh hóa đơn sổ quỹ (F-033): <uploadsDir>/receipts/. Test dùng thư mục tạm, không đụng dữ liệu thật.
+  // Kênh Zalo OA cho chiến dịch (F-037, D-29) — không có token → chỉ dùng Xuất danh sách (CSV)
+  zaloOa: { token: env.ZALO_OA_TOKEN || '', url: env.ZALO_OA_URL || 'https://openapi.zalo.me/v3.0/oa/message/cs' },
+  uploadsDir: env.UPLOADS_DIR || (env.NODE_ENV === 'test' ? path.join(os.tmpdir(), 'cafe-qr-test-uploads') : path.join(repoRoot, 'uploads')),
 };

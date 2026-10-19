@@ -586,3 +586,35 @@ table.table {
   font-weight: 800;
   font-size: 1.4rem;
 }
+.badge.voided {
+  background: var(--c-danger-50);
+  color: var(--c-danger);
+}
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 0.2rem 0;
+  color: var(--c-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.kv.minus span:last-child,
+.due-row.minus span:last-child {
+  color: var(--c-success);
+}
+
+/* F-033 sổ quỹ: ảnh hóa đơn, số tiền chi */
+.receipt-image {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  margin: 0 auto;
+  border-radius: var(--radius-sm);
+}
+table.cash-book td.neg {
+  color: var(--c-danger);
+}
+table.cash-book tr.muted td {
+  opacity: 0.6;
+}

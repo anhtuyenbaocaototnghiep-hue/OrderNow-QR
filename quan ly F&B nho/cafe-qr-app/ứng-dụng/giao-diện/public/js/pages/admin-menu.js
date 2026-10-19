@@ -5,11 +5,15 @@ import { $, clear, el, errorMessage, modal, money, moneyInput, moneyValue, setBu
 
 await mountAdminShell('menu');
 
-const state = { categories: [], items: [], filter: '' };
+const state = { categories: [], items: [], groups: [], filter: '' };
 
 async function load() {
   try {
-    [state.categories, state.items] = await Promise.all([staffApi('/api/admin/categories'), staffApi('/api/admin/menu-items')]);
+    [state.categories, state.items, state.groups] = await Promise.all([
+      staffApi('/api/admin/categories'),
+      staffApi('/api/admin/menu-items'),
+      staffApi('/api/admin/modifier-groups'),
+    ]);
     render();
   } catch (err) {
     clear($('#content'), el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -82,6 +86,7 @@ function categoriesCard() {
               },
             },
             `${c.name} (${c.itemCount})`,
+            c.sellFrom ? ` · ${c.sellFrom}–${c.sellTo}` : '',
           ),
           el(
             'div',
@@ -99,11 +104,20 @@ function categoriesCard() {
 function editCategory(c) {
   const name = el('input', { class: 'input', name: 'name', value: c.name, maxlength: 50 });
   const sort = el('input', { class: 'input', name: 'sortOrder', type: 'number', min: 0, value: c.sortOrder });
+  const from = el('input', { class: 'input', name: 'sellFrom', type: 'time', value: c.sellFrom ?? '' });
+  const to = el('input', { class: 'input', name: 'sellTo', type: 'time', value: c.sellTo ?? '' });
   const form = el(
     'form',
     {},
     el('div', { class: 'field' }, el('label', {}, 'Tên danh mục'), name),
     el('div', { class: 'field' }, el('label', {}, 'Thứ tự hiển thị'), sort),
+    el(
+      'div',
+      { class: 'field' },
+      el('label', {}, 'Giờ bán trên menu khách (để trống = cả ngày)'),
+      el('div', { class: 'row' }, from, el('span', {}, '→'), to),
+      el('div', { class: 'small muted' }, 'Ngoài giờ bán, danh mục bị ẩn trên menu QR (quầy vẫn bán mang đi). Giờ kết thúc nhỏ hơn giờ bắt đầu = qua nửa đêm.'),
+    ),
   );
   modal({
     title: 'Sửa danh mục',
@@ -115,7 +129,10 @@ function editCategory(c) {
         class: 'btn-primary',
         onClick: async () => {
           try {
-            await staffApi(`/api/admin/categories/${c.categoryId}`, { method: 'PUT', body: { name: name.value, sortOrder: Number(sort.value) } });
+            await staffApi(`/api/admin/categories/${c.categoryId}`, {
+              method: 'PUT',
+              body: { name: name.value, sortOrder: Number(sort.value), sellFrom: from.value || null, sellTo: to.value || null },
+            });
             toast('Đã lưu danh mục', 'success');
             load();
           } catch (err) {
@@ -175,6 +192,7 @@ function itemsCard() {
                 el('th', {}, 'Còn bán'),
                 el('th', {}, 'Hiện trên menu'),
                 el('th', {}, 'Định lượng'),
+                el('th', {}, 'Tùy chọn'),
                 el('th', {}, ''),
               ),
             ),
@@ -208,6 +226,14 @@ function itemsCard() {
                     toggle(i.isActive, (v, input) => saveItem(i.menuItemId, { ...itemBody(i), isActive: v }, input), `Hiện ${i.name}`),
                   ),
                   el('td', {}, el('a', { href: `/admin/menu/${i.menuItemId}/bom` }, i.bomCount ? `${i.bomCount} nguyên liệu` : 'Chưa có — thiết lập')),
+                  el(
+                    'td',
+                    { class: 'small' },
+                    i.groupIds
+                      .map((g) => state.groups.find((x) => x.groupId === g)?.name)
+                      .filter(Boolean)
+                      .join(', ') || '—',
+                  ),
                   el(
                     'td',
                     {},
@@ -291,6 +317,40 @@ function editItem(item) {
       el('label', { for: 'imageUrl' }, 'Ảnh (URL, không bắt buộc)'),
       el('input', { class: 'input', id: 'imageUrl', name: 'imageUrl', maxlength: 500, placeholder: 'https://… hoặc /img/…', value: item?.imageUrl ?? '' }),
     ),
+    state.groups.length
+      ? el(
+          'div',
+          { class: 'field' },
+          el('label', {}, 'Nhóm tùy chọn (size, đường, đá, topping…)'),
+          el(
+            'div',
+            { class: 'check-list' },
+            state.groups.map((g) =>
+              el(
+                'label',
+                {},
+                el('input', { type: 'checkbox', name: 'groupIds', value: g.groupId, checked: item?.groupIds.includes(g.groupId) }),
+                `${g.name} · ${g.options.map((o) => o.name).join(', ')}`,
+              ),
+            ),
+          ),
+        )
+      : el('p', { class: 'small muted' }, 'Tạo nhóm tùy chọn (Size, Đường…) ở trang "Tùy chọn món" để gán cho món.'),
+    el(
+      'div',
+      { class: 'field' },
+      el('label', { for: 'prepSeconds' }, 'Thời gian pha chuẩn (giây, trống = dùng thống kê thực tế) — ước tính thời gian chờ'),
+      el('input', {
+        class: 'input',
+        id: 'prepSeconds',
+        name: 'prepSeconds',
+        type: 'number',
+        min: 10,
+        max: 3600,
+        placeholder: 'Ví dụ 90',
+        value: item?.prepSeconds ?? '',
+      }),
+    ),
     el('label', { class: 'check' }, el('input', { type: 'checkbox', name: 'isAvailable', checked: item?.isAvailable ?? true }), 'Còn bán'),
     el('label', { class: 'check' }, el('input', { type: 'checkbox', name: 'isActive', checked: item?.isActive ?? true }), 'Hiện trên menu'),
   );
@@ -315,6 +375,8 @@ function editItem(item) {
             imageUrl: f('imageUrl').value,
             isAvailable: f('isAvailable').checked,
             isActive: f('isActive').checked,
+            groupIds: [...form.querySelectorAll('input[name="groupIds"]:checked')].map((x) => Number(x.value)),
+            prepSeconds: f('prepSeconds').value ? Number(f('prepSeconds').value) : null,
           };
           setBusy(e.currentTarget, true);
           try {

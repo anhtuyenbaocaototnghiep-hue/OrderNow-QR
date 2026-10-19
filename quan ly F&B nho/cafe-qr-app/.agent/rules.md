@@ -3,7 +3,9 @@
 MUST = bắt buộc khi điều kiện xuất hiện · SHOULD = mặc định nên làm · MAY = tùy chọn.
 
 ## Phạm vi và nghiệp vụ
-- MUST không tự thêm quyền, trạng thái, business rule, chi nhánh/kho thứ hai, CRM, nhân sự.
+- MUST không tự thêm quyền, trạng thái, business rule, chi nhánh/kho thứ hai, CRM, nhân sự. Ngoại lệ đã được chủ dự án giao: các chức năng giai đoạn 2 trong ADR-005 (hội viên, khuyến mãi, ca, hoàn tiền… — skill `them-chuc-nang`) và giai đoạn 4–8 trong ADR-006 (chia bill, kho nâng cao, trưởng ca, sổ quỹ, chấm công, CRM, phân tích).
+- MUST tính mọi số tiền bằng bộ `ứng-dụng/máy-chủ/src/pricing/pricing.js` (ADR-005 D-7); không tính tiền ở route/FE; thu tiền phải gắn ca đang mở.
+- MUST không trả dữ liệu chỉ-nhân-viên cho khách: ghi chú bàn / người mở bàn (F-024, BR-032) đi qua `customerView` trong `sessionService`, sự kiện `session.note_changed` chỉ phát room `staff`.
 - MUST dùng rule theo ID trong `tài-liệu/nghiệp-vụ/business-rules.md`; rule PROPOSED/NEEDS_CONFIRMATION
   chỉ được triển khai khi task ghi rõ "áp dụng phương án X".
 - MUST tuân thủ D-1/D-2/D-3 (chỉ tiền mặt; khách gọi thanh toán, nhân viên thu tại bàn; mục bán mang đi riêng) — không tự thêm cổng thanh toán, QR chuyển khoản hay cho khách tự đánh dấu đã trả.

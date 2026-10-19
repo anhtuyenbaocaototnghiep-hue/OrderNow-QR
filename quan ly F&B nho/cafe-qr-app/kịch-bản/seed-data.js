@@ -207,3 +207,95 @@ export async function seedDemo(pool, adminId) {
   }
   return `demo: ${n} paid orders 01–10/10/2026`;
 }
+
+/**
+ * Dữ liệu mẫu giai đoạn 2 (ADR-005) để thử nhanh: nhóm tùy chọn Size + Topping (gán Bạc xỉu, Latte), combo, khuyến mãi, món ghim.
+ * Chỉ thêm khi DB chưa có nhóm tùy chọn / combo / khuyến mãi nào (không đụng dữ liệu quán đã tự tạo). Không dùng trong test.
+ */
+export async function seedExtras(pool) {
+  const q = async (text, inputs = {}) => {
+    const req = pool.request();
+    for (const [k, [type, v]] of Object.entries(inputs)) req.input(k, type, v);
+    return (await req.query(text)).recordset;
+  };
+  const [{ n }] = await q(`SELECT (SELECT COUNT(*) FROM dbo.ModifierGroups) + (SELECT COUNT(*) FROM dbo.Promotions)
+                                + (SELECT COUNT(*) FROM dbo.MenuItems WHERE ItemType = 'COMBO') AS n`);
+  if (n > 0) return 'extras: đã có tùy chọn/combo/khuyến mãi — bỏ qua';
+  const item = async (name) =>
+    (await q('SELECT MenuItemId FROM dbo.MenuItems WHERE Name = @n AND DeletedAt IS NULL', { n: [sql.NVarChar(100), name] }))[0]?.MenuItemId;
+  const ing = async (name) =>
+    (await q('SELECT IngredientId FROM dbo.Ingredients WHERE Name = @n AND DeletedAt IS NULL', { n: [sql.NVarChar(100), name] }))[0]?.IngredientId;
+  const log = [];
+
+  const group = async (name, min, max, options) => {
+    const [{ GroupId }] = await q('INSERT dbo.ModifierGroups (Name, MinSelect, MaxSelect, SortOrder) OUTPUT inserted.GroupId VALUES (@n, @a, @b, @s)', {
+      n: [sql.NVarChar(50), name],
+      a: [sql.Int, min],
+      b: [sql.Int, max],
+      s: [sql.Int, min > 0 ? 1 : 2],
+    });
+    for (const [i, o] of options.entries()) {
+      const [{ OptionId }] = await q(
+        'INSERT dbo.ModifierOptions (GroupId, Name, PriceDelta, IsDefault, SortOrder) OUTPUT inserted.OptionId VALUES (@g, @n, @d, @def, @s)',
+        {
+          g: [sql.Int, GroupId],
+          n: [sql.NVarChar(50), o.name],
+          d: [sql.Decimal(12, 0), o.delta ?? 0],
+          def: [sql.Bit, Boolean(o.isDefault)],
+          s: [sql.Int, i + 1],
+        },
+      );
+      if (o.bom && (await ing(o.bom[0]))) {
+        await q('INSERT dbo.ModifierOptionBom (OptionId, IngredientId, Amount) VALUES (@o, @i, @a)', {
+          o: [sql.Int, OptionId],
+          i: [sql.Int, await ing(o.bom[0])],
+          a: [sql.Decimal(18, 3), o.bom[1]],
+        });
+      }
+    }
+    return GroupId;
+  };
+  const size = await group('Size', 1, 1, [
+    { name: 'Size M', isDefault: true },
+    { name: 'Size L', delta: 5000, bom: ['Sữa tươi', 40] },
+  ]);
+  const topping = await group('Topping', 0, 2, [
+    { name: 'Thạch cà phê', delta: 5000 },
+    { name: 'Trân châu', delta: 5000 },
+  ]);
+  for (const name of ['Bạc xỉu', 'Latte']) {
+    const id = await item(name);
+    if (!id) continue;
+    for (const g of [size, topping]) await q('INSERT dbo.MenuItemModifierGroups (MenuItemId, GroupId) VALUES (@m, @g)', { m: [sql.Int, id], g: [sql.Int, g] });
+  }
+  log.push('tùy chọn: Size (M/L), Topping → Bạc xỉu, Latte');
+
+  const den = await item('Cà phê đen');
+  const banh = await item('Bánh croissant');
+  if (den && banh) {
+    const [{ MenuItemId }] = await q(
+      "INSERT dbo.MenuItems (CategoryId, Name, Price, ItemType) OUTPUT inserted.MenuItemId VALUES (NULL, N'Combo sáng', 45000, 'COMBO')",
+    );
+    for (const c of [den, banh]) {
+      await q('INSERT dbo.ComboComponents (ComboMenuItemId, ComponentMenuItemId, Quantity) VALUES (@c, @m, 1)', { c: [sql.Int, MenuItemId], m: [sql.Int, c] });
+    }
+    log.push('combo: Combo sáng (Cà phê đen + Bánh croissant) 45.000đ');
+  }
+
+  const td = await item('Trà đào');
+  const [{ PromotionId }] = await q(
+    `INSERT dbo.Promotions (Name, Type, Value, StartDate, EndDate, StartTime, EndTime, BadgeText) OUTPUT inserted.PromotionId
+     VALUES (N'Happy hour trà đào', 'ITEM_PRICE', 29000, CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE), '2026-12-31', '14:00', '17:00', N'Giờ vàng')`,
+  );
+  if (td) await q('INSERT dbo.PromotionTargets (PromotionId, MenuItemId) VALUES (@p, @m)', { p: [sql.Int, PromotionId], m: [sql.Int, td] });
+  await q(
+    `INSERT dbo.Promotions (Name, Type, Value, MinOrderAmount, StartDate, EndDate, StackWithMember, BadgeText)
+     VALUES (N'Giảm 10% đơn từ 200k', 'ORDER_PERCENT', 10, 200000, CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE), '2026-12-31', 1, N'−10%')`,
+  );
+  log.push('khuyến mãi: Happy hour trà đào 14–17h 29.000đ; giảm 10% đơn từ 200.000đ');
+
+  const latte = await item('Latte');
+  if (latte) await q("UPDATE dbo.MenuItems SET IsPinned = 1, PinLabel = N'Món mới', PinOrder = 1 WHERE MenuItemId = @m", { m: [sql.Int, latte] });
+  log.push('gợi ý: ghim Latte ("Món mới")');
+  return log.join('\n');
+}

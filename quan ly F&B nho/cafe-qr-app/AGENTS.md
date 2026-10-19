@@ -34,7 +34,7 @@ in bill; admin quản lý menu/bàn/kho/báo cáo. Một quán, một kho. Chi t
 ## Thực hiện
 - Khảo sát nguồn/tests thật trước khi sửa; không đoán tên file.
 - Thay đổi chạm DB, quyền, contract API/realtime hoặc ≥ 2 module → viết `tài-liệu/kế-hoạch/TASK-xxx-plan.md` trước.
-- Dùng skill khi trigger khớp: `implement-feature`, `change-database`, `verify-change`; `do-an-cafe-reviewer` khi đã có trong repo
+- Dùng skill khi trigger khớp: `implement-feature`, `change-database`, `verify-change`, `them-chuc-nang` (thêm / sửa chức năng: giai đoạn 2 — hội viên, combo, khuyến mãi, ca…, ADR-005; giai đoạn 4–8 — chia bill, kho nâng cao, trưởng ca, sổ quỹ, CRM, phân tích…, ADR-006; F-024, F-046, F-047; chức năng mới FEATURE-048+ — gộp từ `extend-features` + `advanced-features` ngày 19/10/2026, bản gốc ở `tài-liệu/nguồn/skill-goc/`; tóm tắt yêu cầu / kiến trúc ở `Skill/YEU-CAU.md`, `Skill/KIEN-TRUC.md`); `do-an-cafe-reviewer` khi đã có trong repo
   (hiện chưa có — xem `tài-liệu/vận-hành/local-development.md` mục Skills).
 - Mọi đổi trạng thái đơn + kho đi qua SP trong `cơ-sở-dữ-liệu/thủ-tục/`; không "SELECT rồi UPDATE" ngoài transaction.
 - Phát realtime sau commit. Kiểm quyền ở server cho mọi endpoint.

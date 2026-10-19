@@ -14,6 +14,7 @@
     "db:migrate": "node --env-file-if-exists=.env kịch-bản/db-migrate.js",
     "db:seed": "node --env-file-if-exists=.env kịch-bản/db-seed.js",
     "db:seed:demo": "node --env-file-if-exists=.env kịch-bản/db-seed.js --demo",
+    "db:seed:mau2": "node --env-file-if-exists=.env kịch-bản/db-seed.js --extras",
     "qr:links": "node --env-file-if-exists=.env kịch-bản/qr-links.js",
     "test": "node --env-file-if-exists=.env --test --test-concurrency=1 ứng-dụng/máy-chủ/tests/*.test.js",
     "load": "node --env-file-if-exists=.env kịch-bản/load-concurrency.js",

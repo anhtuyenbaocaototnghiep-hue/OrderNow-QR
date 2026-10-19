@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quầy — Gọi món tại bàn</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/pos.css" />
+    <link rel="stylesheet" href="/css/customer.css" />
+  </head>
+  <body class="pos">
+    <!-- S-16 Gọi món tại bàn (FEATURE-024): nhân viên chọn bàn, nhập món giúp khách không dùng QR, ghi chú bàn (chỉ nhân viên thấy) -->
+    <div class="banner offline" id="offline-banner" hidden>Mất kết nối</div>
+    <div class="takeaway table-order">
+      <section aria-label="Chọn bàn và món">
+        <div class="card" style="margin-bottom: 0.8rem">
+          <div class="row between">
+            <h2 style="margin: 0; font-size: 1.05rem">1. Chọn bàn</h2>
+            <span class="muted small">Xanh = đang phục vụ · Vàng = gọi thanh toán · 📝 = có ghi chú</span>
+          </div>
+          <div class="table-grid" id="table-grid" style="margin-top: 0.6rem"><p class="muted small">Đang tải…</p></div>
+        </div>
+        <h2 style="margin: 0 0 0.4rem; font-size: 1.05rem">2. Chọn món</h2>
+        <nav class="c-tabs" id="tabs" style="position: static; padding-left: 0; background: transparent; border: 0"></nav>
+        <div class="tiles" id="tiles"><p class="muted">Đang tải thực đơn…</p></div>
+      </section>
+      <aside class="card cart-panel" aria-label="Đơn tại bàn">
+        <div id="target"><p class="muted">Chọn một bàn ở bên trái.</p></div>
+        <div id="note-box"></div>
+        <div id="member-box"></div>
+        <div id="lines"></div>
+        <div id="promo" class="breakdown"></div>
+        <div class="due"><span>Tổng đơn này</span><span id="total">0đ</span></div>
+        <div id="send-error"></div>
+        <button class="btn btn-primary btn-lg btn-block" id="send" type="button" disabled>Gửi đơn cho quầy pha</button>
+        <button class="btn btn-ghost btn-sm btn-block" id="clear" type="button" style="margin-top: 0.4rem">Xóa giỏ</button>
+        <p class="muted small" style="margin-top: 0.5rem">Đơn nhân viên nhập vào thẳng cột <strong>Đang pha</strong>. Thu tiền như bàn gọi qua QR.</p>
+        <div id="ordered"></div>
+      </aside>
+    </div>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script type="module" src="/js/pages/pos-table-order.js"></script>
+  </body>
+</html>

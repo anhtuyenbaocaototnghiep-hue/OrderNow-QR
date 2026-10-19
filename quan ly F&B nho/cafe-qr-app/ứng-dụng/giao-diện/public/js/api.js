@@ -42,6 +42,23 @@ export const api = (path, opts) => call(path, opts);
 /** API nhân viên/quản lý (Bearer token). */
 export const staffApi = (path, opts = {}) => call(path, { ...opts, staff: true });
 
+/** Gửi file (ảnh) làm thân request — ví dụ ảnh hóa đơn sổ quỹ (F-033). Trả JSON như staffApi. */
+export async function staffUpload(path, file, method = 'PUT') {
+  let res;
+  try {
+    res = await fetch(path, {
+      method,
+      headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': file.type || 'application/octet-stream', Accept: 'application/json' },
+      body: file,
+    });
+  } catch {
+    throw new ApiError(0, { code: 'NETWORK', message: 'Mất kết nối mạng, vui lòng thử lại' });
+  }
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(res.status, data);
+  return data;
+}
+
 /** Tải file nhị phân có xác thực (ví dụ ảnh QR) → object URL. */
 export async function staffBlobUrl(path) {
   const res = await fetch(path, { headers: { Authorization: `Bearer ${getToken()}` } });

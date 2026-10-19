@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản lý — Nhật ký thao tác</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+  </head>
+  <body class="admin">
+    <!-- S-38 Nhật ký thao tác — chỉ đọc (FEATURE-035, ADR-006 D-26) -->
+    <div class="admin-layout">
+      <aside class="admin-side" id="side" aria-label="Điều hướng quản lý"></aside>
+      <main class="admin-main">
+        <header class="admin-head">
+          <h1 id="page-title">Nhật ký thao tác</h1>
+          <div class="row wrap no-print" id="head-actions"></div>
+        </header>
+        <div id="content"><p class="muted">Đang tải…</p></div>
+      </main>
+    </div>
+    <script type="module" src="/js/pages/admin-audit.js"></script>
+  </body>
+</html>

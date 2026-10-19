@@ -14,6 +14,11 @@ BEGIN
   IF EXISTS (SELECT 1 FROM dbo.MenuItems WHERE CategoryId = @CategoryId AND DeletedAt IS NULL)
   BEGIN ROLLBACK; THROW 50054, 'HAS_ITEMS', 1; END
 
+  -- Lịch thực đơn (F-040): bỏ mục tiêu là danh mục này và lịch "Giờ bán" sinh từ nó
+  DELETE dbo.MenuScheduleItems WHERE CategoryId = @CategoryId
+     OR ScheduleId IN (SELECT ScheduleId FROM dbo.MenuSchedules WHERE SourceCategoryId = @CategoryId);
+  DELETE dbo.MenuSchedules WHERE SourceCategoryId = @CategoryId;
+
   IF EXISTS (SELECT 1 FROM dbo.MenuItems WHERE CategoryId = @CategoryId)
   BEGIN
     UPDATE dbo.Categories SET DeletedAt = SYSUTCDATETIME() WHERE CategoryId = @CategoryId;
@@ -21,6 +26,7 @@ BEGIN
   END
   ELSE
   BEGIN
+    DELETE dbo.PromotionTargets WHERE CategoryId = @CategoryId;   -- khuyến mãi theo danh mục (FEATURE-016)
     DELETE dbo.Categories WHERE CategoryId = @CategoryId;
     SET @Result = 'DELETED';
   END

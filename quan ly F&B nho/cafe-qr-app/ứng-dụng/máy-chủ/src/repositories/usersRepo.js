@@ -39,11 +39,23 @@ export async function create({ username, passwordHash, fullName, role }) {
   return map(r.recordset[0]);
 }
 
+// F-036: luôn còn ít nhất một quản lý (ADMIN) đang hoạt động. Khóa U toàn bộ dòng ADMIN đang hoạt động (cùng thứ tự quét)
+// → hai quản lý hạ quyền / khóa nhau cùng lúc chạy tuần tự, người sau nhận 50150 LAST_ADMIN.
+const LAST_ADMIN_GUARD = (losesAdmin) => `
+  SET XACT_ABORT ON;
+  BEGIN TRAN;
+  DECLARE @Admins INT = (SELECT COUNT(*) FROM dbo.Users WITH (UPDLOCK, HOLDLOCK) WHERE Role = 'ADMIN' AND IsActive = 1 AND DeletedAt IS NULL);
+  IF (${losesAdmin}) AND @Admins <= 1
+     AND EXISTS (SELECT 1 FROM dbo.Users WHERE UserId = @id AND Role = 'ADMIN' AND IsActive = 1 AND DeletedAt IS NULL)
+  BEGIN ROLLBACK; THROW 50150, 'LAST_ADMIN', 1; END`;
+
 export async function update(id, { fullName, role }) {
   const r = await query(
-    `UPDATE dbo.Users SET FullName = @n, Role = @r
+    `${LAST_ADMIN_GUARD("@r <> 'ADMIN'")}
+     UPDATE dbo.Users SET FullName = @n, Role = @r
      OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt
-     WHERE UserId = @id AND DeletedAt IS NULL`,
+     WHERE UserId = @id AND DeletedAt IS NULL;
+     COMMIT;`,
     { id: [sql.Int, id], n: [sql.NVarChar(100), fullName], r: [sql.VarChar(10), role] },
   );
   return map(r.recordset[0]);
@@ -59,9 +71,11 @@ export async function setPassword(id, passwordHash) {
 
 export async function setActive(id, isActive) {
   const r = await query(
-    `UPDATE dbo.Users SET IsActive = @a
+    `${LAST_ADMIN_GUARD('@a = 0')}
+     UPDATE dbo.Users SET IsActive = @a
      OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt
-     WHERE UserId = @id AND DeletedAt IS NULL`,
+     WHERE UserId = @id AND DeletedAt IS NULL;
+     COMMIT;`,
     { id: [sql.Int, id], a: [sql.Bit, isActive] },
   );
   return map(r.recordset[0]);

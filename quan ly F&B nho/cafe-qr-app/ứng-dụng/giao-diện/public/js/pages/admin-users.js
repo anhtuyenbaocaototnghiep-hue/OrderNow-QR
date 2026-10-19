@@ -7,7 +7,8 @@ const me = await mountAdminShell('users');
 
 clear($('#head-actions'), el('button', { class: 'btn btn-primary', type: 'button', onclick: () => createUser() }, '+ Thêm nhân viên'));
 
-const ROLE = { STAFF: 'Nhân viên quầy', ADMIN: 'Quản lý' };
+// F-036: Trưởng ca = quyền quầy + giảm tay 20 %/50k, hoàn tiền trong ca, duyệt chi quỹ, sửa chấm công trong ngày, kiểm kê, điều chỉnh kho
+const ROLE = { STAFF: 'Nhân viên quầy', MANAGER: 'Trưởng ca', ADMIN: 'Quản lý' };
 
 async function load() {
   let users;
@@ -47,7 +48,7 @@ async function load() {
                 u.userId === me.userId ? el('span', { class: 'badge primary', style: { marginLeft: '0.4rem' } }, 'Bạn') : null,
               ),
               el('td', {}, u.fullName),
-              el('td', {}, el('span', { class: `badge ${u.role === 'ADMIN' ? 'primary' : ''}` }, ROLE[u.role])),
+              el('td', {}, el('span', { class: `badge ${u.role === 'ADMIN' ? 'primary' : u.role === 'MANAGER' ? 'ok' : ''}` }, ROLE[u.role])),
               el('td', { class: 'small' }, dateTime(u.createdAt)),
               el(
                 'td',

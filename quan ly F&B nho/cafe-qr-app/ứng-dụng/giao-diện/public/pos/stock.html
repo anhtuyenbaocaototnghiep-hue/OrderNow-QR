@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quầy — Kho & sơ chế</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/pos.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+  </head>
+  <body class="pos">
+    <!-- S-17 Kho & sơ chế ở quầy (ADR-006): sơ chế bán thành phẩm (F-027), hủy hàng (F-032), lô sắp hết hạn (F-028), nhận hàng theo PO (F-030) -->
+    <div class="banner offline" id="offline-banner" hidden>Mất kết nối</div>
+    <main class="pos-page">
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div id="content"><p class="muted">Đang tải…</p></div>
+    </main>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script type="module" src="/js/pages/pos-stock.js"></script>
+  </body>
+</html>

@@ -1,17 +1,22 @@
 // S-23 Kho nguyên liệu: tồn kho, đang giữ cho đơn (ADR-001), khả dụng, ngưỡng sắp hết (BR-016),
 // điều chỉnh tay có lý do (Q-011/ADR-003), lịch sử giao dịch kho.
+// ADR-006: bán thành phẩm + công thức (F-027), theo lô + hạn dùng (F-028), giá vốn bình quân (F-031), hao hụt định mức (F-032).
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell } from '../admin-shell.js';
+import { advancedDialog, costLine, ingredientBadges, lotsDialog, recipeDialog } from '../inventory-advanced.js';
+import { adjustDialog } from '../stock-adjust.js';
 import { $, clear, dateTime, el, errorMessage, modal, num, setBusy, showFieldErrors, toast } from '../ui.js';
 
 await mountAdminShell('ingredients');
 
 clear($('#head-actions'), el('button', { class: 'btn btn-primary', type: 'button', onclick: () => editIngredient(null) }, '+ Thêm nguyên liệu'));
 
+let ingredients = [];
 async function load() {
   let list;
   try {
     list = await staffApi('/api/admin/ingredients');
+    ingredients = list;
   } catch (err) {
     return clear($('#content'), el('div', { class: 'alert danger' }, errorMessage(err)));
   }
@@ -45,7 +50,15 @@ async function load() {
                 el(
                   'tr',
                   { style: { opacity: i.isActive ? 1 : 0.55 } },
-                  el('td', {}, el('strong', {}, i.name), el('div', { class: 'muted small' }, `Đơn vị: ${i.unit} · dùng trong ${i.usedIn} món`)),
+                  el(
+                    'td',
+                    {},
+                    el('strong', {}, i.name),
+                    ' ',
+                    ingredientBadges(i),
+                    el('div', { class: 'muted small' }, `Đơn vị: ${i.unit} · dùng trong ${i.usedIn} món`),
+                    costLine(i),
+                  ),
                   el('td', { class: 'num' }, num(i.stockQty)),
                   el('td', { class: 'num' }, num(i.reservedQty)),
                   el('td', { class: 'num' }, el('strong', {}, num(i.available))),
@@ -68,6 +81,11 @@ async function load() {
                       el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => adjust(i) }, 'Điều chỉnh'),
                       el('button', { class: 'btn btn-sm', type: 'button', onclick: () => history(i) }, 'Lịch sử'),
                       el('button', { class: 'btn btn-sm', type: 'button', onclick: () => editIngredient(i) }, 'Sửa'),
+                      el('button', { class: 'btn btn-sm', type: 'button', onclick: () => advancedDialog(i, load) }, 'Kho nâng cao'),
+                      i.kind === 'SEMI'
+                        ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => recipeDialog(i, ingredients, load) }, 'Công thức')
+                        : null,
+                      i.trackLots ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => lotsDialog(i, load) }, 'Lô') : null,
                       el(
                         'button',
                         {
@@ -153,72 +171,26 @@ function editIngredient(i) {
   });
 }
 
-function adjust(i) {
-  const mode = el(
-    'select',
-    { class: 'input', name: 'mode' },
-    el('option', { value: 'newQty' }, 'Đặt số tồn mới (kiểm kê)'),
-    el('option', { value: 'delta' }, 'Cộng / trừ (nhập thêm, hao hụt…)'),
-  );
-  const qty = el('input', { class: 'input', name: 'newQty', inputmode: 'decimal', placeholder: `Ví dụ: ${num(i.stockQty)}` });
-  const reason = el('input', { class: 'input', name: 'reason', maxlength: 200, placeholder: 'Ví dụ: Kiểm kê cuối ngày, nhập thêm hàng, đổ vỡ…' });
-  const hint = el('div', { class: 'muted small' });
-  const updateHint = () => {
-    qty.name = mode.value;
-    hint.textContent =
-      mode.value === 'delta'
-        ? 'Số dương = nhập thêm, số âm = giảm (ví dụ -50).'
-        : `Tồn hiện tại ${num(i.stockQty)} ${i.unit}; đang giữ cho đơn ${num(i.reservedQty)} ${i.unit}.`;
-  };
-  mode.addEventListener('change', updateHint);
-  updateHint();
-  const form = el(
-    'form',
-    {},
-    el('div', { class: 'field' }, el('label', {}, 'Cách điều chỉnh'), mode),
-    el('div', { class: 'field' }, el('label', {}, `Số lượng (${i.unit})`), qty, hint),
-    el('div', { class: 'field' }, el('label', {}, 'Lý do'), reason),
-  );
-  modal({
-    title: `Điều chỉnh kho: ${i.name}`,
-    body: form,
-    actions: [
-      { label: 'Hủy' },
-      {
-        label: 'Lưu điều chỉnh',
-        class: 'btn-primary',
-        onClick: async (_c, e) => {
-          const value = String(qty.value).replace(',', '.').trim();
-          if (value === '' || Number.isNaN(Number(value))) {
-            qty.classList.add('invalid');
-            toast('Nhập số lượng hợp lệ', 'error');
-            return false;
-          }
-          setBusy(e.currentTarget, true);
-          try {
-            const r = await staffApi(`/api/admin/ingredients/${i.ingredientId}/adjust`, {
-              method: 'POST',
-              body: { [mode.value]: Number(value), reason: reason.value },
-            });
-            toast(`Đã điều chỉnh: ${r.name} còn ${num(r.stockQty)} ${r.unit}`, 'success');
-            load();
-          } catch (err) {
-            setBusy(e.currentTarget, false);
-            if (!showFieldErrors(form, err)) toast(errorMessage(err), 'error', 5000);
-            return false;
-          }
-        },
-      },
-    ],
-  });
-}
+// Điều chỉnh tay (dùng chung với quầy cho trưởng ca — js/stock-adjust.js, F-036)
+const adjust = (i) => adjustDialog(i, { url: `/api/admin/ingredients/${i.ingredientId}/adjust`, onDone: load });
+
+// Phiếu hủy hàng ghi lý do dạng 'WASTE:<mã> — ghi chú' (F-032) → hiển thị tiếng Việt
+const WASTE_REASON = { SPILL: 'Đổ / vỡ', EXPIRED: 'Hết hạn', QUALITY: 'Hỏng / không đạt', OTHER: 'Khác' };
+const reasonText = (r) => (r ?? '').replace(/^WASTE:(\w+)/, (_m, code) => `Hủy hàng: ${WASTE_REASON[code] ?? code}`);
 
 async function history(i) {
   const body = el('div', {}, el('p', { class: 'muted' }, 'Đang tải…'));
   modal({ title: `Lịch sử kho: ${i.name}`, drawer: true, body });
   try {
     const { transactions } = await staffApi(`/api/admin/ingredients/${i.ingredientId}/transactions`);
-    const label = { DEDUCT: 'Trừ theo đơn', ADJUST: 'Điều chỉnh', IMPORT: 'Nhập kho' };
+    const label = {
+      DEDUCT: 'Trừ theo đơn',
+      ADJUST: 'Điều chỉnh / hủy hàng',
+      IMPORT: 'Nhập kho',
+      RESTOCK: 'Hoàn kho (hoàn tiền)',
+      PREP_OUT: 'Xuất cho sơ chế',
+      PREP_IN: 'Nhập từ sơ chế',
+    };
     clear(
       body,
       transactions.length === 0
@@ -253,7 +225,7 @@ async function history(i) {
                       `${t.delta > 0 ? '+' : ''}${num(t.delta)}`,
                     ),
                     el('td', { class: 'num' }, num(t.balanceAfter)),
-                    el('td', { class: 'small' }, t.order ? `Đơn #${t.order.orderCode}` : (t.reason ?? ''), t.createdBy ? ` · ${t.createdBy}` : ''),
+                    el('td', { class: 'small' }, t.order ? `Đơn #${t.order.orderCode}` : reasonText(t.reason), t.createdBy ? ` · ${t.createdBy}` : ''),
                   ),
                 ),
               ),

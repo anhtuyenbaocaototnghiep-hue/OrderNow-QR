@@ -13,6 +13,9 @@ coverage/
 bin/
 obj/
 
+# Ảnh tải lên (hóa đơn sổ quỹ — F-033)
+uploads/
+
 # Test output
 playwright-report/
 test-results/

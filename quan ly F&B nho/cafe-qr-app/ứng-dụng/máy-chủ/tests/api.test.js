@@ -75,6 +75,8 @@ before(async () => {
   api = supertest(server);
   adminToken = await login('admin', 'Admin@123');
   staffToken = await login('staff1', 'Staff@123');
+  // F-018: thu tiền cần ca đang mở (ADR-005)
+  assert.equal((await api.post('/api/shifts/open').set(auth(staffToken)).send({ openingCash: 0 })).status, 201);
   ids = Object.fromEntries((await pool.request().query('SELECT MenuItemId, Name FROM dbo.MenuItems')).recordset.map((m) => [m.Name, m.MenuItemId]));
   tables = Object.fromEntries((await pool.request().query('SELECT Code, QrToken FROM dbo.Tables')).recordset.map((t) => [t.Code, t.QrToken]));
 });

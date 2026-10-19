@@ -1,0 +1,53 @@
+# FEATURE-016 — Khuyến mãi
+
+> **Nguồn:** skill `extend-features` §4 F-016. Quyết định: [ADR-005](../quyết-định/ADR-005-mo-rong-giai-doan-2.md) D-7, D-8, D-10.
+
+- **Status:** CONFIRMED (ADR-005) · Triển khai: READY_FOR_REVIEW (16/10/2026)
+- **Actor:**
+  - ADMIN tạo và quản lý khuyến mãi.
+  - Khách và STAFF được áp dụng tự động.
+- **Màn hình:**
+  - Quản lý → **Khuyến mãi** (`/admin/promotions`): thêm/sửa, bật/tắt, thống kê, xóa.
+  - Menu khách: mục "🎁 Ưu đãi hôm nay". Món có khuyến mãi hiện nhãn và giá gạch.
+  - Giỏ hàng: dòng "Giá khuyến mãi" / tên khuyến mãi theo đơn.
+- **Dữ liệu:** migration `0006_khuyen_mai.sql`.
+  - Bảng `Promotions`, `PromotionTargets` (món hoặc danh mục), `PromotionUsages`.
+  - `OrderItems.PromotionId/LineDiscount/AllowMemberStack`.
+  - `Orders.SubtotalAmount/PromoDiscount/OrderPromotionId`.
+- **Quy tắc:**
+  - **Hai loại khuyến mãi:**
+    - `ITEM_PRICE`: giá mới cho món hoặc danh mục theo lịch.
+    - `ORDER_PERCENT` / `ORDER_AMOUNT`: đơn từ mức tối thiểu.
+  - **Lịch:**
+    - Khoảng ngày, ngày trong tuần (bit0 = CN), khung giờ.
+    - Khung giờ có thể qua nửa đêm; trống = cả ngày.
+    - Tính theo giờ quán (UTC+7).
+  - **Chọn khuyến mãi:**
+    - Một dòng chỉ nhận một khuyến mãi giá (giá thấp nhất). Combo không nhận.
+    - Một đơn chỉ nhận một khuyến mãi theo đơn (giảm nhiều nhất), xét trên tổng sau khuyến mãi dòng.
+  - **Khóa lúc gửi đơn (D-8):** thu tiền phiên cộng các đơn đã khóa, không tính lại.
+  - **`MaxUsesPerDay`:**
+    - Đếm số đơn (chưa hủy) dùng khuyến mãi trong ngày quán.
+    - `sp_SubmitOrder` khóa dòng `Promotions` nên hai đơn tranh lượt cuối chạy tuần tự.
+    - Đơn thua nhận `PROMO_EXHAUSTED`. Service tính lại đơn đó không có khuyến mãi (khách không thấy lỗi).
+    - Với đơn mang đi: trả về `AMOUNT_CHANGED` để quầy xem lại tổng.
+  - **`StackWithMember = 0`:** dòng (hoặc cả đơn, nếu là khuyến mãi đơn) không nhận chiết khấu hội viên.
+  - **Xóa:**
+    - Khuyến mãi đã dùng → xóa mềm.
+    - Chưa dùng → xóa hẳn.
+- **API:**
+  - `GET/POST /api/admin/promotions`.
+  - `GET/PUT/DELETE /api/admin/promotions/{id}`.
+  - `PATCH …/active`.
+  - `GET …/stats?from&to` (lượt, tiền giảm, doanh thu đơn có khuyến mãi).
+  - `GET /api/menu`: món có `listPrice`, `price` (giá hiện hành), `promotionBadge`; kèm `promotions[]`.
+  - `POST /api/orders/quote`: báo giá giỏ.
+- **Acceptance Criteria**
+  - AC-016-01: Happy hour 14–17h trà đào 25k: lúc 15:00 giá 25.000đ; lúc 17:01 về 35.000đ (unit test lịch giờ).
+  - AC-016-02: Hai khuyến mãi giá cùng món → áp giá thấp nhất.
+  - AC-016-03: `MaxUsesPerDay = 1`, hai đơn gửi đồng thời → đúng một đơn được giảm, đơn kia giá gốc. Hết lượt thì không quảng bá trên menu nữa.
+  - AC-016-04: `StackWithMember = 0` → thu tiền không chiết khấu hội viên lên dòng khuyến mãi.
+  - AC-016-05: Thống kê đúng số lượt và tiền giảm.
+- **Bằng chứng:**
+  - `tests/pricing.test.js` (lịch, giá thấp nhất, khuyến mãi đơn).
+  - `tests/sales.test.js` → "Khuyến mãi (F-016)".

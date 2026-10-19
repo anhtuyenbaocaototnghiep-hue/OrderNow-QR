@@ -2,11 +2,16 @@
 import express from 'express';
 import { z } from 'zod';
 import { requireAdmin } from '../middleware/auth.js';
-import { paramId, parse, zDate, zId, zText } from '../middleware/validate.js';
+import { paramId, parse, zDate, zId, zText, zTime } from '../middleware/validate.js';
 import * as adminService from '../services/adminService.js';
 import * as userService from '../services/userService.js';
 import { badRequest } from '../errors.js';
 import { isValidDate } from '../utils/time.js';
+import { marketingRouter } from './marketing.js';
+import { operationsRouter } from './operations.js';
+import { advancedRouter } from './advanced.js';
+import { financeAdminRouter } from './financeAdmin.js';
+import { analyticsAdminRouter } from './analytics.js';
 
 export const adminRouter = express.Router();
 adminRouter.use(requireAdmin);
@@ -15,7 +20,18 @@ const zQty = () => z.coerce.number().min(0).max(1_000_000_000);
 const zBool = () => z.boolean();
 
 // ---- Danh mục ----
-const categoryBody = z.object({ name: zText(50).min(1, 'Nhập tên danh mục'), sortOrder: z.coerce.number().int().min(0).max(10000).default(0) });
+// Giờ bán (F-020): để trống cả hai = bán cả ngày; giờ bắt đầu > giờ kết thúc = qua nửa đêm
+const categoryBody = z
+  .object({
+    name: zText(50).min(1, 'Nhập tên danh mục'),
+    sortOrder: z.coerce.number().int().min(0).max(10000).default(0),
+    sellFrom: zTime(),
+    sellTo: zTime(),
+  })
+  .refine((c) => (c.sellFrom === null) === (c.sellTo === null) && (c.sellFrom === null || c.sellFrom !== c.sellTo), {
+    message: 'Nhập đủ giờ bắt đầu và kết thúc (khác nhau), hoặc để trống cả hai',
+    path: ['sellTo'],
+  });
 adminRouter.get('/categories', async (_req, res) => res.json(await adminService.listCategories()));
 adminRouter.post('/categories', async (req, res) => res.status(201).json(await adminService.createCategory(parse(categoryBody, req.body))));
 adminRouter.put('/categories/:id', async (req, res) => res.json(await adminService.updateCategory(paramId(req), parse(categoryBody, req.body))));
@@ -37,6 +53,8 @@ const itemBody = z.object({
     .transform((s) => s || null),
   isAvailable: zBool().default(true),
   isActive: zBool().default(true),
+  groupIds: z.array(zId()).max(20).optional(), // nhóm tùy chọn món (F-013); vắng = giữ nguyên
+  prepSeconds: z.coerce.number().int().min(10, 'Thời gian pha tối thiểu 10 giây').max(3600).nullable().optional(), // F-025; vắng = giữ nguyên
 });
 adminRouter.get('/menu-items', async (_req, res) => res.json(await adminService.listItems()));
 adminRouter.post('/menu-items', async (req, res) => res.status(201).json(await adminService.createItem(parse(itemBody, req.body))));
@@ -101,24 +119,22 @@ adminRouter.put('/ingredients/:id', async (req, res) => {
   const body = parse(z.object({ ...ingredientBase, isActive: zBool() }), req.body);
   res.json(await adminService.updateIngredient(paramId(req), body));
 });
+// Dùng chung cho trưởng ca (/api/ops/ingredients/:id/adjust — F-036)
+export const adjustBody = z
+  .object({
+    newQty: z.coerce.number().min(0, 'Tồn kho không được âm').max(1_000_000_000).optional(),
+    delta: z.coerce.number().min(-1_000_000_000).max(1_000_000_000).optional(),
+    reason: zText(200).min(1, 'Nhập lý do điều chỉnh'),
+  })
+  .refine((b) => (b.newQty === undefined) !== (b.delta === undefined), 'Nhập số mới HOẶC số cộng/trừ');
 adminRouter.post('/ingredients/:id/adjust', async (req, res) => {
-  const body = parse(
-    z
-      .object({
-        newQty: z.coerce.number().min(0, 'Tồn kho không được âm').max(1_000_000_000).optional(),
-        delta: z.coerce.number().min(-1_000_000_000).max(1_000_000_000).optional(),
-        reason: zText(200).min(1, 'Nhập lý do điều chỉnh'),
-      })
-      .refine((b) => (b.newQty === undefined) !== (b.delta === undefined), 'Nhập số mới HOẶC số cộng/trừ'),
-    req.body,
-  );
-  res.json(await adminService.adjustIngredient(paramId(req), body, req.user));
+  res.json(await adminService.adjustIngredient(paramId(req), parse(adjustBody, req.body), req.user));
 });
 adminRouter.get('/ingredients/:id/transactions', async (req, res) => res.json(await adminService.ingredientTransactions(paramId(req))));
 adminRouter.delete('/ingredients/:id', async (req, res) => res.json({ result: await adminService.deleteIngredient(paramId(req)) }));
 
 // ---- Tài khoản (FEATURE-009) ----
-const role = () => z.enum(['STAFF', 'ADMIN']);
+const role = () => z.enum(['STAFF', 'MANAGER', 'ADMIN']); // F-036 trưởng ca
 const password = () => z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự').max(100);
 adminRouter.get('/users', async (_req, res) => res.json(await userService.list()));
 adminRouter.post('/users', async (req, res) => {
@@ -153,6 +169,13 @@ adminRouter.patch('/users/:id/active', async (req, res) => {
   res.json(await userService.setActive(paramId(req), isActive, req.user));
 });
 
+// ---- Marketing & Khách hàng, vận hành (ADR-005) ----
+adminRouter.use(marketingRouter);
+adminRouter.use(operationsRouter);
+adminRouter.use(advancedRouter); // ADR-006 giai đoạn 4–8
+adminRouter.use(financeAdminRouter); // ADR-006 giai đoạn 6: sổ quỹ, nhân sự, nhật ký, lãi/lỗ
+adminRouter.use(analyticsAdminRouter); // ADR-006 giai đoạn 8: menu engineering, phân tích
+
 // ---- Báo cáo (FEATURE-012), lịch sử đơn (Q-014), thu tiền ----
 function range(query) {
   const q = parse(z.object({ from: zDate(), to: zDate() }).passthrough(), query);
@@ -171,7 +194,7 @@ adminRouter.get('/orders', async (req, res) => {
   const { from, to } = range(req.query);
   const q = parse(
     z.object({
-      status: z.enum(['PENDING', 'PREPARING', 'COMPLETED', 'CANCELLED']).optional(),
+      status: z.enum(['PENDING', 'PREPARING', 'COMPLETED', 'CANCELLED', 'VOIDED']).optional(),
       type: z.enum(['DINE_IN', 'TAKE_AWAY']).optional(),
       page: z.coerce.number().int().min(1).default(1),
       pageSize: z.coerce.number().int().min(1).max(200).default(50),

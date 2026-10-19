@@ -5,34 +5,66 @@ import { sqlErrorNumber, withDeadlockRetry } from '../db.js';
 import { badRequest, conflict, fromSqlError, notFound } from '../errors.js';
 import * as ingredientsRepo from '../repositories/ingredientsRepo.js';
 import * as menuRepo from '../repositories/menuRepo.js';
+import * as modifiersRepo from '../repositories/modifiersRepo.js';
 import * as ordersRepo from '../repositories/ordersRepo.js';
 import * as reportsRepo from '../repositories/reportsRepo.js';
 import * as tablesRepo from '../repositories/tablesRepo.js';
 import { newQrToken } from '../utils/tokens.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
-import { refreshAvailability } from './menuService.js';
+import { menuChanged, refreshAvailability } from './menuService.js';
+import { invalidateCatalog } from './pricingService.js';
 import { addDays, eachDay, todayVn, vnDayStartUtc } from '../utils/time.js';
+import { invalidateItems as invalidateEtaItems } from './etaService.js';
+import { invalidateSchedules } from './scheduleService.js';
 
 const isDuplicate = (err) => [2627, 2601].includes(sqlErrorNumber(err));
 
+/** Sau mọi thay đổi ảnh hưởng giá/món trên menu: xóa cache bộ tính giá + báo trang khách tải lại. */
+function catalogChanged() {
+  invalidateCatalog();
+  menuChanged();
+}
+
 // ---------- Danh mục ----------
 export const listCategories = () => menuRepo.listCategories();
-export const createCategory = (d) => menuRepo.createCategory(d);
+
+export async function createCategory(d) {
+  const c = await menuRepo.createCategory(d);
+  invalidateSchedules();
+  catalogChanged();
+  return c;
+}
 
 export async function updateCategory(id, d) {
   const c = await menuRepo.updateCategory(id, d);
   if (!c) throw notFound('Không tìm thấy danh mục');
+  invalidateSchedules();
+  catalogChanged();
   return c;
 }
 
 /** ADR-004: trả 'DELETED' | 'ARCHIVED'. */
 export async function deleteCategory(id) {
-  return withDeadlockRetry(() => menuRepo.deleteCategory(id));
+  const r = await withDeadlockRetry(() => menuRepo.deleteCategory(id));
+  invalidateSchedules();
+  return r;
 }
 
 export async function deleteItem(id) {
-  const result = await withDeadlockRetry(() => menuRepo.removeItem(id));
+  let result;
+  try {
+    result = await withDeadlockRetry(() => menuRepo.removeItem(id));
+  } catch (err) {
+    const appErr = fromSqlError(err);
+    if (appErr?.code === 'IN_COMBO') {
+      appErr.message = `Món đang nằm trong combo: ${appErr.sqlMessage}. Hãy bỏ món khỏi các combo này (hoặc xóa combo) trước.`;
+      appErr.details = { combos: appErr.sqlMessage.split(', ') };
+    }
+    throw appErr ?? err;
+  }
+  invalidateCatalog();
   await refreshAvailability();
+  menuChanged();
   return result;
 }
 
@@ -61,17 +93,31 @@ async function assertCategory(categoryId) {
     throw badRequest('VALIDATION_ERROR', 'Danh mục không tồn tại', { fields: [{ path: 'categoryId', message: 'Danh mục không tồn tại' }] });
 }
 
+/** F-013: nhóm tùy chọn gán cho món phải tồn tại. */
+async function assertGroups(groupIds) {
+  if (!groupIds?.length) return;
+  const found = await modifiersRepo.existingGroupIds(groupIds);
+  if (groupIds.some((g) => !found.has(g))) {
+    throw badRequest('VALIDATION_ERROR', 'Nhóm tùy chọn không tồn tại', { fields: [{ path: 'groupIds', message: 'Nhóm tùy chọn không tồn tại' }] });
+  }
+}
+
 export async function createItem(d) {
   await assertCategory(d.categoryId);
+  await assertGroups(d.groupIds);
   const item = await menuRepo.createItem(d);
+  catalogChanged();
   refreshAvailability();
   return item;
 }
 
 export async function updateItem(id, d) {
   await assertCategory(d.categoryId);
+  await assertGroups(d.groupIds);
   const item = await menuRepo.updateItem(id, d);
   if (!item) throw notFound('Không tìm thấy món');
+  invalidateEtaItems();
+  catalogChanged();
   refreshAvailability();
   return item;
 }
@@ -94,6 +140,7 @@ export async function getBom(menuItemId) {
 export async function replaceBom(menuItemId, rows) {
   const item = await menuRepo.getItem(menuItemId);
   if (!item) throw notFound('Không tìm thấy món');
+  if (item.itemType === 'COMBO') throw badRequest('COMBO_HAS_NO_BOM', 'Combo không có định lượng riêng — kho trừ theo định lượng của từng món thành phần');
   const fields = [];
   const seen = new Set();
   const existing = await ingredientsRepo.existingIds(rows.map((r) => r.ingredientId).filter(Boolean));

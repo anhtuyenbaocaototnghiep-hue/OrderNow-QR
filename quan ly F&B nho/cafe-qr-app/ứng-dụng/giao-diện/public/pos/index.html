@@ -8,14 +8,16 @@
     <link rel="stylesheet" href="/css/pos.css" />
   </head>
   <body class="pos">
-    <!-- S-10 Dashboard quầy, S-11 chi tiết đơn, S-14 thu tiền bàn (FEATURE-006, FEATURE-007) -->
+    <!-- S-10 Dashboard quầy, S-11 chi tiết đơn, S-14 thu tiền bàn (FEATURE-006, FEATURE-007); gọi nhân viên, hội viên, giảm giá (ADR-005) -->
     <div class="banner offline" id="offline-banner" hidden>Mất kết nối — đơn mới sẽ được tải lại khi có mạng</div>
     <div class="banner late" id="late" hidden></div>
     <section class="pay-strip" id="pay-strip" hidden aria-label="Bàn gọi thanh toán"></section>
+    <section class="pay-strip call-strip" id="call-strip" hidden aria-label="Bàn gọi nhân viên"></section>
     <div class="pos-main">
       <div class="board" id="board">
         <section class="column col-pending" aria-label="Đơn mới">
           <h2>Mới <span class="count" id="count-PENDING">0</span></h2>
+          <div class="queue-eta small" id="queue-eta" aria-live="polite"></div>
           <div id="col-PENDING"></div>
         </section>
         <section class="column col-preparing" aria-label="Đang pha">
@@ -28,7 +30,10 @@
         </section>
       </div>
       <aside class="card tables-panel" aria-label="Bàn đang phục vụ">
-        <h2>Bàn đang phục vụ</h2>
+        <div class="panel-head">
+          <h2>Bàn đang phục vụ</h2>
+          <a class="btn btn-sm btn-primary" href="/pos/table-order" id="go-table-order" title="Gọi món tại bàn">+ Gọi món</a>
+        </div>
         <div id="tables"><p class="muted small">Đang tải…</p></div>
       </aside>
     </div>

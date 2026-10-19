@@ -1,0 +1,151 @@
+// S-33 Cài đặt quán (ADR-005): nhận đơn QR (F-020), ngưỡng giảm giá tay của nhân viên (D-14), làm tròn (D-7), ưu đãi đơn đầu (D-5).
+// ADR-006: quyền trưởng ca (D-24) + ngưỡng duyệt chi quỹ (D-23).
+import { staffApi } from '../api.js';
+import { mountAdminShell, toggle } from '../admin-shell.js';
+import { $, clear, el, errorMessage, money, toast } from '../ui.js';
+
+await mountAdminShell('settings');
+
+async function load() {
+  try {
+    render(await staffApi('/api/admin/settings'));
+  } catch (err) {
+    clear($('#content'), el('div', { class: 'alert danger' }, errorMessage(err)));
+  }
+}
+
+function render(s) {
+  let accepting = s.acceptingOrders;
+  const closedMessage = el('input', { class: 'input', maxlength: 200, value: s.closedMessage });
+  const maxPct = el('input', { class: 'input', type: 'number', min: 0, max: 100, value: s.staffMaxPercent });
+  const maxAmt = el('input', { class: 'input', type: 'number', min: 0, step: 1000, value: s.staffMaxAmount });
+  const round = el(
+    'select',
+    { class: 'input' },
+    [1, 100, 500, 1000].map((v) => el('option', { value: v, selected: v === s.roundTo }, v === 1 ? 'Không làm tròn' : `Làm tròn xuống ${money(v)}`)),
+  );
+  const firstPct = el('input', { class: 'input', type: 'number', min: 0, max: 50, value: s.firstOrderPercent });
+  const mgrPct = el('input', { class: 'input', type: 'number', min: 0, max: 100, value: s.managerMaxPercent });
+  const mgrAmt = el('input', { class: 'input', type: 'number', min: 0, step: 1000, value: s.managerMaxAmount });
+  const mgrCash = el('input', { class: 'input', type: 'number', min: 0, step: 10000, value: s.managerCashApproveMax });
+  const cashThreshold = el('input', { class: 'input', type: 'number', min: 0, step: 10000, value: s.cashApproveThreshold });
+  const sameShift = el('input', { type: 'checkbox', checked: s.managerRefundSameShiftOnly });
+  const costMethod = el(
+    'select',
+    { class: 'input', 'aria-label': 'Cách tính giá vốn' },
+    el('option', { value: 'AVG', selected: s.costMethod !== 'FIFO' }, 'Bình quân gia quyền'),
+    el('option', { value: 'FIFO', selected: s.costMethod === 'FIFO' }, 'FIFO theo lô (nguyên liệu theo lô)'),
+  );
+  const safety = el('input', { class: 'input', type: 'number', min: 0, max: 200, value: s.forecastSafetyPercent, 'aria-label': 'Tồn an toàn (%)' });
+  const card = (title, ...children) =>
+    el('div', { class: 'card', style: { maxWidth: '720px', marginBottom: '1rem' } }, el('h2', { style: { fontSize: '1rem' } }, title), ...children);
+  clear(
+    $('#content'),
+    card(
+      'Nhận đơn qua QR',
+      el(
+        'div',
+        { class: 'row' },
+        toggle(accepting, (v) => (accepting = v), 'Nhận đơn qua QR'),
+        el('span', {}, 'Khách được gửi đơn qua QR (tắt khi quá tải / sắp đóng cửa — quầy vẫn bán mang đi; nhân viên cũng bật/tắt được ở màn quầy)'),
+      ),
+      el('div', { class: 'field' }, el('label', {}, 'Thông báo khi tạm ngưng'), closedMessage),
+      el('p', { class: 'small muted' }, 'Giờ bán theo danh mục (ví dụ bánh chỉ bán 6:00–11:00) chỉnh ở Thực đơn → Sửa danh mục.'),
+    ),
+    card(
+      'Giảm giá tay của nhân viên',
+      el(
+        'div',
+        { class: 'form-grid' },
+        el('div', { class: 'field' }, el('label', {}, 'Tối đa % bill'), maxPct),
+        el('div', { class: 'field' }, el('label', {}, 'Tối đa số tiền (đ)'), maxAmt),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Nhân viên tự giảm khi không vượt cả hai ngưỡng; vượt ngưỡng cần tài khoản quản lý nhập để duyệt. Luôn bắt buộc ghi lý do.',
+      ),
+    ),
+    card(
+      'Trưởng ca & sổ quỹ',
+      el(
+        'div',
+        { class: 'form-grid' },
+        el('div', { class: 'field' }, el('label', {}, 'Trưởng ca giảm tay tối đa % bill'), mgrPct),
+        el('div', { class: 'field' }, el('label', {}, 'Trưởng ca giảm tay tối đa (đ)'), mgrAmt),
+        el('div', { class: 'field' }, el('label', {}, 'Khoản chi quỹ cần duyệt khi lớn hơn (đ)'), cashThreshold),
+        el('div', { class: 'field' }, el('label', {}, 'Trưởng ca duyệt chi tối đa (đ)'), mgrCash),
+      ),
+      el('label', { class: 'check' }, sameShift, 'Trưởng ca chỉ tự hoàn tiền cho lượt thu trong ca đang mở'),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Khoản chi lớn hơn ngưỡng hoặc thuộc danh mục "cần duyệt" chờ trưởng ca / quản lý duyệt; khoản lớn hơn mức duyệt của trưởng ca chỉ quản lý duyệt được.',
+      ),
+    ),
+    card(
+      'Kho & giá vốn',
+      el(
+        'div',
+        { class: 'form-grid' },
+        el('div', { class: 'field' }, el('label', {}, 'Cách tính giá vốn khi hoàn tất đơn'), costMethod),
+        el('div', { class: 'field' }, el('label', {}, 'Tồn an toàn khi đề xuất nhập (% nhu cầu)'), safety),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Bình quân: giá vốn = giá bình quân sau mỗi lần nhập. FIFO: nguyên liệu theo lô lấy giá của lô bị trừ (hết hạn trước dùng trước). Chỉ áp cho đơn hoàn tất sau khi đổi.',
+      ),
+    ),
+    card(
+      'Tính tiền',
+      el(
+        'div',
+        { class: 'form-grid' },
+        el('div', { class: 'field' }, el('label', {}, 'Làm tròn tổng thanh toán'), round),
+        el('div', { class: 'field' }, el('label', {}, 'Ưu đãi đơn đầu tiên của hội viên mới (%)'), firstPct),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Thứ tự: khuyến mãi món → khuyến mãi đơn → hội viên → giảm tay → làm tròn xuống. % hạng hội viên chỉnh ở Hội viên → Hạng hội viên.',
+      ),
+    ),
+    el(
+      'button',
+      {
+        class: 'btn btn-primary btn-lg',
+        type: 'button',
+        onclick: async () => {
+          try {
+            const r = await staffApi('/api/admin/settings', {
+              method: 'PUT',
+              body: {
+                acceptingOrders: accepting,
+                closedMessage: closedMessage.value.trim() || s.closedMessage,
+                staffMaxPercent: Number(maxPct.value),
+                staffMaxAmount: Number(maxAmt.value),
+                roundTo: Number(round.value),
+                firstOrderPercent: Number(firstPct.value),
+                managerMaxPercent: Number(mgrPct.value),
+                managerMaxAmount: Number(mgrAmt.value),
+                managerCashApproveMax: Number(mgrCash.value),
+                cashApproveThreshold: Number(cashThreshold.value),
+                managerRefundSameShiftOnly: sameShift.checked,
+                costMethod: costMethod.value,
+                forecastSafetyPercent: Number(safety.value),
+              },
+            });
+            toast('Đã lưu cài đặt', 'success');
+            render(r);
+          } catch (err) {
+            toast(errorMessage(err), 'error');
+          }
+        },
+      },
+      'Lưu cài đặt',
+    ),
+  );
+}
+
+load();

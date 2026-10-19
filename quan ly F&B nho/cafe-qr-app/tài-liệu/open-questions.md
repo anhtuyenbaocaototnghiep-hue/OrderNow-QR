@@ -167,6 +167,64 @@ Các câu hỏi Q-012 → Q-018 phát hiện khi đọc lại toàn bộ `tài-l
 - **Đề xuất (PROPOSED):** Đóng bàn trống khi phiên "không có đơn nào khác `CANCELLED`". Bỏ tham chiếu `sp_CloseEmptySession`; làm trong một câu `UPDATE Sessions … WHERE Status IN ('OPEN','PAYMENT_REQUESTED') AND NOT EXISTS (đơn ≠ CANCELLED)`.
 - **Chặn:** TASK-015 (Đóng bàn trống).
 
+## Q-019 — Ngưỡng giảm giá tay của nhân viên "10 % hoặc 20.000đ" hiểu thế nào?
+
+- **Nguồn:** skill `extend-features` D-14: "STAFF tối đa 10 % hoặc 20.000đ/bill".
+- **Cách hiểu:** (a) không vượt **cả hai** ngưỡng; (b) chỉ cần thỏa một trong hai; (c) % áp cho giảm theo %, số tiền áp cho giảm theo số tiền.
+- **Đã áp dụng (ADR-005):** phương án chặt hơn (a) — nhân viên tự giảm khi số giảm ≤ 10% bill (sau hội viên) **và** ≤ 20.000đ; vượt → quản lý nhập tài khoản duyệt. Ngưỡng sửa được ở Quản lý → Cài đặt.
+- **Chặn:** không. Nhóm xác nhận; nếu chọn (b)/(c) chỉ sửa hàm `manualNeedsApproval` (`src/pricing/pricing.js`) + test.
+
+## Q-020 — Hoàn tiền sau thu được phép trong bao lâu?
+
+- **Nguồn:** skill `extend-features` F-019: "chỉ trong ngày (hoặc ca) — mặc định cùng ngày quán".
+- **Đã áp dụng (ADR-005):** cùng **ngày thu tiền** theo giờ Việt Nam (`sp_RefundPayment`, lỗi `REFUND_WINDOW_EXPIRED`); tiền hoàn trừ vào ca **đang mở** lúc hoàn.
+- **Câu hỏi:** có cần giới hạn "cùng ca" (chặt hơn) hoặc cho quản lý hoàn đơn ngày trước không?
+- **Chặn:** không.
+
+## Q-021 — Gọi món tại bàn: các mặc định cần chủ quán xác nhận
+
+- **Nguồn:** yêu cầu chủ dự án 16/10/2026 (FEATURE-024): "nhân viên ra order rồi nhập thủ công vào máy và ghi chú trong bàn để nhớ". Yêu cầu không nói rõ các điểm dưới.
+- **Đã áp dụng (PROPOSED):**
+  1. Đơn nhân viên nhập vào thẳng **Đang pha** (không cần "Tiếp nhận").
+  2. Nhân viên nhập được cả khi **tạm ngưng nhận đơn QR** / ngoài **giờ bán** của danh mục (giống bán mang đi).
+  3. Ghi chú gắn với **lượt khách (phiên)**, hết khi thu tiền; không gắn cố định với bàn.
+  4. **Khách không thấy** ghi chú; không in lên hóa đơn.
+  5. Bàn đang có nhóm → nhân viên phải chọn nhóm hoặc "Nhóm mới" (không tự gộp).
+- **Câu hỏi:** giữ các mặc định này? Có cần ghi chú **cố định theo bàn** (ví dụ "bàn ngoài trời, hay mưa") hoặc in ghi chú lên phiếu pha không?
+- **Chặn:** không. Đổi (1) chỉ sửa `@AcceptNow`; đổi (2) thêm kiểm tra trong `orderService.submitByStaff`.
+
+## Q-022 — Lệch ma trận D-24 và các cách hiểu đã áp ở giai đoạn 4–8
+
+- **Nguồn:** skill `advanced-features` (ma trận quyền D-24, D-28, phần "Kiểm" của F-036); [ADR-006](quyết-định/ADR-006-mo-rong-giai-doan-4-8.md) bảng "Thích nghi theo hiện trạng repo"; FEATURE-009, FEATURE-018, FEATURE-033, FEATURE-036, FEATURE-038, FEATURE-039. Skill ghi "nguồn chính là docs", nên khi skill lệch docs hiện có thì làm theo docs và ghi lại ở đây.
+- **Trạng thái:** Đã áp phương án, chờ nhóm xác nhận (18/10/2026).
+- **Đã áp dụng:**
+  1. **STAFF vẫn mở / đóng ca.** Ma trận D-24 ghi STAFF ✘ mở/đóng ca, nhưng FEATURE-018 (ADR-005) cho nhân viên mở/đóng ca. Repo giữ theo docs: `shift.manage` cấp cho cả STAFF, MANAGER, ADMIN.
+  2. **STAFF ghi được sổ quỹ.** Ma trận D-24 ghi STAFF ✘ "chi quỹ ≤ ngưỡng", nhưng D-23 đã nêu ngưỡng duyệt. Repo cho STAFF ghi khoản (`cash.create`): khoản chi > 500.000đ hoặc thuộc danh mục "Khác (chi)" chờ trưởng ca / quản lý duyệt; khoản nhỏ hơn được duyệt ngay (BR-048, BR-049).
+  3. **"Lần đầu" ở D-28 hiểu chặt.** Thưởng giới thiệu chỉ xét **lượt thu đầu tiên** của người được giới thiệu (`VisitCount = 1`). Lượt đầu < 30.000đ thì không tặng, và các lượt sau cũng không tặng (BR-060).
+  4. **ADMIN cuối cùng tự hạ vai trò → 400.** Phần "Kiểm" của skill F-036 ghi "hạ ADMIN cuối cùng → 409 `LAST_ADMIN`". Repo vẫn trả `400 CANNOT_CHANGE_OWN_ROLE` (và `400 CANNOT_LOCK_SELF`) khi ai đó tự đổi vai trò / tự khóa, như FEATURE-009. `409 LAST_ADMIN` áp khi người khác hạ / khóa / xóa ADMIN cuối cùng, kể cả hai quản lý hạ quyền nhau cùng lúc (BR-047).
+  5. **Số dư điểm cũ không quy đổi.** Tỷ lệ tích điểm đổi từ D-5 (1 điểm / 1.000đ) sang D-27 (1 điểm / 10.000đ) ở migration `0029`. Số dư cũ giữ nguyên và ghi một dòng `ADJUST` "Số dư trước F-039" (ADR-006), nên điểm tích trước F-039 có giá trị gấp 10 lần điểm tích sau.
+  6. **Hoàn tiền không trả lại voucher.** FEATURE-039 quy định hoàn điểm / tem khi hoàn tiền, còn FEATURE-038 không nói gì về voucher. Code hiện tại (`sp_ReverseLoyalty`, `sp_RefundPayment`) không trả lại voucher đã dùng cho lượt thu bị hoàn.
+- **Câu hỏi:**
+  - (a) Giữ (1)(2) theo docs, hay siết đúng D-24: chỉ trưởng ca / quản lý mở/đóng ca; STAFF không ghi chi quỹ?
+  - (b) "Lần đầu" có nên hiểu là "lần đầu đạt ≥ 30.000đ"?
+  - (c) Có quy đổi số dư điểm cũ theo tỷ lệ mới (÷ 10) không?
+  - (d) Hoàn toàn bộ lượt thu có trả lại voucher (nếu còn hạn) không?
+- **Chặn:** không.
+  - Đổi (1)(2): sửa `PERMISSIONS['shift.manage']` / `PERMISSIONS['cash.create']` trong `ứng-dụng/máy-chủ/src/auth/permissions.js`; test ma trận quyền sinh từ bảng này nên tự kiểm theo.
+  - Đổi (3): sửa điều kiện bước 5 "Giới thiệu bạn" trong `sp_ApplyLoyalty` (`cơ-sở-dữ-liệu/thủ-tục/sp_Loyalty.sql`).
+  - Đổi (4): sửa `userService` (kiểm `LAST_ADMIN` trước `CANNOT_CHANGE_OWN_ROLE`).
+  - Đổi (5): thêm migration quy đổi kèm dòng `ADJUST`.
+  - Đổi (6): thêm bước trả voucher trong `sp_ReverseLoyalty`.
+  - Mỗi thay đổi cần cập nhật test tương ứng (`finance.test.js`, `loyalty.test.js`).
+
+## Q-023 — Sheet chia bill của khách mất chữ đang gõ ở ô "Tên phần" (E2E chia bill không ổn định)
+
+- **Nguồn:** phát hiện khi chạy E2E cho TASK-055 (F-046, 18/10/2026). Không thuộc F-046; TASK-055 ghi "không sửa luồng chia bill" nên **chưa sửa**.
+- **Hiện tượng:** sheet **Chia bill theo người** ở trang theo dõi đơn của khách (`ứng-dụng/giao-diện/public/js/pages/t-track.js`, `openSplit()` → `refresh()`) vẽ lại toàn bộ thân sheet mỗi khi có cập nhật realtime (đơn / chia bill đổi) và gắn lại ô "Tên phần". Ô mất focus đúng lúc khách đang gõ → các ký tự gõ sau đó bị mất; nếu ô còn trống, phần được lưu với tên mặc định **"Tôi"**. E2E "chia bill…" (`kiểm-thử/e2e/flow.spec.js`) vì vậy thỉnh thoảng fail (không ổn định).
+- **Rủi ro:** thấp (chỉ là tên hiển thị của phần, tiền không sai), nhưng gây khó chịu cho khách và làm E2E chập chờn.
+- **Đề xuất (PROPOSED):** nhớ phần tử đang focus (và vị trí con trỏ) trước khi vẽ lại rồi focus lại ô "Tên phần" sau khi vẽ; hoặc không vẽ lại khối "Tạo phần của tôi" khi khách chưa tạo phần. Sửa kèm chạy lại E2E "chia bill…" nhiều lần.
+- **Chặn:** không. Cần nhóm đồng ý mở task riêng (đụng luồng chia bill F-026).
+
 ---
 
 # Phụ lục — Những điểm tài liệu nguồn đã **không** tự quyết

@@ -17,3 +17,9 @@ Tên file: `tài-liệu/kế-hoạch/TASK-0xx-plan.md`.
 ```
 
 Không cần chờ người duyệt mọi plan nếu task đã được giao quyền triển khai rõ ràng. Chỉ hỏi khi vấn đề vượt phạm vi task hoặc chưa được cấp quyền.
+
+## Plan đã có
+
+- [TASK-002-017-plan.md](TASK-002-017-plan.md) — MVP.
+- [TASK-023-033-plan.md](TASK-023-033-plan.md) — mở rộng giai đoạn 2 (skill `extend-features`, ADR-005).
+- [TASK-035-054-plan.md](TASK-035-054-plan.md) — mở rộng giai đoạn 4–8 (skill `advanced-features`, ADR-006).

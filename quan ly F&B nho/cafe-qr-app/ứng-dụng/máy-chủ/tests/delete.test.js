@@ -39,6 +39,7 @@ before(async () => {
   api = supertest(server);
   admin = await login('admin', 'Admin@123');
   staff = await login('staff1', 'Staff@123');
+  await api.post('/api/shifts/open').set(auth(staff)).send({ openingCash: 0 }); // F-018: thu tiền cần ca mở
 });
 
 after(async () => {

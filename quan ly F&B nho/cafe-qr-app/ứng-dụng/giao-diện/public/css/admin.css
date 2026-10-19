@@ -256,3 +256,405 @@ body.admin {
     border-color: #999;
   }
 }
+
+/* ---------- ADR-005 ---------- */
+.admin-side .nav-group {
+  margin: 0.9rem 0 0.25rem;
+  padding: 0 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.admin-side {
+  overflow-y: auto;
+}
+.pill {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--c-surface-2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0.1rem 0.2rem 0.1rem 0;
+}
+.pill.on {
+  background: var(--c-success-50);
+  color: var(--c-success);
+}
+.pill.off {
+  background: var(--c-danger-50);
+  color: var(--c-danger);
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.6rem 1rem;
+}
+.form-grid .field {
+  margin: 0;
+}
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.days label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+.check-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.6rem;
+}
+.check-list label {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.15rem 0;
+}
+.sub-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr auto auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+.opt-card {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.opt-card .bom-mini {
+  display: grid;
+  grid-template-columns: 1fr 7rem auto;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+.rank {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  background: var(--c-primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.neg {
+  color: var(--c-danger);
+}
+.pos-val {
+  color: var(--c-success);
+}
+.receipt-row {
+  display: grid;
+  grid-template-columns: 1fr 9rem 10rem auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+@media (max-width: 700px) {
+  .receipt-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ADR-006: lịch thực đơn (F-040) */
+.schedule-targets .row {
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.schedule-targets select {
+  min-height: 30px;
+  padding: 0.1rem 0.4rem;
+}
+.pill.danger {
+  background: var(--c-danger-50);
+  color: var(--c-danger);
+}
+.preview-menu ul {
+  margin: 0.2rem 0 0.6rem;
+  padding-left: 1.1rem;
+}
+
+/* ADR-006 giai đoạn 5: thất thoát / sắp hết trước ngày giao (tô đỏ), biểu đồ dự báo, phiếu đặt hàng in */
+tr.loss-flag td {
+  background: var(--c-danger-50);
+}
+svg.chart rect.bar.forecast {
+  fill: var(--c-accent);
+  opacity: 0.85;
+}
+svg.chart text.axis {
+  font-size: 10px;
+  fill: var(--c-muted);
+}
+.po-print .po-sheet {
+  max-width: 760px;
+  margin: 1.5rem auto;
+  background: var(--c-surface);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+}
+.po-print .po-actions {
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+@media print {
+  .po-print .po-sheet {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* ADR-006 giai đoạn 6: lịch làm tuần (kéo thả), lãi/lỗ, nhật ký thao tác */
+.kpi.neg .value {
+  color: var(--c-danger);
+}
+.kpi.pos .value {
+  color: var(--c-success);
+}
+table.roster td.roster-cell {
+  vertical-align: top;
+  min-width: 7.5rem;
+  height: 3.2rem;
+}
+table.roster .today {
+  background: var(--c-primary-50);
+}
+table.roster td.drop {
+  outline: 2px dashed var(--c-primary);
+  outline-offset: -3px;
+}
+.roster-chip {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: grab;
+  text-align: left;
+}
+.roster-chip.danger {
+  border-color: var(--c-danger);
+}
+.roster-chip.ok {
+  border-color: var(--c-success);
+}
+.roster-add {
+  border: 1px dashed var(--c-border);
+  background: transparent;
+  color: var(--c-muted);
+  border-radius: var(--radius-sm);
+  width: 100%;
+  cursor: pointer;
+  opacity: 0.45;
+}
+.roster-cell:hover .roster-add,
+.roster-add:focus-visible {
+  opacity: 1;
+}
+svg.chart rect.bar.pnl-rev {
+  fill: var(--c-primary);
+}
+svg.chart rect.bar.pnl-cogs {
+  fill: var(--c-accent);
+}
+svg.chart rect.bar.pnl-cost {
+  fill: var(--c-muted);
+}
+svg.chart .pnl-breakeven {
+  stroke: var(--c-danger);
+  stroke-width: 2;
+  stroke-dasharray: 6 4;
+}
+svg.chart text.pnl-breakeven-label {
+  fill: var(--c-danger);
+  font-weight: 700;
+}
+.legend {
+  gap: 1rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+.legend .swatch {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 2px;
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+}
+.swatch.pnl-rev {
+  background: var(--c-primary);
+}
+.swatch.pnl-cogs {
+  background: var(--c-accent);
+}
+.swatch.pnl-cost {
+  background: var(--c-muted);
+}
+.swatch.pnl-be {
+  background: var(--c-danger);
+  height: 3px;
+}
+pre.json {
+  background: var(--c-surface-2);
+  padding: 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  max-height: 22rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+ul.plain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+ul.plain-list li {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+
+/* ADR-006 giai đoạn 8: menu engineering, heatmap, dự báo, dashboard "Hôm nay" (≤ 400 px không cuộn ngang) */
+.up {
+  color: var(--c-success);
+}
+.down {
+  color: var(--c-danger);
+}
+.badge.me-star {
+  background: var(--c-success-50);
+  color: var(--c-success);
+}
+.badge.me-plow {
+  background: var(--c-info-50);
+  color: var(--c-info);
+}
+.badge.me-puzzle {
+  background: var(--c-warning-50);
+  color: var(--c-warning);
+}
+.badge.me-dog {
+  background: var(--c-danger-50);
+  color: var(--c-danger);
+}
+.me-grid {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+@media (max-width: 1000px) {
+  .me-grid {
+    grid-template-columns: 1fr;
+  }
+}
+svg.chart circle.dot {
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+svg.chart circle.me-star {
+  fill: var(--c-success);
+}
+svg.chart circle.me-plow {
+  fill: var(--c-info);
+}
+svg.chart circle.me-puzzle {
+  fill: var(--c-warning);
+}
+svg.chart circle.me-dog {
+  fill: var(--c-danger);
+}
+svg.chart .fc-hist {
+  fill: none;
+  stroke: var(--c-primary);
+  stroke-width: 2;
+}
+svg.chart .fc-line {
+  fill: none;
+  stroke: var(--c-accent);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 4;
+}
+svg.chart .fc-band {
+  fill: var(--c-accent);
+  opacity: 0.18;
+}
+table.heatmap {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 0.75rem;
+}
+table.heatmap th {
+  color: var(--c-muted);
+  font-weight: 600;
+  padding: 0.2rem 0.3rem;
+}
+table.heatmap td {
+  --heat: 0;
+  min-width: 2.2rem;
+  height: 1.9rem;
+  text-align: center;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c-primary) calc(var(--heat) * 100%), var(--c-surface-2));
+  color: var(--c-text);
+}
+table.heatmap td.peak {
+  outline: 2px solid var(--c-accent);
+  font-weight: 800;
+  color: #fff;
+}
+.today-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.today-card h2,
+.today-todo h2 {
+  font-size: 0.95rem;
+  margin: 0 0 0.35rem;
+  color: var(--c-muted);
+}
+.today-card .big {
+  font-size: 1.7rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.today-card ul,
+.today-card ol,
+.today-todo ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+.today-todo li {
+  padding: 0.2rem 0;
+}
+@media (max-width: 480px) {
+  .admin-main {
+    padding: 0.75rem 16px 2rem;
+  }
+  .admin-head {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}

@@ -1,0 +1,44 @@
+# FEATURE-023 — Nhập kho & kiểm kê
+
+> **Nguồn:** skill `extend-features` §4 F-023. Quyết định: [ADR-005](../quyết-định/ADR-005-mo-rong-giai-doan-2.md).
+
+- **Status:** CONFIRMED (ADR-005) · Triển khai: READY_FOR_REVIEW (16/10/2026)
+- **Actor:** ADMIN.
+- **Màn hình:** Quản lý → **Nhập kho & kiểm kê** (`/admin/stock`) có 3 tab:
+  - **Nhập kho:** phiếu mới (nhà cung cấp, dòng nguyên liệu, SL, giá nhập); danh sách phiếu theo ngày.
+  - **Kiểm kê:** tạo phiếu DRAFT → nhập số đếm → lưu nháp / chốt / xóa.
+  - **Giá vốn & hao hụt.**
+- **Dữ liệu:** migration `0013_nhap_kho_kiem_ke.sql`.
+  - `StockReceipts` + `StockReceiptLines`, `Stocktakes` + `StocktakeLines`.
+  - `Ingredients.LastUnitCost`.
+  - `InventoryTransactions.StockReceiptId/StocktakeId`.
+  - SP: `sp_ReceiveStock`, `sp_PostStocktake`, `sp_AdjustInventory` (khóa khi đang kiểm kê).
+- **Quy tắc:**
+  - **Phiếu nhập:**
+    - Mỗi dòng cộng tồn, ghi `IMPORT`, cập nhật giá nhập gần nhất — một transaction.
+    - SL > 0; một nguyên liệu một dòng; nguyên liệu đã xóa → 400.
+    - Nhập kho xong món "hết" tự bán lại.
+  - **Phiếu kiểm kê:**
+    - Chụp tồn lúc tạo phiếu.
+    - Khi đang DRAFT, nguyên liệu trong phiếu bị khóa điều chỉnh tay → `409 STOCKTAKE_LOCKED`.
+    - Chốt phiếu:
+      - chênh lệch tính theo tồn **thực tế lúc chốt** (đơn hoàn tất trong lúc đếm vẫn đúng);
+      - tạo `ADJUST` cho dòng có chênh lệch, lưu giá nhập để tính hao hụt;
+      - thiếu số đếm → `400 STOCKTAKE_INCOMPLETE`;
+      - số đếm < phần đang giữ cho đơn → `409 BELOW_RESERVED` (kèm tên).
+    - Phiếu đã chốt không sửa / chốt lại được.
+  - **Báo cáo:**
+    - Giá vốn món = Σ BOM × giá nhập gần nhất. Thiếu giá một nguyên liệu → "—".
+    - Lãi gộp theo món trong khoảng ngày (doanh thu trước chiết khấu hội viên/giảm tay).
+    - Hao hụt = Σ chênh lệch × giá nhập.
+- **API:**
+  - `GET/POST /api/admin/stock-receipts`, `GET /api/admin/stock-receipts/{id}`.
+  - `GET/POST /api/admin/stocktakes`, `GET/DELETE /api/admin/stocktakes/{id}`.
+  - `PUT /api/admin/stocktakes/{id}/lines`, `POST /api/admin/stocktakes/{id}/post`.
+  - `GET /api/admin/reports/costs?from&to`.
+- **Acceptance Criteria**
+  - AC-023-01: Nhập 1.000 ml sữa tươi giá 30đ/ml → tồn +1.000, có `IMPORT` gắn phiếu, giá nhập gần nhất = 30.
+  - AC-023-02: Phiếu kiểm kê DRAFT → điều chỉnh tay 409. Chốt (đếm thiếu 100 ml) → `ADJUST` −100, hao hụt 3.000đ. Chốt lại → 409.
+  - AC-023-03: Số đếm thấp hơn phần đang giữ → 409 kèm tên nguyên liệu.
+  - AC-023-04: Báo cáo giá vốn: "Sữa tươi đường" (200 ml × 30 + 10 g × 20 = 6.200đ/ly), bán 2 ly 50.000đ → giá vốn 12.400đ, lãi gộp 37.600đ.
+- **Bằng chứng:** `tests/operations.test.js` → "Nhập kho & kiểm kê (F-023)".

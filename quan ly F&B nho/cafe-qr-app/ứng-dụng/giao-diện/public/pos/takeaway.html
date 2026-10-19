@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/customer.css" />
   </head>
   <body class="pos">
-    <!-- S-13 Bán mang đi — mục riêng, thu tiền mặt ngay tại quầy (FEATURE-008, ADR-000 D-3) -->
+    <!-- S-13 Bán mang đi — mục riêng, thu tiền mặt ngay tại quầy (FEATURE-008, ADR-000 D-3); combo, tùy chọn, hội viên, giảm giá (ADR-005) -->
     <div class="banner offline" id="offline-banner" hidden>Mất kết nối</div>
     <div class="takeaway">
       <section aria-label="Chọn món">
@@ -26,6 +26,8 @@
       <aside class="card cart-panel" aria-label="Giỏ mang đi">
         <h2 style="font-size: 1.1rem">Giỏ mang đi</h2>
         <div id="lines"></div>
+        <div id="billing-slot"></div>
+        <div id="breakdown" class="breakdown"></div>
         <div class="due"><span>Tổng</span><span id="total">0đ</span></div>
         <form id="pay-form" novalidate>
           <label for="received">Tiền khách đưa</label>

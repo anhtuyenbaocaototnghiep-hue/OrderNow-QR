@@ -216,8 +216,11 @@ body.customer .toasts {
   cursor: pointer;
   color: var(--c-text);
 }
-.c-choice strong {
+.c-choice strong,
+.c-choice span {
   display: block;
+}
+.c-choice strong {
   font-size: 1.05rem;
   color: var(--c-primary);
 }
@@ -338,4 +341,213 @@ body.customer .toasts {
 }
 .popup-done .big {
   font-size: 3rem;
+}
+
+/* ---------- ADR-005: Ưu đãi / Gợi ý / Combo / tùy chọn / hội viên / gọi nhân viên ---------- */
+.banner.closed {
+  background: var(--c-warning-50);
+  color: var(--c-warning);
+  border-bottom: 1px solid #f0d7a8;
+  font-weight: 700;
+}
+.chip.special {
+  border-color: var(--c-accent);
+}
+.tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--c-primary-50);
+  color: var(--c-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.tag.promo {
+  background: var(--c-danger-50);
+  color: var(--c-danger);
+}
+.save {
+  color: var(--c-success);
+  font-weight: 600;
+}
+.promo-card {
+  border: 1px dashed var(--c-accent);
+  background: var(--c-warning-50);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.6rem;
+}
+.qty-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  margin-right: 0.35rem;
+  border-radius: 999px;
+  background: var(--c-primary);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.c-control {
+  display: flex;
+  align-items: center;
+}
+.opt-labels,
+.line-opts {
+  display: block;
+  color: var(--c-primary);
+  font-size: 0.82rem;
+}
+.opt-picker .opt-group {
+  border: 0;
+  margin: 0 0 0.9rem;
+  padding: 0;
+}
+.opt-picker legend {
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+.opt-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.2rem;
+  border-bottom: 1px solid var(--c-border);
+  font-weight: 500;
+  cursor: pointer;
+}
+.opt-row input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--c-primary);
+}
+.opt-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+  padding-top: 0.4rem;
+}
+.member-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  border: 1px dashed var(--c-accent);
+  background: var(--c-warning-50);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.9rem;
+  font: inherit;
+  color: var(--c-text);
+  cursor: pointer;
+}
+.member-box.on {
+  border-style: solid;
+  border-color: #b6dcc4;
+  background: var(--c-success-50);
+  cursor: default;
+}
+.cart-sub {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.15rem 0.25rem;
+  font-size: 0.92rem;
+}
+.bill {
+  margin-top: 0.5rem;
+}
+
+/* ADR-006 giai đoạn 4: gọi lại đơn + yêu thích (F-045), thời gian chờ (F-025), chia bill (F-026) */
+.recall-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.6rem;
+  align-items: center;
+  background: var(--c-primary-50);
+  border: 1px solid #ecd2c2;
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem;
+  margin: 0.6rem 0;
+}
+.recall-card > .small.muted {
+  grid-column: 1 / -1;
+}
+.fav-strip {
+  margin: 0.4rem 0 0.2rem;
+}
+.fav-btn {
+  border: 0;
+  background: transparent;
+  color: var(--c-danger);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 0.3rem;
+  align-self: flex-start;
+}
+.eta {
+  color: var(--c-info);
+  font-weight: 600;
+}
+.alert.eta {
+  margin-bottom: 0.6rem;
+}
+.split-summary {
+  margin-top: 0.6rem;
+}
+.split-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.split-line.mine {
+  background: var(--c-success-50);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+/* F-039 / F-038: điểm, tem, voucher của hội viên trên màn khách */
+.member-box .loyalty-lines {
+  margin-top: 0.3rem;
+  line-height: 1.45;
+}
+
+/* F-047 Thẻ thành viên (ADR-008 D-37) */
+.member-box .link-btn {
+  margin-top: 0.35rem;
+  padding: 0;
+}
+.member-card .card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--c-primary-50);
+  border-radius: var(--radius);
+  padding: 0.8rem 0.9rem;
+}
+.member-card .card-points strong {
+  font-size: 1.6rem;
+  color: var(--c-primary);
+}
+.member-card .card-section h3 {
+  margin: 0.4rem 0 0.3rem;
+  font-size: 1rem;
+}
+.member-card .card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.member-card .card-list li {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.member-card .card-list li:last-child {
+  border-bottom: 0;
 }

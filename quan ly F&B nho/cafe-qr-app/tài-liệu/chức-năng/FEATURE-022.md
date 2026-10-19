@@ -1,0 +1,42 @@
+# FEATURE-022 — Giảm giá tay trên bill
+
+> **Nguồn:** skill `extend-features` §4 F-022. Quyết định: [ADR-005](../quyết-định/ADR-005-mo-rong-giai-doan-2.md) D-7, D-14. Câu hỏi còn mở: [Q-019](../open-questions.md) (cách hiểu ngưỡng).
+
+- **Status:** CONFIRMED (ADR-005) · Triển khai: READY_FOR_REVIEW (16/10/2026)
+- **Actor:** STAFF (trong ngưỡng), ADMIN (mọi mức, tự duyệt).
+- **Màn hình:**
+  - Mục "Hội viên · giảm giá" trong drawer Thu tiền bàn và màn Bán mang đi: mức giảm (đ hoặc %) + lý do.
+  - Vượt ngưỡng → hiện ô tài khoản + mật khẩu quản lý.
+  - Số xem trước (breakdown) do server tính.
+- **Dữ liệu:**
+  - `Payments.ManualDiscount`, `ManualReason`, `ApprovedBy` (migration `0009_giam_gia_tay.sql`). CHECK: có giảm thì phải có lý do.
+  - `Settings.discount.staff_max_percent` (10), `discount.staff_max_amount` (20.000).
+- **Quy tắc:**
+  - Giảm tay tính **sau** chiết khấu hội viên, trước làm tròn (D-7).
+    - Theo %: tính trên số còn lại sau hội viên.
+    - Không vượt số còn lại; không âm.
+  - Bắt buộc lý do (400).
+  - Nhân viên tự giảm khi **không vượt cả hai** ngưỡng (10% và 20.000đ). Vượt → cần `adminUsername/adminPassword` của tài khoản quản lý đang hoạt động.
+    - Thiếu → `403 ADMIN_APPROVAL_REQUIRED`.
+    - Sai, hoặc là tài khoản nhân viên → `403 ADMIN_APPROVAL_INVALID`.
+    - Thành công → lưu `ApprovedBy`.
+  - Xem trước (`settle/preview`, `takeaway/quote`) trả `needsApproval`.
+  - POS gửi kèm `expectedAmountDue`. Nếu lệch số server tính → `409 AMOUNT_CHANGED`.
+- **API:**
+  - `POST /api/sessions/{id}/settle/preview`.
+  - `POST /api/sessions/{id}/settle`.
+  - `POST /api/orders/takeaway/quote`, `POST /api/orders/takeaway`.
+  - Các API trên nhận thêm `manualDiscount { kind: AMOUNT | PERCENT, value }`, `manualReason`, `adminUsername`, `adminPassword`.
+- **Báo cáo:**
+  - Báo cáo → Marketing: "Giảm giá tay theo nhân viên / ngày" (kèm người duyệt).
+  - Phiếu chốt ca: tổng giảm tay.
+- **Acceptance Criteria**
+  - AC-022-01: Bill 100.000đ giảm 10% "Khách quen" → thu 90.000đ, không ghi người duyệt.
+  - AC-022-02: Giảm 20.000đ trên bill 100.000đ (vượt 10%):
+    - không có quản lý → 403;
+    - sai mật khẩu hoặc tài khoản nhân viên → 403;
+    - đúng → thu 80.000đ, ghi người duyệt.
+  - AC-022-03: Thiếu lý do → 400.
+- **Bằng chứng:**
+  - `tests/members.test.js` → "Giảm giá tay (F-022)".
+  - `tests/pricing.test.js` (giảm tay, ngưỡng).

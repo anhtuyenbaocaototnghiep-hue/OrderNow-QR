@@ -5,11 +5,13 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import { request } from '../db.js';
 import { optionalStaff, requireStaff } from '../middleware/auth.js';
-import { loginLimiter, orderLimiter } from '../middleware/rateLimit.js';
-import { paramGuid, paramId, parse, zGuid, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
+import { loginLimiter, memberLimiters, orderLimiter } from '../middleware/rateLimit.js';
+import { paramGuid, paramId, parse, zGuid, zId, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
+import * as memberService from '../services/memberService.js';
 import * as menuService from '../services/menuService.js';
 import * as orderService from '../services/orderService.js';
 import * as sessionService from '../services/sessionService.js';
+import * as staffCallService from '../services/staffCallService.js';
 import * as userService from '../services/userService.js';
 
 export const publicRouter = express.Router();
@@ -32,9 +34,42 @@ publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
 publicRouter.get('/auth/me', requireStaff, (req, res) => res.json({ user: req.user, shop: config.shop }));
 
 // ---- Menu (FEATURE-002) ----
-publicRouter.get('/menu', async (_req, res) => {
+// Quầy gọi kèm Bearer → thấy cả danh mục ngoài giờ bán (bán mang đi); khách chỉ thấy danh mục đang trong giờ (F-020)
+publicRouter.get('/menu', optionalStaff, async (req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json({ shop: { name: config.shop.name }, categories: await menuService.getPublicMenu() });
+  res.json({ shop: { name: config.shop.name }, ...(await menuService.getPublicMenu({ staff: Boolean(req.user) })) });
+});
+
+// ---- Hội viên (FEATURE-014): khách thấy tên che; quầy (Bearer) thấy tên đầy đủ. Giới hạn tra cứu D-6 ----
+const zPhone = () => z.string().trim().min(1, 'Nhập số điện thoại').max(20);
+publicRouter.post('/members/lookup', optionalStaff, ...memberLimiters, async (req, res) => {
+  const { phone } = parse(z.object({ phone: zPhone() }), req.body);
+  res.json(await memberService.lookup(phone, { staff: Boolean(req.user) }));
+});
+
+publicRouter.post('/members', optionalStaff, ...memberLimiters, async (req, res) => {
+  const body = parse(
+    z.object({
+      phone: zPhone(),
+      fullName: zText(100).min(2, 'Nhập họ tên'),
+      consent: z.boolean().optional(),
+      referrerPhone: z.string().trim().max(20).optional().nullable(),
+    }),
+    req.body,
+  );
+  res.status(201).json(await memberService.register(body, { staff: Boolean(req.user) }));
+});
+
+publicRouter.post('/sessions/:id/member', optionalStaff, ...memberLimiters, async (req, res) => {
+  const body = parse(
+    z.object({ phone: zPhone().optional(), memberId: zId().optional() }).refine((b) => b.phone || b.memberId, 'Nhập số điện thoại'),
+    req.body,
+  );
+  res.json({ member: await memberService.attachToSession(paramGuid(req), body, { user: req.user, clientToken: req.clientToken }) });
+});
+
+publicRouter.delete('/sessions/:id/member', optionalStaff, async (req, res) => {
+  res.json(await memberService.detachFromSession(paramGuid(req), { user: req.user, clientToken: req.clientToken }));
 });
 
 // ---- Phiên khách (FEATURE-001, 004, 005) ----
@@ -63,7 +98,19 @@ publicRouter.post('/sessions/:id/request-payment', async (req, res) => {
   res.json(await sessionService.requestPayment(paramGuid(req), req.clientToken));
 });
 
+// ---- Gọi nhân viên (FEATURE-021): 60 giây/phiên ----
+publicRouter.post('/sessions/:id/call-staff', async (req, res) => {
+  const body = parse(z.object({ type: z.enum(['STAFF']).default('STAFF'), message: zText(100).optional().nullable() }), req.body ?? {});
+  res.status(201).json(await staffCallService.call(paramGuid(req), body.message || null, req.clientToken));
+});
+
 // ---- Đơn khách (FEATURE-003) ----
+// Báo giá giỏ (khuyến mãi, combo, tùy chọn) — cùng bộ tính với lúc gửi; FE không tự tính tiền (ADR-005)
+publicRouter.post('/orders/quote', async (req, res) => {
+  const { items } = parse(z.object({ items: zOrderItems() }), req.body);
+  res.json(await orderService.quoteItems(items));
+});
+
 publicRouter.post('/orders', orderLimiter, async (req, res) => {
   const body = parse(z.object({ sessionId: zGuid(), items: zOrderItems(), note: zText(200).optional().nullable() }), req.body);
   const key = parse(z.string().max(100).optional(), req.get('idempotency-key') || undefined);

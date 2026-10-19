@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quầy — Ca & hoàn tiền</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/pos.css" />
+  </head>
+  <body class="pos">
+    <!-- S-15 Ca tiền mặt: mở/đóng ca, phiếu chốt ca (FEATURE-018); hoàn tiền sau thu (FEATURE-019) -->
+    <div class="banner offline" id="offline-banner" hidden>Mất kết nối</div>
+    <main class="pos-page" id="main" aria-live="polite"><p class="muted">Đang tải…</p></main>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script type="module" src="/js/pages/pos-shift.js"></script>
+  </body>
+</html>

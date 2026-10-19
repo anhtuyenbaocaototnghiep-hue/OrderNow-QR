@@ -1,5 +1,6 @@
 // S-25 Báo cáo (FEATURE-012): khoảng ngày hợp lệ (BR-005), KPI, biểu đồ theo ngày/giờ, món bán chạy, nguyên liệu sắp hết,
 // thu tiền theo nhân viên; tab Lịch sử đơn (Q-014/ADR-003) và Thu tiền.
+// ADR-005: doanh thu = tiền thực thu − hoàn tiền; tab Marketing (hội viên, chiết khấu theo loại, khuyến mãi, giảm tay).
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { printUrl } from '../print.js';
@@ -63,6 +64,7 @@ const tabs = el(
     ['revenue', 'Doanh thu'],
     ['history', 'Lịch sử đơn'],
     ['payments', 'Thu tiền'],
+    ['marketing', 'Marketing & khách hàng'],
   ].map(([key, label]) =>
     el(
       'button',
@@ -106,6 +108,7 @@ async function load() {
   try {
     if (state.tab === 'revenue') renderRevenue(await staffApi(`/api/admin/reports/revenue?from=${state.from}&to=${state.to}`));
     else if (state.tab === 'history') await loadHistory();
+    else if (state.tab === 'marketing') renderMarketing(await staffApi(`/api/admin/reports/marketing?from=${state.from}&to=${state.to}`));
     else renderPayments(await staffApi(`/api/admin/payments?from=${state.from}&to=${state.to}`));
   } catch (err) {
     clear(body, el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -165,7 +168,13 @@ function renderRevenue(r) {
     el(
       'div',
       { class: 'kpis' },
-      el('div', { class: 'card kpi' }, el('div', { class: 'label' }, 'Tổng doanh thu'), el('div', { class: 'value' }, money(r.totalRevenue))),
+      el(
+        'div',
+        { class: 'card kpi' },
+        el('div', { class: 'label' }, 'Tổng doanh thu'),
+        el('div', { class: 'value' }, money(r.totalRevenue)),
+        r.refunded ? el('div', { class: 'small muted' }, `đã trừ hoàn tiền ${money(r.refunded)}`) : null,
+      ),
       el('div', { class: 'card kpi' }, el('div', { class: 'label' }, 'Số hóa đơn (đơn đã thu)'), el('div', { class: 'value' }, num(r.orderCount))),
       el(
         'div',
@@ -189,7 +198,11 @@ function renderRevenue(r) {
         r.byHour ? `Doanh thu theo giờ — ${fmtDate(r.from)}` : `Doanh thu theo ngày — ${fmtDate(r.from)} đến ${fmtDate(r.to)}`,
       ),
       barChart(points),
-      el('p', { class: 'muted small' }, 'Tính theo ngày thanh toán (giờ Việt Nam); không gồm đơn đã hủy hoặc chưa thu tiền.'),
+      el(
+        'p',
+        { class: 'muted small' },
+        'Tiền thực thu theo ngày thanh toán (giờ Việt Nam), đã trừ khuyến mãi / hội viên / giảm giá và hoàn tiền; không gồm đơn đã hủy hoặc chưa thu.',
+      ),
     ),
     el(
       'div',
@@ -444,8 +457,8 @@ function renderPayments(list) {
               el(
                 'tr',
                 {},
-                ['Thời gian', 'Bàn / đơn', 'Phải thu', 'Khách đưa', 'Tiền thừa', 'Thu ngân'].map((h, i) =>
-                  el('th', { class: i >= 2 && i <= 4 ? 'num' : '' }, h),
+                ['Thời gian', 'Bàn / đơn', 'Giảm', 'Phải thu', 'Khách đưa', 'Tiền thừa', 'Đã hoàn', 'Thu ngân'].map((h, i) =>
+                  el('th', { class: i >= 2 && i <= 6 ? 'num' : '' }, h),
                 ),
               ),
             ),
@@ -457,16 +470,123 @@ function renderPayments(list) {
                   'tr',
                   {},
                   el('td', { class: 'nowrap' }, dateTime(p.paidAt)),
-                  el('td', {}, p.orderCode ? `${p.target} · #${p.orderCode}` : p.target),
+                  el(
+                    'td',
+                    {},
+                    p.orderCode ? `${p.target} · #${p.orderCode}` : p.target,
+                    p.member ? el('div', { class: 'small muted' }, `⭐ ${p.member}`) : null,
+                    p.manualReason ? el('div', { class: 'small muted' }, `Giảm tay: ${p.manualReason}`) : null,
+                  ),
+                  el('td', { class: 'num' }, p.discount ? `−${money(p.discount)}` : '—'),
                   el('td', { class: 'num' }, money(p.amountDue)),
                   el('td', { class: 'num' }, money(p.amountReceived)),
                   el('td', { class: 'num' }, money(p.changeGiven)),
+                  el('td', { class: 'num' }, p.refunded ? money(p.refunded) : '—'),
                   el('td', {}, p.receivedBy),
                 ),
               ),
             ),
           ),
         ),
+  );
+}
+
+// ---------- Marketing & khách hàng (ADR-005) ----------
+function renderMarketing(r) {
+  const kpi = (label, value, sub) =>
+    el(
+      'div',
+      { class: 'card kpi' },
+      el('div', { class: 'label' }, label),
+      el('div', { class: 'value' }, value),
+      sub ? el('div', { class: 'small muted' }, sub) : null,
+    );
+  const mv = r.memberVsWalkin;
+  const total = mv.member.amount + mv.walkin.amount;
+  const share = total ? Math.round((1000 * mv.member.amount) / total) / 10 : 0;
+  clear(
+    body,
+    el(
+      'div',
+      { class: 'kpis' },
+      kpi('Hội viên mới', num(r.newMemberTotal)),
+      kpi('Doanh thu hội viên', money(mv.member.amount), `${mv.member.payments} lượt · ${share}% tổng`),
+      kpi('Doanh thu khách lẻ', money(mv.walkin.amount), `${mv.walkin.payments} lượt`),
+      kpi('Quay lại trong 30 ngày', `${r.return30.rate}%`, `${r.return30.returning}/${r.return30.activeMembers} hội viên ghé ≥ 2 lần`),
+    ),
+    el(
+      'div',
+      { class: 'grid-2', style: { gridTemplateColumns: '1fr 1fr' } },
+      el(
+        'div',
+        { class: 'card' },
+        el('h2', { style: { fontSize: '1rem' } }, 'Chiết khấu theo loại'),
+        el(
+          'table',
+          { class: 'table' },
+          el(
+            'tbody',
+            {},
+            [
+              ['Khuyến mãi (giá món + theo đơn)', r.discounts.promo],
+              ['Hội viên', r.discounts.member],
+              ['Giảm giá tay', r.discounts.manual],
+              ['Làm tròn', r.discounts.rounding],
+              ['Hoàn tiền', r.discounts.refunds],
+            ].map(([l, v]) => el('tr', {}, el('td', {}, l), el('td', { class: 'num' }, money(v)))),
+          ),
+        ),
+      ),
+      el(
+        'div',
+        { class: 'card' },
+        el('h2', { style: { fontSize: '1rem' } }, 'Top khuyến mãi'),
+        r.topPromotions.length === 0
+          ? el('p', { class: 'muted' }, 'Chưa có lượt dùng khuyến mãi.')
+          : el(
+              'table',
+              { class: 'table' },
+              el('thead', {}, el('tr', {}, el('th', {}, 'Khuyến mãi'), el('th', { class: 'num' }, 'Lượt'), el('th', { class: 'num' }, 'Tiền giảm'))),
+              el(
+                'tbody',
+                {},
+                r.topPromotions.map((p) =>
+                  el('tr', {}, el('td', {}, p.name), el('td', { class: 'num' }, p.uses), el('td', { class: 'num' }, money(p.discount))),
+                ),
+              ),
+            ),
+      ),
+    ),
+    el(
+      'div',
+      { class: 'grid-2', style: { gridTemplateColumns: '1fr 1fr', marginTop: '1rem' } },
+      el(
+        'div',
+        { class: 'card' },
+        el('h2', { style: { fontSize: '1rem' } }, 'Hội viên mới theo ngày'),
+        r.newMembers.length === 0
+          ? el('p', { class: 'muted' }, 'Chưa có.')
+          : el(
+              'ul',
+              {},
+              r.newMembers.map((d) => el('li', {}, `${fmtDate(d.date)}: ${d.count}`)),
+            ),
+      ),
+      el(
+        'div',
+        { class: 'card' },
+        el('h2', { style: { fontSize: '1rem' } }, 'Giảm giá tay theo nhân viên / ngày'),
+        r.manualByStaff.length === 0
+          ? el('p', { class: 'muted' }, 'Không có giảm giá tay.')
+          : el(
+              'ul',
+              {},
+              r.manualByStaff.map((m) =>
+                el('li', {}, `${fmtDate(m.date)} · ${m.fullName}: ${m.count} lần · ${money(m.amount)}${m.approvedBy ? ` (duyệt: ${m.approvedBy})` : ''}`),
+              ),
+            ),
+      ),
+    ),
   );
 }
 

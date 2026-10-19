@@ -14,6 +14,7 @@ Object.assign(process.env, {
   DB_NAME: dbName,
   PORT: port,
   RATE_LIMIT: 'off',
+  JOBS_ENABLED: 'false',
   PUBLIC_BASE_URL: `http://localhost:${port}`,
   ADMIN_SEED_USERNAME: 'admin',
   ADMIN_SEED_PASSWORD: 'Admin@123',

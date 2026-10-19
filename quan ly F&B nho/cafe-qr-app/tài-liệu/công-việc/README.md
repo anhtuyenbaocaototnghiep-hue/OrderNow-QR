@@ -38,8 +38,50 @@
 | [TASK-020](TASK-020.md) | Chạy thử tại quán | — | TASK-019 | Cả nhóm | 7 | verify-change | TODO |
 | [TASK-021](TASK-021.md) | Tài liệu đồ án xuất từ `tài-liệu/` | — | TASK-019 | Sáng + cả nhóm | 7–8 | — | TODO |
 | [TASK-022](TASK-022.md) | Làm sau: cron, ảnh, ngăn kéo, VietQR, KDS… | REQ-020/021/022 | TASK-020 | — | 8+ | — | BACKLOG |
+| [TASK-023](TASK-023.md) | Hội viên SĐT + họ tên (tra cứu, đăng ký, chiết khấu khi thu tiền, quản lý, ẩn danh) | FEATURE-014 | — | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-024](TASK-024.md) | Gợi ý / bán chạy / ghim trên menu khách | FEATURE-017 | TASK-023 (Settings) | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-025](TASK-025.md) | Combo cố định + bộ tính giá dùng chung `pricing` | FEATURE-015 | TASK-023 | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-026](TASK-026.md) | Khuyến mãi theo lịch (giá đặc biệt, theo đơn, lượt/ngày) | FEATURE-016 | TASK-025 | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-027](TASK-027.md) | Quản lý "Marketing & Khách hàng" + báo cáo marketing | FEATURE-014…017 | TASK-023…026 | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-028](TASK-028.md) | Tùy chọn món (size, topping) có phụ thu + BOM cộng thêm | FEATURE-013 | TASK-025 | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-029](TASK-029.md) | Chốt ca tiền mặt (mở/đóng ca, phiếu chốt ca) | FEATURE-018 | — | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-030](TASK-030.md) | Giảm giá tay trên bill có ngưỡng + quản lý duyệt | FEATURE-022 | TASK-023, TASK-029 | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-031](TASK-031.md) | Tự hết món + công tắc nhận đơn QR + giờ bán theo danh mục | FEATURE-020 | — | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-032](TASK-032.md) | Khách gọi nhân viên | FEATURE-021 | — | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-033](TASK-033.md) | Hoàn tiền sau thu + nhập kho & kiểm kê + giá vốn | FEATURE-019, FEATURE-023 | TASK-029 | Agent | — | extend-features | READY_FOR_REVIEW |
+| [TASK-034](TASK-034.md) | Gọi món tại bàn (nhân viên nhập giúp) + ghi chú bàn | FEATURE-024 | TASK-023…033 | Agent | — | yêu cầu chủ dự án 16/10 | READY_FOR_REVIEW |
+| [TASK-035](TASK-035.md) | Gọi lại đơn lần trước & món yêu thích | FEATURE-045 (skill F-024) | TASK-016, TASK-023, TASK-025, TASK-028 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-036](TASK-036.md) | Thực đơn theo mùa / khung giờ tự động | FEATURE-040 | TASK-031, TASK-035 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-037](TASK-037.md) | Thời gian chờ ước tính + bộ lập lịch job nền | FEATURE-025 | TASK-012, TASK-013, TASK-036 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-038](TASK-038.md) | Chia bill theo người trong phiên gộp | FEATURE-026 | TASK-015, TASK-023, TASK-025, TASK-030, TASK-033 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-039](TASK-039.md) | Đổi đơn vị & giá vốn bình quân / FIFO | FEATURE-031 | TASK-013, TASK-033 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-040](TASK-040.md) | Bán thành phẩm / BOM 2 cấp / phiếu sơ chế | FEATURE-027 | TASK-007, TASK-039 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-041](TASK-041.md) | Hao hụt định mức & phiếu hủy hàng | FEATURE-032 | TASK-033, TASK-039, TASK-040 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-042](TASK-042.md) | Lô & hạn sử dụng (FEFO) | FEATURE-028 | TASK-037, TASK-039, TASK-040, TASK-041 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-043](TASK-043.md) | Nhà cung cấp & đơn đặt hàng (PO) | FEATURE-030 | TASK-039, TASK-042 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-044](TASK-044.md) | Dự báo nhập hàng | FEATURE-029 | TASK-037, TASK-041, TASK-043 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-045](TASK-045.md) | Vai Trưởng ca (MANAGER) và ma trận quyền | FEATURE-036 | TASK-017, TASK-030, TASK-033 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-046](TASK-046.md) | Sổ quỹ (thu / chi tiền mặt ngoài bán hàng) | FEATURE-033 | TASK-029, TASK-045 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-047](TASK-047.md) | Chấm công, lịch làm, năng suất, nhật ký thao tác | FEATURE-035 | TASK-037, TASK-045, TASK-046 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-048](TASK-048.md) | Lãi / lỗ đơn giản & điểm hòa vốn | FEATURE-034 | TASK-033, TASK-039, TASK-046 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-049](TASK-049.md) | Tích điểm đổi quà & tem | FEATURE-039 | TASK-023, TASK-033, TASK-038 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-050](TASK-050.md) | Giới thiệu bạn & voucher | FEATURE-038 | TASK-023, TASK-049 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-051](TASK-051.md) | Chiến dịch theo phân khúc | FEATURE-037 | TASK-037, TASK-047, TASK-050 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-052](TASK-052.md) | Menu engineering | FEATURE-041 | TASK-024, TASK-026, TASK-039 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-053](TASK-053.md) | Giờ cao điểm, dự báo doanh thu, so sánh kỳ, doanh thu theo bàn | FEATURE-042 | TASK-044, TASK-048, TASK-052 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-054](TASK-054.md) | Dashboard chủ quán ("Hôm nay") | FEATURE-043 | TASK-037, TASK-042, TASK-043, TASK-045, TASK-046, TASK-048 | Agent | — | advanced-features | READY_FOR_REVIEW |
+| [TASK-055](TASK-055.md) | Sửa / xóa món đã gọi, xóa đơn, hủy lượt phục vụ bàn | FEATURE-046 (ADR-007) | TASK-013, TASK-033, TASK-038, TASK-039, TASK-041, TASK-042, TASK-045, TASK-047 | Agent | — | yêu cầu chủ dự án 18/10 | READY_FOR_REVIEW |
+| [TASK-056](TASK-056.md) | Hội viên khi gọi món tại bàn, Thẻ thành viên, quyền lợi trên bill | FEATURE-047 (ADR-008) | TASK-023, TASK-034, TASK-049, TASK-050, TASK-051 | Agent | — | yêu cầu chủ dự án 18/10 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
+
+**Cập nhật 16/10/2026:** chủ dự án giao skill `extend-features` → TASK-023…033 (FEATURE-013…023, ADR-005) đã làm theo thứ tự giai đoạn 1 → 2 → 3 của skill, mỗi feature một migration; bàn giao: [`handover-2026-10-16.md`](../chất-lượng/handover-2026-10-16.md).
+
+**Cập nhật 18/10/2026:** chủ dự án giao skill `advanced-features` (17/10/2026) → TASK-035…054 (20 feature, ADR-006, migration `0015`…`0032`) đã làm theo thứ tự giai đoạn 4 → 8 của [plan](../kế-hoạch/TASK-035-054-plan.md); mã skill F-024 "Gọi lại đơn / yêu thích" đổi thành **FEATURE-045** (FEATURE-024 đã là "Gọi món tại bàn"). Bằng chứng 18/10/2026: `npm test` 217/217, `npm run test:e2e` 27/27, `npm run load` 10/10 (p95 92 ms), lint + prettier PASS. Hướng dẫn cho quán: [`chức-năng-mới/`](../../chức-năng-mới/README.md) mục 14…24. Lệch ma trận quyền skill ↔ docs ghi ở Q-022.
+
+**Cập nhật 18/10/2026 (sau giai đoạn 4–8):** chủ dự án yêu cầu sửa / xóa món và "xóa bàn" ở drawer Thu tiền → [ADR-007](../quyết-định/ADR-007-sua-xoa-mon-huy-ban.md) (D-33…D-35) → TASK-055 (FEATURE-046, migration `0033`). Bằng chứng: `npm test` 229/229, `npm run test:e2e` 28/28, `npm run load` 10/10, lint + prettier PASS; bàn giao ở [`handover-2026-10-18.md`](../chất-lượng/handover-2026-10-18.md) mục "Bổ sung F-046". Hướng dẫn cho quán: mục 25 trong `chức-năng-mới/`. Phát hiện ngoài phạm vi (E2E chia bill không ổn định) ghi ở Q-023.
+
+**Cập nhật 18/10/2026 (sau F-046):** chủ dự án yêu cầu gắn SĐT hội viên ở Gọi món tại bàn và cho hội viên thấy điểm / voucher / chiến dịch → [ADR-008](../quyết-định/ADR-008-hoi-vien-tai-ban-the-thanh-vien.md) (D-36…D-38) → TASK-056 (FEATURE-047, không migration). Bằng chứng: `npm test` 234/234, `npm run test:e2e` 29/29, lint + prettier PASS (`npm run load` không chạy lại — không đổi luồng gửi đơn / thu tiền); bàn giao ở [`handover-2026-10-18.md`](../chất-lượng/handover-2026-10-18.md) mục "Bổ sung F-047". Hướng dẫn cho quán: mục 26 trong `chức-năng-mới/`.
 
 ## Lịch 8 tuần theo người
 

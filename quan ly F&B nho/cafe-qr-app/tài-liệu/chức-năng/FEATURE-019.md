@@ -1,0 +1,42 @@
+# FEATURE-019 — Hủy / hoàn tiền sau khi đã thu
+
+> **Nguồn:** skill `extend-features` §4 F-019. Quyết định: [ADR-005](../quyết-định/ADR-005-mo-rong-giai-doan-2.md) D-15. Câu hỏi còn mở: [Q-020](../open-questions.md) (thời hạn hoàn tiền).
+
+- **Status:** CONFIRMED (ADR-005) · Triển khai: READY_FOR_REVIEW (16/10/2026)
+- **Actor:**
+  - ADMIN hoàn tiền trực tiếp.
+  - STAFF hoàn tiền khi có tài khoản quản lý nhập tên + mật khẩu (xác thực lại, không dùng token của STAFF).
+- **Màn hình:**
+  - Quầy → **Ca & hoàn tiền** → nút "Hoàn tiền" trên từng lượt thu. Hộp thoại gồm:
+    - số tiền (mặc định = phần còn lại), lý do (bắt buộc);
+    - chọn đơn bị hủy;
+    - "Hoàn kho cho món đã làm";
+    - tài khoản quản lý.
+  - Quản lý → Ca & hoàn tiền: danh sách hoàn tiền (ai làm, ai duyệt).
+- **Dữ liệu:** migration `0012_hoan_tien.sql`.
+  - `Refunds`.
+  - `Orders.Status` thêm `VOIDED`, `Orders.VoidedAt`.
+  - `InventoryTransactions.Type` thêm `RESTOCK`; unique (đơn × nguyên liệu) cho RESTOCK.
+  - SP `sp_RefundPayment`.
+- **Quy tắc:**
+  - Chỉ hoàn trong **ngày thu tiền** (giờ quán) — `409 REFUND_WINDOW_EXPIRED`.
+  - Σ hoàn ≤ số đã thu — `400 REFUND_EXCEEDS`. SP khóa dòng `Payments`, nên hai lần hoàn đồng thời không vượt.
+  - Hoàn một phần: đơn giữ nguyên. Hoàn đủ số đã thu, hoặc chọn đơn cụ thể: các đơn đó → `VOIDED`.
+    - Đơn chưa làm (`PREPARING`): trả phần kho đang giữ.
+    - Đơn đã làm (`COMPLETED`) + "hoàn kho": cộng lại đúng lượng đã trừ (`RESTOCK`).
+  - Tiền hoàn trừ vào ca đang mở (F-018). Hội viên bị trừ `TotalSpent` (không hạ hạng).
+  - Báo cáo doanh thu trừ hoàn tiền theo ngày hoàn.
+- **API:**
+  - `GET /api/payments/{id}`: chi tiết lượt thu + đơn + các lần hoàn.
+  - `POST /api/payments/{id}/refunds { amount, reason, restockInventory, orderIds?, adminUsername?, adminPassword? }`.
+  - `GET /api/admin/refunds?from&to`.
+  - Realtime `payment.refunded`.
+- **Acceptance Criteria**
+  - AC-019-01: Hoàn toàn bộ → đơn `VOIDED`, doanh thu ngày giảm đúng.
+  - AC-019-02: Hoàn vượt → 400. STAFF không có quản lý duyệt → `403 ADMIN_APPROVAL_REQUIRED`.
+  - AC-019-03: Hoàn kho → tồn tăng đúng BOM, có dòng `RESTOCK`.
+  - AC-019-04: Hai lần hoàn đồng thời → chỉ một thành công.
+  - AC-019-05: Hoàn đơn mang đi chưa pha → phần kho đang giữ được trả. Đơn không hoàn tất được nữa.
+- **Bằng chứng:**
+  - `tests/operations.test.js` → "Hoàn tiền sau khi đã thu (F-019)".
+  - E2E "ca: … hoàn tiền một lượt …".

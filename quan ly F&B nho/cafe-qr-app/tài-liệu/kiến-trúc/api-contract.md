@@ -2,6 +2,12 @@
 
 > **Nguồn:** `tài-liệu/nguồn/huong-dan-web-app-v1.2.md` §11.3 (bản 1.2, 14/10/2026). **Trạng thái tài liệu:** BẢN NHÁP — trạng thái từng mục ghi tại chỗ (CONFIRMED / PROPOSED / NEEDS_CONFIRMATION / UNKNOWN / N/A). Quyết định đã chốt: [ADR-000](../quyết-định/ADR-000-thanh-toan-tien-mat.md) (D-1/D-2/D-3).
 
+> **Cập nhật 18/10/2026:** endpoint giai đoạn 4–8 (ADR-006) kèm quyền theo vai (STAFF / MANAGER / ADMIN), trường mới `voucherCode` / `reward` ở các endpoint thu tiền và `POST /api/auth/logout` nằm ở mục "Bổ sung giai đoạn 4–8" cuối file.
+
+> **Cập nhật 18/10/2026 (ADR-007):** 4 endpoint sửa / xóa món, xóa đơn, hủy lượt phục vụ bàn (FEATURE-046) nằm ở mục "Bổ sung F-046" cuối file.
+
+> **Cập nhật 18/10/2026 (ADR-008):** endpoint Thẻ thành viên `GET /api/sessions/{id}/member-card` và trường `memberCard` trên dữ liệu bill (FEATURE-047) nằm ở mục "Bổ sung F-047" cuối file.
+
 Quy ước chung: JSON; thời gian ISO-8601 UTC; lỗi dạng `{ "code": "OUT_OF_STOCK", "message": "…", "details": {...} }`; phân trang `?page=&pageSize=` cho danh sách dài. Xác thực: `Authorization: Bearer <jwt>` cho `/pos` và `/admin`; cookie `cf_client` cho khách. HTTP status là quyết định kỹ thuật ở bảng này, không suy từ Word. **Không có endpoint nào cho khách đổi trạng thái thanh toán (BR-007).**
 
 **Khách (public, cookie client)**
@@ -70,7 +76,7 @@ Mã nguồn: `ứng-dụng/máy-chủ/src/routes/{public,staff,admin}.js`. Test:
 | `POST /api/sessions/{id}/close` | Đóng bàn trống khi không có đơn nào khác `CANCELLED` (Q-018); còn đơn → `409 HAS_ORDERS` |
 | `GET /api/auth/me` | `{ user, shop: { name, address } }` |
 | `DELETE /api/admin/categories/{id}` | `204`; còn món → `409 HAS_ITEMS` |
-| `PUT /api/admin/menu-items/{id}/bom` | Lỗi `400 VALIDATION_ERROR` "Định lượng không hợp lệ, phải lớn hơn 0" với `details.fields: [{ path: "0.amount" | "1.ingredientId", message }]`; BOM cũ giữ nguyên |
+| `PUT /api/admin/menu-items/{id}/bom` | Lỗi `400 VALIDATION_ERROR` "Định lượng không hợp lệ, phải lớn hơn 0" với `details.fields: [{ path: "0.amount" \| "1.ingredientId", message }]`; BOM cũ giữ nguyên |
 | `POST /api/admin/ingredients` | Body `{ name, unit, stockQty, lowStockThreshold }`; tồn ban đầu ghi `InventoryTransactions(ADJUST)` |
 | `POST /api/admin/ingredients/{id}/adjust` | Body `{ newQty }` **hoặc** `{ delta }` + `reason` (bắt buộc). Lỗi `NEGATIVE_STOCK`, `BELOW_RESERVED`, `INVALID_ADJUSTMENT` |
 | `GET /api/admin/orders` | Lịch sử đơn (Q-014): `from`, `to` (bắt buộc), `status`, `type`, `page`, `pageSize ≤ 200` → `{ items, total, page, pageSize }` |
@@ -95,3 +101,243 @@ Mọi request `/api/*` không có cookie hợp lệ sẽ được cấp `cf_clie
 | `DELETE /api/admin/users/{id}` | Như trên; tự xóa → `400 CANNOT_DELETE_SELF`; token của người bị xóa → `401` ở request kế tiếp |
 
 `DELETED` = xóa hẳn khỏi DB; `ARCHIVED` = xóa mềm (đã có lịch sử). Mọi endpoint danh sách/sửa bỏ qua bản ghi đã xóa; báo cáo, lịch sử đơn, lịch sử kho vẫn giữ tên.
+
+## Bổ sung giai đoạn 2 (ADR-005, 16/10/2026)
+
+Mọi tiền do server tính bằng bộ `src/pricing/pricing.js` (D-7); FE chỉ hiển thị `breakdownLines`. Trường mới đều **tùy chọn** (API cũ gọi như trước vẫn chạy).
+
+**Khách / dùng chung**
+
+| Method & path | Ghi chú |
+| --- | --- |
+| `GET /api/menu` | Thêm `store`, `combos[]` (`components`, `listTotal`, `savings`), `promotions[]`, `suggested[]`, `modifierGroups[]`; món có `listPrice`, `price` (giá hiện hành), `promotionBadge`, `groupIds`. Gọi kèm Bearer (quầy) → thấy cả danh mục ngoài giờ bán |
+| `POST /api/orders/quote { items }` | Báo giá giỏ: `lines`, `subtotal`, `lineDiscount`, `orderPromotion`, `promoDiscount`, `total` |
+| `POST /api/orders` | `items[].optionIds` (F-013); `503 STORE_CLOSED`; `400 INVALID_OPTIONS`; `409 ITEM_UNAVAILABLE` (ngoài giờ bán) |
+| `GET /api/sessions/{id}` | Thêm `member` (khách: tên che), `bill { amountDue, breakdown }` (ước tính sau hội viên), `openCalls` |
+| `POST /api/members/lookup { phone }` · `POST /api/members { phone, fullName, consent }` | `400 INVALID_PHONE` / `CONSENT_REQUIRED`, `409 PHONE_EXISTS`, `429 RATE_LIMITED` |
+| `POST /api/sessions/{id}/member { phone \| memberId }` · `DELETE …/member` | Khách: phiên của mình, bằng SĐT; quầy: `memberId` |
+| `POST /api/sessions/{id}/call-staff { message }` | `201`; `429 TOO_SOON { retryAfter }` |
+
+**Quầy (STAFF/ADMIN)**
+
+| Method & path | Ghi chú |
+| --- | --- |
+| `POST /api/sessions/{id}/settle/preview { memberId?, manualDiscount?, manualReason? }` | `{ totals { subtotal, promoDiscount, memberDiscount, manualDiscount, roundingAdj, amountDue, breakdownLines }, member, needsApproval }` |
+| `POST /api/sessions/{id}/settle` | Thêm `memberId`, `manualDiscount { kind: AMOUNT\|PERCENT, value }`, `manualReason`, `adminUsername`, `adminPassword`; `409 NO_OPEN_SHIFT`, `AMOUNT_CHANGED`; `403 ADMIN_APPROVAL_REQUIRED/INVALID` |
+| `POST /api/orders/takeaway/quote` · `POST /api/orders/takeaway` | Như trên + `expectedAmountDue` |
+| `GET /api/shifts/current` · `POST /api/shifts/open { openingCash }` · `POST /api/shifts/{id}/close { countedCash, note }` · `GET /api/shifts/{id}/report` | `409 SHIFT_ALREADY_OPEN`, `SHIFT_NOT_OPEN` |
+| `GET /api/payments/{id}` · `POST /api/payments/{id}/refunds { amount, reason, restockInventory, orderIds?, adminUsername?, adminPassword? }` | `400 REFUND_EXCEEDS`, `409 REFUND_WINDOW_EXPIRED`, `403 ADMIN_APPROVAL_REQUIRED` |
+| `GET /api/staff-calls` · `POST /api/staff-calls/{id}/handle` | `409 ALREADY_PROCESSED` |
+| `GET/PUT /api/store { acceptingOrders, closedMessage }` | Công tắc nhận đơn QR |
+| `GET /api/tables` | F-024: bàn đang bật + `sessions[]` chưa đóng (có `note`, `openedBy`); không trả mã QR |
+| `POST /api/tables/{id}/sessions { note?, newGroup? }` | F-024 mở bàn → `201 { session }`; `404 TABLE_NOT_FOUND`; `409 TABLE_OCCUPIED { sessions }` khi bàn đang có nhóm mà không chọn `newGroup` |
+| `POST /api/sessions/{id}/orders { items, note? }` + `Idempotency-Key` | F-024 nhân viên gọi món giúp → `201 { order }` (`PREPARING`, `createdBy`); không bị chặn bởi `STORE_CLOSED` / giờ bán; `409 SESSION_CLOSED` |
+| `PUT /api/sessions/{id}/note { note \| null }` | F-024 ghi chú bàn → `{ session }`; `409 SESSION_CLOSED`. `GET /api/sessions…` của nhân viên có `note`, `noteUpdatedAt`, `noteUpdatedBy`, `openedBy` — response cho khách **không** có |
+
+**Quản lý (ADMIN, `/api/admin`)**: `members` (`?q=&page=`, `{id}`, `{id}/anonymize`), `member-tiers`, `combos` (+ `{id}/availability`), `promotions` (+ `{id}/active`, `{id}/stats`), `suggestions`, `modifier-groups`, `settings`, `shifts`, `refunds`, `stock-receipts`, `stocktakes` (+ `{id}/lines`, `{id}/post`), `reports/marketing`, `reports/costs`; `categories` thêm `sellFrom/sellTo`; `menu-items` thêm `groupIds`; `DELETE menu-items/{id}` có thể `409 IN_COMBO`.
+
+## Bổ sung giai đoạn 4–8 (ADR-006, cập nhật 18/10/2026)
+
+Mã nguồn: `ứng-dụng/máy-chủ/src/routes/`. Route khách và quầy nằm ở `engagement.js`, `ops.js`, `finance.js`, `loyalty.js`, `analytics.js` (`dashboardRouter`) và `staff.js`. Route quản lý gắn dưới `/api/admin` nằm ở `advanced.js`, `financeAdmin.js`, `marketing.js`, `analytics.js` (`analyticsAdminRouter`). Ma trận quyền ở `src/auth/permissions.js` (FEATURE-036). Mọi trường mới đều **tùy chọn**: API cũ gọi như trước vẫn chạy. Chi tiết nghiệp vụ xem FEATURE-025…045. Mã lỗi SP (`50072`, `50110`…`50174`) xem [data-model](data-model.md).
+
+### Quyền
+
+| Ký hiệu (cột "Quyền") | Nghĩa |
+| --- | --- |
+| Công khai | Không cần đăng nhập |
+| Khách/NV | Khách bằng cookie `cf_client` (chỉ phiên của mình, hoặc hội viên đang gắn vào phiên chưa đóng của chính điện thoại đó; sai → `403`) **hoặc** nhân viên bằng Bearer (dùng được mọi phiên / hội viên) |
+| NV | Mọi tài khoản đang đăng nhập: STAFF, MANAGER, ADMIN (`requireStaff` ≈ `pos.use`) |
+| `tên.quyền` | `requirePermission(…)`: chưa đăng nhập → `401`, không đủ quyền → `403` |
+| ADMIN | Mọi route `/api/admin/*` (`requireAdmin`, tương ứng `admin.all`). MANAGER gọi nhận `403` |
+
+| Quyền (`PERMISSIONS`) | STAFF | MANAGER | ADMIN |
+| --- | --- | --- | --- |
+| `pos.use`, `shift.manage`, `cash.create`, `prep.post`, `waste.create`, `po.receive` | ✔ | ✔ | ✔ |
+| `cash.approve` | ✘ | ≤ `manager.cash_out_approve_max` (2.000.000đ) | ✔ |
+| `attendance.edit` | ✘ | chỉ trong ngày | ✔ |
+| `inventory.adjust`, `stocktake.post` | ✘ | ✔ | ✔ |
+| `dashboard.view` | ✘ | bản rút gọn | ✔ |
+| `admin.all` | ✘ | ✘ | ✔ |
+
+Ba quyền `prep.post`, `waste.create`, `po.receive` gồm đủ ba vai nên route dùng `requireStaff`.
+
+Giảm giá tay tự duyệt được đến: STAFF ≤ `discount.*` (10 % / 20.000đ), MANAGER ≤ `manager.discount_max_*` (20 % / 50.000đ), ADMIN không giới hạn. Vượt ngưỡng thì gửi kèm `adminUsername` / `adminPassword` của trưởng ca (nếu mức giảm nằm trong ngưỡng trưởng ca) hoặc của quản lý; sai hay thiếu → `403 ADMIN_APPROVAL_REQUIRED` / `ADMIN_APPROVAL_INVALID`.
+
+### Thay đổi trên endpoint đã có
+
+| Endpoint | Thay đổi |
+| --- | --- |
+| `POST /api/auth/login` | Nhân viên và trưởng ca được tự chấm công vào (`sp_ClockIn`); quản lý không tự chấm |
+| **`POST /api/auth/logout`** (mới, NV) | Đóng chấm công đang mở → `200 { clockedOut }`. FE gọi trước khi xóa token |
+| `GET /api/menu` | Thêm `nextChangeAt` (ISO; mốc lịch thực đơn đổi gần nhất trong 8 ngày tới). Khách không thấy món ngoài lịch; gọi kèm Bearer thì thấy đủ, món đang ẩn có `hiddenBySchedule: true` (F-040) |
+| `POST /api/orders` (khách) | Món ngoài lịch → `409 ITEM_UNAVAILABLE`. Quầy (mang đi, gọi món tại bàn) không bị chặn |
+| `POST /api/members` | Thêm `referrerPhone?`; response thêm `referred: true`. Lỗi: `404 REFERRER_NOT_FOUND`, `400 SELF_REFERRAL`, `409 REFERRAL_LIMIT` (F-038) |
+| `GET /api/sessions/{id}` và các response có `member` | `member.loyalty { points, stampCards[{ programId, name, requiredStamps, stamps, rewardsAvailable, text }], rewards[], vouchers[] }`. Khách không thấy `code` của voucher (F-039) |
+| `GET /api/sessions` (quầy) | Thêm `splitCount`, `paidAmount` (F-026) |
+| Thu tiền: `POST /api/sessions/{id}/settle` (+ `/preview`), `POST /api/splits/{id}/settle` (+ `/preview`), `POST /api/orders/takeaway` (+ `/quote`) | Body thêm **`voucherCode?`** (≤ 20 ký tự) và **`reward?`**: `{ type: 'POINTS', rewardId }` hoặc `{ type: 'STAMP', programId }`. `totals` thêm `voucherDiscount`, `rewardDiscount`, `pointsEarned`, `stampsEarned[]`; `payment` thêm `voucherCode`, `voucherDiscount`. Lỗi voucher: `404 VOUCHER_NOT_FOUND`; `409 VOUCHER_USED` / `VOUCHER_EXPIRED` / `VOUCHER_NOT_OWNER` / `VOUCHER_MIN_ORDER` / `VOUCHER_UNAVAILABLE` (hai quầy dùng cùng mã). Lỗi đổi thưởng: `400 MEMBER_REQUIRED`, `400 REWARD_WITH_MANUAL`; `409 POINTS_INSUFFICIENT` / `STAMP_REWARD_UNAVAILABLE` / `REWARD_UNAVAILABLE` / `REWARD_ITEM_NOT_IN_BILL` |
+| `POST /api/sessions/{id}/settle` | Bàn đã chia bill → `409 SESSION_HAS_SPLITS` |
+| `POST /api/payments/{id}/refunds` | MANAGER tự hoàn lượt thu thuộc ca đang mở (`manager.refund_same_shift_only`; tắt cài đặt này thì được hoàn mọi lượt trong ngày); lượt thu khác cần quản lý. Lượt thu của một phần chia bill chỉ được hoàn tiền: gửi `orderIds` → `400 INVALID_REFUND`. Điểm và tem được trừ / trả lại (F-039) |
+| `POST /api/shifts/{id}/close` | Còn khoản sổ quỹ chờ duyệt → `409 CASH_PENDING`. `ExpectedCash` gồm thu khác và chi đã duyệt; người đóng ca được chấm công ra |
+| `POST /api/admin/stock-receipts` | Dòng `{ ingredientId, qty, unitCost? }` **hoặc** `{ ingredientId, packUnitCode, packQty, packPrice? }`, kèm `expiryDate?`, `lotCode?` (nguyên liệu theo lô). Không quy đổi được → `400 UNIT_MISMATCH` |
+| `POST` / `PUT /api/admin/menu-items` | `prepSeconds` (10–3600; `null` = dùng thống kê; không gửi = giữ nguyên) |
+| `POST /api/admin/users`, `PUT …/{id}`, `PATCH …/{id}/active`, `DELETE …/{id}` | `role: 'STAFF' \| 'MANAGER' \| 'ADMIN'`. Hạ vai, khóa hoặc xóa quản lý đang hoạt động cuối cùng → `409 LAST_ADMIN` |
+| `PUT /api/admin/settings` | Thêm `etaBaseSeconds`, `kitchenParallelism`, `etaSpreadPercent`, `etaDefaultItemSeconds` (F-025); `costMethod: 'AVG' \| 'FIFO'` (F-031); `forecastSafetyPercent` (F-029); `managerMaxPercent`, `managerMaxAmount`, `managerRefundSameShiftOnly`, `managerCashApproveMax`, `cashApproveThreshold` (F-036, F-033) |
+
+### Giai đoạn 4 — gọi lại đơn, lịch thực đơn, thời gian chờ, chia bill
+
+| Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
+| --- | --- | --- | --- | --- |
+| `GET /api/members/{id}/recent-orders?limit=3` (1–10) | Khách/NV | — | Đơn đã thu gần nhất; mỗi dòng có `available`, `reason` | 403 |
+| `GET /api/members/{id}/favorites` | Khách/NV | — | `{ hearted[], items[{ menuItemId, name, price, isAvailable, hearted, timesOrdered }] }` | 403 |
+| `PUT` / `DELETE /api/members/{id}/favorites/{menuItemId}` | Khách/NV | — | Danh sách yêu thích mới | 403, 404 (món) |
+| `POST /api/cart/replay` | Khách/NV | `{ orderId }` | `{ items[{ menuItemId, name, quantity, note, optionIds, optionLabels, optionDelta, price }], skipped[{ name, reason }] }`. Giá lấy theo thực đơn hiện tại | 403, 404 |
+| `GET /api/queue/eta?items=12:2,15:1` | Công khai | — | `{ etaSeconds, minMinutes, maxMinutes, queueLength, queueOrders }` (`no-store`) | 400 |
+| `GET /api/sessions/{id}/eta` | Khách/NV | — | `{ eta: {…} \| null }` | 403 |
+| `GET /api/sessions/{id}/splits` | Khách/NV | — | `{ hasSplits, splits[{ splitId, label, isCommon, status, mine, member, lines[], unpaidAmount, paidAmount }], lines[] }` | 403, 404 |
+| `POST /api/sessions/{id}/splits` | Khách/NV | `{ label }` (≤ 50) | `201 { splitId, …view }`. Khách: phần của điện thoại này (tạo lại → trả phần cũ, đổi tên). Quầy: phần mới. Phần Chung tự tạo cùng phần đầu tiên | 403, `409 SESSION_CLOSED` |
+| `PUT /api/sessions/{id}/items/{orderItemId}/split` | Khách/NV | `{ splitId \| null }` | View chia bill | `403` (khách gán dòng không phải Chung / không phải của mình); `409 LINE_LOCKED`, `SPLIT_PAID`, `NO_SPLITS`, `SESSION_CLOSED` |
+| `POST /api/splits/{id}/settle/preview` | NV | Như thu cả bàn: `memberId`, `manualDiscount`, `manualReason`, `voucherCode`, `reward`… | `{ split, includeCommon, lineCount, totals, member, needsApproval }` | 404 |
+| `POST /api/splits/{id}/settle` | NV | Như trên + `amountReceived`, `expectedAmountDue?` | `{ split, includeCommon, payment, sessionClosed, totals }` | `409 SPLIT_PAID`, `COMMON_REQUIRED`, `SPLIT_EMPTY`, `HAS_PENDING_ORDERS`, `AMOUNT_CHANGED`, `ALREADY_SETTLED`, `NO_OPEN_SHIFT`; `400 INSUFFICIENT_AMOUNT` |
+| `POST /api/sessions/{id}/splits/merge` | NV | — | `{ removed, unsplit, …view }` ("Thu chung": chưa thu phần nào → bỏ chia hẳn; đã thu ≥ 1 phần → dồn các phần còn mở về Chung) | `409 SESSION_CLOSED` |
+| `GET /api/payments/{id}/receipt` | NV | — | Bill của **một lượt thu** (chỉ các dòng của lượt đó, có tên phần) | 404 |
+| `GET` / `POST /api/admin/menu-schedules` | ADMIN | `{ name, startDate?, endDate?, daysOfWeekMask (1–127, bit0 = CN), startTime?, endTime?, isActive, targets[{ menuItemId \| categoryId, mode: SHOW \| HIDE }] }` | Lịch | 400 |
+| `PUT` / `DELETE /api/admin/menu-schedules/{id}` · `PATCH …/{id}/active { isActive }` | ADMIN | Như trên | Lịch; phát `menu.updated` | 404 |
+| `GET /api/admin/menu-schedules/preview?at=YYYY-MM-DDTHH:MM` | ADMIN | — | Menu khách tại thời điểm đó (giờ quán) | 400 |
+| `GET /api/admin/prep-stats` | ADMIN | — | Thời gian pha chuẩn / thực tế / số mẫu / số đang dùng | — |
+| `GET /api/admin/jobs` | ADMIN | — | `[{ name, label, schedule, lastRun{ status, startedAt, finishedAt, info, error } }]` | — |
+| `POST /api/admin/jobs/{name}/run` | ADMIN | — | `{ name, status: OK \| SKIPPED \| FAILED, info?, error? }` (dùng cho nút "Tính lại", ví dụ `demand-forecast`, `daily-summary`) | 404 (không có job) |
+
+### Giai đoạn 5 — kho nâng cao
+
+| Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
+| --- | --- | --- | --- | --- |
+| `GET /api/ops/ingredients` | NV | — | Tồn kho cho quầy (khả dụng đã trừ phần giữ và lô hết hạn; có `expiredQty`) | — |
+| `GET /api/prep/recipes` · `GET /api/prep/preview?semiId&multiplier` | NV (`prep.post`) | — | Danh sách bán thành phẩm · `{ lines[{ …, enough, cost }], estimatedCost, canPrepare }` | 404 |
+| `POST /api/prep/batches` | NV (`prep.post`) | `{ semiIngredientId, multiplier (≤ 100), note? }` | `201` mẻ + `transactions[]`; phát `inventory.prepared` | `409 PREP_SHORT` (message có tên nguyên liệu thiếu), `404 NO_RECIPE`, `409 STOCKTAKE_LOCKED`, `409 LOT_SHORT` |
+| `GET /api/prep/batches?from&to` | NV | — | Mẻ trong kỳ | 400 |
+| `POST /api/waste` | NV (`waste.create`) | `{ ingredientId, qty, reason: SPILL \| EXPIRED \| QUALITY \| OTHER, note? }` | `201` phiếu hủy | `409 BELOW_RESERVED`, `409 STOCKTAKE_LOCKED`, `400 WASTE_INVALID` |
+| `GET /api/waste?from&to` | NV | — | Phiếu hủy trong kỳ | 400 |
+| `GET /api/lots/expiring?days=2` (0–30) | NV | — | Lô mở đã / sắp hết hạn `[{ lotId, ingredientId, name, unit, lotCode, qty, expiryDate, daysLeft, unitCost, source }]` | — |
+| `POST /api/lots/{id}/write-off` · `POST /api/admin/lots/{id}/write-off` | NV · ADMIN | `{ note? }` | `201` phiếu hủy `EXPIRED` cho toàn bộ phần còn lại; lô đóng | 404 (lô không còn mở) |
+| `GET /api/receiving/purchase-orders` · `GET …/{id}` | NV (`po.receive`) | — | PO đang chờ (`SENT` / `PARTIAL`) | 404 |
+| `POST /api/receiving/purchase-orders/{id}/receive` · `POST /api/admin/purchase-orders/{id}/receive` | NV (`po.receive`) · ADMIN | `{ confirmOver, note?, lines[{ poLineId, packs \| qty, packPrice?, expiryDate?, lotCode? }] }` | `201` phiếu nhập | `409 OVER_RECEIPT` (`details.items` = tên), `409 PO_NOT_RECEIVABLE`, 404 |
+| `POST /api/ops/ingredients/{id}/adjust` · `GET …/{id}/transactions` | `inventory.adjust` (MANAGER, ADMIN) | Như `/api/admin/ingredients/{id}/adjust` | Như bản admin | Như bản admin |
+| `GET` / `POST /api/ops/stocktakes` · `GET` / `DELETE …/{id}` · `PUT …/{id}/lines` · `POST …/{id}/post` | `stocktake.post` (MANAGER, ADMIN) | Như `/api/admin/stocktakes` | Như bản admin | Như bản admin |
+| `GET /api/admin/units` · `PUT /api/admin/units/{code}` · `DELETE …/{code}` | ADMIN | `{ name, baseUnitCode?, factor? }` | Đơn vị | `409 IN_USE`; `400` (quy đổi vòng lặp, đơn vị gốc không có) |
+| `PUT /api/admin/ingredients/{id}/advanced` | ADMIN | `{ kind: RAW \| SEMI, shelfLifeHours?, wastePercent, trackLots? }` | Nguyên liệu | `409 HAS_RECIPE` (chuyển về RAW khi còn công thức) |
+| `GET` / `PUT /api/admin/ingredients/{id}/recipe` | ADMIN | `{ outputQty, instructions?, lines[{ ingredientId, qty }] }` (1–30 dòng) | Công thức | `400 RECIPE_CYCLE`, `400 RECIPE_TOO_DEEP` (> 3 cấp) |
+| `GET /api/admin/ingredients/{id}/lots?all=1` | ADMIN | — | `{ ingredient, lots[{ lotCode, qty, expiryDate, daysLeft, unitCost, source, isClosed }] }` | 404 |
+| `GET` / `POST /api/admin/suppliers` · `PUT …/{id}` | ADMIN | `{ name, phone?, email?, leadTimeDays, deliveryDaysMask, note?, isActive, items[{ ingredientId, packUnitCode, packSize?, lastPrice?, isPreferred }] }` | Nhà cung cấp kèm `items[]` | 400 |
+| `GET /api/admin/purchase-orders?status=` · `GET` / `POST` / `PUT …/{id}` | ADMIN | `{ supplierId, expectedDate?, note?, lines[{ ingredientId, orderedPacks, packUnitCode?, packSize?, unitPrice? }] }` | PO | `409 PO_NOT_DRAFT` (chỉ sửa PO nháp), `400 UNIT_MISMATCH` |
+| `POST /api/admin/purchase-orders/{id}/send` · `…/cancel` | ADMIN | — | PO | `409 PO_NOT_DRAFT`, `409 PO_HAS_RECEIPTS`, `409 PO_CANCELLED` |
+| `POST /api/admin/purchase-orders/from-suggestion` | ADMIN | `{ supplierId, expectedDate?, note?, lines[{ ingredientId, packs }] }` | `201` PO nháp | 400 |
+| `GET /api/admin/inventory/replenishment?nextDeliveryDate&supplierId` | ADMIN | — | Mỗi nguyên liệu: `available, incoming, demand, safety, suggestBase, suggestPacks, runOutDate, runsOutBeforeDelivery, enoughData, supplier` | 400 |
+| `GET /api/admin/inventory/forecast/{ingredientId}` | ADMIN | — | `{ history[28 ngày], forecast[14 ngày] }` | 404 |
+| `GET /api/admin/reports/cogs?from&to` | ADMIN | — | `{ items[{ name, qty, revenue, cogs, unknownQty, marginPct }], ingredients[{ name, qty, cost }] }` | `400 INVALID_RANGE` |
+| `GET /api/admin/reports/loss?from&to` | ADMIN | — | `[{ consumption, standard, loggedWaste, stocktakeShortage, gap, abnormal, flagged, abnormalValue }]` | `400 INVALID_RANGE` |
+| `GET /api/admin/reports/suppliers?from&to` | ADMIN | — | `{ prices[], performance[] }` | `400 INVALID_RANGE` |
+
+### Giai đoạn 6 — trưởng ca, sổ quỹ, chấm công, nhật ký, lãi/lỗ
+
+| Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
+| --- | --- | --- | --- | --- |
+| `GET /api/cash-categories` | NV | — | Danh mục đang dùng | — |
+| `GET /api/cash-transactions?shiftId` | `cash.create` | — | Khoản thu chi của ca (mặc định ca đang mở) | — |
+| `POST /api/cash-transactions` | `cash.create` | `{ categoryId, amount (> 0), reason }` | `201 { cashTxnId, status: APPROVED \| PENDING, … }`; phát `cash.created` | `409 NO_OPEN_SHIFT`, `400 CASH_CATEGORY_INVALID` |
+| `PUT /api/cash-transactions/{id}/receipt` | `cash.create` (chỉ người ghi khoản, hoặc người có `cash.approve`) | Thân request là **ảnh** (`Content-Type: image/jpeg \| png \| webp`), ≤ 2 MB, không dùng multipart | Khoản (đã có ảnh) | `400 RECEIPT_TOO_LARGE`, `400 RECEIPT_INVALID` (kiểm chữ ký file), 403 |
+| `GET /api/cash-transactions/{id}/receipt` | NV | — | File ảnh (`Cache-Control: private, no-store`) | 404 |
+| `POST /api/cash-transactions/{id}/approve` | NV; người duyệt phải có `cash.approve` (nhân viên nhập tài khoản trưởng ca / quản lý) | `{ adminUsername?, adminPassword? }` | Khoản; phát `cash.reviewed` | `403 ADMIN_APPROVAL_REQUIRED` / `INVALID`, `403 SELF_APPROVAL` (trừ quản lý), `409 CASH_NOT_PENDING`, `409 NO_OPEN_SHIFT` |
+| `POST /api/cash-transactions/{id}/reject` | Như trên | `{ rejectReason, adminUsername?, adminPassword? }` | Khoản; phát `cash.reviewed` | Như trên |
+| `GET /api/attendance/me` | NV | — | `{ open }` (bản ghi đang mở hoặc `null`) | — |
+| `GET /api/attendance?from&to&userId` · `GET /api/attendance/users` | `attendance.edit` | — | Bản ghi chấm công · người dùng đang hoạt động | 400 |
+| `POST /api/attendance` | `attendance.edit` | `{ userId, clockIn, clockOut?, reason }` (ISO có múi giờ) | `201` bản ghi | `400` (thiếu lý do, giờ ở tương lai, > 24 giờ); `403 ATTENDANCE_NOT_TODAY` (trưởng ca sửa khác ngày hôm nay); `409 ATTENDANCE_OVERLAP` |
+| `PUT /api/attendance/{id}` | `attendance.edit` | `{ clockIn, clockOut?, reason }` | Bản ghi | Như trên |
+| `GET /api/admin/cash-transactions?from&to&categoryId&status&direction` | ADMIN | — | `{ from, to, rows, summary{ totalIn, totalOut, net, pending, byCategory[] } }` | 400 |
+| `GET /api/admin/cash-transactions/export.csv?…` | ADMIN | — | CSV UTF-8 có BOM, chặn công thức Excel | 400 |
+| `GET` / `POST /api/admin/cash-categories` · `PUT` / `DELETE …/{id}` | ADMIN | `{ name, direction: IN \| OUT, isExpense, requiresApproval, isActive, sortOrder }` | DELETE → `{ result }` (danh mục đã dùng → chuyển ngừng dùng) | 404 |
+| `GET /api/admin/rosters?from&to` · `POST` · `PUT` / `DELETE …/{id}` | ADMIN | `{ userId, workDate, startTime, endTime, note? }` | Ca làm có trạng thái `ON_TIME` / `LATE` / `ABSENT` / `UPCOMING` | 400 |
+| `POST /api/admin/rosters/copy-week` | ADMIN | `{ fromWeek, toWeek }` | Chép lịch tuần (bỏ qua ca đã có) | 400 |
+| `GET /api/admin/reports/productivity?from&to` | ADMIN | — | `{ from, to, rows }` (tiền thu, đơn hoàn tất, giờ làm, tiền thu / giờ) | 400 |
+| `GET /api/admin/audit-logs?from&to&userId&entity&entityId&action&page&pageSize` (≤ 200) · `GET /api/admin/audit-logs/facets` | ADMIN | — | Nhật ký phân trang (`BeforeJson` / `AfterJson`); không có API sửa / xóa | 400 |
+| `GET` / `POST /api/admin/fixed-costs` · `PUT` / `DELETE …/{id}` | ADMIN | `{ name, monthlyAmount, effectiveFrom, effectiveTo? }` | Khoản chi phí cố định | `400` (ngày kết thúc trước ngày bắt đầu), 404 |
+| `GET /api/admin/reports/pnl?from&to&groupBy=day\|month` | ADMIN | — | `{ revenueGross, discounts, refunds, revenueNet, cogs, grossMargin, grossMarginPct, cashExpenses, fixedCostsAllocated, fixedCostsPerDay, operatingProfit, breakEvenPerDay, estimatedCogsRows, expensesByCategory[], series[], note: "ước tính" }` | `400 INVALID_RANGE` (sai khoảng, > ~13 tháng) |
+
+### Giai đoạn 7 — tích điểm & tem, giới thiệu bạn & voucher, chiến dịch
+
+| Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
+| --- | --- | --- | --- | --- |
+| `GET /api/members/{id}/loyalty` | NV | — | `{ points, stampCards[], rewards[{ …, affordable }], vouchers[] }` | `404 MEMBER_NOT_FOUND` |
+| `GET /api/members/{id}/vouchers` | NV | — | Voucher còn dùng được của hội viên | `404 MEMBER_NOT_FOUND` |
+| `POST /api/vouchers/validate` | NV | `{ code, memberId? }` | `{ valid: true, voucher }` hoặc `{ valid: false, code, message }` (lỗi nghiệp vụ trả trong body) | `404 MEMBER_NOT_FOUND` |
+| `GET` / `POST /api/admin/rewards` · `PUT` / `DELETE …/{id}` | ADMIN | `{ name, pointsCost, rewardType: DISCOUNT \| FREE_ITEM, discountAmount? \| menuItemId?, isActive, sortOrder }` | DELETE → `{ result }` (quà đã có người đổi → chuyển ngừng) | 400, 404 |
+| `GET` / `POST /api/admin/stamp-programs` · `PUT` / `DELETE …/{id}` | ADMIN | `{ name, requiredStamps (2–50), menuItemIds[], rewardMenuItemId?, isActive }` | Chương trình tem | `400` (món tặng không thuộc danh sách), 404 |
+| `GET /api/admin/members/{id}/loyalty` | ADMIN | — | `{ cards, pointHistory, vouchers, referrals }` | 404 |
+| `POST /api/admin/members/{id}/points` | ADMIN | `{ delta (≠ 0), reason }` | `{ points }` | `409 POINTS_INSUFFICIENT` (làm điểm âm), `404 MEMBER_NOT_FOUND` |
+| `GET /api/admin/vouchers?from&to&source` | ADMIN | — | Voucher trong kỳ (`REFERRAL` / `CAMPAIGN` / `MANUAL`) | 400 |
+| `POST /api/admin/vouchers` | ADMIN | `{ percent \| amount, maxDiscount?, minOrderAmount, stackWithMember, days (1–365), memberId? }` | `201` voucher mã `QL…` (không gắn hội viên thì ai có mã cũng dùng được một lần) | 400 |
+| `GET` / `POST /api/admin/segments` · `PUT` / `DELETE …/{id}` | ADMIN | `{ name, rule }`. `rule`: `tierIn[]`, `lastVisitDaysGte/Lte`, `visitCountGte/Lte`, `totalSpentGte`, `birthdayMonth`, `hasPointsGte` (khóa lạ → 400) | Phân khúc | `409 IN_USE` (đang được chiến dịch dùng) |
+| `POST /api/admin/segments/preview` | ADMIN | `{ rule }` | `{ count, optedOut, recentlyContacted, sample[] }` (tên / SĐT đã che) | 400 |
+| `GET` / `POST /api/admin/campaigns` · `GET` / `PUT` / `DELETE …/{id}` | ADMIN | `{ name, segmentId, channel: EXPORT \| ZALO_OA \| SMS, messageTemplate ({name} {voucher} {expires}), voucherPercent?, voucherDays?, voucherMinOrder, scheduledAt? }` | Chiến dịch | `409 CAMPAIGN_LOCKED` (đã chạy); `400 CHANNEL_NOT_CONFIGURED` (thiếu `ZALO_OA_TOKEN`), `400 CHANNEL_NOT_SUPPORTED` (SMS) |
+| `POST /api/admin/campaigns/{id}/run` | ADMIN | — | `{ …campaign, result: { delivered, skipped, failed } }` | `409 CAMPAIGN_NOT_RUNNABLE` |
+| `GET /api/admin/campaigns/{id}/export.csv` | ADMIN | — | CSV UTF-8 BOM (Họ tên, SĐT đầy đủ, Hạng, Mã voucher, Hạn dùng, Nội dung). Mỗi lần tải ghi nhật ký `campaigns.export` | 404 |
+| `PATCH /api/admin/members/{id}/opt-out` | ADMIN | `{ optOut }` | Hội viên | 404 |
+
+### Giai đoạn 8 — phân tích, dashboard chủ quán
+
+| Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
+| --- | --- | --- | --- | --- |
+| `GET /api/admin/reports/menu-engineering?from&to&categoryId` | ADMIN | — (không truyền ngày → 30 ngày) | `{ items[{ menuItemId, name, categoryName, qty, revenue, cogs, margin, marginPerUnit, share, class: STAR \| PLOWHORSE \| PUZZLE \| DOG \| INSUFFICIENT, advice, estimatedQty }], medianQty, medianMarginPerUnit, estimatedCogs }` | `400 INVALID_RANGE` |
+| `POST /api/admin/reports/menu-engineering/pin` | ADMIN | `{ menuItemId }` | Ghim món vào mục gợi ý (chế độ AUTO chuyển thành BOTH) | `400` (đã ghim đủ 20 món) |
+| `GET /api/admin/reports/heatmap?from&to&metric=orders\|revenue` | ADMIN | — | `{ matrix[7][24], max }` (hàng 0 = Thứ Hai, giờ quán) | `400 INVALID_RANGE` |
+| `GET /api/admin/reports/revenue-forecast?days=7` (1–14) | ADMIN | — | `{ today, history[{ date, revenue }], forecast[{ date, forecast, low, high, samples }] }` | 400 |
+| `GET /api/admin/reports/compare?period=week\|month&offset=0` (0–24) | ADMIN | — | `{ current, previous, change, partial }` | 400 |
+| `GET /api/admin/reports/tables?from&to` | ADMIN | — | `{ tables[{ code, name, sessions, revenue, avgMinutes, revenuePerHour, flag }], medianRevenuePerHour, medianMinutes }` | `400 INVALID_RANGE` |
+| `GET /api/dashboard/today` | `dashboard.view` | — | `{ date, full, yesterday, sameDayLastWeek, revenueChange, today, lastShift, todos{ pendingCash, posDue, expiredLots, stocktakeAgeDays, stocktakeOverdue } }`. Với MANAGER (`full: false`), server bỏ `cogs`, `grossProfit` và tổng tiền chi chờ duyệt | `403` (STAFF) |
+| `POST /api/dashboard/recompute` | `dashboard.view` | — | Tính lại hôm nay (và hôm qua nếu chưa có dòng tổng hợp) | 403 |
+
+### Mã lỗi ứng dụng mới (ngoài mã SP)
+
+`LINE_LOCKED` 409, `NO_SPLITS` 409, `UNIT_MISMATCH` 400, `RECIPE_CYCLE` 400, `RECIPE_TOO_DEEP` 400, `HAS_RECIPE` 409, `NO_RECIPE` 404, `PO_NOT_DRAFT` 409, `PO_CANCELLED` 409, `PO_HAS_RECEIPTS` 409, `RECEIPT_TOO_LARGE` 400, `RECEIPT_INVALID` 400, `SELF_APPROVAL` 403, `ATTENDANCE_NOT_TODAY` 403, `ATTENDANCE_OVERLAP` 409, `REFERRER_NOT_FOUND` 404, `SELF_REFERRAL` 400, `VOUCHER_NOT_FOUND` 404, `VOUCHER_USED` 409, `VOUCHER_EXPIRED` 409, `VOUCHER_NOT_OWNER` 409, `VOUCHER_MIN_ORDER` 409, `MEMBER_REQUIRED` 400, `REWARD_WITH_MANUAL` 400, `REWARD_ITEM_NOT_IN_BILL` 409, `CAMPAIGN_LOCKED` 409, `CAMPAIGN_NOT_RUNNABLE` 409, `CHANNEL_NOT_CONFIGURED` 400, `CHANNEL_NOT_SUPPORTED` 400. `IN_USE` 409 nay dùng thêm cho đơn vị tính và phân khúc.
+
+### Nhật ký thao tác (không đổi request / response)
+
+Middleware `src/middleware/audit.js` ghi vào `AuditLogs` các request sau, sau khi response trả về thành công (status < 400):
+
+- mọi `POST` / `PUT` / `PATCH` / `DELETE` có Bearer dưới `/api/admin/*`, trừ `…/preview`;
+- các route quầy trong bảng luật: thu tiền phiên / phần, đơn mang đi, hủy đơn, hoàn tiền, mở / đóng ca, `PUT /api/store`, sổ quỹ (tạo, duyệt, từ chối, gắn ảnh), sơ chế, hủy hàng, hủy lô, nhận PO, điều chỉnh kho / kiểm kê của trưởng ca, sửa chấm công; từ F-046: sửa / xóa món (`order.item-void`), xóa đơn (`order.void`), hủy bàn (`session.cancel`).
+
+Tiếp nhận, hoàn tất và gọi món thường không được ghi.
+
+## Bổ sung F-046 — sửa / xóa món, xóa đơn, hủy bàn (ADR-007, 18/10/2026)
+
+Mã nguồn: route `src/routes/staff.js`, service `src/services/voidService.js`, repository `src/repositories/voidRepo.js`. Chi tiết nghiệp vụ: [FEATURE-046](../chức-năng/FEATURE-046.md), BR-066…BR-070. Mã lỗi SP `50181`…`50186` xem [data-model](data-model.md).
+
+| Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
+| --- | --- | --- | --- | --- |
+| `POST /api/order-items/{id}/void` | NV (`pos.use`) | `{ quantity (SL **mới**, số nguyên 0…SL hiện tại − 1; 0 = xóa dòng), reason (1–200 ký tự), stockMode?: 'WASTE' \| 'RESTOCK', adminUsername?, adminPassword? }` | `{ order, cancelled, sessionClosed }` — `cancelled: true` khi đơn hết dòng (`CANCELLED`); `sessionClosed: true` khi phiên đã thu một phần tự đóng | `400 INVALID_QTY` (tăng / giữ nguyên số lượng — dùng "Gọi thêm món"), `400 VALIDATION_ERROR` (thiếu lý do); `403 ADMIN_APPROVAL_REQUIRED` / `ADMIN_APPROVAL_INVALID`; `404 ITEM_NOT_FOUND` (kể cả hai máy cùng xóa một dòng); `409 ITEM_NOT_EDITABLE` (dòng đã thu, đơn mang đi, đơn đã hủy / hoàn, phiên đã đóng) |
+| `POST /api/orders/{id}/void` | NV (`pos.use`) | `{ reason, stockMode?, adminUsername?, adminPassword? }` | `{ order, sessionClosed }` — đơn tại bàn chưa thu → `CANCELLED`, dòng giữ lại làm lịch sử | `404 NOT_FOUND`; `409 ITEM_NOT_EDITABLE` (đơn đã thu / có dòng đã thu, mang đi, đã hủy); 400, 403 như trên |
+| `POST /api/sessions/{id}/cancel` | NV (`pos.use`) | `{ reason, stockMode?, adminUsername?, adminPassword? }` | `{ session, cancelledOrders }` — mọi đơn chưa thu → `CANCELLED`, phiên `CLOSED`, không tạo lượt thu (người hủy + lý do ghi ở `Sessions.CancelledBy` / `CancelReason`, không trả trong `session`) | `409 SESSION_HAS_PAYMENTS` (đã thu một phần chia bill), `409 SESSION_CLOSED`, `404 NOT_FOUND`; 400, 403 như trên |
+| `GET /api/sessions/{id}/voids` | NV (`pos.use`) | — | `[{ voidId, orderId, orderCode, itemName, qty, amount, orderStatus, stockMode: RELEASE \| WASTE \| RESTOCK, reason, createdAt, createdBy, approvedBy }]` — mới nhất trước; `createdBy` / `approvedBy` là họ tên | — |
+
+- **Người duyệt (D-33):** đơn còn `PENDING` thì không cần. Đơn `PREPARING` / `COMPLETED` (hủy bàn: phiên có ít nhất một đơn như vậy): MANAGER / ADMIN tự duyệt; STAFF gửi `adminUsername` / `adminPassword` của **trưởng ca hoặc quản lý** — thiếu → `403 ADMIN_APPROVAL_REQUIRED`, sai mật khẩu / tài khoản không đủ vai → `403 ADMIN_APPROVAL_INVALID`. SP kiểm lại sau khi khóa: đơn vừa được tiếp nhận mà không có người duyệt → `403 ADMIN_APPROVAL_REQUIRED`.
+- **`stockMode`** chỉ dùng khi đơn đã `COMPLETED`; không gửi = `WASTE` (ghi hủy hàng). Đơn chưa pha xong luôn trả phần đang giữ.
+- **Realtime:** `order.status_changed` / `order.cancelled` sau mỗi lần sửa / xóa; `session.closed` khi hủy bàn hoặc khi phiên đã thu một phần tự đóng — xem [realtime-events](realtime-events.md).
+- **Nhật ký thao tác:** `order.item-void` (OrderItem), `order.void` (Order), `session.cancel` (Session); khóa `adminPassword` bị bỏ khỏi bản ghi.
+
+**Thay đổi trên endpoint đã có:** `POST /api/payments/{id}/refunds` có hoàn kho → không hoàn lại lượng đã `VOID_BACK` hoặc đã ghi hủy hàng khi xóa món (request / response không đổi).
+
+## Bổ sung F-047 — hội viên tại bàn, Thẻ thành viên, quyền lợi trên bill (ADR-008, 18/10/2026)
+
+Chi tiết nghiệp vụ: [FEATURE-047](../chức-năng/FEATURE-047.md), BR-071…BR-073. Không đổi schema. Mã nguồn: route `src/routes/engagement.js`, `sessionService.memberCard`, `loyaltyService.memberCard` / `receiptCard`; `loyaltyRepo.vouchersOf` nối thêm `Campaigns` để lấy `campaignName`.
+
+**Dùng lại, không đổi request / response** (trang Gọi món tại bàn gọi bằng Bearer của nhân viên): `POST /api/members/lookup`, `POST /api/members` (thiếu đồng ý → `400 CONSENT_REQUIRED`), `POST` / `DELETE /api/sessions/{id}/member` (phát `session.member_changed`).
+
+| Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
+| --- | --- | --- | --- | --- |
+| `GET /api/sessions/{id}/member-card` | Khách/NV (`optionalStaff`: khách phải thuộc phiên; nhân viên Bearer xem mọi phiên) | — | `{ member: { maskedName, maskedPhone, tierName, discountPercent, firstOrderPercent \| null }, points, pointHistory[≤ 10 mới nhất { delta, type, label, createdAt }], stampCards[{ programId, name, requiredStamps, stamps, rewardsAvailable, text }], rewards[{ rewardId, name, pointsCost, missing }], vouchers[{ percent, amount, maxDiscount, minOrderAmount, expiresAt, source, sourceLabel }] }`. `Cache-Control: no-store`. `label`: `EARN` "Tích điểm", `REDEEM` "Đổi quà", `ADJUST` "Quán điều chỉnh", `EXPIRE` "Điểm hết hạn", `REFUND` "Hoàn tiền — trả / trừ điểm". `vouchers` chỉ gồm voucher còn dùng được; `sourceLabel` = `Chiến dịch "<tên>"` nếu voucher thuộc chiến dịch, còn lại `REFERRAL` "Giới thiệu bạn", `MANUAL` "Quán tặng". **Không** có mã voucher, không có tên nhân viên | `403` (thiết bị không thuộc phiên), `404 NOT_FOUND` (không có phiên), `409 SESSION_CLOSED`, `404 NO_MEMBER` (phiên chưa gắn hội viên / hội viên ngừng hoạt động) |
+
+**Thay đổi trên endpoint đã có** — dữ liệu bill thêm trường `memberCard`:
+
+| Endpoint | Thay đổi |
+| --- | --- |
+| `GET /api/sessions/{id}/receipt?mode=final` · `GET /api/payments/{id}/receipt` (một phần chia bill) · `GET /api/orders/{id}/receipt` (mang đi) | Thêm `memberCard: { points, stampCards[text], vouchers[voucher như trên] } \| null` — có giá trị khi lượt thu có hội viên đang hoạt động, chưa ẩn danh; số liệu **lúc gọi API** (in lại sau thì là số mới). `mode=provisional` và bill không có hội viên → `null`. Không có mã voucher |

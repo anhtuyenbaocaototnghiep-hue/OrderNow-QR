@@ -42,6 +42,10 @@ export const time = (d) => (d ? new Date(d).toLocaleTimeString('vi-VN', { hour: 
 export const dateTime = (d) =>
   d ? new Date(d).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ }) : '';
 export const todayVn = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+/** "31/10/2026" theo giờ quán (hạn voucher, lịch sử điểm). */
+export const dateOnly = (d) => (d ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ }) : '');
+/** Giá trị voucher: "−10% (tối đa 50.000đ)" / "−20.000đ" (F-038, F-047). */
+export const voucherValue = (v) => (v.percent ? `−${v.percent}%${v.maxDiscount ? ` (tối đa ${money(v.maxDiscount)})` : ''}` : `−${money(v.amount)}`);
 
 /** "3:05" (phút:giây) hoặc "1 giờ 05 phút" từ một mốc thời gian. */
 export function elapsed(from, now = Date.now()) {
@@ -55,7 +59,19 @@ export const ORDER_STATUS = {
   PREPARING: 'Đang chuẩn bị',
   COMPLETED: 'Đã xong',
   CANCELLED: 'Đã hủy',
+  VOIDED: 'Đã hoàn tiền',
 };
+
+/** Dòng breakdown tiền (server tính — ADR-005): [{ key, label, amount }] → các dòng nhãn / số tiền. */
+export const breakdownRows = (lines, cls = 'kv') =>
+  (lines ?? []).map((b) =>
+    el(
+      'div',
+      { class: `${cls} ${b.key === 'total' ? 'total' : ''} ${b.amount < 0 ? 'minus' : ''} ${b.info ? 'info' : ''}` },
+      el('span', {}, b.label),
+      el('span', {}, b.info ? '' : money(b.amount)), // dòng thông tin (điểm / tem đã tích — F-039) không có số tiền
+    ),
+  );
 
 export const statusBadge = (status, label) => el('span', { class: `badge ${status.toLowerCase()}` }, label ?? ORDER_STATUS[status] ?? status);
 export const paymentBadge = (paymentStatus) =>
@@ -181,20 +197,27 @@ export function unlockAudio() {
 }
 export const audioReady = () => Boolean(audioCtx && audioCtx.state === 'running');
 
-/** 'ting' = đơn mới; 'chime' = gọi thanh toán (khác nhau để nhân viên phân biệt không cần nhìn). */
+/** 'ting' = đơn mới; 'chime' = gọi thanh toán; 'bell' = khách gọi nhân viên (F-021) — khác nhau để nhân viên phân biệt không cần nhìn. */
+const SOUNDS = {
+  ting: [
+    [1175, 0],
+    [1568, 0.12],
+  ],
+  chime: [
+    [784, 0],
+    [988, 0.18],
+    [1319, 0.36],
+  ],
+  bell: [
+    [660, 0],
+    [660, 0.22],
+    [880, 0.44],
+    [660, 0.66],
+  ],
+};
 export function playSound(kind = 'ting') {
   if (!audioReady()) return false;
-  const notes =
-    kind === 'chime'
-      ? [
-          [784, 0],
-          [988, 0.18],
-          [1319, 0.36],
-        ]
-      : [
-          [1175, 0],
-          [1568, 0.12],
-        ];
+  const notes = SOUNDS[kind] ?? SOUNDS.ting;
   const t0 = audioCtx.currentTime;
   for (const [freq, at] of notes) {
     const osc = audioCtx.createOscillator();

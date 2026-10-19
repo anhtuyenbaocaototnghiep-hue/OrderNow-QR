@@ -10,7 +10,7 @@
 | Môi trường | `dev` (máy cá nhân + SQL Server), `staging` (deploy thử, dữ liệu giả), `prod` (quán thử nghiệm) | PROPOSED |
 | Secrets | `.env` không commit; `.env.example` liệt kê tên biến: `DB_CONNECTION`, `JWT_SECRET`, `PUBLIC_BASE_URL` (URL in trong QR bàn), `SHOP_NAME`, `SHOP_ADDRESS` (in bill), `ADMIN_SEED_USERNAME`, `ADMIN_SEED_PASSWORD` | PROPOSED (`.env.example` tạo ở TASK-001) |
 | Dữ liệu nhạy cảm | Mật khẩu (hash); JWT secret; số liệu doanh thu/kho chỉ ADMIN xem | PROPOSED |
-| Audit | `CreatedBy/CompletedBy/CancelledAt` trên đơn; `InventoryTransactions` cho kho; đủ cho đồ án, chưa làm bảng audit tổng quát | PROPOSED |
+| Audit | `CreatedBy/CompletedBy/CancelledAt` trên đơn; `InventoryTransactions` cho kho. Từ ADR-006 (F-035, D-26) có bảng `AuditLogs` chỉ đọc cho mọi thao tác đổi tiền/kho/quyền/giá, giữ 12 tháng (job `audit-retention`) | CONFIRMED (D-26) |
 | Rate limit | `POST /api/orders` 10 req/phút/clientToken; `POST /api/auth/login` 5 req/phút/IP | PROPOSED |
 | CORS | Chỉ domain FE | PROPOSED |
 | Sao lưu | Backup DB hàng ngày khi chạy prod thử nghiệm (Azure SQL tự động / script `BACKUP DATABASE` cron) | PROPOSED |
@@ -59,18 +59,20 @@ sqlcmd -S . -E -C -Q "SELECT SERVERPROPERTY('ProductVersion'), SERVERPROPERTY('E
    npm run db:migrate          # áp cơ-sở-dữ-liệu/chuyển-đổi (một lần) + cơ-sở-dữ-liệu/thủ-tục (mỗi lần) — chạy lại không lỗi
    npm run db:seed             # admin (từ .env), staff1/Staff@123, 2 danh mục, 8 món, 6 nguyên liệu, BOM, 6 bàn; in URL QR từng bàn
    npm run db:seed:demo        # (tùy chọn) 55 đơn đã thu 01–10/10/2026 để xem báo cáo
+   npm run db:seed:mau2        # (tùy chọn) mẫu giai đoạn 2: tùy chọn Size/Topping, combo, khuyến mãi, món ghim (ADR-005)
    ```
 
-## Lệnh hằng ngày — ĐÃ XÁC MINH (14/10/2026)
+## Lệnh hằng ngày — ĐÃ XÁC MINH (16/10/2026; test, lint chạy lại 18/10/2026)
 
 | Lệnh | Việc | Kết quả lần chạy gần nhất |
 | --- | --- | --- |
 | `npm run dev` | Chạy API + Socket.io + FE tĩnh tại `http://localhost:3000`, tự khởi động lại khi sửa `ứng-dụng/máy-chủ/src` (FE không cần build: sửa file trong `ứng-dụng/giao-diện/public` rồi F5) | Chạy được; in ra các địa chỉ LAN |
 | `npm start` | Như trên, không watch (dùng khi chạy thật ở quán) | Chạy được |
-| `npm test` | 46 integration test (SP + API + quyền + realtime + xóa) trên DB `CafeQrTest` thật — **xóa sạch DB test mỗi lần** | 46/46 PASS |
-| `npm run test:e2e` | 15 test Playwright Chromium (điện thoại 390px + máy quầy + quản lý) trên server riêng cổng 3100, DB test sạch | 15/15 PASS |
-| `npm run load` | Kịch bản §13.2 qua HTTP thật, 10 vòng × 30 khách (NFR-002) + đo độ trễ realtime (NFR-001) | 10/10 vòng PASS; p95 165 ms |
-| `npm run lint` / `npm run format:check` | ESLint 9 / Prettier 3 | 0 lỗi |
+| `npm test` | 217 test (16 file): unit (bộ tính giá, lịch thực đơn, ETA, đơn vị / dự báo / hao hụt, nhật ký / lãi lỗ / quyền, phân tích) + integration (SP, API, quyền, realtime, xóa, hội viên, combo, khuyến mãi, tùy chọn, ca, giảm tay, hoàn tiền, kho, gọi món tại bàn, và giai đoạn 4–8) trên DB `CafeQrTest` thật — **xóa sạch DB test mỗi lần**; chi tiết ở `chất-lượng/test-strategy.md` | 217/217 PASS (18/10/2026) |
+| `npm run test:e2e` | 27 test Playwright Chromium (điện thoại 390px + máy quầy + quản lý) trên server riêng cổng 3100, DB test sạch, `JOBS_ENABLED=false` | 27/27 PASS (18/10/2026) |
+| `npm run load` | Kịch bản §13.2 qua HTTP thật, 10 vòng × 30 khách (NFR-002) + đo độ trễ realtime (NFR-001) | 10/10 vòng PASS; NFR-001 p50 75 ms, p95 92 ms (18/10/2026) |
+| `npm run db:seed:mau2` | Thêm dữ liệu mẫu giai đoạn 2 (chỉ khi chưa có tùy chọn/combo/khuyến mãi) | Đã chạy trên DB test, chạy lại tự bỏ qua |
+| `npm run lint` / `npm run format:check` | ESLint 9 / Prettier 3 | 0 lỗi (18/10/2026) |
 | `npm run skills:check` | Kiểm `.claude/skills` khớp `.agent/skills` | OK |
 | `npm run setup` | Cài đặt lần đầu có hỏi đáp (tạo `.env`, DB + login qua `sqlcmd -E`, migrate, seed, Chromium) — chạy lại an toàn | Đã chạy trên máy có sẵn và máy giả lập chưa có `.env` |
 | `npm run qr:links` | In link QR các bàn đang hoạt động (chỉ đọc) | OK |
@@ -83,12 +85,62 @@ Lần đầu chạy E2E cần cài trình duyệt: `node node_modules/@playwrigh
 - **Điện thoại khách quét QR**: máy chủ và điện thoại phải cùng Wi-Fi; đặt `PUBLIC_BASE_URL=http://<IP-LAN>:3000` (khi khởi động, server in danh sách IP), mở port 3000 trên Windows Firewall, rồi **in lại QR** (trang Quản lý → Bàn & mã QR → In tất cả QR).
 - Trên http trong LAN, trình duyệt điện thoại không có `crypto.randomUUID`; FE đã có phương án dự phòng.
 - Âm thanh POS: bấm nút "Bật âm thanh" một lần sau khi mở trang (trình duyệt chặn tự phát âm thanh).
+- **Thu tiền cần ca đang mở** (ADR-005, F-018): mỗi ngày bấm "⚠ Chưa mở ca" trên thanh quầy để mở ca; cuối ngày Quầy → Ca & hoàn tiền → Đóng ca.
+- Migration `0003`…`0014` đã áp lên DB dev có sẵn dữ liệu ngày 16/10/2026 (chỉ thêm bảng/cột; dữ liệu cũ giữ nguyên).
+- Migration giai đoạn 4–8 (ADR-006): `0015_goi_lai_don.sql` … `0032_tong_hop_ngay.sql`, mỗi feature có đổi schema một file; `npm run db:migrate` áp các file chưa chạy. Lưu ý `0029_tich_diem.sql`: số dư điểm cũ được ghi thành một dòng `ADJUST` "Số dư trước F-039", từ đó tích 1 điểm / 10.000đ (D-27).
+- Migration `0033_sua_xoa_mon.sql` (ADR-007, F-046 sửa / xóa món, hủy bàn) đã áp lên `CafeQrDev` ngày 18/10/2026 (chỉ thêm bảng / cột). Migration mới tiếp theo dùng số **`0034`**.
 - Dữ liệu dev hiện có thêm vài đơn chạy thử từ lượt kiểm giao diện ngày 14/10/2026.
+
+### Giai đoạn 4–8: biến môi trường, job nền, ảnh tải lên (ADR-006, 18/10/2026)
+
+**Biến môi trường mới / đổi ý nghĩa** (khai báo mẫu trong `.env.example`, đọc ở `ứng-dụng/máy-chủ/src/config.js` và `src/jobs/scheduler.js`):
+
+| Biến | Mặc định | Tác dụng |
+| --- | --- | --- |
+| `JOBS_ENABLED` | bật (`.env.example` ghi `true`) | Chỉ giá trị `false` mới tắt bộ lập lịch: job không tự chạy, nhưng vẫn chạy thủ công được. Test (`tests/helpers/testDb.js`) và E2E (`kịch-bản/e2e-server.js`) tự đặt `false` |
+| `UPLOADS_DIR` | `<repo>/uploads` (khi `NODE_ENV=test`: thư mục tạm `cafe-qr-test-uploads` của hệ điều hành) | Nơi lưu ảnh hóa đơn sổ quỹ (F-033), file nằm ở `<UPLOADS_DIR>/receipts/` |
+| `ZALO_OA_TOKEN` | trống | Có token → bật kênh `ZALO_OA` cho chiến dịch (F-037). Trống → chỉ dùng "Xuất danh sách (CSV)"; chọn Zalo OA báo `400 CHANNEL_NOT_CONFIGURED`, không gửi gì ra ngoài |
+| `ZALO_OA_URL` | `https://openapi.zalo.me/v3.0/oa/message/cs` | Cổng gửi tin Zalo OA; đổi khi tài khoản OA của quán dùng cổng khác |
+| `JWT_EXPIRES_IN` (đã có) | `8h` | Ngoài thời hạn token, nay còn là mốc job `attendance-autoclose` đóng chấm công quên đăng xuất: `ClockOut = ClockIn + thời hạn`. Nhận `8h`, `45m`, `1d` hoặc số giây; không đọc được → 8 giờ |
+
+**Job nền** (`src/jobs/index.js` đăng ký, `src/jobs/scheduler.js` chạy; giờ quán UTC+7):
+
+| Job | Lịch | Việc | Feature |
+| --- | --- | --- | --- |
+| `refresh-caches` | Mỗi 15 phút | Làm mới thống kê gợi ý + bảng thời gian pha chuẩn | F-017, F-025 |
+| `attendance-autoclose` | Mỗi 15 phút | Đóng chấm công mở quá thời hạn token | F-035 |
+| `campaigns-due` | Mỗi 5 phút | Chạy chiến dịch `SCHEDULED` đã đến giờ hẹn | F-037 |
+| `daily-summary` | 00:30 | Tổng hợp số liệu **hôm qua** cho `/admin/today` | F-043 |
+| `prep-stats` | 02:00 | Trung vị thời gian pha thực tế 30 ngày theo món | F-025 |
+| `demand-forecast` | 02:00 | Dự báo tiêu thụ 14 ngày tới | F-029 |
+| `audit-retention` | 03:00 | Xóa nhật ký thao tác quá 12 tháng (lô 5.000 dòng) | F-035 |
+| `lot-expiry` | 06:00 | Phát `inventory.expiring` (≤ 2 ngày) / `inventory.expired` tới quầy | F-028 |
+| `runout-alert` | 06:05 | Phát `inventory.runout`: nguyên liệu sẽ hết trước ngày giao kế tiếp | F-029 |
+
+Cách chạy:
+
+- Bộ lập lịch là một `setInterval` 30 giây trong tiến trình `npm start` / `npm run dev`; không cần cron của hệ điều hành.
+- Job theo chu kỳ chờ đủ một chu kỳ sau khi khởi động. Job theo giờ chạy khi đã qua mốc giờ trong ngày mà chưa có lần chạy `OK`/`RUNNING` từ mốc đó, nên máy tắt lúc 02:00 thì bật lên sẽ chạy bù.
+- Khóa trong DB (`Settings` `job.<name>.running`, hết hạn 30 phút) → nhiều tiến trình không chạy trùng; lần bị trùng ghi `SKIPPED`. Mỗi lần chạy ghi bảng `JobRuns` (`RUNNING` → `OK` / `FAILED` / `SKIPPED`). Job idempotent (chạy lại không nhân đôi).
+
+Chạy thủ công một job:
+
+- **Giao diện quản lý:** S-34 tab "Thời gian pha & hàng chờ" → **Tính lại thống kê** (`prep-stats`); S-35 tab "Đề xuất nhập hàng" → **Tính lại dự báo** (`demand-forecast`); S-42 → **Tính lại hôm nay** (gọi `POST /api/dashboard/recompute`, tính lại hôm nay và hôm qua nếu chưa có).
+- **API (chỉ ADMIN):** `GET /api/admin/jobs` (danh sách job, lịch, lần chạy gần nhất); `POST /api/admin/jobs/{name}/run` → `{ name, status: OK | SKIPPED | FAILED, info | error }`, ghi `JobRuns` "Chạy thủ công" và nhật ký thao tác `jobs.run`. Endpoint đã có test (`phase4`, `inventory2`, `finance`, `loyalty`, `analytics`); lệnh `curl` dưới đây **CHƯA XÁC MINH**:
+
+  ```bash
+  curl -s -X POST http://localhost:3000/api/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"<mật khẩu>"}'
+  # dán accessToken vào <token>
+  curl -s -X POST http://localhost:3000/api/admin/jobs/daily-summary/run -H "Authorization: Bearer <token>"
+  ```
+
+**Ảnh tải lên:** thư mục `uploads/` đã có trong `.gitignore` (ảnh hóa đơn không vào git). DB chỉ lưu đường dẫn ảnh, nên khi chuyển máy hoặc sao lưu cần chép kèm thư mục `UPLOADS_DIR`. Test dùng thư mục tạm, không đụng `uploads/` thật.
 
 ### Chưa xác minh
 
 - `docker-compose.yml` và `.github/workflows/ci.yml` (máy thiết lập không có Docker và repo chưa đẩy lên GitHub).
 - Deploy online (Q-008 còn mở), k6 (không cài; `npm run load` thay thế), in trên máy in nhiệt thật, đo NFR-001 trên Wi-Fi quán.
+- Gửi tin Zalo OA thật (F-037): test chỉ dùng kênh giả; cổng gửi phụ thuộc cấu hình tài khoản OA / ZNS của quán.
 
 ## Skills
 
@@ -109,6 +161,7 @@ Nguồn chính của skills là `.agent/skills/<name>/SKILL.md`. Công cụ AI k
 | `implement-feature` | Có. Đã đổi các tham chiếu "mẫu 19.4/19.5" thành đường dẫn thật (`tài-liệu/kế-hoạch/README.md`, `tài-liệu/chất-lượng/test-strategy.md#ban-giao`) |
 | `change-database` | Có. Thêm tham chiếu tới bảng mã lỗi và "ghi chú đối chiếu" trong data-model |
 | `verify-change` | Có. Đổi tham chiếu mẫu bàn giao thành đường dẫn thật |
+| `them-chuc-nang` | Có (19/10/2026). Gộp `extend-features` (giai đoạn 2) + `advanced-features` (giai đoạn 4–8), thêm F-024 / F-046 / F-047, đổi đường dẫn `docs/`, `db/`, `apps/` thành đường dẫn thật. Bản gốc: `tài-liệu/nguồn/skill-goc/`. Tóm tắt yêu cầu / kiến trúc: `Skill/YEU-CAU.md`, `Skill/KIEN-TRUC.md` |
 | `do-an-cafe-reviewer` | **CHƯA CÓ trong repo.** Đã tìm trên máy thiết lập (`~/.claude/skills`, Downloads, Documents, Desktop) nhưng không thấy. Việc cần làm: thành viên đang giữ skill copy `SKILL.md` vào `.agent/skills/do-an-cafe-reviewer/`, chạy `kịch-bản/sync-skills.sh`, rồi đối chiếu với `rules.md` và `verify-change`: rule nghiệp vụ/quyền viết tay trong skill thì thay bằng link `tài-liệu/nghiệp-vụ/*`; phần trùng `verify-change` thì gộp. Ghi kết quả đối chiếu vào bảng này |
 
 ## Kiểm tra thiết lập agent

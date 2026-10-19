@@ -21,7 +21,9 @@ export async function requireStaffPage({ admin = false } = {}) {
   return user;
 }
 
-export function logout() {
+/** Đăng xuất: báo server kết thúc chấm công (F-035) rồi xóa phiên trên máy. */
+export async function logout() {
+  await staffApi('/api/auth/logout', { method: 'POST' }).catch(() => {});
   clearStaffSession();
   location.href = '/pos/login';
 }

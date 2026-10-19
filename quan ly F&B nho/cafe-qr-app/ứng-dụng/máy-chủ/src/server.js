@@ -6,6 +6,7 @@ import { config } from './config.js';
 import { closePool, getPool } from './db.js';
 import { attachRealtime } from './realtime/io.js';
 import { initAvailability } from './services/menuService.js';
+import { startScheduler } from './jobs/scheduler.js';
 
 void config.jwtSecret; // kiểm tra sớm biến bắt buộc
 
@@ -30,6 +31,7 @@ server.listen(config.port, () => {
   console.log(`cafe-qr-app chạy tại http://localhost:${config.port}`);
   if (lan.length) console.log(`Trong mạng LAN: ${lan.join(', ')}  (đặt PUBLIC_BASE_URL theo địa chỉ này để điện thoại quét QR được)`);
   console.log(`QR bàn trỏ tới: ${config.publicBaseUrl}/t/<qrToken>`);
+  if (startScheduler()) console.log('Job nền: đã bật (JOBS_ENABLED=false để tắt)');
 });
 
 async function shutdown(signal) {

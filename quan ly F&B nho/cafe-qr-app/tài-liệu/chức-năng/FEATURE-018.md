@@ -1,0 +1,44 @@
+# FEATURE-018 — Chốt ca (mở/đóng ca tiền mặt)
+
+> **Nguồn:** skill `extend-features` §4 F-018. Quyết định: [ADR-005](../quyết-định/ADR-005-mo-rong-giai-doan-2.md).
+
+- **Status:** CONFIRMED (ADR-005) · Triển khai: READY_FOR_REVIEW (16/10/2026)
+- **Actor:**
+  - STAFF/ADMIN mở/đóng ca.
+  - ADMIN xem lịch sử.
+- **Màn hình:**
+  - Thanh trên quầy: nút "Ca #n · từ hh:mm" hoặc "⚠ Chưa mở ca".
+  - Banner "Chưa mở ca — chưa thu tiền được" kèm nút Mở ca.
+  - Quầy → **Ca & hoàn tiền** (`/pos/shift`, S-15):
+    - tiền đầu ca / đã thu / đã hoàn / dự kiến;
+    - lượt thu trong ca;
+    - đóng ca (đếm tiền → chênh lệch);
+    - in phiếu chốt ca.
+  - Quản lý → **Ca & hoàn tiền** (`/admin/shifts`).
+- **Dữ liệu:**
+  - `Shifts`; unique filtered index "chỉ một ca mở".
+  - `Payments.ShiftId`, `Refunds.ShiftId`.
+  - Migration `0008_chot_ca.sql`. SP `sp_CloseShift`.
+- **Quy tắc:**
+  - Thu tiền bàn, bán mang đi và hoàn tiền đều cần ca đang mở; nếu không → `409 NO_OPEN_SHIFT`.
+  - SP thu tiền giữ khóa đọc trên dòng ca, nên đóng ca phải chờ các lượt thu đang chạy xong.
+  - Một thời điểm chỉ một ca mở: mở lần 2 → `409 SHIFT_ALREADY_OPEN`.
+  - Đóng ca: `ExpectedCash = OpeningCash + Σ AmountDue (ca) − Σ hoàn tiền (ca)`.
+    - Nhập `CountedCash` → `Difference`. Âm hiển thị đỏ.
+    - Ca đã đóng không sửa được: đóng lại → `409 SHIFT_NOT_OPEN`.
+- **API:**
+  - `GET /api/shifts/current`.
+  - `POST /api/shifts/open { openingCash }`.
+  - `POST /api/shifts/{id}/close { countedCash, note }`.
+  - `GET /api/shifts/{id}/report`.
+  - `GET /api/admin/shifts?from&to`.
+  - Realtime `shift.opened`, `shift.closed`.
+- **Acceptance Criteria**
+  - AC-018-01: Chưa mở ca mà thu tiền → 409 `NO_OPEN_SHIFT`.
+  - AC-018-02: Mở ca 2 lần → 409.
+  - AC-018-03: Đóng ca → tiền dự kiến = đầu ca + Σ đã thu − Σ đã hoàn. Chênh lệch âm hiện đỏ trong lịch sử.
+  - AC-018-04: Phiếu chốt ca có tổng theo nhân viên thu, giảm giá theo loại, hoàn tiền.
+- **Bằng chứng:**
+  - `tests/members.test.js` → "Chốt ca", "Đóng ca".
+  - `tests/operations.test.js` (tiền hoàn trừ vào ca).
+  - E2E "ca: trang Ca & hoàn tiền…".

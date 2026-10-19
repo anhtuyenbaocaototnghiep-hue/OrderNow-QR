@@ -258,6 +258,19 @@ body.pos {
 .tables-panel h2 {
   font-size: 1rem;
 }
+.tables-panel .panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.tables-panel .panel-head h2 {
+  margin: 0;
+}
+.tables-panel .panel-head .btn {
+  white-space: nowrap;
+}
 .table-row {
   border-top: 1px solid var(--c-border);
   padding: 0.55rem 0;
@@ -432,4 +445,358 @@ body.pos {
 .login-card .logo {
   font-size: 2.2rem;
   text-align: center;
+}
+
+/* ---------- ADR-005: ca, gọi nhân viên, hội viên + giảm giá, tùy chọn ---------- */
+.banner.no-shift {
+  background: var(--c-danger-50);
+  color: var(--c-danger);
+  border-bottom: 1px solid #f3c2bd;
+}
+.call-strip {
+  background: #eaf3ff;
+  border-bottom-color: #c4d7ef;
+}
+.call-strip .label {
+  color: var(--c-info);
+}
+.call-card {
+  border-color: var(--c-info);
+  cursor: default;
+}
+.ticket .opts,
+.opts {
+  display: block;
+  color: var(--c-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.billing {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  margin: 0.75rem 0 0.25rem;
+  background: var(--c-surface-2);
+}
+.billing summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+.billing .stack {
+  margin-top: 0.5rem;
+}
+.billing .row .input {
+  flex: 1;
+}
+.member-on {
+  background: var(--c-success-50);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.6rem;
+}
+.approval {
+  border-left: 3px solid var(--c-warning);
+  padding-left: 0.6rem;
+}
+.breakdown .due-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.15rem 0;
+  font-weight: 600;
+}
+.breakdown .due-row.minus span:last-child {
+  color: var(--c-success);
+}
+.pos-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+.pos-page h2 {
+  font-size: 1.05rem;
+}
+.pos-page .kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.pos-page .kpi .label {
+  color: var(--c-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.pos-page .kpi .value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.pos-page .kpi.strong {
+  border: 2px solid var(--c-primary);
+}
+.pos-page .kpi.neg .value {
+  color: var(--c-danger);
+}
+.pos-page .kpi.pos .value {
+  color: var(--c-success);
+}
+.pos-page .grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 800px) {
+  .pos-page .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+.opt-picker .opt-group,
+.opt-group {
+  border: 0;
+  margin: 0 0 0.9rem;
+  padding: 0;
+}
+.opt-picker legend {
+  font-weight: 800;
+}
+.opt-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.2rem;
+  border-bottom: 1px solid var(--c-border);
+  cursor: pointer;
+}
+.opt-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+  padding-top: 0.4rem;
+}
+.print-only {
+  display: none;
+}
+@media print {
+  .pos-top,
+  .banner,
+  .no-print,
+  .toasts {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+}
+.tile .sub {
+  display: block;
+  margin-top: 0.15rem;
+}
+
+/* Gọi món tại bàn (S-16, F-024) + ghi chú bàn */
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 0.5rem;
+}
+.table-chip {
+  position: relative;
+  border: 2px solid var(--c-border);
+  background: var(--c-surface);
+  border-radius: 12px;
+  padding: 0.5rem 0.7rem;
+  min-height: 64px;
+  text-align: left;
+  font: inherit;
+  color: var(--c-text);
+  cursor: pointer;
+}
+.table-chip .name {
+  display: block;
+  font-weight: 800;
+}
+.table-chip .state {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--c-muted);
+}
+.table-chip.busy {
+  background: var(--c-success-50);
+  border-color: #b9dcc6;
+}
+.table-chip.pay {
+  background: var(--c-warning-50);
+  border-color: #f3d9a4;
+}
+.table-chip.active {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px var(--c-primary-50);
+}
+.table-chip .in-cart {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--c-primary);
+  color: #fff;
+  border-radius: 999px;
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.table-chip .note,
+.table-note {
+  display: block;
+  color: #b4530a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.table-note {
+  white-space: normal;
+  margin-top: 0.2rem;
+}
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0.3rem;
+}
+.ticket .by-staff {
+  font-size: 0.75rem;
+  color: var(--c-info);
+  font-weight: 700;
+}
+
+/* ADR-006 giai đoạn 4: hàng chờ (F-025), chia bill ở quầy (F-026), món ngoài lịch (F-040), gọi lại đơn (F-045) */
+.queue-eta {
+  color: var(--c-info);
+  font-weight: 600;
+  margin: -0.3rem 0 0.5rem;
+}
+.split-info {
+  color: var(--c-info);
+  font-weight: 600;
+}
+.split-block {
+  border: 1px dashed var(--c-border);
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.split-card.selected {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px var(--c-primary-50);
+}
+.split-move {
+  display: inline-block;
+  width: auto;
+  min-height: 28px;
+  padding: 0.1rem 0.3rem;
+  margin-left: 0.3rem;
+  font-size: 0.8rem;
+}
+.tile .off-schedule {
+  color: var(--c-warning);
+  font-weight: 700;
+}
+.recall-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem 0.5rem;
+  align-items: center;
+  background: var(--c-primary-50);
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.5rem;
+}
+.recall-card > .small.muted {
+  grid-column: 1 / -1;
+}
+
+/* ADR-006 F-039 / F-038: điểm, tem, đổi thưởng, voucher trong khung thu tiền */
+.billing .row.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.billing .loyalty-info {
+  background: var(--c-primary-50);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.6rem;
+}
+.billing .earn-note {
+  margin-top: 0.25rem;
+}
+
+/* F-046 Sửa / xóa món, xóa đơn, hủy bàn trong drawer Thu tiền bàn */
+.line-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  margin-left: 0.35rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.line-edit:hover,
+.line-edit:focus-visible {
+  border-color: var(--c-primary);
+  background: var(--c-primary-50);
+}
+.reason-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.reason-chips .chip {
+  min-height: 32px;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface-2);
+  color: var(--c-text);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.reason-chips .chip:hover {
+  border-color: var(--c-primary);
+}
+.void-history {
+  margin: 0.2rem 0 0.6rem;
+}
+.void-history summary {
+  cursor: pointer;
+  color: var(--c-muted);
+}
+.void-history ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.1rem;
+}
+
+/* F-047 Hội viên ở Gọi món tại bàn (ADR-008 D-36) */
+#member-box {
+  margin-bottom: 0.6rem;
+}
+#member-box .member-row {
+  gap: 0.3rem;
+  flex-wrap: nowrap;
+}
+#member-box .member-row .input {
+  flex: 1;
+  min-width: 0;
+}
+#member-box .member-on {
+  margin: 0.2rem 0 0.35rem;
+}
+#member-box .alert {
+  margin-top: 0.4rem;
 }
