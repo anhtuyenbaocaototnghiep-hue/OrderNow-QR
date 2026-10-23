@@ -93,7 +93,7 @@ export async function todos(today) {
             (SELECT ISNULL(SUM(Amount), 0) FROM dbo.CashTransactions WHERE Status = 'PENDING') AS PendingCashAmount,
             (SELECT COUNT(*) FROM dbo.PurchaseOrders WHERE Status IN ('SENT', 'PARTIAL') AND ExpectedDate <= @today) AS PosDue,
             (SELECT COUNT(*) FROM dbo.IngredientLots WHERE IsClosed = 0 AND Qty > 0 AND ExpiryDate < @today) AS ExpiredLots,
-            (SELECT MAX(PostedAt) FROM dbo.Stocktakes WHERE PostedAt IS NOT NULL) AS LastStocktake`,
+            (SELECT MAX(PostedAt) FROM dbo.Stocktakes WHERE Status = 'POSTED') AS LastStocktake`,
     { today: [sql.Date, today] },
   );
   const x = r.recordset[0];

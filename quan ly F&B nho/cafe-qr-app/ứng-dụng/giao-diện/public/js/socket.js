@@ -26,12 +26,28 @@ export function connectRealtime({ token, sessionId, onOnline, onOffline, onAuthE
       onOffline?.();
     }
   };
-  socket.on('disconnect', goOffline);
+  socket.on('disconnect', (reason) => {
+    // 'io client disconnect' = chính trang gọi socket.close() khi rời trang → không báo "Mất kết nối" (DEF-011)
+    if (reason !== 'io client disconnect') goOffline();
+  });
   socket.on('connect_error', (err) => {
     // Server từ chối ở middleware (token sai / không thuộc phiên) → không tự kết nối lại
     if (!socket.active) onAuthError?.(err.message);
     else goOffline();
   });
-  window.addEventListener('beforeunload', () => socket.close());
+  // Rời trang (chuyển mục / tải lại): tự đóng kết nối. Dùng pagehide — chỉ phát khi trang thật sự rời đi
+  // (beforeunload phát ngay lúc bấm, trang cũ còn hiện trong lúc chờ trang mới, và có thể bị hủy ngang).
+  let closedOnHide = false;
+  window.addEventListener('pagehide', () => {
+    closedOnHide = true;
+    socket.close();
+  });
+  // Bấm Back mà trình duyệt khôi phục trang từ bộ nhớ đệm (bfcache): kết nối đã bị đóng → mở lại,
+  // 'ready' → onOnline(true) → trang tải lại ảnh chụp (REQ-017). Không mở lại thì trang báo "Đã kết nối" mà không nhận đơn.
+  window.addEventListener('pageshow', (e) => {
+    if (!e.persisted || !closedOnHide) return;
+    closedOnHide = false;
+    socket.connect();
+  });
   return socket;
 }

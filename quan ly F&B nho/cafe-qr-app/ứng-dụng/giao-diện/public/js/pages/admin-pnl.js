@@ -3,6 +3,7 @@
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell } from '../admin-shell.js';
 import { $, clear, el, errorMessage, modal, money, showFieldErrors, toast, todayVn } from '../ui.js';
+import { attachHover, barPath, compact, niceScale, svg } from '../chart-kit.js';
 
 await mountAdminShell('pnl');
 
@@ -78,62 +79,83 @@ const kpi = (label, value, hint = '', cls = '') =>
     hint ? el('div', { class: 'small muted' }, hint) : null,
   );
 
-// ---------- Biểu đồ ----------
-const SVG = 'http://www.w3.org/2000/svg';
-function svg(tag, attrs = {}, ...children) {
-  const n = document.createElementNS(SVG, tag);
-  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
-  for (const c of children.flat(Infinity))
-    if (c !== null && c !== undefined && c !== false) n.append(c instanceof Node ? c : document.createTextNode(String(c)));
-  return n;
-}
+// ---------- Biểu đồ (TASK-069, ADR-015 D-60: 3 màu --viz-*, cột bo đầu chân vuông, khe 2px, rê chuột / bàn phím xem số) ----------
 const SERIES = [
   ['revenueNet', 'Doanh thu thuần', 'pnl-rev'],
   ['cogs', 'Giá vốn', 'pnl-cogs'],
   ['costs', 'Chi phí (quỹ + cố định)', 'pnl-cost'],
 ];
-const short = (v) => (Math.abs(v) >= 1e6 ? `${(v / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}tr` : `${Math.round(v / 1000)}k`);
+/** Nhãn trục: ngày "2026-10-05" → "05", ghi kèm tháng ở nhãn đầu và khi sang tháng ("02/11"); tháng "2026-10" → "10/26". */
+function periodTicker() {
+  let month = '';
+  return (p) => {
+    if (p.length !== 10) return p.length === 7 ? `${p.slice(5, 7)}/${p.slice(2, 4)}` : p;
+    const m = p.slice(5, 7);
+    const t = m === month ? p.slice(8, 10) : `${p.slice(8, 10)}/${m}`;
+    month = m;
+    return t;
+  };
+}
+const periodFull = (p) =>
+  p.length === 10 ? `${p.slice(8, 10)}/${p.slice(5, 7)}/${p.slice(0, 4)}` : p.length === 7 ? `Tháng ${p.slice(5, 7)}/${p.slice(0, 4)}` : p;
 
 function pnlChart(series, breakEven) {
   const pts = series.map((s) => ({ ...s, costs: s.cashExpenses + s.fixedCostsAllocated }));
-  const W = Math.max(640, pts.length * 54);
-  const H = 260;
-  const pad = { l: 56, r: 12, t: 14, b: 34 };
-  const max = Math.max(1, breakEven ?? 0, ...pts.flatMap((p) => SERIES.map(([k]) => p[k])));
-  const step = 10 ** Math.floor(Math.log10(max));
-  const top = Math.ceil(max / step) * step;
-  const y = (v) => pad.t + (H - pad.t - pad.b) * (1 - Math.max(0, v) / top);
-  const gw = (W - pad.l - pad.r) / pts.length;
-  const bw = (gw * 0.8) / SERIES.length;
+  // Bề rộng có trần: kỳ dài không làm chữ / cột co lại mức không đọc được (review G3 TASK-069)
+  const W = Math.min(1100, Math.max(640, pts.length * 34));
+  const H = 280;
+  const pad = { l: 56, r: 16, t: 18, b: 34 };
+  const base = H - pad.b;
+  const { top, ticks } = niceScale(Math.max(breakEven ?? 0, ...pts.flatMap((p) => SERIES.map(([k]) => p[k]))));
+  const y = (v) => pad.t + (base - pad.t) * (1 - Math.max(0, v) / top);
+  const gw = (W - pad.l - pad.r) / Math.max(1, pts.length);
+  const gap = 2; // khe màu nền giữa các cột cạnh nhau
+  const rawBw = (gw * 0.72 - gap * (SERIES.length - 1)) / SERIES.length;
+  // Quá nhiều kỳ cho cột nhóm (cột < 4 đơn vị) → đổi sang 3 đường cùng màu (dạng hợp với chuỗi thời gian dày)
+  const dense = rawBw < 4;
+  const bw = Math.min(24, Math.max(0, rawBw));
+  const groupW = dense ? 0 : bw * SERIES.length + gap * (SERIES.length - 1);
+  const gx = (i) => pad.l + i * gw + (gw - groupW) / 2;
+  const cx = (i) => gx(i) + groupW / 2;
+  const every = Math.ceil(pts.length / 16); // tối đa ~16 nhãn trục để không chồng chữ
+  const tick = periodTicker();
+  const chart = svg(
+    'svg',
+    {
+      class: 'chart pnl-chart',
+      viewBox: `0 0 ${W} ${H}`,
+      role: 'img',
+      'aria-label': 'Biểu đồ doanh thu thuần, giá vốn, chi phí theo kỳ — rê chuột hoặc dùng phím mũi tên để xem số',
+    },
+    ticks.map((t) => [
+      svg('line', { class: t ? 'grid' : 'axis-line', x1: pad.l, x2: W - pad.r, y1: y(t), y2: y(t) }),
+      svg('text', { class: 'tick', x: pad.l - 8, y: y(t) + 4, 'text-anchor': 'end' }, compact(t)),
+    ]),
+    dense
+      ? SERIES.map(([k, , cls]) => svg('path', { class: `pnl-line ${cls}`, d: pts.map((p, i) => `${i ? 'L' : 'M'}${cx(i)},${y(p[k])}`).join(' ') }))
+      : pts.map((p, i) => SERIES.map(([k, , cls], j) => svg('path', { class: `bar ${cls}`, d: barPath(gx(i) + j * (bw + gap), y(p[k]), bw, base - y(p[k])) }))),
+    pts.map((p, i) => (i % every === 0 ? svg('text', { class: 'tick', x: cx(i), y: base + 18, 'text-anchor': 'middle' }, tick(p.period)) : null)),
+    breakEven
+      ? [
+          svg('line', { class: 'pnl-breakeven', x1: pad.l, x2: W - pad.r, y1: y(breakEven), y2: y(breakEven) }),
+          svg('text', { x: W - pad.r, y: y(breakEven) - 6, 'text-anchor': 'end', class: 'pnl-breakeven-label' }, `Hòa vốn ${money(breakEven)}/ngày`),
+        ]
+      : null,
+  );
+  const plot = el('div', {}, chart);
+  attachHover(chart, {
+    width: W,
+    count: pts.length,
+    xAt: cx,
+    yTop: pad.t,
+    yBottom: base,
+    title: (i) => periodFull(pts[i].period),
+    rows: (i) => [...SERIES.map(([k, label, cls]) => [label, money(pts[i][k]), cls]), ['Lợi nhuận hoạt động', money(pts[i].operatingProfit)]],
+  });
   return el(
     'div',
     {},
-    svg(
-      'svg',
-      { class: 'chart pnl-chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Biểu đồ doanh thu thuần, giá vốn, chi phí' },
-      [0, 0.25, 0.5, 0.75, 1].map((f) => [
-        svg('line', { class: 'grid', x1: pad.l, x2: W - pad.r, y1: y(f * top), y2: y(f * top) }),
-        svg('text', { x: pad.l - 6, y: y(f * top) + 4, 'text-anchor': 'end' }, short(f * top)),
-      ]),
-      pts.map((p, i) => [
-        SERIES.map(([k, label, cls], j) =>
-          svg(
-            'rect',
-            { class: `bar ${cls}`, x: pad.l + i * gw + gw * 0.1 + j * bw, y: y(p[k]), width: bw * 0.92, height: Math.max(0, H - pad.b - y(p[k])), rx: 2 },
-            svg('title', {}, `${p.period} · ${label}: ${money(p[k])}`),
-          ),
-        ),
-        pts.length <= 31
-          ? svg('text', { x: pad.l + i * gw + gw / 2, y: H - pad.b + 16, 'text-anchor': 'middle' }, p.period.length > 7 ? p.period.slice(8, 10) : p.period)
-          : null,
-      ]),
-      breakEven
-        ? [
-            svg('line', { class: 'pnl-breakeven', x1: pad.l, x2: W - pad.r, y1: y(breakEven), y2: y(breakEven) }),
-            svg('text', { x: W - pad.r, y: y(breakEven) - 4, 'text-anchor': 'end', class: 'pnl-breakeven-label' }, `Hòa vốn ${money(breakEven)}/ngày`),
-          ]
-        : null,
-    ),
+    plot,
     el(
       'div',
       { class: 'row small legend' },

@@ -47,10 +47,12 @@
 ## Acceptance Criteria
 
 - AC-025-01: Hàng chờ 0 → ETA = base + thời gian giỏ.
-- AC-025-02: Thêm 3 đơn vào hàng chờ → ETA tăng đúng.
+- AC-025-02: Hàng chờ trống, `kitchen.base_seconds` = 120, món chưa có thống kê = 180 s, `parallelism` = 1: thêm 3 đơn × 2 Cà phê đen → hàng chờ 6 món; ETA giỏ có 1 Nước suối = 120 + 6 × 180 + 180 = 1.380 s; ETA của phiên vừa gọi = 120 + 6 × 180 = 1.200 s. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
 - AC-025-03: `parallelism = 2` → phần hàng chờ giảm ½.
 - AC-025-04: Món chưa có thống kê → 180 giây; có `PrepSeconds` → dùng số quản lý nhập.
 - AC-025-05: Job tính trung vị đúng (120/240/300 giây → 240); chạy lại không nhân đôi; hai lần cùng lúc → một lần `SKIPPED`.
+- AC-025-06: Điện thoại không thuộc phiên xem thời gian chờ của phiên → 403. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-025-07: Quản lý nhập thời gian pha chuẩn dưới 10 giây (ví dụ 5) → 400. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

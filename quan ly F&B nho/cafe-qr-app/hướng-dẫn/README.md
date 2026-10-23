@@ -14,6 +14,9 @@ Dành cho cả nhóm. Trên **Windows** chỉ cần **bấm đúp** các file `.
 | `6-kiểm-tra-code.cmd` | Tìm lỗi code (ESLint) và kiểm tra định dạng (Prettier) | `npm run lint` và `npm run format:check` | ~10 giây |
 | `7-chạy-tất-cả-test.cmd` | Chạy lần lượt 3 → 6 và in tổng kết | — | ~3 phút |
 | `8-xem-link-qr-bàn.cmd` | In link QR của từng bàn để vào vai khách | `npm run qr:links` | vài giây |
+| `9-sao-lưu-ngay.cmd` | Sao lưu database + ảnh hóa đơn vào `BACKUP_DIR` (cần đặt trong `.env` — [backup-restore.md](../tài-liệu/vận-hành/backup-restore.md)) | `npm run db:backup` | vài giây |
+| `10-kiểm-tra-hệ-thống.cmd` | Kiểm tra app + database, ổ đĩa, bản sao lưu gần nhất, job nền: ỔN / CẦN ĐỂ Ý / CÓ LỖI | `npm run ops:health` | vài giây |
+| `11-chạy-máy-chủ-quán.cmd` | Chạy app trên **máy chạy thật** của quán, ghi nhật ký vào `nhật-ký\` (không mở trình duyệt; Task Scheduler gọi khi bật máy — [deployment-checklist.md](../tài-liệu/vận-hành/deployment-checklist.md)) | `npm start` | chạy liên tục |
 
 Các file `.cmd` mở một cửa sổ đen. Đọc dòng **KẾT QUẢ / TỔNG KẾT** ở cuối, rồi bấm phím bất kỳ để đóng.
 

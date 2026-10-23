@@ -314,15 +314,16 @@ export async function cogsReport(fromUtc, toUtc) {
   };
 }
 
-/** Thất thoát theo nguyên liệu (F-032): tiêu thụ lý thuyết, hủy đã ghi, hụt kiểm kê trong kỳ. */
+/** Thất thoát theo nguyên liệu (F-032): tiêu thụ lý thuyết, hủy đã ghi, hụt kiểm kê trong kỳ (chỉ phiếu kiểm kê còn hiệu lực — F-048). */
 export async function lossReport(fromUtc, toUtc) {
   const r = await query(
     `SELECT i.IngredientId, i.Name, i.Unit, i.WastePercent, i.AvgCost,
             ISNULL(SUM(CASE WHEN t.Type IN ('DEDUCT', 'PREP_OUT') THEN -t.Delta END), 0) AS Consumption,
-            ISNULL(SUM(CASE WHEN t.StocktakeId IS NOT NULL THEN -t.Delta END), 0) AS StocktakeShortage,
+            ISNULL(SUM(CASE WHEN st.Status = 'POSTED' THEN -t.Delta END), 0) AS StocktakeShortage,
             ISNULL(SUM(CASE WHEN t.WasteId IS NOT NULL THEN -t.Delta END), 0) AS Logged
      FROM dbo.Ingredients i
      LEFT JOIN dbo.InventoryTransactions t ON t.IngredientId = i.IngredientId AND t.CreatedAt >= @f AND t.CreatedAt < @t
+     LEFT JOIN dbo.Stocktakes st ON st.StocktakeId = t.StocktakeId
      WHERE i.DeletedAt IS NULL
      GROUP BY i.IngredientId, i.Name, i.Unit, i.WastePercent, i.AvgCost
      ORDER BY i.Name`,

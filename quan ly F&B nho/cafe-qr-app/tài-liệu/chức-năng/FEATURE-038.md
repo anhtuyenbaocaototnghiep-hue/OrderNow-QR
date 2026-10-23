@@ -66,6 +66,8 @@ Realtime:
 - AC-038-03: Voucher dùng lần 2 → 409; hết hạn → 409; voucher người khác → 409; hai quầy cùng dùng → một bên thắng.
 - AC-038-04: 5 lượt / tháng — đăng ký đồng thời không vượt.
 - AC-038-05: Bất biến `VOUCHER_PAYMENT_MISMATCH` (voucher đã dùng gắn đúng lượt thu); breakdown lượt thu gồm voucher.
+- AC-038-06: Voucher tay của quản lý (10.000đ, đơn tối thiểu 20.000đ, không gắn hội viên): đơn 10.000đ → 409 `VOUCHER_MIN_ORDER`; hai quầy cùng dùng mã cho đơn đủ tối thiểu → đúng một lượt thu được giảm 10.000đ, lượt kia 409. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-038-07: Mã voucher không tồn tại → 404. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

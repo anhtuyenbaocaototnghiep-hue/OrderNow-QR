@@ -7,36 +7,60 @@
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/pos.css" />
   </head>
-  <body class="pos">
-    <!-- S-10 Dashboard quầy, S-11 chi tiết đơn, S-14 thu tiền bàn (FEATURE-006, FEATURE-007); gọi nhân viên, hội viên, giảm giá (ADR-005) -->
-    <div class="banner offline" id="offline-banner" hidden>Mất kết nối — đơn mới sẽ được tải lại khi có mạng</div>
-    <div class="banner late" id="late" hidden></div>
-    <section class="pay-strip" id="pay-strip" hidden aria-label="Bàn gọi thanh toán"></section>
-    <section class="pay-strip call-strip" id="call-strip" hidden aria-label="Bàn gọi nhân viên"></section>
-    <div class="pos-main">
-      <div class="board" id="board">
-        <section class="column col-pending" aria-label="Đơn mới">
-          <h2>Mới <span class="count" id="count-PENDING">0</span></h2>
-          <div class="queue-eta small" id="queue-eta" aria-live="polite"></div>
-          <div id="col-PENDING"></div>
-        </section>
-        <section class="column col-preparing" aria-label="Đang pha">
-          <h2>Đang pha <span class="count" id="count-PREPARING">0</span></h2>
-          <div id="col-PREPARING"></div>
-        </section>
-        <section class="column col-completed" aria-label="Đã xong hôm nay">
-          <h2>Đã xong hôm nay <span class="count" id="count-COMPLETED">0</span></h2>
-          <div id="col-COMPLETED"></div>
+  <body class="pos pos-board">
+    <!-- S-10 Dashboard quầy, S-11 chi tiết đơn, S-14 thu tiền bàn (FEATURE-006, FEATURE-007); gọi nhân viên, hội viên, giảm giá (ADR-005).
+         Bố cục ADR-018 (TASK-072): dải "Cần xử lý ngay" → đơn cần làm (Mới, Đang pha) + đã xong thu gọn → lưới bàn (ngăn trượt ở màn vừa). -->
+    <section class="pos-alerts" id="pos-alerts" aria-label="Cần xử lý ngay">
+      <div class="banner offline" id="offline-banner" hidden>Mất kết nối — đơn mới sẽ được tải lại khi có mạng</div>
+      <div class="banner late" id="late" hidden></div>
+      <section class="pay-strip" id="pay-strip" hidden aria-label="Bàn gọi thanh toán"></section>
+      <section class="pay-strip call-strip" id="call-strip" hidden aria-label="Bàn gọi nhân viên"></section>
+      <section class="pay-strip call-strip review-strip" id="review-strip" hidden aria-label="Khách đánh giá thấp"></section>
+    </section>
+    <main class="pos-main" id="pos-main">
+      <div class="orders-area">
+        <div class="orders-bar">
+          <button class="btn tables-toggle" type="button" id="tables-toggle" aria-controls="tables-panel" aria-expanded="false">Bàn</button>
+        </div>
+        <div class="board" id="board">
+          <section class="column col-pending" aria-labelledby="h-pending">
+            <div class="column-head">
+              <h2 id="h-pending">Mới</h2>
+              <span class="count" id="count-PENDING">0</span>
+            </div>
+            <div class="queue-eta small" id="queue-eta" aria-live="polite"></div>
+            <div class="column-body" id="col-PENDING"></div>
+          </section>
+          <section class="column col-preparing" aria-labelledby="h-preparing">
+            <div class="column-head">
+              <h2 id="h-preparing">Đang pha</h2>
+              <span class="count" id="count-PREPARING">0</span>
+            </div>
+            <div class="column-body" id="col-PREPARING"></div>
+          </section>
+        </div>
+        <section class="done-band col-completed" aria-labelledby="h-completed">
+          <div class="column-head">
+            <h2 id="h-completed">Đã xong hôm nay</h2>
+            <span class="count" id="count-COMPLETED">0</span>
+          </div>
+          <div class="done-list" id="col-COMPLETED"></div>
         </section>
       </div>
-      <aside class="card tables-panel" aria-label="Bàn đang phục vụ">
-        <div class="panel-head">
-          <h2>Bàn đang phục vụ</h2>
-          <a class="btn btn-sm btn-primary" href="/pos/table-order" id="go-table-order" title="Gọi món tại bàn">+ Gọi món</a>
+      <section class="tables-panel" id="tables-panel" aria-labelledby="h-tables">
+        <div class="tp-head">
+          <h2 id="h-tables">Bàn</h2>
+          <div class="tp-actions">
+            <a class="btn btn-primary" href="/pos/table-order" id="go-table-order" title="Gọi món tại bàn">Gọi món</a>
+            <a class="btn" href="/pos/takeaway" id="go-takeaway">Mang đi</a>
+            <button class="btn tp-close" type="button" id="tables-close" aria-label="Đóng khung bàn">Đóng</button>
+          </div>
+          <p class="tp-summary" id="tables-summary"></p>
         </div>
-        <div id="tables"><p class="muted small">Đang tải…</p></div>
-      </aside>
-    </div>
+        <div class="tbl-grid" id="tables"><p class="muted small">Đang tải…</p></div>
+      </section>
+      <div class="tables-backdrop" id="tables-backdrop" hidden></div>
+    </main>
     <script src="/socket.io/socket.io.min.js"></script>
     <script type="module" src="/js/pages/pos-dashboard.js"></script>
   </body>

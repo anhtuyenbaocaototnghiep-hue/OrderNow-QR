@@ -5,7 +5,8 @@
 - **Status:** CONFIRMED (ADR-005) · Triển khai: READY_FOR_REVIEW (16/10/2026)
 - **Actor:**
   - ADMIN hoàn tiền trực tiếp.
-  - STAFF hoàn tiền khi có tài khoản quản lý nhập tên + mật khẩu (xác thực lại, không dùng token của STAFF).
+  - MANAGER (Trưởng ca) tự hoàn, hoặc duyệt cho nhân viên, lượt thu thuộc **ca đang mở**; lượt thu ca khác cần ADMIN (tắt `manager.refund_same_shift_only` thì trưởng ca hoàn mọi lượt thu trong ngày) _(cập nhật 20/10/2026 theo ADR-006 D-24, FEATURE-036, BR-046 — TASK-057)_.
+  - STAFF hoàn tiền khi có tài khoản quản lý (hoặc trưởng ca trong phạm vi trên) nhập tên + mật khẩu (xác thực lại, không dùng token của STAFF).
 - **Màn hình:**
   - Quầy → **Ca & hoàn tiền** → nút "Hoàn tiền" trên từng lượt thu. Hộp thoại gồm:
     - số tiền (mặc định = phần còn lại), lý do (bắt buộc);
@@ -32,11 +33,13 @@
   - `GET /api/admin/refunds?from&to`.
   - Realtime `payment.refunded`.
 - **Acceptance Criteria**
-  - AC-019-01: Hoàn toàn bộ → đơn `VOIDED`, doanh thu ngày giảm đúng.
+  - AC-019-01: Lượt thu 58.000đ (2 Cà phê sữa đã hoàn tất): hoàn 20.000đ → đơn giữ nguyên, doanh thu của ngày còn 38.000đ; hoàn nốt 38.000đ → đơn `VOIDED`, doanh thu của ngày về 0đ (giảm đúng 58.000đ). _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
   - AC-019-02: Hoàn vượt → 400. STAFF không có quản lý duyệt → `403 ADMIN_APPROVAL_REQUIRED`.
   - AC-019-03: Hoàn kho → tồn tăng đúng BOM, có dòng `RESTOCK`.
   - AC-019-04: Hai lần hoàn đồng thời → chỉ một thành công.
   - AC-019-05: Hoàn đơn mang đi chưa pha → phần kho đang giữ được trả. Đơn không hoàn tất được nữa.
+  - AC-019-06: Hoàn tiền lượt thu của ngày trước (giờ quán) → 409 `REFUND_WINDOW_EXPIRED`. _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-019-07: Hoàn tiền thiếu lý do → 400; không đăng nhập → 401. _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:**
   - `tests/operations.test.js` → "Hoàn tiền sau khi đã thu (F-019)".
   - E2E "ca: … hoàn tiền một lượt …".

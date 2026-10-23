@@ -5,6 +5,7 @@ import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { printUrl } from '../print.js';
 import { $, clear, dateTime, el, errorMessage, modal, money, num, paymentBadge, statusBadge, todayVn } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('reports');
 
@@ -137,7 +138,7 @@ function barChart(points) {
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * top);
   return svg(
     'svg',
-    { class: 'chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Biểu đồ doanh thu' },
+    { class: 'chart rev-chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Biểu đồ doanh thu' },
     ticks.map((t) => [
       svg('line', { class: 'grid', x1: pad.l, x2: W - pad.r, y1: y(t), y2: y(t) }),
       svg('text', { x: pad.l - 6, y: y(t) + 4, 'text-anchor': 'end' }, t >= 1000 ? `${num(t / 1000)}k` : num(t)),
@@ -474,7 +475,7 @@ function renderPayments(list) {
                     'td',
                     {},
                     p.orderCode ? `${p.target} · #${p.orderCode}` : p.target,
-                    p.member ? el('div', { class: 'small muted' }, `⭐ ${p.member}`) : null,
+                    p.member ? el('div', { class: 'small muted' }, icon('star', { label: 'Hội viên' }), p.member) : null,
                     p.manualReason ? el('div', { class: 'small muted' }, `Giảm tay: ${p.manualReason}`) : null,
                   ),
                   el('td', { class: 'num' }, p.discount ? `−${money(p.discount)}` : '—'),

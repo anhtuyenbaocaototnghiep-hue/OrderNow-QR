@@ -41,14 +41,22 @@ export function createApp() {
   const api = express.Router();
   api.use(ensureClientToken);
   api.use(auditTrail); // ADR-006 D-26: nhật ký thao tác đổi tiền/kho/quyền/giá (theo bảng luật)
-  api.use(publicRouter);
-  api.use(engagementRouter); // ADR-006: gọi lại đơn, thời gian chờ, chia bill (khách + quầy)
-  api.use('/admin', adminRouter);
-  api.use(opsRouter); // ADR-006: kho cho quầy (sơ chế, hủy hàng, lô, nhận hàng; trưởng ca: điều chỉnh, kiểm kê)
-  api.use(financeRouter); // ADR-006: sổ quỹ, chấm công, đăng xuất
-  api.use(loyaltyRouter); // ADR-006: điểm / tem / voucher (quầy)
-  api.use(dashboardRouter); // ADR-006 F-043: dashboard chủ quán (quản lý + trưởng ca)
-  api.use(staffRouter);
+  // Router dưới /api theo đúng thứ tự gắn (tiền tố '' = gắn thẳng). Trang Tra cứu API đọc lại bảng này (F-052, ADR-011 D-50).
+  const apiRouters = [
+    ['', publicRouter],
+    ['', engagementRouter], // ADR-006: gọi lại đơn, thời gian chờ, chia bill (khách + quầy)
+    ['/admin', adminRouter],
+    ['', opsRouter], // ADR-006: kho cho quầy (sơ chế, hủy hàng, lô, nhận hàng; trưởng ca: điều chỉnh, kiểm kê)
+    ['', financeRouter], // ADR-006: sổ quỹ, chấm công, đăng xuất
+    ['', loyaltyRouter], // ADR-006: điểm / tem / voucher (quầy)
+    ['', dashboardRouter], // ADR-006 F-043: dashboard chủ quán (quản lý + trưởng ca)
+    ['', staffRouter],
+  ];
+  for (const [prefix, router] of apiRouters) {
+    if (prefix) api.use(prefix, router);
+    else api.use(router);
+  }
+  app.locals.apiRouters = apiRouters.map(([prefix, router]) => ({ prefix: `/api${prefix}`, router, pathless: !prefix }));
   app.use('/api', api);
   app.use('/api', notFoundApi);
 

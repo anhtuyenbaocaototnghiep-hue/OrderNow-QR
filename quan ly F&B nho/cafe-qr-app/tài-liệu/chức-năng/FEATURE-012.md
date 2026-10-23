@@ -6,14 +6,14 @@
 - **Source:** US11 (bản 1), US9 (bản 2), Module 5.1
 - **Đầu vào:** `from`, `to` (ngày, múi giờ quán `Asia/Ho_Chi_Minh` — PROPOSED), bộ lọc nhanh "Hôm nay / 7 ngày / Tháng này".
 - **Chỉ số (định nghĩa để tránh lệch số):**
-  - Tổng doanh thu = Σ `TotalAmount` của đơn có `PaymentStatus = PAID` và `Status ≠ CANCELLED`, tính theo **ngày thanh toán** (`PaidAt`) — PROPOSED (Word chưa định nghĩa; cần chốt: theo ngày tạo hay ngày thanh toán).
-  - Số hóa đơn = số đơn thỏa điều kiện trên.
+  - Tổng doanh thu = Σ `Payments.AmountDue` (số thực thu, đã trừ khuyến mãi / hội viên / giảm tay / làm tròn) theo **ngày thu** (`PaidAt`) − Σ `Refunds.Amount` theo **ngày hoàn** (giờ VN). Khi không có giảm giá và hoàn tiền, bằng Σ `TotalAmount` của đơn đã thu. Bản gốc (MVP, 14/10/2026): "Σ `TotalAmount` của đơn có `PaymentStatus = PAID` và `Status ≠ CANCELLED`, tính theo ngày thanh toán" _(cập nhật 20/10/2026 theo ADR-005 phần Hệ quả, F-019 — TASK-057)_.
+  - Số hóa đơn = số đơn có `PaymentStatus = PAID`, `Status` không phải `CANCELLED` / `VOIDED`, `PaidAt` trong khoảng.
   - Món bán chạy = top 10 theo Σ `Quantity` từ `OrderItems` của các đơn trên.
   - Doanh thu theo ngày (biểu đồ cột) và theo giờ trong ngày (nếu chọn 1 ngày).
   - Cảnh báo nguyên liệu sắp hết (BR-016) — không phụ thuộc khoảng ngày.
 - **Acceptance Criteria**
-  - AC-012-01: Chọn 01/10–10/10/2026 → biểu đồ + bảng đúng số liệu seed (có bộ dữ liệu mẫu để đối chiếu).
-  - AC-012-02: Chọn 01/12–10/12/2026 hoặc `from > to` → nút Xem bị vô hiệu, báo "Khoảng thời gian không hợp lệ"; server cũng trả 400.
+  - AC-012-01: Với bộ dữ liệu mẫu (`kịch-bản/seed-data.js`), chọn 01/10–10/10/2026 → 55 hóa đơn, tổng doanh thu 3.190.000đ, biểu đồ 10 cột ngày (ngày 05/10: 5 hóa đơn, 290.000đ), món bán chạy nhất "Cà phê sữa". _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+  - AC-012-02: Chọn khoảng có ngày kết thúc sau hôm nay (giờ quán) hoặc `from > to` → nút Xem bị vô hiệu, báo "Khoảng thời gian không hợp lệ"; gọi thẳng API → 400 `INVALID_RANGE`. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
   - AC-012-03: Đơn `CANCELLED` hoặc `UNPAID` không tính vào doanh thu.
   - AC-012-04: STAFF gọi API báo cáo → 403.
 - **Liên kết:** API `GET /api/admin/reports/revenue` · UI S-25 · Rule BR-005 · Hỏi: Q-014 (lịch sử đơn, "theo ca").

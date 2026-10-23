@@ -55,11 +55,26 @@ Mở app và chạy test: xem [`../hướng-dẫn/README.md`](../hướng-dẫn/
 | 25 | [Sửa / xóa món, xóa đơn, hủy bàn](25-sửa-xóa-món-hủy-bàn.md) | Trước khi thu tiền: giảm / xóa món gọi nhầm, xóa cả đơn, hủy lượt phục vụ khi khách bỏ về / mở nhầm bàn; đơn đã pha chọn ghi hủy hàng hay hoàn kho; có lịch sử | Quầy · Trưởng ca · Quản lý |
 | 26 | [Hội viên tại bàn & Thẻ thành viên](26-hội-viên-tại-bàn-thẻ-thành-viên.md) | Nhân viên gắn / đăng ký SĐT hội viên ngay ở Gọi món tại bàn; khách xem điểm, tem, quà, voucher (kèm hạn, tên chiến dịch) trên điện thoại; bill in điểm hiện có và voucher còn hạn | Quầy · Khách |
 
+### Theo yêu cầu chủ dự án (21/10/2026)
+
+| # | Chức năng | Dùng để | Ai dùng |
+| --- | --- | --- | --- |
+| 27 | [Chuyển bàn](27-chuyển-bàn.md) | Khách đổi chỗ: chuyển cả nhóm sang bàn khác, đơn / chia bill / hội viên đi theo, điện thoại khách tự chuyển | Quầy |
+| 18+ | [Sổ quỹ — hủy / sửa khoản đã duyệt](18-sổ-quỹ.md#hủy--sửa-khoản-đã-duyệt-ghi-nhầm) | Ghi nhầm khoản chi / thu đã duyệt: hủy hoặc sửa khi ca còn mở, két tính lại | Trưởng ca · Quản lý |
+| 28 | [Đánh giá sau khi dùng món](28-đánh-giá-món.md) | Khách chấm sao từng món + góp ý sau khi thanh toán; quầy được báo khi ≤ 2 sao; sao trên menu | Khách · Quầy · Quản lý |
+
+### Theo yêu cầu chủ dự án (23/10/2026)
+
+| # | Chức năng | Dùng để | Ai dùng |
+| --- | --- | --- | --- |
+| 29 | [Tra cứu API](29-tra-cứu-api.md) | Xem mọi API server đang chạy: quyền cần có, request / response / mã lỗi, chép lệnh curl để thử | Quản lý |
+| 6+ | [Chốt ca — chưa mở ca thì không nhận / xử lý đơn](06-chốt-ca.md#mở-ca-đầu-ngày--đầu-ca) | Khách xem menu nhưng không gửi đơn; quầy khóa tiếp nhận / hoàn tất / gọi món tại bàn… tới khi mở ca | Khách · Quầy |
+
 ## Những chỗ **đã đổi** trong cách làm quen thuộc
 
-1. **Phải mở ca trước khi thu tiền.**
+1. **Phải mở ca trước khi bán.**
    - Đầu ngày bấm nút đỏ **⚠ Chưa mở ca** trên thanh quầy → nhập tiền lẻ trong két → **Mở ca**.
-   - Chưa mở ca thì khách vẫn gọi món được, nhưng **không thu tiền và không hoàn tiền được**.
+   - Chưa mở ca thì **khách không gửi được đơn** (vẫn xem menu), **quầy không tiếp nhận / hoàn tất / gọi món tại bàn**, không thu tiền, không hoàn tiền (F-055, từ 23/10/2026).
    - Xem [Chốt ca](06-chốt-ca.md).
 2. **Hộp "Thu tiền bàn" có thêm mục "Hội viên · giảm giá".**
    - Số phải thu do hệ thống tính sẵn, hiện từng dòng: Tạm tính → Khuyến mãi → Hội viên → Giảm giá → Làm tròn.

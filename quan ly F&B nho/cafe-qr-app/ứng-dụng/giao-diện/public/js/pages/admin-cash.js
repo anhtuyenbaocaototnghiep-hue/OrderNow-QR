@@ -4,6 +4,7 @@ import { staffApi, staffBlobUrl } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { cashBookTable } from '../cash-book.js';
 import { $, clear, el, errorMessage, modal, money, showFieldErrors, toast, todayVn } from '../ui.js';
+import { icon } from '../icons.js';
 
 const me = await mountAdminShell('cash');
 
@@ -88,6 +89,7 @@ function filters() {
       ['PENDING', 'Chờ duyệt'],
       ['APPROVED', 'Đã duyệt'],
       ['REJECTED', 'Từ chối'],
+      ['VOIDED', 'Đã hủy'], // F-050
     ]),
     el('button', { class: 'btn', type: 'button', onclick: exportCsv }, 'Xuất CSV'),
   );
@@ -194,8 +196,8 @@ function renderCategories() {
               { class: c.isActive ? '' : 'muted' },
               el('td', {}, c.name),
               el('td', {}, c.direction === 'IN' ? 'Thu' : 'Chi'),
-              el('td', {}, c.isExpense ? '✔' : ''),
-              el('td', {}, c.requiresApproval ? '✔' : ''),
+              el('td', {}, c.isExpense ? icon('check', { label: 'Có' }) : ''),
+              el('td', {}, c.requiresApproval ? icon('check', { label: 'Có' }) : ''),
               el(
                 'td',
                 {},

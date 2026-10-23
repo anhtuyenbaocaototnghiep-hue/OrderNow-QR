@@ -2,6 +2,7 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { $, clear, el, errorMessage, money, setBusy, showFieldErrors, toast } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('menu');
 
@@ -80,7 +81,7 @@ function render(item) {
                 drawRows();
               },
             },
-            '✕',
+            icon('x'),
           ),
         ),
       ),

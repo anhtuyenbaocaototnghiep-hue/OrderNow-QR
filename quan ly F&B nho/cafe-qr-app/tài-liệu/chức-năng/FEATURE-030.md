@@ -52,7 +52,8 @@
 - AC-030-01: PO 10 gói, nhận 6 → `PARTIAL`, tồn +6 gói quy đổi; nhận thêm 4 → `RECEIVED`.
 - AC-030-02: Nhận vượt → 409 cần xác nhận; có xác nhận → nhận được.
 - AC-030-03: Hủy PO đã nhận một phần → 409.
-- AC-030-04: Lịch sử giá + tỉ lệ đúng hạn / đủ hàng đúng.
+- AC-030-04: PO 10 hộp (giá đặt 32.000đ/hộp) nhận 6 hộp giá 31.000đ rồi 4 hộp, đủ trước ngày dự kiến → báo cáo nhà cung cấp: 1 PO, 1 PO đã nhận đủ, đúng hạn 100 %, đủ hàng 100 %; lịch sử giá có 2 dòng (2 lần nhận); giá gần nhất của nhà cung cấp = 32.000đ/hộp. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+- AC-030-05: Nhận hàng theo PO còn nháp (chưa gửi) → 409 `PO_NOT_RECEIVABLE`. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

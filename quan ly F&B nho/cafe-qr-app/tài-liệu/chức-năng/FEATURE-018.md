@@ -8,7 +8,7 @@
   - ADMIN xem lịch sử.
 - **Màn hình:**
   - Thanh trên quầy: nút "Ca #n · từ hh:mm" hoặc "⚠ Chưa mở ca".
-  - Banner "Chưa mở ca — chưa thu tiền được" kèm nút Mở ca.
+  - Banner "Chưa mở ca — chưa thu tiền được" kèm nút Mở ca. _(Từ 23/10/2026 — F-055, ADR-017: chưa mở ca thì cũng không nhận / xử lý đơn; banner đổi thành "Chưa mở ca — chưa nhận, xử lý đơn và thu tiền được")_
   - Quầy → **Ca & hoàn tiền** (`/pos/shift`, S-15):
     - tiền đầu ca / đã thu / đã hoàn / dự kiến;
     - lượt thu trong ca;
@@ -38,6 +38,7 @@
   - AC-018-02: Mở ca 2 lần → 409.
   - AC-018-03: Đóng ca → tiền dự kiến = đầu ca + Σ đã thu − Σ đã hoàn. Chênh lệch âm hiện đỏ trong lịch sử.
   - AC-018-04: Phiếu chốt ca có tổng theo nhân viên thu, giảm giá theo loại, hoàn tiền.
+  - AC-018-05: Đóng lại ca đã đóng → 409 `SHIFT_NOT_OPEN`; sau khi đóng ca (chưa mở ca mới), bán mang đi → 409 `NO_OPEN_SHIFT`. _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:**
   - `tests/members.test.js` → "Chốt ca", "Đóng ca".
   - `tests/operations.test.js` (tiền hoàn trừ vào ca).

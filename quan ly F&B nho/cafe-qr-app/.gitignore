@@ -16,9 +16,17 @@ obj/
 # Ảnh tải lên (hóa đơn sổ quỹ — F-033)
 uploads/
 
+# Vận hành (bước 15): nhật ký server / kiểm tra, bản sao lưu nếu để trong repo — có dữ liệu thật, không commit
+nhật-ký/
+sao-lưu/
+*.bak
+
 # Test output
 playwright-report/
 test-results/
+# Kết quả chạy thật cho ma trận truy vết (npm run trace) — sinh lại mỗi lần chạy, không commit
+kiểm-thử/kết-quả/*
+!kiểm-thử/kết-quả/.gitkeep
 
 # OS / editor
 .DS_Store

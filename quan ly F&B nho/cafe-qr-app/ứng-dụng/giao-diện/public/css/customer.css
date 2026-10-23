@@ -3,12 +3,18 @@ body.customer {
   background: var(--c-bg);
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }
+/* Vùng chạm trên điện thoại ≥ 44 px (ADR-012 D-54) */
+body.customer .btn:not(.btn-sm):not(.btn-lg) {
+  min-height: 44px;
+}
 /* Toast nằm trên thanh nút cố định ở đáy màn hình */
 body.customer .toasts {
   bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
+/* Đầu trang espresso, viền caramel (ADR-012). Cao cố định (rem — phóng chữ thì đầu trang và thanh danh mục cùng lớn) để thanh danh mục dính ngay bên dưới */
 .c-header {
+  --c-focus: var(--c-focus-dark); /* nền tối → viền focus sáng (TASK-057) */
   position: sticky;
   top: 0;
   z-index: 30;
@@ -16,145 +22,216 @@ body.customer .toasts {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: var(--c-primary);
+  height: 4.125rem; /* 66px */
+  padding: 0 1rem;
+  background: var(--c-espresso);
   color: #fff;
+  border-bottom: 3px solid var(--c-accent);
+}
+.c-header > div:first-child {
+  min-width: 0;
 }
 .c-shop {
-  font-size: 0.8rem;
-  opacity: 0.85;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--c-on-dark-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+/* Tên bàn là chỗ khách xác nhận đúng bàn: tên dài xuống tối đa 2 dòng (cỡ chữ co theo bề ngang) thay vì bị cắt (review G3) */
 .c-table {
-  font-size: 1.15rem;
+  font-size: clamp(1rem, 4.6vw, 1.2rem);
   font-weight: 800;
+  line-height: 1.15; /* 2 dòng + tên quán vừa trong 66px */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 .c-header .btn {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.35);
+  flex: none;
+  background: var(--c-espresso-2);
+  border-color: rgba(234, 220, 203, 0.35);
   color: #fff;
+}
+.c-header .btn:hover {
+  background: #45311f;
 }
 
 .c-tabs {
   position: sticky;
-  top: 60px;
+  top: 4.125rem; /* = chiều cao .c-header */
   z-index: 20;
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding: 0.6rem 1rem;
+  padding: 0.65rem 1rem;
   background: var(--c-bg);
   border-bottom: 1px solid var(--c-border);
   scrollbar-width: none;
 }
+/* Thanh danh mục cuộn ngang: chip giữ nguyên bề rộng (chip ở chỗ khác được co / xuống dòng) */
+.c-tabs .chip {
+  flex: none;
+}
+/* Bóng dưới thanh danh mục chỉ ở trang khách (quầy dùng lại .c-tabs dạng tĩnh ở Bán mang đi / Gọi món tại bàn) */
+body.customer .c-tabs {
+  box-shadow: 0 6px 12px -10px rgba(42, 27, 18, 0.35);
+}
 .c-tabs::-webkit-scrollbar {
   display: none;
 }
-.chip {
-  flex: none;
-  border: 1px solid var(--c-border);
-  background: var(--c-surface);
-  border-radius: 999px;
-  padding: 0.35rem 0.85rem;
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  color: var(--c-text);
-}
-.chip.active,
-.chip[aria-pressed='true'] {
-  background: var(--c-primary);
-  border-color: var(--c-primary);
-  color: #fff;
-}
-
 .c-menu {
-  padding: 0.5rem 1rem 1rem;
+  padding: 0.25rem 1rem 1rem;
   max-width: 720px;
   margin: 0 auto;
 }
 .c-section {
-  scroll-margin-top: 120px;
+  scroll-margin-top: 8.25rem;
 }
+/* Tiêu đề nhóm món: chữ có chân + đường kẻ mảnh */
 .c-section h2 {
-  font-size: 1.05rem;
-  margin: 1rem 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin: 1.35rem 0 0.7rem;
 }
+.c-section h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--c-border);
+}
+.c-section h2 .ic {
+  margin: 0;
+  color: var(--c-accent-600);
+}
+/* Thẻ món nổi bằng bóng, không viền (độ nổi khai báo một lần — ADR-013 D-56) */
 .c-item {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.85rem;
   align-items: center;
   background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  padding: 0.65rem;
-  margin-bottom: 0.6rem;
+  border-radius: 16px;
+  padding: 0.75rem 0.8rem 0.75rem 0.75rem;
+  margin-bottom: 0.7rem;
+  box-shadow: var(--shadow);
+}
+.c-item .thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #f4e4d0, #e7d0b3);
+  color: var(--c-primary-600);
+  font-size: 1.65rem;
 }
 .c-item.soldout {
   opacity: 0.55;
 }
 .c-item-name {
   font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.35;
 }
 .c-item-price {
+  margin-top: 0.15rem;
   color: var(--c-primary);
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
 }
 .add-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: none;
   background: var(--c-primary);
   color: #fff;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   line-height: 1;
   cursor: pointer;
   flex: none;
+  box-shadow: 0 4px 10px -4px rgba(95, 52, 28, 0.6);
+  transition:
+    background 0.15s,
+    transform 0.05s;
+  touch-action: manipulation;
+}
+.add-btn:hover {
+  background: var(--c-primary-600);
+}
+.add-btn:active {
+  transform: scale(0.94);
 }
 .stepper {
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--c-border);
   border-radius: 999px;
-  background: var(--c-surface);
+  background: var(--c-primary-50);
   flex: none;
 }
 .stepper button {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border: none;
   background: transparent;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   cursor: pointer;
   color: var(--c-primary);
   border-radius: 50%;
+  touch-action: manipulation;
 }
 .stepper span {
   min-width: 26px;
   text-align: center;
-  font-weight: 700;
+  font-weight: 800;
 }
 
+/* Thanh giỏ nổi: nút espresso, số món trên nền caramel nhạt */
 .c-cartbar {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 40;
-  padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
-  background: linear-gradient(transparent, var(--c-bg) 30%);
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(rgba(246, 239, 229, 0), var(--c-bg) 35%);
 }
 .c-cartbar .btn {
   max-width: 640px;
+  min-height: 56px;
   margin: 0 auto;
   justify-content: space-between;
+  border-radius: 16px;
+  background: var(--c-espresso);
+  border-color: var(--c-espresso);
   box-shadow: var(--shadow-lg);
 }
+.c-cartbar .btn:hover {
+  background: var(--c-espresso-2);
+}
 .cart-count {
-  background: rgba(255, 255, 255, 0.2);
+  min-width: 1.9rem;
   border-radius: 999px;
   padding: 0.1rem 0.6rem;
+  background: var(--c-accent-100);
+  color: var(--c-espresso);
+  font-weight: 800;
+  text-align: center;
+}
+#cart-total {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .cart-line {
@@ -182,26 +259,49 @@ body.customer .toasts {
 .cart-total {
   display: flex;
   justify-content: space-between;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 800;
   padding-top: 0.75rem;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Vào bàn (S-01) */
 .c-entry {
   max-width: 480px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2.5rem 1rem 2rem;
 }
 .c-hero {
   text-align: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
+/* Biểu tượng trong khung tròn như miệng tách */
 .c-hero .logo {
-  font-size: 2.5rem;
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 0.9rem;
+  border-radius: 50%;
+  background: var(--c-primary-50);
+  box-shadow:
+    inset 0 0 0 6px var(--c-surface),
+    0 0 0 1px var(--c-border);
+  color: var(--c-primary);
+  line-height: 1;
+}
+.c-hero .logo .ic {
+  width: 2.4rem;
+  height: 2.4rem;
+  margin: 0;
+  stroke-width: 1.75;
+}
+.c-hero .logo.warn {
+  background: var(--c-warning-50);
+  color: var(--c-warning-text);
 }
 .c-hero h1 {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
 }
 .c-choice {
   display: block;
@@ -209,12 +309,18 @@ body.customer .toasts {
   text-align: left;
   border: 2px solid var(--c-primary);
   background: var(--c-surface);
-  border-radius: var(--radius);
-  padding: 0.9rem 1rem;
-  margin-bottom: 0.75rem;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.8rem;
   font: inherit;
   cursor: pointer;
   color: var(--c-text);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.c-choice:hover {
+  background: var(--c-primary-50);
 }
 .c-choice strong,
 .c-choice span {
@@ -226,6 +332,9 @@ body.customer .toasts {
 }
 .c-choice.alt {
   border-color: var(--c-border);
+}
+.c-choice.alt:hover {
+  background: var(--c-surface-2);
 }
 .c-choice.alt strong {
   color: var(--c-text);
@@ -251,15 +360,17 @@ body.customer .toasts {
   margin: 0 auto;
   padding: 1rem;
 }
+/* Thẻ đơn nổi bằng bóng; viền chỉ hiện khi mang trạng thái (đã xong = viền xanh) */
 .order-card {
   background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  padding: 0.85rem 1rem;
-  margin-bottom: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.8rem;
+  box-shadow: var(--shadow);
 }
 .order-card.completed {
-  border-color: #bfe0cb;
+  border-color: #bcd8c0;
 }
 .order-card.cancelled {
   opacity: 0.6;
@@ -278,7 +389,7 @@ body.customer .toasts {
 .line-note {
   display: block;
   font-size: 0.82rem;
-  color: var(--c-warning);
+  color: var(--c-warning-text);
 }
 .progress {
   display: flex;
@@ -287,7 +398,7 @@ body.customer .toasts {
 }
 .progress span {
   flex: 1;
-  height: 5px;
+  height: 6px;
   border-radius: 99px;
   background: var(--c-border);
 }
@@ -299,8 +410,9 @@ body.customer .toasts {
   justify-content: space-between;
   align-items: baseline;
   font-weight: 800;
-  font-size: 1.15rem;
-  padding: 0.5rem 0.25rem 1rem;
+  font-size: 1.2rem;
+  padding: 0.6rem 0.25rem 1rem;
+  font-variant-numeric: tabular-nums;
 }
 .c-actions {
   position: fixed;
@@ -310,9 +422,10 @@ body.customer .toasts {
   z-index: 40;
   display: flex;
   gap: 0.6rem;
-  padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+  padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom));
   background: var(--c-surface);
   border-top: 1px solid var(--c-border);
+  box-shadow: 0 -8px 24px -16px rgba(42, 27, 18, 0.45);
 }
 .c-actions .btn {
   flex: 1;
@@ -322,7 +435,7 @@ body.customer .toasts {
   padding: 1rem;
   margin-bottom: 1rem;
   background: var(--c-info-50);
-  border: 1px solid #c4d7ef;
+  border: 1px solid #c3d5e8;
 }
 .pay-status .timer {
   font-family: var(--mono);
@@ -333,21 +446,27 @@ body.customer .toasts {
   text-align: center;
   padding: 2.5rem 1rem;
 }
-.thanks .big {
-  font-size: 3rem;
+.thanks .big,
+.popup-done .big {
+  color: var(--c-primary);
+  line-height: 1;
+}
+.thanks .big .ic,
+.popup-done .big .ic {
+  width: 3.25rem;
+  height: 3.25rem;
+  margin: 0;
+  stroke-width: 1.6;
 }
 .popup-done {
   text-align: center;
-}
-.popup-done .big {
-  font-size: 3rem;
 }
 
 /* ---------- ADR-005: Ưu đãi / Gợi ý / Combo / tùy chọn / hội viên / gọi nhân viên ---------- */
 .banner.closed {
   background: var(--c-warning-50);
-  color: var(--c-warning);
-  border-bottom: 1px solid #f0d7a8;
+  color: var(--c-warning-text);
+  border-bottom: 1px solid #efd5a6;
   font-weight: 700;
 }
 .chip.special {
@@ -375,9 +494,9 @@ body.customer .toasts {
 .promo-card {
   border: 1px dashed var(--c-accent);
   background: var(--c-warning-50);
-  border-radius: var(--radius-sm);
-  padding: 0.6rem 0.8rem;
-  margin-bottom: 0.6rem;
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.7rem;
 }
 .qty-badge {
   display: inline-grid;
@@ -447,7 +566,7 @@ body.customer .toasts {
 }
 .member-box.on {
   border-style: solid;
-  border-color: #b6dcc4;
+  border-color: #bcd8c0;
   background: var(--c-success-50);
   cursor: default;
 }
@@ -468,10 +587,10 @@ body.customer .toasts {
   gap: 0.25rem 0.6rem;
   align-items: center;
   background: var(--c-primary-50);
-  border: 1px solid #ecd2c2;
+  border: 1px solid #e8d3bd;
   border-radius: var(--radius);
-  padding: 0.7rem 0.85rem;
-  margin: 0.6rem 0;
+  padding: 0.75rem 0.9rem;
+  margin: 0.75rem 0;
 }
 .recall-card > .small.muted {
   grid-column: 1 / -1;
@@ -480,13 +599,22 @@ body.customer .toasts {
   margin: 0.4rem 0 0.2rem;
 }
 .fav-btn {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  min-height: 40px;
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: var(--c-danger);
-  font-size: 1.25rem;
   cursor: pointer;
-  padding: 0 0.3rem;
+  padding: 0;
   align-self: flex-start;
+}
+.fav-btn .ic {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin: 0;
 }
 .eta {
   color: var(--c-info);
@@ -550,4 +678,79 @@ body.customer .toasts {
 }
 .member-card .card-list li:last-child {
   border-bottom: 0;
+}
+
+/* F-051: đánh giá sau khi dùng món (màn cảm ơn) + sao trên menu */
+.review-box {
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+  text-align: left;
+}
+.review-box h2 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0;
+  margin: 0 0 0.5rem;
+}
+.review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.2rem 0;
+}
+.stars {
+  display: flex;
+  gap: 0.15rem;
+}
+.stars .star {
+  display: inline-grid;
+  place-items: center;
+  min-width: 40px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  line-height: 1;
+  color: var(--c-muted);
+  cursor: pointer;
+}
+.stars .star .ic {
+  width: 1.65rem;
+  height: 1.65rem;
+  margin: 0;
+}
+.stars .star.on {
+  color: var(--c-warning-text); /* sao tô đặc khi chọn, rỗng khi chưa — khác hình, không chỉ khác màu */
+}
+.review-done {
+  font-weight: 600;
+  color: var(--c-success);
+}
+.review-done .ic {
+  color: var(--c-danger);
+}
+.c-item .rating {
+  color: var(--c-warning-text);
+  font-weight: 600;
+}
+.c-item .rating .ic {
+  margin: 0;
+}
+
+/* Mũi tên trong ô hội viên (biểu tượng trang trí) */
+.member-box > .ic-chevron-right {
+  margin: 0;
+  color: var(--c-muted);
+}
+
+/* Giảm chuyển động (ADR-013 D-56): nút "+" không co lại khi bấm */
+@media (prefers-reduced-motion: reduce) {
+  .add-btn:active {
+    transform: none;
+  }
 }

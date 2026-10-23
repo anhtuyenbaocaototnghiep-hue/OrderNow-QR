@@ -44,11 +44,15 @@ export async function saveCategory(id, { name, direction, isExpense, requiresApp
 const SELECT = `
   SELECT c.CashTxnId, c.ShiftId, c.CategoryId, cc.Name AS CategoryName, cc.IsExpense, c.Direction, c.Amount, c.Reason,
          c.ReceiptImagePath, c.Status, c.CreatedBy, cu.FullName AS CreatedByName, c.CreatedAt,
-         c.ApprovedBy, au.FullName AS ApprovedByName, c.ApprovedAt, c.RejectReason
+         c.ApprovedBy, au.FullName AS ApprovedByName, c.ApprovedAt, c.RejectReason,
+         c.VoidedBy, vu.FullName AS VoidedByName, c.VoidedAt, c.VoidReason, c.ReplacedById, c.ReplacesId,
+         CASE WHEN sh.ClosedAt IS NULL THEN 1 ELSE 0 END AS ShiftOpen
   FROM dbo.CashTransactions c
   JOIN dbo.CashCategories cc ON cc.CategoryId = c.CategoryId
   JOIN dbo.Users cu ON cu.UserId = c.CreatedBy
-  LEFT JOIN dbo.Users au ON au.UserId = c.ApprovedBy`;
+  JOIN dbo.Shifts sh ON sh.ShiftId = c.ShiftId
+  LEFT JOIN dbo.Users au ON au.UserId = c.ApprovedBy
+  LEFT JOIN dbo.Users vu ON vu.UserId = c.VoidedBy`;
 
 const map = (r) => ({
   cashTxnId: r.CashTxnId,
@@ -64,6 +68,13 @@ const map = (r) => ({
   approvedBy: r.ApprovedBy ? { userId: r.ApprovedBy, fullName: r.ApprovedByName } : null,
   approvedAt: r.ApprovedAt,
   rejectReason: r.RejectReason,
+  // F-050: hủy / sửa khoản đã duyệt
+  voidedBy: r.VoidedBy ? { userId: r.VoidedBy, fullName: r.VoidedByName } : null,
+  voidedAt: r.VoidedAt ?? null,
+  voidReason: r.VoidReason ?? null,
+  replacedById: r.ReplacedById ?? null,
+  replacesId: r.ReplacesId ?? null,
+  shiftOpen: Boolean(r.ShiftOpen),
 });
 
 export async function getById(id) {
@@ -109,6 +120,25 @@ export async function review(id, approve, userId, rejectReason) {
     .input('UserId', sql.Int, userId)
     .input('RejectReason', sql.NVarChar(200), rejectReason ?? null)
     .execute('dbo.sp_ReviewCashTxn');
+}
+
+/** Hủy (replacement null) / sửa khoản đã duyệt — sp_VoidCashTxn (F-050). → { newTxnId, newStatus } */
+export async function voidTxn({ id, approverId, actorId, reason, replacement = null, threshold }) {
+  const r = await (
+    await request()
+  )
+    .input('CashTxnId', sql.Int, id)
+    .input('UserId', sql.Int, approverId)
+    .input('ActorId', sql.Int, actorId)
+    .input('Reason', sql.NVarChar(200), reason)
+    .input('NewCategoryId', sql.Int, replacement?.categoryId ?? null)
+    .input('NewAmount', sql.Decimal(12, 0), replacement?.amount ?? null)
+    .input('NewReason', sql.NVarChar(200), replacement?.reason ?? null)
+    .input('Threshold', sql.Decimal(12, 0), threshold)
+    .output('NewTxnId', sql.Int)
+    .output('NewStatus', sql.VarChar(10))
+    .execute('dbo.sp_VoidCashTxn');
+  return { newTxnId: r.output.NewTxnId ?? null, newStatus: r.output.NewStatus ?? null };
 }
 
 export async function listByShift(shiftId) {

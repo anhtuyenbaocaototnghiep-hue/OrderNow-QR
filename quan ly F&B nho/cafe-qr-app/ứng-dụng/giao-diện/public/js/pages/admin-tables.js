@@ -2,12 +2,13 @@
 import { staffApi, staffBlobUrl } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, confirmDialog, el, errorMessage, modal, setBusy, showFieldErrors, toast } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('tables');
 
 clear(
   $('#head-actions'),
-  el('a', { class: 'btn', href: '/admin/tables/print' }, '🖨 In tất cả QR'),
+  el('a', { class: 'btn', href: '/admin/tables/print' }, icon('printer'), 'In tất cả QR'),
   el('button', { class: 'btn btn-primary', type: 'button', onclick: () => editTable(null) }, '+ Thêm bàn'),
 );
 

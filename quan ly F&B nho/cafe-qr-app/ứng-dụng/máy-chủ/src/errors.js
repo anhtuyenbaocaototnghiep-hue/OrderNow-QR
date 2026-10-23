@@ -90,6 +90,29 @@ const SQL_ERRORS = {
   50184: [409, 'SESSION_HAS_PAYMENTS', 'Bàn đã thu một phần (chia bill) — xóa từng món chưa thu thay vì hủy bàn'],
   50185: [404, 'ITEM_NOT_FOUND', 'Không tìm thấy món trong đơn'],
   50186: [400, 'VALIDATION_ERROR', 'Nhập lý do sửa / xóa món'],
+  // FEATURE-048 sửa / hủy phiếu nhập, hủy phiếu kiểm kê (ADR-009) — message SP = tên nguyên liệu ở 50192…50194, 50197, 50198
+  50190: [404, 'NOT_FOUND', 'Không tìm thấy phiếu nhập'],
+  50191: [409, 'RECEIPT_VOIDED', 'Phiếu nhập đã bị hủy'],
+  50192: [409, 'RECEIPT_AFTER_STOCKTAKE', 'Đã có phiếu kiểm kê chốt sau lần nhập này'],
+  50193: [409, 'RECEIPT_STOCK_USED', 'Hàng của phiếu đã được dùng — tồn không đủ để trừ lại'],
+  50194: [409, 'RECEIPT_LOT_USED', 'Lô hàng của phiếu đã được dùng hoặc đã hủy'],
+  50195: [404, 'NOT_FOUND', 'Không tìm thấy phiếu kiểm kê'],
+  50196: [409, 'STOCKTAKE_NOT_POSTED', 'Chỉ hủy được phiếu kiểm kê đã chốt'],
+  50197: [409, 'STOCKTAKE_NOT_LATEST', 'Đã có phiếu kiểm kê chốt sau phiếu này'],
+  50198: [409, 'STOCKTAKE_SURPLUS_USED', 'Phần thừa ghi khi kiểm kê đã được dùng'],
+  50199: [400, 'VALIDATION_ERROR', 'Nhập lý do sửa / hủy phiếu'],
+  // FEATURE-050 hủy / sửa khoản sổ quỹ đã duyệt (ADR-010 D-44)
+  50142: [409, 'CASH_NOT_APPROVED', 'Chỉ hủy / sửa được khoản đã duyệt — khoản chờ duyệt dùng Từ chối'],
+  50143: [404, 'NOT_FOUND', 'Không tìm thấy khoản thu chi'],
+  50144: [400, 'VALIDATION_ERROR', 'Nhập lý do hủy / sửa khoản'],
+  50145: [409, 'SHIFT_CLOSED', 'Ca của khoản này đã đóng — số đã chốt không đổi được'],
+  // FEATURE-049 chuyển bàn (ADR-010 D-43)
+  50200: [404, 'NOT_FOUND', 'Không tìm thấy phiên của bàn'],
+  50201: [409, 'SESSION_CLOSED', 'Bàn đã thanh toán / đã đóng — không chuyển được'],
+  50202: [404, 'TABLE_NOT_FOUND', 'Bàn đích không tồn tại'],
+  50203: [409, 'TABLE_INACTIVE', 'Bàn đích đang tắt'],
+  50204: [400, 'SAME_TABLE', 'Nhóm đang ngồi ở bàn này rồi'],
+  50205: [409, 'SESSION_MOVED', 'Nhóm vừa được chuyển sang bàn khác ở máy khác — xem lại bàn hiện tại rồi chuyển'],
 };
 
 /** Chuyển lỗi THROW 5000x của SP thành AppError; trả null nếu không phải lỗi nghiệp vụ. */

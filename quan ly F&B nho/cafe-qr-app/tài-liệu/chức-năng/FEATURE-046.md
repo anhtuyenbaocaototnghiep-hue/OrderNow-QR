@@ -99,5 +99,8 @@ Quyền: NV (`pos.use`). Realtime: `order.status_changed` / `order.cancelled` (s
   - "nhật ký thao tác" (không lưu mật khẩu người duyệt);
   - "xóa tài khoản chỉ có lịch sử sửa / xóa món" (người làm / người duyệt → xóa mềm, không lỗi khóa ngoại).
 - AC-046-07: bất biến `OVER_RESTOCK`, `ORDER_LINES_MISMATCH`, `COGS_MISMATCH` (trừ `CogsReduction`) kiểm sau mọi file test (`tests/helpers/testDb.js`).
+- AC-046-08: Người duyệt nhập sai mật khẩu, hoặc tài khoản duyệt là nhân viên → 403 `ADMIN_APPROVAL_INVALID`; lượt bị từ chối không ghi lịch sử, không đổi đơn. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-046-09: Số lượng mới không nhỏ hơn số đang gọi → 400 `INVALID_QTY`; dòng không tồn tại → 404; khách (không đăng nhập quầy) → 401. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-046-10: Hai máy cùng xóa một dòng → đúng 1 lần thành công, máy sau nhận lỗi 4xx (404 `ITEM_NOT_FOUND` khi dòng đã bị xóa), lịch sử chỉ có 1 dòng. _(bổ sung — TASK-057, 20/10/2026)_
 - E2E "sửa / xóa món + hủy bàn" (`kiểm-thử/e2e/flow.spec.js`).
 - 18/10/2026: `npm test` 229/229, `npm run test:e2e` 28/28, `npm run load` 10/10 — xem [TASK-055](../công-việc/TASK-055.md).

@@ -1,11 +1,12 @@
 // S-31 Nhập kho & kiểm kê (FEATURE-023): phiếu nhập (cộng tồn + giá nhập gần nhất), phiếu kiểm kê (DRAFT → chốt tạo ADJUST theo
 // chênh lệch thực tế; nguyên liệu đang kiểm khóa điều chỉnh tay), báo cáo giá vốn (COGS) + lãi gộp theo món và hao hụt theo kỳ.
 // ADR-006: nhập theo đơn vị đóng gói + hạn dùng / mã lô (F-031, F-028); giá vốn thực tế chốt lúc hoàn tất (F-031); thất thoát (F-032);
-// quản lý đơn vị quy đổi (F-031).
+// quản lý đơn vị quy đổi (F-031). ADR-009: sửa / hủy phiếu nhập, hủy phiếu kiểm kê đã chốt (F-048).
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { stocktakeUi } from '../stocktake.js';
-import { $, clear, dateTime, el, errorMessage, modal, money, num, toast, todayVn } from '../ui.js';
+import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, reasonDialog, toast, todayVn } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('stock');
 
@@ -98,9 +99,12 @@ function unitOptions(l) {
     return false;
   };
   const codes = state.units.filter((u) => u.unitCode !== ing.unit && reaches(u.unitCode));
+  // Sửa phiếu (F-048): dòng nhận theo gói của đơn đặt hàng có thể dùng đơn vị không có trong bảng quy đổi — vẫn hiện đúng đơn vị đã nhập
+  const kept = l.unit && l.unit !== ing.unit && !codes.some((u) => u.unitCode === l.unit) ? [el('option', { value: l.unit, selected: true }, l.unit)] : [];
   return [
     el('option', { value: '', selected: !l.unit }, ing.unit),
     ...codes.map((u) => el('option', { value: u.unitCode, selected: l.unit === u.unitCode }, `${u.unitCode} (${u.name})`)),
+    ...kept,
   ];
 }
 
@@ -110,14 +114,21 @@ const receiptLine = (l) => {
   const base = l.unit ? { packUnitCode: l.unit, packQty: qty, packPrice: price } : { qty, unitCost: price };
   return { ingredientId: l.ingredientId, ...base, expiryDate: l.expiryDate || null, lotCode: l.lotCode || null };
 };
-async function renderReceipts() {
-  const list = await staffApi(`/api/admin/stock-receipts?from=${state.from}&to=${state.to}`);
-  const newLine = () => ({ ingredientId: null, unit: '', qty: '', unitCost: '', expiryDate: '', lotCode: '' });
-  const lines = [newLine()];
-  const supplier = el('input', { class: 'input', maxlength: 100, placeholder: 'Nhà cung cấp (không bắt buộc)' });
-  const note = el('input', { class: 'input', maxlength: 200, placeholder: 'Ghi chú' });
+const newLine = () => ({ ingredientId: null, unit: '', qty: '', unitCost: '', expiryDate: '', lotCode: '' });
+/** Dòng phiếu đã lưu → dòng form (đơn vị đóng gói giữ như lúc nhập) — Sửa phiếu (F-048). */
+const formLine = (l) => ({
+  ingredientId: l.ingredientId,
+  unit: l.packUnitCode ?? '',
+  qty: l.packUnitCode ? l.packQty : l.qty,
+  unitCost: (l.packUnitCode ? l.packPrice : l.unitCost) ?? '',
+  expiryDate: l.expiryDate ?? '',
+  lotCode: l.lotCode ?? '',
+});
+
+/** Bộ nhập dòng phiếu: nguyên liệu, đơn vị, SL, giá, hạn dùng / mã lô (nguyên liệu theo lô). Dùng cho phiếu mới và Sửa phiếu. */
+function lineEditor(lines) {
   const rows = el('div');
-  const renderRows = () =>
+  const render = () =>
     clear(
       rows,
       lines.map((l, idx) =>
@@ -132,7 +143,7 @@ async function renderReceipts() {
               onchange: (e) => {
                 l.ingredientId = Number(e.target.value) || null;
                 l.unit = '';
-                renderRows();
+                render();
               },
             },
             ingOptions(l.ingredientId),
@@ -190,15 +201,38 @@ async function renderReceipts() {
               'aria-label': 'Bỏ dòng',
               onclick: () => {
                 lines.splice(idx, 1);
-                renderRows();
+                render();
               },
             },
-            '×',
+            icon('x'),
           ),
         ),
       ),
     );
-  renderRows();
+  render();
+  const addBtn = el(
+    'button',
+    {
+      class: 'btn btn-sm',
+      type: 'button',
+      onclick: () => {
+        lines.push(newLine());
+        render();
+      },
+    },
+    '+ Dòng',
+  );
+  return { rows, addBtn };
+}
+
+const receiptStatus = (r) => (r.status === 'VOIDED' ? el('span', { class: 'pill off' }, 'Đã hủy') : r.edited ? el('span', { class: 'pill' }, 'Đã sửa') : null);
+
+async function renderReceipts() {
+  const list = await staffApi(`/api/admin/stock-receipts?from=${state.from}&to=${state.to}`);
+  const lines = [newLine()];
+  const editor = lineEditor(lines);
+  const supplier = el('input', { class: 'input', maxlength: 100, placeholder: 'Nhà cung cấp (không bắt buộc)' });
+  const note = el('input', { class: 'input', maxlength: 200, placeholder: 'Ghi chú' });
   clear(
     body,
     el(
@@ -206,22 +240,11 @@ async function renderReceipts() {
       { class: 'card', style: { marginBottom: '1rem' } },
       el('h2', { style: { fontSize: '1rem' } }, 'Phiếu nhập mới'),
       el('div', { class: 'form-grid' }, supplier, note),
-      el('div', { style: { marginTop: '0.6rem' } }, rows),
+      el('div', { style: { marginTop: '0.6rem' } }, editor.rows),
       el(
         'div',
         { class: 'row', style: { marginTop: '0.5rem' } },
-        el(
-          'button',
-          {
-            class: 'btn btn-sm',
-            type: 'button',
-            onclick: () => {
-              lines.push(newLine());
-              renderRows();
-            },
-          },
-          '+ Dòng',
-        ),
+        editor.addBtn,
         el(
           'button',
           {
@@ -250,7 +273,7 @@ async function renderReceipts() {
       el(
         'p',
         { class: 'small muted' },
-        'Lưu là cộng tồn ngay (lịch sử kho IMPORT), cập nhật giá vốn bình quân. Nhập theo thùng / lon / kg… được quy ra đơn vị gốc của nguyên liệu (tab Đơn vị). Nguyên liệu theo lô: mỗi dòng thành một lô có hạn dùng.',
+        'Lưu là cộng tồn ngay (lịch sử kho IMPORT), cập nhật giá vốn bình quân. Nhập theo thùng / lon / kg… được quy ra đơn vị gốc của nguyên liệu (tab Đơn vị). Nguyên liệu theo lô: mỗi dòng thành một lô có hạn dùng. Nhập sai: bấm vào phiếu để Sửa hoặc Hủy phiếu.',
       ),
     ),
     rangeBar,
@@ -268,7 +291,7 @@ async function renderReceipts() {
               el(
                 'tr',
                 {},
-                ['Phiếu', 'Thời gian', 'Nhà cung cấp', 'Số dòng', 'Tổng tiền nhập', 'Người nhập'].map((h, i) =>
+                ['Phiếu', 'Thời gian', 'Nhà cung cấp', 'Số dòng', 'Tổng tiền nhập', 'Người nhập', 'Trạng thái', ''].map((h, i) =>
                   el('th', { class: i >= 3 && i <= 4 ? 'num' : '' }, h),
                 ),
               ),
@@ -279,13 +302,31 @@ async function renderReceipts() {
               list.map((r) =>
                 el(
                   'tr',
-                  { style: { cursor: 'pointer' }, onclick: () => showReceipt(r.receiptId) },
+                  { class: r.status === 'VOIDED' ? 'voided' : '', style: { cursor: 'pointer' }, onclick: () => showReceipt(r.receiptId) },
                   el('td', { class: 'mono' }, `#${r.receiptId}`),
                   el('td', { class: 'nowrap' }, dateTime(r.receivedAt)),
                   el('td', {}, r.supplier ?? '—'),
                   el('td', { class: 'num' }, r.lineCount),
                   el('td', { class: 'num' }, money(r.totalCost)),
                   el('td', {}, r.receivedBy),
+                  el('td', {}, receiptStatus(r)),
+                  el(
+                    'td',
+                    {},
+                    el(
+                      'button',
+                      {
+                        class: 'btn btn-sm',
+                        type: 'button',
+                        'aria-label': `Chi tiết phiếu nhập #${r.receiptId}`,
+                        onclick: (e) => {
+                          e.stopPropagation();
+                          showReceipt(r.receiptId);
+                        },
+                      },
+                      'Chi tiết',
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -295,29 +336,155 @@ async function renderReceipts() {
 }
 
 async function showReceipt(id) {
+  let r;
   try {
-    const r = await staffApi(`/api/admin/stock-receipts/${id}`);
-    modal({
-      title: `Phiếu nhập #${r.receiptId}`,
-      body: el(
-        'div',
-        {},
-        el('p', { class: 'small muted' }, `${dateTime(r.receivedAt)} · ${r.receivedBy}${r.supplier ? ` · ${r.supplier}` : ''}${r.note ? ` · ${r.note}` : ''}`),
-        el(
-          'ul',
-          {},
-          r.lines.map((l) => el('li', {}, `${l.name}: +${num(l.qty)} ${l.unit}${l.unitCost !== null ? ` × ${money(l.unitCost)}` : ''}`)),
+    r = await staffApi(`/api/admin/stock-receipts/${id}`);
+  } catch (err) {
+    return toast(errorMessage(err), 'error');
+  }
+  const voided = r.status === 'VOIDED';
+  modal({
+    title: `Phiếu nhập #${r.receiptId}${voided ? ' (đã hủy)' : ''}`,
+    body: el(
+      'div',
+      {},
+      el(
+        'p',
+        { class: 'small muted' },
+        `${dateTime(r.receivedAt)} · ${r.receivedBy}${r.supplier ? ` · ${r.supplier}` : ''}${r.note ? ` · ${r.note}` : ''}${r.poId ? ` · Đơn đặt hàng #${r.poId}` : ''}`,
+      ),
+      voided ? el('p', { class: 'small' }, el('strong', {}, 'Đã hủy'), ` ${dateTime(r.voidedAt)} · ${r.voidedBy} · Lý do: ${r.voidReason}`) : null,
+      r.editedAt ? el('p', { class: 'small' }, el('strong', {}, 'Sửa gần nhất'), ` ${dateTime(r.editedAt)} · ${r.editedBy} · Lý do: ${r.editReason}`) : null,
+      el(
+        'ul',
+        { class: voided ? 'voided' : '' },
+        r.lines.map((l) =>
+          el(
+            'li',
+            {},
+            `${l.name}: +${num(l.qty)} ${l.unit}${l.unitCost !== null ? ` × ${money(l.unitCost)}` : ''}${l.lotCode ? ` · lô ${l.lotCode}` : ''}${l.expiryDate ? ` · HSD ${l.expiryDate}` : ''}`,
+          ),
         ),
       ),
-      actions: [{ label: 'Đóng', class: 'btn-primary' }],
+      voided
+        ? null
+        : el(
+            'p',
+            { class: 'small muted' },
+            'Sửa / hủy được khi hàng của phiếu chưa bị dùng hết, chưa kiểm kê sau lúc nhập và không đang kiểm kê — không được thì hệ thống báo rõ lý do.',
+          ),
+    ),
+    actions: voided
+      ? [{ label: 'Đóng', class: 'btn-primary' }]
+      : [
+          {
+            label: 'Hủy phiếu',
+            class: 'btn-danger',
+            onClick: async (close) => {
+              const reason = await reasonDialog(
+                `Hủy phiếu nhập #${r.receiptId}?`,
+                'Kho trừ lại đúng số đã nhập, giá vốn bình quân tính lại. Phiếu vẫn còn trong danh sách với nhãn "Đã hủy".',
+                { okLabel: 'Hủy phiếu', danger: true, placeholder: 'Ví dụ: nhập nhầm, trả hàng nhà cung cấp…' },
+              );
+              if (!reason) return false;
+              try {
+                await staffApi(`/api/admin/stock-receipts/${r.receiptId}/void`, { method: 'POST', body: { reason } });
+                toast(`Đã hủy phiếu nhập #${r.receiptId}`, 'success');
+                close();
+                load();
+              } catch (err) {
+                toast(errorMessage(err), 'error', 8000);
+              }
+              return false;
+            },
+          },
+          {
+            label: 'Sửa',
+            onClick: (close) => {
+              close();
+              editReceipt(r);
+              return false;
+            },
+          },
+          { label: 'Đóng', class: 'btn-primary' },
+        ],
+  });
+}
+
+/** Sửa phiếu nhập (F-048): giữ số phiếu; dòng không đổi giữ nguyên, dòng đổi = bỏ dòng cũ + nhập dòng mới; bắt buộc lý do. */
+function editReceipt(r) {
+  const lines = r.lines.map(formLine);
+  const editor = lineEditor(lines);
+  const supplier = el('input', { class: 'input', maxlength: 100, value: r.supplier ?? '', disabled: Boolean(r.supplierId) });
+  const note = el('input', { class: 'input', maxlength: 200, value: r.note ?? '' });
+  const reason = el('input', { class: 'input', maxlength: 200, placeholder: 'Ví dụ: sai số lượng theo hóa đơn' });
+  const send = (confirmOver) =>
+    staffApi(`/api/admin/stock-receipts/${r.receiptId}`, {
+      method: 'PUT',
+      body: {
+        supplier: supplier.value || null,
+        note: note.value || null,
+        reason: reason.value,
+        confirmOver,
+        lines: lines.filter((l) => l.ingredientId).map(receiptLine),
+      },
     });
-  } catch (err) {
-    toast(errorMessage(err), 'error');
-  }
+  const m = modal({
+    title: `Sửa phiếu nhập #${r.receiptId}`,
+    body: el(
+      'div',
+      { class: 'stack' },
+      el(
+        'p',
+        { class: 'small muted' },
+        'Dòng không đổi giữ nguyên; dòng đổi = bỏ dòng cũ và nhập dòng mới (lịch sử kho ghi cả hai). Tồn, giá vốn bình quân, lô và đơn đặt hàng được tính lại.',
+      ),
+      el(
+        'div',
+        { class: 'form-grid' },
+        el('div', { class: 'field' }, el('label', {}, r.supplierId ? 'Nhà cung cấp (theo đơn đặt hàng)' : 'Nhà cung cấp'), supplier),
+        el('div', { class: 'field' }, el('label', {}, 'Ghi chú'), note),
+      ),
+      editor.rows,
+      el('div', {}, editor.addBtn),
+      el('div', { class: 'field' }, el('label', {}, 'Lý do sửa (bắt buộc)'), reason),
+    ),
+    actions: [
+      { label: 'Thôi', value: false },
+      {
+        label: 'Lưu thay đổi',
+        class: 'btn-primary',
+        onClick: async (close) => {
+          if (!reason.value.trim()) {
+            toast('Nhập lý do sửa phiếu', 'error');
+            reason.focus();
+            return false;
+          }
+          try {
+            let res;
+            try {
+              res = await send(false);
+            } catch (err) {
+              if (err.code !== 'OVER_RECEIPT') throw err;
+              if (!(await confirmDialog('Nhận vượt số đã đặt?', errorMessage(err), { okLabel: 'Vẫn lưu' }))) return false;
+              res = await send(true);
+            }
+            toast(`Đã sửa phiếu nhập #${res.receiptId}`, 'success');
+            close();
+            load();
+          } catch (err) {
+            toast(errorMessage(err), 'error', 8000);
+          }
+          return false;
+        },
+      },
+    ],
+  });
+  m.root.style.width = 'min(960px, 100%)';
 }
 
 // ---------- Kiểm kê (dùng chung với quầy cho trưởng ca — js/stocktake.js, F-036) ----------
-const stocktakes = stocktakeUi({ base: '/api/admin/stocktakes', body, ingredients: () => state.ingredients, reload: () => load() });
+const stocktakes = stocktakeUi({ base: '/api/admin/stocktakes', body, ingredients: () => state.ingredients, reload: () => load(), canVoid: true });
 const renderStocktakes = () => stocktakes.render();
 
 // ---------- Giá vốn & hao hụt ----------

@@ -24,4 +24,5 @@
   - AC-005-03: Phiên đã `CLOSED` → 409; không phát sự kiện.
   - AC-005-04: Bấm Gọi thanh toán 2 lần → chỉ một thẻ trên POS, thời gian gọi cập nhật; không tạo bản ghi thừa.
   - AC-005-05: Client của phiên khác gọi API với `sessionId` này → 403.
+  - AC-005-06: Phiên đang gọi thanh toán (`PAYMENT_REQUESTED`), khách gửi thêm đơn → 201, phiên về `OPEN`, quầy nhận `session.payment_cancelled` để gỡ thẻ gọi thanh toán; tổng phải thu cộng thêm đơn mới (93.000 + 25.000 = 118.000đ). _(bổ sung — TASK-057, 20/10/2026)_
 - **Liên kết:** Data `Sessions` · API `POST /api/sessions/{id}/request-payment` · UI S-05, S-04 · Rule BR-018 · Realtime `session.payment_requested` · Hỏi: Q-013 (gọi thêm món sau khi đã gọi thanh toán).

@@ -23,7 +23,7 @@
   - Chiết khấu tính lúc **thu tiền** (D-8), theo hạng lúc đó, chỉ trên dòng cho phép cộng dồn với khuyến mãi.
   - Đơn đầu tiên −10% (cài đặt), thay % hạng khi lớn hơn.
   - Sau thu tiền (trong cùng transaction — `sp_ApplyMemberPayment`):
-    - cộng `TotalSpent` (số thực trả), `VisitCount`, `Points` (1/1.000đ);
+    - cộng `TotalSpent` (số thực trả), `VisitCount`. Điểm **không** còn cộng ở bước này: từ migration `0029` điểm tích = ⌊thực trả / `loyalty.point_value` (10.000đ)⌋, ghi sổ `PointTransactions` trong `sp_ApplyLoyalty` cùng transaction lượt thu (FEATURE-039). Bản gốc ghi "`Points` (1/1.000đ)" theo D-5 _(cập nhật 20/10/2026 theo ADR-006 D-27 — TASK-057)_;
     - đánh dấu đã dùng ưu đãi đơn đầu;
     - tự nâng hạng, không tự hạ;
     - ghi `MemberTransactions`.
@@ -53,6 +53,8 @@
   - AC-014-04: SĐT sai → 400. Tra cứu lần thứ 11 trong một phút từ một IP → 429.
   - AC-014-05: Ẩn danh → không còn tên/SĐT, tra cứu không thấy, `Payments` vẫn đủ.
   - AC-014-06: Khách gọi `/api/admin/members` → 401. STAFF → 403. Danh sách quản lý che số (`09xx***678`).
+  - AC-014-07: Đăng ký hội viên không tick đồng ý → 400 `CONSENT_REQUIRED`; SĐT đã là hội viên (kể cả viết dạng +84…) → 409 `PHONE_EXISTS`. _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-014-08: Khách gắn SĐT hội viên vào phiên không thuộc điện thoại của mình → 403; gắn vào phiên của mình → 200, quầy nhận `session.member_changed` chỉ có tên che ("Nguyễn V. A."), quầy tra cứu thấy tên đầy đủ. _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:**
   - `tests/members.test.js`.
   - `tests/pricing.test.js` (hội viên, đơn đầu).

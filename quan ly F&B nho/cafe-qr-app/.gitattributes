@@ -2,3 +2,12 @@
 *.sh text eol=lf
 *.docx binary
 *.cmd text eol=crlf
+# Mã + tài liệu luôn LF trên mọi máy (Prettier kiểm LF; Windows core.autocrlf=true làm checkout ra CRLF) — TASK-057
+*.js text eol=lf
+*.mjs text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+*.yml text eol=lf

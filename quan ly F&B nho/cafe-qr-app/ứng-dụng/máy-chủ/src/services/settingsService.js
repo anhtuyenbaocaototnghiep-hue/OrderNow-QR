@@ -1,5 +1,7 @@
 // Cài đặt quán (ADR-005): hội viên, làm tròn, gợi ý, nhận đơn QR, ngưỡng giảm giá tay. Cache ngắn trong tiến trình, xóa cache khi sửa.
+import { config } from '../config.js';
 import * as settingsRepo from '../repositories/settingsRepo.js';
+import * as shiftsRepo from '../repositories/shiftsRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 
 const TTL_MS = 10_000;
@@ -40,6 +42,12 @@ function toSettings(map) {
     referralVoucherDays: num(map.get('referral.voucher_days'), 30),
     referralMonthlyLimit: num(map.get('referral.monthly_limit'), 5),
     campaignMinDaysBetween: num(map.get('campaign.min_days_between'), 7),
+    // F-051 sao trên menu (D-48)
+    reviewMenuMinCount: Math.max(1, num(map.get('review.menu_min_count'), 5)),
+    reviewMenuDays: Math.max(1, num(map.get('review.menu_days'), 90)),
+    // F-053 thông tin quán (BR-085): chưa lưu lần nào → SHOP_NAME / SHOP_ADDRESS của .env; địa chỉ lưu rỗng = không in
+    shopName: map.get('shop.name') || config.shop.name,
+    shopAddress: map.has('shop.address') ? map.get('shop.address') : config.shop.address,
   };
 }
 
@@ -77,6 +85,10 @@ const KEYS = {
   referralVoucherDays: 'referral.voucher_days',
   referralMonthlyLimit: 'referral.monthly_limit',
   campaignMinDaysBetween: 'campaign.min_days_between',
+  reviewMenuMinCount: 'review.menu_min_count',
+  reviewMenuDays: 'review.menu_days',
+  shopName: 'shop.name',
+  shopAddress: 'shop.address',
 };
 
 /** Sửa một phần cài đặt (đã validate ở route). Đổi trạng thái nhận đơn → báo khách + quầy ngay. */
@@ -89,14 +101,24 @@ export async function updateSettings(patch) {
   cache = null;
   const after = await getSettings();
   if (before.acceptingOrders !== after.acceptingOrders || before.closedMessage !== after.closedMessage) {
-    publish([ROOMS.public, ROOMS.staff], 'store.status_changed', { acceptingOrders: after.acceptingOrders, closedMessage: after.closedMessage });
+    publish([ROOMS.public, ROOMS.staff], 'store.status_changed', await storeStatus());
   }
   return after;
 }
 
+/**
+ * Trạng thái nhận đơn cho khách / quầy: công tắc nhận đơn QR (F-020) + có ca đang mở không (F-055, ADR-017 D-64).
+ * Khách gửi được đơn khi `acceptingOrders && shiftOpen`; hai điều kiện để riêng để quầy không thấy công tắc tự tắt.
+ */
 export const storeStatus = async () => {
+  const [s, shiftOpen] = await Promise.all([getSettings(), shiftsRepo.isOpen()]);
+  return { acceptingOrders: s.acceptingOrders, closedMessage: s.closedMessage, shiftOpen };
+};
+
+/** Tên + địa chỉ quán (F-053) — một nguồn cho thanh quầy / quản lý, menu khách, hóa đơn. */
+export const shopInfo = async () => {
   const s = await getSettings();
-  return { acceptingOrders: s.acceptingOrders, closedMessage: s.closedMessage };
+  return { name: s.shopName, address: s.shopAddress };
 };
 
 export function invalidateSettings() {

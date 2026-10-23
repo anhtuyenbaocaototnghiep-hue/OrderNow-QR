@@ -45,9 +45,11 @@ Lặp 10 lần với seed ngẫu nhiên số suất; tất cả phải pass.
 
 Thêm sau khi nhóm chốt Q-013 (xem `tài-liệu/open-questions.md`): một phiên `PAYMENT_REQUESTED`, bắn đồng thời `POST /api/sessions/{id}/settle` và `POST /api/orders` (cùng phiên). Kỳ vọng: **không** có đơn nào thuộc phiên `CLOSED` mà vẫn `UNPAID`. Tức là hoặc đơn mới được tạo trước rồi settle trả 409 `HAS_PENDING_ORDERS`, hoặc settle chạy trước rồi gửi đơn trả 409 `SESSION_CLOSED`.
 
-## Bộ test hiện có (cập nhật 18/10/2026)
+## Bộ test hiện có (cập nhật 20/10/2026)
 
-Kết quả chạy ngày 18/10/2026 (máy local), sau F-047 (TASK-056): `npm test` **234/234 PASS** (18 file), `npm run test:e2e` **29/29 PASS**, `npm run lint` + `npm run format:check` PASS. `npm run load` NFR-002 **10/10 vòng PASS** (NFR-001 p50 78 ms, p95 89 ms) chạy sau F-046 (229 test / 28 E2E); không chạy lại sau F-047 vì F-047 không đổi luồng gửi đơn / thu tiền. Các dòng ghi "16/10" bên dưới là bộ cũ, vẫn nằm trong 234 test và vẫn PASS.
+Kết quả chạy ngày **20/10/2026** (máy local, TASK-057 / TASK-058): `npm test` **255/255 PASS** (19 file), `npm run test:e2e` **34/34 PASS** (31 luồng + 3 khả năng tiếp cận), `npm run load` NFR-002 **10/10 vòng PASS** (NFR-001 p50 79 ms, p95 239 ms), `npm run lint` + `npm run format:check` PASS, `npm audit` 0 lỗ hổng. Cập nhật **21/10/2026** ([TASK-059](../công-việc/TASK-059.md)): `npm run test:e2e` **35/35 PASS** (32 luồng + 3 khả năng tiếp cận — thêm test hồi quy DEF-011), chạy 2 lần liên tiếp. Cập nhật **21/10/2026** ([TASK-060](../công-việc/TASK-060.md) … [TASK-063](../công-việc/TASK-063.md), F-048…F-051): `npm test` **286/286 PASS** (24 file — thêm `stock-revise`, `table-move`, `cash-void`, `reviews` và các bất biến `RECEIPT_LEDGER_MISMATCH`, `STOCKTAKE_LEDGER_MISMATCH`, `PO_RECEIVED_MISMATCH`, `ORDER_TABLE_MISMATCH`, `CASH_REPLACE_LINK`), `npm run test:e2e` **39/39 PASS** (36 luồng + 3 khả năng tiếp cận — quét thêm `/admin/reviews`). Cập nhật **23/10/2026** ([TASK-064](../công-việc/TASK-064.md), F-052): `npm test` **292/292 PASS** (25 file — thêm `api-docs.test.js` 6 test), `npm run test:e2e` **40/40 PASS** (37 luồng + 3 khả năng tiếp cận — quét thêm `/admin/api-docs`). Cập nhật **23/10/2026** ([TASK-070](../công-việc/TASK-070.md), bước 15): `npm test` **302/302 PASS** (26 file — thêm `ops.test.js` 10 test đơn vị cho script sao lưu / kiểm tra hệ thống); script vận hành thử thật trên máy dev ([backup-restore.md](../vận-hành/backup-restore.md) §6). 1](../công-việc/TASK-071.md), F-055): `npm test` **304/304 PASS** (27 file — thêm `shift-required.test.js` 4 test), `npm run test:e2e` **43/43 PASS** (40 luồng + 3 khả năng tiếp cận — thêm E2E "chưa mở ca…"). Gộp **23/10/2026** (nhánh `release/2026-10-23` = main + TASK-065…072): `npm test` **314/314 PASS** (28 file), `npm run test:e2e` **45/45 PASS** (42 luồng + 3 khả năng tiếp cận), `npm run load` **10/10 vòng PASS** (p95 219 ms). **Ma trận truy vết** [traceability.md](traceability.md): 335 / 335 AC PASS, 0 GAP (sinh bằng `npm run trace` từ [tc-map.md](tc-map.md) + báo cáo chạy thật).
+
+> Kết quả trước đó (18/10/2026, sau F-047): `npm test` 234/234, E2E 29/29 — giữ trong các bàn giao cũ.
 
 | Bộ | Lệnh | Phạm vi | Kết quả |
 | --- | --- | --- | --- |
@@ -102,9 +104,23 @@ Bất biến thêm ở giai đoạn 4–8 (`ứng-dụng/máy-chủ/tests/helper
 
 **Job nền trong test:** `testDb.js` và `kịch-bản/e2e-server.js` đặt `JOBS_ENABLED=false`; test gọi job qua `POST /api/admin/jobs/{name}/run` (`prep-stats`, `demand-forecast`, `attendance-autoclose`, `campaigns-due`, `daily-summary`). Ảnh hóa đơn test lưu ở thư mục tạm (`UPLOADS_DIR`), không vào `uploads/` thật. Kênh Zalo OA thay bằng kênh giả (`setSender`), không gọi mạng.
 
-**NOT_RUN:** in trên máy in nhiệt thật, NFR-001 trên Wi-Fi quán (TASK-020); k6 (dùng `npm run load` thay); CI GitHub Actions (chưa có remote); gửi tin Zalo OA thật (F-037, chỉ kiểm bằng kênh giả); bộ lập lịch tự chạy job đúng giờ trong tiến trình thật (test tắt `JOBS_ENABLED`, chỉ gọi job thủ công); `npm run load` sau F-047 (không đổi luồng gửi đơn / thu tiền).
+**NOT_RUN:** in trên máy in nhiệt thật, NFR-001 trên Wi-Fi quán (TASK-020); k6 (dùng `npm run load` thay); CI GitHub Actions (chưa có remote — đã chạy tương đương local); gửi tin Zalo OA thật (F-037, chỉ kiểm bằng kênh giả); bộ lập lịch tự chạy job đúng giờ trong tiến trình thật (test tắt `JOBS_ENABLED`, chỉ gọi job thủ công); `npm run load` sau F-047 (không đổi luồng gửi đơn / thu tiền).
 
-**Đã biết (chưa sửa):** E2E "chia bill…" thỉnh thoảng không ổn định — ô "Tên phần" ở sheet chia bill của khách mất focus khi sheet vẽ lại theo realtime, phần được lưu tên "Tôi" ([Q-023](../open-questions.md)).
+**Đã sửa (20/10/2026):** E2E "chia bill…" chập chờn do ô "Tên phần" mất focus (Q-023 / DEF-001) — sửa ở [TASK-058](../công-việc/TASK-058.md), test có thêm bước hồi quy (fail với code cũ, pass với code mới).
+
+### Bổ sung theo quy trình 15 bước — bước 14 (TASK-057, 20/10/2026)
+
+| Lớp (sổ tay) | Bộ / công cụ | Nội dung | Kết quả 20/10/2026 |
+| --- | --- | --- | --- |
+| Integration — AC còn thiếu | `ứng-dụng/máy-chủ/tests/acceptance.test.js` | 21 test cho AC trước chưa có / chỉ có một phần bằng chứng: AC-005-03, 008-03, 017-01, 020-03, 026-05, 030-03, 047-01; 13 AC lỗi / biên bổ sung ở bước 05 (AC-003-09, 009-05, 016-07 đua 4 quầy cho lượt khuyến mãi cuối, 021-04, 026-09, 027-07, 032-05, 035-08, 037-08, 039-09, 045-05, 047-06); trang chủ / 404 (AC-001-07/08); header bảo mật | 21/21 PASS |
+| E2E — AC còn thiếu | `kiểm-thử/e2e/flow.spec.js` | "giỏ còn sau khi tải lại trang…" (AC-002-04, 004-02 ≤ 2 s sau khi có mạng, 013-04, 006-04); "thực đơn trống / lỗi mạng…" (AC-002-06, chặn mạng bằng Playwright); bước hồi quy Q-023 | PASS |
+| Accessibility | `kiểm-thử/e2e/a11y.spec.js` (project `a11y`, chạy sau `flow`) | 30+ màn hình khách / quầy / quản lý: nhãn ô nhập, tên nút, `lang`, `alt`, vùng chạm ≥ 24 px (2.5.8), tương phản chữ ≥ 4.5:1 (1.4.3), viền focus ≥ 3:1 (1.4.11 / 2.4.7), không cuộn ngang 320 / 390 px (1.4.10); chụp ảnh chuẩn | 3/3 PASS (sau khi sửa DEF-006…008) |
+| Security | [security-check.md](security-check.md) | `npm audit`, quét secret / PII, ma trận quyền, sở hữu dữ liệu, header, đối chiếu OWASP ASVS, sổ rủi ro SEC-R1…R10 | 0 lỗ hổng thư viện; rủi ro chờ chủ dự án quyết |
+| Traceability | `kịch-bản/traceability.js` (`npm run trace`) | AC → US → UC → MOD → SCR → TC → kết quả thật; phát hiện Story / AC / BR / màn hình thiếu liên kết | 289 / 289 AC PASS |
+| UAT | [uat-plan.md](uat-plan.md) | Kịch bản theo Actor trên thiết bị thật + kiểm tay (máy in, Wi-Fi quán, Safari / Android, Zalo) | **CHỜ NGƯỜI THẬT** |
+| CI | `.github/workflows/ci.yml` | Repo chưa có remote GitHub → CI NOT_RUN; đã chạy **tương đương trên máy local** đủ các bước của workflow (lint, format, skills, test, load, E2E) | PASS local |
+
+Lỗi phát hiện / đã sửa: [defect-log.md](defect-log.md). DoD áp dụng: [dod.md](dod.md). Hồ sơ Gate: [quality-gates.md](quality-gates.md).
 
 <a id="ban-giao"></a>
 

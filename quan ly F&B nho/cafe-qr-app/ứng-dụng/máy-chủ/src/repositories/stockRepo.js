@@ -1,4 +1,5 @@
 // Nhập kho & kiểm kê (FEATURE-023); báo cáo giá vốn / hao hụt theo giá nhập gần nhất.
+// FEATURE-048 (ADR-009): sửa / hủy phiếu nhập (sp_ReviseStockReceipt), sửa phiếu kiểm kê nháp, hủy phiếu đã chốt (sp_VoidStocktake).
 import { inTransaction, query, request, sql, txQuery } from '../db.js';
 
 // ---------- Phiếu nhập ----------
@@ -29,7 +30,7 @@ export async function createReceipt({ supplier, note, lines, userId, poId = null
 
 export async function listReceipts(fromUtc, toUtc) {
   const r = await query(
-    `SELECT sr.ReceiptId, sr.Supplier, sr.ReceivedAt, sr.Note, u.FullName,
+    `SELECT sr.ReceiptId, sr.Supplier, sr.ReceivedAt, sr.Note, sr.Status, sr.EditedAt, sr.PoId, u.FullName,
             (SELECT COUNT(*) FROM dbo.StockReceiptLines l WHERE l.ReceiptId = sr.ReceiptId) AS LineCount,
             (SELECT SUM(l.Qty * ISNULL(l.UnitCost, 0)) FROM dbo.StockReceiptLines l WHERE l.ReceiptId = sr.ReceiptId) AS TotalCost
      FROM dbo.StockReceipts sr JOIN dbo.Users u ON u.UserId = sr.ReceivedBy
@@ -42,6 +43,9 @@ export async function listReceipts(fromUtc, toUtc) {
     receivedAt: x.ReceivedAt,
     note: x.Note,
     receivedBy: x.FullName,
+    status: x.Status,
+    edited: x.EditedAt !== null,
+    poId: x.PoId ?? null,
     lineCount: x.LineCount,
     totalCost: Number(x.TotalCost ?? 0),
   }));
@@ -49,10 +53,14 @@ export async function listReceipts(fromUtc, toUtc) {
 
 export async function getReceipt(id) {
   const r = await query(
-    `SELECT sr.ReceiptId, sr.Supplier, sr.ReceivedAt, sr.Note, u.FullName FROM dbo.StockReceipts sr JOIN dbo.Users u ON u.UserId = sr.ReceivedBy
+    `SELECT sr.ReceiptId, sr.Supplier, sr.ReceivedAt, sr.Note, sr.Status, sr.PoId, sr.SupplierId, u.FullName,
+            sr.VoidedAt, sr.VoidReason, vu.FullName AS VoidedByName, sr.EditedAt, sr.EditReason, eu.FullName AS EditedByName
+     FROM dbo.StockReceipts sr JOIN dbo.Users u ON u.UserId = sr.ReceivedBy
+     LEFT JOIN dbo.Users vu ON vu.UserId = sr.VoidedBy LEFT JOIN dbo.Users eu ON eu.UserId = sr.EditedBy
      WHERE sr.ReceiptId = @id;
-     SELECT l.IngredientId, i.Name, i.Unit, l.Qty, l.UnitCost, l.PackUnitCode, l.PackQty, l.PackPrice, CONVERT(CHAR(10), l.ExpiryDate, 23) AS Expiry, l.LotId
-     FROM dbo.StockReceiptLines l JOIN dbo.Ingredients i ON i.IngredientId = l.IngredientId
+     SELECT l.IngredientId, i.Name, i.Unit, l.Qty, l.UnitCost, l.PackUnitCode, l.PackQty, l.PackPrice, CONVERT(CHAR(10), l.ExpiryDate, 23) AS Expiry, l.LotId,
+            lot.LotCode
+     FROM dbo.StockReceiptLines l JOIN dbo.Ingredients i ON i.IngredientId = l.IngredientId LEFT JOIN dbo.IngredientLots lot ON lot.LotId = l.LotId
      WHERE l.ReceiptId = @id ORDER BY i.Name;`,
     { id: [sql.Int, id] },
   );
@@ -64,6 +72,15 @@ export async function getReceipt(id) {
     receivedAt: h.ReceivedAt,
     note: h.Note,
     receivedBy: h.FullName,
+    status: h.Status,
+    poId: h.PoId ?? null,
+    supplierId: h.SupplierId ?? null,
+    voidedBy: h.VoidedByName ?? null,
+    voidedAt: h.VoidedAt ?? null,
+    voidReason: h.VoidReason ?? null,
+    editedBy: h.EditedByName ?? null,
+    editedAt: h.EditedAt ?? null,
+    editReason: h.EditReason ?? null,
     lines: r.recordsets[1].map((l) => ({
       ingredientId: l.IngredientId,
       name: l.Name,
@@ -75,8 +92,28 @@ export async function getReceipt(id) {
       packPrice: l.PackPrice === null ? null : Number(l.PackPrice),
       expiryDate: l.Expiry ?? null,
       lotId: l.LotId ?? null,
+      lotCode: l.LotCode ?? null,
     })),
   };
+}
+
+/**
+ * Sửa (mode 'EDIT', dòng đã quy ra đơn vị gốc — như createReceipt) / hủy (mode 'VOID') phiếu nhập — sp_ReviseStockReceipt (FEATURE-048).
+ * Lỗi nghiệp vụ là THROW của SP (errors.js 50190…50199, 50100, 50104, 50131).
+ */
+export async function reviseReceipt({ receiptId, userId, mode, reason, supplier = null, note = null, lines = null, confirmOver = false }) {
+  await (
+    await request()
+  )
+    .input('ReceiptId', sql.Int, receiptId)
+    .input('UserId', sql.Int, userId)
+    .input('Mode', sql.VarChar(4), mode)
+    .input('Reason', sql.NVarChar(200), reason)
+    .input('Supplier', sql.NVarChar(100), supplier || null)
+    .input('Note', sql.NVarChar(200), note || null)
+    .input('LinesJson', sql.NVarChar(sql.MAX), lines ? JSON.stringify(lines) : null)
+    .input('ConfirmOver', sql.Bit, confirmOver)
+    .execute('dbo.sp_ReviseStockReceipt');
 }
 
 // ---------- Kiểm kê ----------
@@ -88,6 +125,9 @@ const mapStocktake = (h, lines) => ({
   countedAt: h.CountedAt,
   postedBy: h.PostedByName,
   postedAt: h.PostedAt,
+  voidedBy: h.VoidedByName ?? null,
+  voidedAt: h.VoidedAt ?? null,
+  voidReason: h.VoidReason ?? null,
   lineCount: h.LineCount,
   shrinkageValue: h.ShrinkValue === null || h.ShrinkValue === undefined ? null : Number(h.ShrinkValue),
   lines,
@@ -95,9 +135,11 @@ const mapStocktake = (h, lines) => ({
 
 const HEAD = `
   SELECT s.StocktakeId, s.Status, s.Note, s.CountedAt, s.PostedAt, cu.FullName AS CountedByName, pu.FullName AS PostedByName,
+         s.VoidedAt, s.VoidReason, vu.FullName AS VoidedByName,
          (SELECT COUNT(*) FROM dbo.StocktakeLines l WHERE l.StocktakeId = s.StocktakeId) AS LineCount,
          (SELECT SUM(CASE WHEN l.Diff < 0 THEN -l.Diff * ISNULL(l.UnitCost, 0) ELSE 0 END) FROM dbo.StocktakeLines l WHERE l.StocktakeId = s.StocktakeId) AS ShrinkValue
-  FROM dbo.Stocktakes s JOIN dbo.Users cu ON cu.UserId = s.CountedBy LEFT JOIN dbo.Users pu ON pu.UserId = s.PostedBy`;
+  FROM dbo.Stocktakes s JOIN dbo.Users cu ON cu.UserId = s.CountedBy LEFT JOIN dbo.Users pu ON pu.UserId = s.PostedBy
+  LEFT JOIN dbo.Users vu ON vu.UserId = s.VoidedBy`;
 
 export async function listStocktakes() {
   const r = await query(`${HEAD} ORDER BY s.StocktakeId DESC`);
@@ -165,6 +207,54 @@ export async function updateCounts(id, lines) {
     }
     return 'DRAFT';
   });
+}
+
+/**
+ * Sửa phiếu kiểm kê nháp (FEATURE-048): ghi chú + danh sách nguyên liệu — thêm → chụp tồn hiện tại, bớt → mất số đếm dòng đó.
+ * → 'DRAFT' | 'EMPTY' (không còn nguyên liệu nào — không đổi gì) | trạng thái khác | null (không có phiếu).
+ */
+export async function updateDraft(id, { note, ingredientIds }) {
+  return inTransaction(async (tx) => {
+    const s = await txQuery(tx, 'SELECT Status FROM dbo.Stocktakes WITH (UPDLOCK, HOLDLOCK) WHERE StocktakeId = @id', { id: [sql.Int, id] });
+    const status = s.recordset[0]?.Status;
+    if (status !== 'DRAFT') return status ?? null;
+    const params = {
+      id: [sql.Int, id],
+      n: [sql.NVarChar(200), note || null],
+      keep: [sql.Bit, note === undefined], // không gửi ghi chú = giữ nguyên
+      ids: [sql.NVarChar(sql.MAX), ingredientIds.join(',')],
+    };
+    const keep = await txQuery(
+      tx,
+      `SELECT COUNT(*) AS n FROM dbo.Ingredients i
+       WHERE i.IngredientId IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@ids, ','))
+         AND (i.DeletedAt IS NULL OR EXISTS (SELECT 1 FROM dbo.StocktakeLines l WHERE l.StocktakeId = @id AND l.IngredientId = i.IngredientId))`,
+      params,
+    );
+    if (keep.recordset[0].n === 0) return 'EMPTY';
+    await txQuery(
+      tx,
+      `UPDATE dbo.Stocktakes SET Note = CASE WHEN @keep = 1 THEN Note ELSE @n END WHERE StocktakeId = @id;
+       DELETE dbo.StocktakeLines WHERE StocktakeId = @id AND IngredientId NOT IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@ids, ','));
+       INSERT dbo.StocktakeLines (StocktakeId, IngredientId, SystemQty)
+       SELECT @id, i.IngredientId, i.StockQty FROM dbo.Ingredients i
+       WHERE i.DeletedAt IS NULL AND i.IngredientId IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@ids, ','))
+         AND NOT EXISTS (SELECT 1 FROM dbo.StocktakeLines l WHERE l.StocktakeId = @id AND l.IngredientId = i.IngredientId);`,
+      params,
+    );
+    return 'DRAFT';
+  });
+}
+
+/** Hủy phiếu kiểm kê đã chốt — sp_VoidStocktake (FEATURE-048). */
+export async function voidStocktake(id, userId, reason) {
+  await (
+    await request()
+  )
+    .input('StocktakeId', sql.Int, id)
+    .input('UserId', sql.Int, userId)
+    .input('Reason', sql.NVarChar(200), reason)
+    .execute('dbo.sp_VoidStocktake');
 }
 
 export async function post(id, userId) {

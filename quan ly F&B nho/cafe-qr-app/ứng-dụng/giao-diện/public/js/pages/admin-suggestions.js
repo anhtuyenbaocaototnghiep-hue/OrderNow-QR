@@ -3,6 +3,7 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { $, clear, el, errorMessage, num, toast } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('suggestions');
 
@@ -39,7 +40,7 @@ function render() {
   const windowDays = el('input', { class: 'input', type: 'number', min: 1, max: 90, value: d.windowDays, style: { width: '5rem' } });
   const addSel = el(
     'select',
-    { class: 'input' },
+    { class: 'input', 'aria-label': 'Chọn món để ghim' },
     el('option', { value: '' }, '— Chọn món để ghim —'),
     d.items
       .filter((i) => i.isActive && !state.pins.some((p) => p.menuItemId === i.menuItemId))
@@ -90,8 +91,8 @@ function render() {
                 style: { maxWidth: '14rem' },
                 oninput: (e) => (p.label = e.target.value),
               }),
-              el('button', { class: 'btn btn-sm', type: 'button', 'aria-label': 'Lên', onclick: () => move(idx, -1) }, '↑'),
-              el('button', { class: 'btn btn-sm', type: 'button', 'aria-label': 'Xuống', onclick: () => move(idx, 1) }, '↓'),
+              el('button', { class: 'btn btn-sm', type: 'button', 'aria-label': 'Lên', onclick: () => move(idx, -1) }, icon('arrow-up')),
+              el('button', { class: 'btn btn-sm', type: 'button', 'aria-label': 'Xuống', onclick: () => move(idx, 1) }, icon('arrow-down')),
               el(
                 'button',
                 {
@@ -103,7 +104,7 @@ function render() {
                     render();
                   },
                 },
-                '×',
+                icon('x'),
               ),
             ),
           ),

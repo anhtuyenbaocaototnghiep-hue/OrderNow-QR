@@ -3,6 +3,7 @@
 // Không tự tính tiền: trang gọi API xem trước (server dùng bộ pricing) mỗi khi lựa chọn đổi.
 import { staffApi } from './api.js';
 import { clear, el, errorMessage, toast } from './ui.js';
+import { icon } from './icons.js';
 
 /**
  * Khung hội viên + giảm giá tay dùng chung cho thu tiền bàn và mang đi.
@@ -197,7 +198,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
         'div',
         { class: 'loyalty-info small' },
         el('strong', {}, `${l.points} điểm`),
-        l.stampCards.map((c) => el('div', {}, `🎟 ${c.name}: ${c.text}`)),
+        l.stampCards.map((c) => el('div', {}, icon('stamp'), `${c.name}: ${c.text}`)),
       ),
       l.rewards.length || l.stampCards.some((c) => c.rewardsAvailable > 0) ? el('div', { class: 'row' }, el('label', {}, 'Đổi thưởng'), rewardSel) : null,
       l.vouchers.length
@@ -212,7 +213,8 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
                   type: 'button',
                   onclick: () => applyVoucher(st.voucherCode === v.code ? null : v.code),
                 },
-                `🎫 ${v.code} −${v.percent ? `${v.percent}%` : `${Number(v.amount).toLocaleString('vi-VN')}đ`}`,
+                icon('ticket'),
+                `${v.code} −${v.percent ? `${v.percent}%` : `${Number(v.amount).toLocaleString('vi-VN')}đ`}`,
               ),
             ),
           )
@@ -241,7 +243,14 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
         el(
           'div',
           { class: 'row between member-on' },
-          el('span', {}, '⭐ ', el('strong', {}, m.fullName), ` · ${m.tierName} ${m.discountPercent}%`, m.firstOrderDiscount ? ' · đơn đầu' : ''),
+          el(
+            'span',
+            {},
+            icon('star', { label: 'Hội viên' }),
+            el('strong', {}, m.fullName),
+            ` · ${m.tierName} ${m.discountPercent}%`,
+            m.firstOrderDiscount ? ' · đơn đầu' : '',
+          ),
           el('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => setMember(null) }, 'Gỡ'),
         ),
       );

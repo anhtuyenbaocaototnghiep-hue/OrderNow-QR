@@ -6,7 +6,8 @@ import { api } from '../api.js';
 import { mountMemberBox } from '../member-box.js';
 import { connectRealtime } from '../socket.js';
 import { $, clear, el, elapsed, errorMessage, modal, money, setBusy, time, toast } from '../ui.js';
-import { CUSTOMER_STATUS, clearSessionId, getSessionId, goEntry, qrToken, takeFlash } from '../customer.js';
+import { CUSTOMER_STATUS, clearSessionId, followTable, getSessionId, goEntry, qrToken, takeFlash } from '../customer.js';
+import { icon } from '../icons.js';
 
 const qr = qrToken();
 const sessionId = getSessionId(qr);
@@ -27,6 +28,9 @@ let splitSheet = null;
 let prevStatuses = null;
 let loadTimer = null;
 let lastCall = null; // { at, handled }
+let review = null; // F-051: { canReview, reason, submitted, items[] } khi phiên đã thanh toán
+const reviewDraft = { picked: new Map(), comment: '' }; // bản nháp giữ qua các lần vẽ lại (review G3)
+let closedKey = null; // màn cảm ơn đang vẽ — không vẽ lại khi không đổi (giữ ô đang gõ / đang chọn)
 const memberSlot = el('div');
 let memberBox = null;
 
@@ -46,17 +50,100 @@ async function load() {
     );
     return;
   }
+  if (session.status !== 'CLOSED' && followTable(qr, sessionId, session.table)) return; // F-049: nhóm đã chuyển bàn trong lúc trang đóng / mất mạng
   $('#table').textContent = session.table.name;
   const waiting = session.orders.some((o) => o.status === 'PENDING' || o.status === 'PREPARING');
-  const [e, sp] = await Promise.all([
+  const [e, sp, rv] = await Promise.all([
     waiting && session.status !== 'CLOSED' ? api(`/api/sessions/${sessionId}/eta`).catch(() => null) : null,
     session.splitCount > 0 && session.status !== 'CLOSED' ? api(`/api/sessions/${sessionId}/splits`).catch(() => null) : null,
+    session.status === 'CLOSED' ? api(`/api/sessions/${sessionId}/review`).catch(() => null) : null,
   ]);
   eta = e?.eta ?? null;
   splits = sp;
+  review = rv;
   notifyCompleted();
   render();
   splitSheet?.refresh();
+}
+
+/** F-051: chấm sao từng món + góp ý sau khi thanh toán (1 lần / điện thoại / lượt, trong 24 giờ). */
+function reviewBlock() {
+  if (!review) return null;
+  if (review.submitted) return el('p', { class: 'review-done', role: 'status' }, icon('heart', { filled: true }), 'Cảm ơn bạn đã đánh giá!');
+  if (!review.canReview || review.items.length === 0) return null;
+  const picked = reviewDraft.picked;
+  const comment = el('textarea', {
+    class: 'input',
+    maxlength: 300,
+    rows: 2,
+    value: reviewDraft.comment,
+    placeholder: 'Ví dụ: cà phê hơi ngọt, phục vụ nhanh…',
+    oninput: (e) => (reviewDraft.comment = e.target.value),
+  });
+  const rows = review.items.map((it) => {
+    const buttons = [];
+    // Sao tô đặc = đã chọn, sao rỗng = chưa chọn (không chỉ khác màu — WCAG 1.4.1); bấm lại sao đang chọn để bỏ chấm món đó
+    const show = (n) =>
+      buttons.forEach((b, i) => {
+        b.classList.toggle('on', i < n);
+        b.replaceChildren(icon('star', { filled: i < n }));
+        b.setAttribute('aria-checked', String(i + 1 === n));
+      });
+    const pick = (n) => {
+      if (picked.get(it.menuItemId) === n) {
+        picked.delete(it.menuItemId);
+        show(0);
+      } else {
+        picked.set(it.menuItemId, n);
+        show(n);
+      }
+    };
+    for (let n = 1; n <= 5; n++) {
+      buttons.push(
+        el('button', { type: 'button', class: 'star', role: 'radio', 'aria-checked': 'false', 'aria-label': `${n} sao`, onclick: () => pick(n) }, icon('star')),
+      );
+    }
+    show(picked.get(it.menuItemId) ?? 0);
+    return el(
+      'div',
+      { class: 'review-row' },
+      el('span', { class: 'review-name', id: `rv-${it.menuItemId}` }, it.name),
+      el('div', { class: 'stars', role: 'radiogroup', 'aria-labelledby': `rv-${it.menuItemId}` }, buttons),
+    );
+  });
+  const send = el(
+    'button',
+    {
+      class: 'btn btn-primary',
+      type: 'button',
+      onclick: async () => {
+        const items = [...picked].map(([menuItemId, stars]) => ({ menuItemId, stars }));
+        if (!items.length && !comment.value.trim()) return toast('Chấm ít nhất một món hoặc viết góp ý', 'warning');
+        setBusy(send, true);
+        try {
+          await api(`/api/sessions/${sessionId}/review`, { method: 'POST', body: { items, comment: comment.value.trim() || null } });
+          review = { ...review, submitted: true, canReview: false };
+          render();
+        } catch (err) {
+          setBusy(send, false);
+          toast(errorMessage(err), 'error');
+          if (err.code === 'ALREADY_REVIEWED') {
+            review = { ...review, submitted: true };
+            render();
+          }
+        }
+      },
+    },
+    'Gửi đánh giá',
+  );
+  return el(
+    'section',
+    { class: 'review-box', 'aria-label': 'Đánh giá món' },
+    el('h2', {}, 'Bạn thấy món hôm nay thế nào?'),
+    rows,
+    el('div', { class: 'field' }, el('label', {}, 'Góp ý (không bắt buộc)'), comment),
+    send,
+  );
 }
 
 /** Pop-up khi có đơn vừa chuyển sang COMPLETED (AC-004-01). */
@@ -71,7 +158,7 @@ function notifyCompleted() {
         body: el(
           'div',
           { class: 'popup-done' },
-          el('div', { class: 'big', 'aria-hidden': 'true' }, '🎉'),
+          el('div', { class: 'big' }, icon('party-popper')),
           el('p', {}, done.length === 1 ? `Đơn #${done[0].orderCode} đã xong, vui lòng nhận tại quầy.` : `${done.length} đơn đã xong, vui lòng nhận tại quầy.`),
         ),
         actions: [{ label: 'Đã hiểu', class: 'btn-primary' }],
@@ -148,12 +235,16 @@ function render() {
   if (session.status === 'CLOSED') {
     actions.hidden = true;
     const paid = session.payment;
+    // Sự kiện realtime / kết nối lại sau khi đã thu (đơn pha xong, voucher…) → không vẽ lại nếu màn cảm ơn không đổi
+    const key = JSON.stringify([paid?.amountDue, session.payments?.length, review?.canReview, review?.submitted, review?.items?.length]);
+    if (key === closedKey && main.querySelector('.thanks')) return;
+    closedKey = key;
     clear(
       main,
       el(
         'div',
         { class: 'thanks card' },
-        el('div', { class: 'big', 'aria-hidden': 'true' }, '☕'),
+        el('div', { class: 'big' }, icon('coffee')),
         el('h1', {}, 'Cảm ơn quý khách!'),
         paid
           ? el('p', {}, `Đã thanh toán ${money(paid.amountDue)} (tiền mặt).`)
@@ -162,6 +253,7 @@ function render() {
             : el('p', {}, 'Bàn đã được đóng.'),
         paid?.memberDiscount > 0 ? el('p', { class: 'save' }, `Bạn đã tiết kiệm ${money(paid.memberDiscount)} nhờ ưu đãi hội viên.`) : null,
         el('p', { class: 'muted' }, 'Hẹn gặp lại bạn lần sau.'),
+        reviewBlock(),
         el(
           'button',
           {
@@ -198,10 +290,18 @@ function render() {
     active.length ? billSummary() : null,
     splitSummary(),
     active.length
-      ? el('div', { class: 'center' }, el('button', { class: 'btn', type: 'button', id: 'split-bill', onclick: openSplit }, '🧾 Chia bill theo người'))
+      ? el(
+          'div',
+          { class: 'center' },
+          el('button', { class: 'btn', type: 'button', id: 'split-bill', onclick: openSplit }, icon('receipt'), 'Chia bill theo người'),
+        )
       : null,
     active.length ? el('p', { class: 'muted small center' }, 'Thanh toán bằng tiền mặt. Bấm "Gọi thanh toán" khi bạn muốn tính tiền.') : null,
-    el('div', { class: 'center' }, el('button', { class: 'btn btn-ghost', type: 'button', id: 'call-staff', onclick: callStaff }, '🙋 Gọi nhân viên')),
+    el(
+      'div',
+      { class: 'center' },
+      el('button', { class: 'btn btn-ghost', type: 'button', id: 'call-staff', onclick: callStaff }, icon('hand'), 'Gọi nhân viên'),
+    ),
   );
   updatePayButton();
   updateCallButton();
@@ -234,7 +334,7 @@ function paymentStatus() {
 /** F-025: "Món của bạn dự kiến xong sau khoảng 8–12 phút" (hàng chờ trước bạn + món của bạn). */
 function etaLine() {
   if (!eta) return null;
-  return el('div', { class: 'alert info eta', id: 'eta' }, `⏱ Món của bạn dự kiến xong sau khoảng ${eta.minMinutes}–${eta.maxMinutes} phút`);
+  return el('div', { class: 'alert info eta', id: 'eta' }, icon('timer'), `Món của bạn dự kiến xong sau khoảng ${eta.minMinutes}–${eta.maxMinutes} phút`);
 }
 
 /** F-026: tóm tắt các phần khi bàn đã chia bill. */
@@ -261,7 +361,17 @@ function splitSummary() {
 /** F-026: mỗi khách tạo phần của mình rồi chạm chọn món; món chưa ai nhận thuộc phần "Chung". */
 async function openSplit() {
   const label = el('input', { class: 'input', maxlength: 50, placeholder: 'Tên phần của bạn (ví dụ: Anh A)', 'aria-label': 'Tên phần' });
-  const body = el('div', { class: 'stack' });
+  // Q-023: khối "Tạo phần" tạo một lần và không bị gỡ khỏi trang khi vẽ lại → không mất focus / chữ đang gõ khi có cập nhật realtime
+  const createBox = el(
+    'div',
+    { class: 'stack' },
+    el('p', { class: 'small muted' }, 'Tạo phần của bạn, rồi chạm vào các món bạn dùng. Món không ai chọn sẽ tính vào phần cuối cùng.'),
+    label,
+    el('button', { class: 'btn btn-primary btn-block', type: 'button', id: 'create-split', onclick: createSplit }, 'Tạo phần của tôi'),
+  );
+  const head = el('div', { style: { display: 'contents' } });
+  const rest = el('div', { class: 'stack' }); // giữ khoảng cách giữa các dòng như trước
+  const body = el('div', { class: 'stack' }, head, rest);
   const msg = el('div');
   let data = null;
   const m = modal({ title: 'Chia bill theo người', sheet: true, body: el('div', {}, msg, body), onClose: () => (splitSheet = null) });
@@ -281,17 +391,10 @@ async function openSplit() {
     const owner = new Map();
     for (const s of data.splits) for (const l of s.lines) owner.set(l.orderItemId, s);
     const lines = data.hasSplits ? data.splits.flatMap((s) => s.lines) : data.lines;
+    if (mine) clear(head, el('div', { class: 'alert info' }, `Phần của bạn: `, el('strong', {}, mine.label), ` · ~${money(mine.unpaidAmount)}`));
+    else if (!head.contains(createBox)) clear(head, createBox);
     clear(
-      body,
-      mine
-        ? el('div', { class: 'alert info' }, `Phần của bạn: `, el('strong', {}, mine.label), ` · ~${money(mine.unpaidAmount)}`)
-        : el(
-            'div',
-            { class: 'stack' },
-            el('p', { class: 'small muted' }, 'Tạo phần của bạn, rồi chạm vào các món bạn dùng. Món không ai chọn sẽ tính vào phần cuối cùng.'),
-            label,
-            el('button', { class: 'btn btn-primary btn-block', type: 'button', id: 'create-split', onclick: createSplit }, 'Tạo phần của tôi'),
-          ),
+      rest,
       el('h3', { style: { margin: '0.4rem 0 0', fontSize: '1rem' } }, 'Món trong bàn'),
       lines
         .filter((l) => !l.paid)
@@ -338,14 +441,18 @@ async function openSplit() {
   }
 
   async function createSplit(e) {
-    setBusy(e.currentTarget, true);
+    const btn = e.currentTarget; // currentTarget về null sau await
+    setBusy(btn, true);
     try {
       await api(`/api/sessions/${sessionId}/splits`, { method: 'POST', body: { label: label.value.trim() || 'Tôi' } });
+      // Khối tạo phần được dùng lại nếu phần của khách bị gộp / đã thu → trả nút và ô về trạng thái mới
+      setBusy(btn, false);
+      label.value = '';
       await refresh();
       scheduleLoad();
     } catch (err) {
       clear(msg, el('div', { class: 'field-error' }, errorMessage(err)));
-      setBusy(e.currentTarget, false);
+      setBusy(btn, false);
     }
   }
 
@@ -386,7 +493,7 @@ function updateCallButton() {
   if (!btn) return;
   const left = lastCall ? CALL_COOLDOWN_MS - (Date.now() - lastCall.at) : 0;
   btn.disabled = left > 0;
-  btn.textContent = left > 0 ? `🙋 Đã gọi nhân viên (gọi lại sau ${Math.ceil(left / 1000)}s)` : '🙋 Gọi nhân viên';
+  btn.replaceChildren(icon('hand'), left > 0 ? `Đã gọi nhân viên (gọi lại sau ${Math.ceil(left / 1000)}s)` : 'Gọi nhân viên');
 }
 
 async function requestPayment() {
@@ -513,13 +620,14 @@ for (const evt of [
 ]) {
   socket?.on(evt, scheduleLoad);
 }
+socket?.on('session.table_changed', (p) => followTable(qr, sessionId, p.toTable)); // F-049
 socket?.on('session.staff_called', (c) => {
   lastCall = { at: new Date(c.requestedAt).getTime(), handled: false };
   scheduleLoad();
 });
 // F-038: thanh toán lần đầu của người được giới thiệu → cả hai nhận voucher
 socket?.on('member.vouchers_issued', (p) => {
-  toast(`🎉 Bạn và người giới thiệu mỗi người nhận 1 voucher giảm ${p.percent}% — dùng ở lần sau, báo nhân viên khi thanh toán.`, 'success', 9000);
+  toast(`Bạn và người giới thiệu mỗi người nhận 1 voucher giảm ${p.percent}% — dùng ở lần sau, báo nhân viên khi thanh toán.`, 'success', 9000);
   scheduleLoad();
 });
 socket?.on('session.staff_call_handled', () => {

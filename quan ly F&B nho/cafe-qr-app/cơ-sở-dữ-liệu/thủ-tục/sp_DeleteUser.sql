@@ -29,9 +29,10 @@ BEGIN
      OR EXISTS (SELECT 1 FROM dbo.Shifts WHERE OpenedBy = @UserId OR ClosedBy = @UserId)
      OR EXISTS (SELECT 1 FROM dbo.Refunds WHERE CreatedBy = @UserId OR ApprovedBy = @UserId)
      OR EXISTS (SELECT 1 FROM dbo.StaffCalls WHERE HandledBy = @UserId)
-     OR EXISTS (SELECT 1 FROM dbo.StockReceipts WHERE ReceivedBy = @UserId)
-     OR EXISTS (SELECT 1 FROM dbo.Stocktakes WHERE CountedBy = @UserId OR PostedBy = @UserId)
-     OR EXISTS (SELECT 1 FROM dbo.CashTransactions WHERE CreatedBy = @UserId OR ApprovedBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.StockReceipts WHERE ReceivedBy = @UserId OR VoidedBy = @UserId OR EditedBy = @UserId)   -- F-048: sửa / hủy phiếu nhập
+     OR EXISTS (SELECT 1 FROM dbo.SessionTableMoves WHERE MovedBy = @UserId)                                         -- F-049: chuyển bàn
+     OR EXISTS (SELECT 1 FROM dbo.Stocktakes WHERE CountedBy = @UserId OR PostedBy = @UserId OR VoidedBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.CashTransactions WHERE CreatedBy = @UserId OR ApprovedBy = @UserId OR VoidedBy = @UserId)   -- F-050: hủy khoản
      OR EXISTS (SELECT 1 FROM dbo.Attendance WHERE UserId = @UserId OR EditedBy = @UserId)
      OR EXISTS (SELECT 1 FROM dbo.PrepBatches WHERE PreparedBy = @UserId)
      OR EXISTS (SELECT 1 FROM dbo.WasteLogs WHERE CreatedBy = @UserId)
@@ -42,6 +43,7 @@ BEGIN
      OR EXISTS (SELECT 1 FROM dbo.Vouchers WHERE CreatedBy = @UserId)                   -- F-038
      OR EXISTS (SELECT 1 FROM dbo.Segments WHERE CreatedBy = @UserId)                   -- F-037
      OR EXISTS (SELECT 1 FROM dbo.Campaigns WHERE CreatedBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.Reviews WHERE HandledBy = @UserId)                     -- F-051: xử lý đánh giá thấp
   BEGIN
     UPDATE dbo.Users SET DeletedAt = SYSUTCDATETIME(), IsActive = 0 WHERE UserId = @UserId;
     SET @Result = 'ARCHIVED';

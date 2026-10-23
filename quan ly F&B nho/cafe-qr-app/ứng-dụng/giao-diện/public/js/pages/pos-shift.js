@@ -3,7 +3,7 @@
 // ADR-006: sổ quỹ ca — chi tiền / thu khác, duyệt khoản chờ (F-033); trưởng ca / quản lý sửa chấm công trong ngày (F-035, F-036).
 import { staffApi } from '../api.js';
 import { attendanceDialog, attendanceTable } from '../attendance.js';
-import { getToken } from '../auth.js';
+import { getToken, logout } from '../auth.js';
 import { cashBookTable, cashEntryDialog } from '../cash-book.js';
 import { mountPosShell } from '../pos-shell.js';
 import { connectRealtime } from '../socket.js';
@@ -13,10 +13,20 @@ const shell = await mountPosShell('shift');
 const main = $('#main');
 const isLead = ['MANAGER', 'ADMIN'].includes(shell.user.role); // trưởng ca / quản lý
 let closedReport = null; // phiếu chốt ca vừa đóng (để in)
+// F-054 (ADR-014 D-59): tới từ nút Đăng xuất khi đang giữ ca → nhắc + tự mở hộp đóng ca; đóng xong thì đăng xuất
+const logoutAfter = new URLSearchParams(location.search).get('then') === 'logout';
+// Bỏ tham số khỏi URL ngay: tải lại / Back / đăng nhập lại (next=) không tự đăng xuất người khác (review G3)
+if (logoutAfter) history.replaceState(null, '', location.pathname);
+let promptedClose = false;
+// Đang tự đóng ca: sự kiện realtime shift.closed có thể về trước phản hồi HTTP — lúc đó không tự đăng xuất, chờ màn "Đã đóng ca" (in phiếu)
+let closingSelf = false;
+let loadSeq = 0; // lượt tải mới nhất — lượt cũ về sau không được vẽ đè (DEF-012)
 
 async function load() {
+  const my = ++loadSeq;
   if (closedReport) return renderClosed(closedReport);
   const shift = shell.shift;
+  if (!shift && logoutAfter && !closingSelf) return logout(); // ca đã được người khác đóng → không còn gì chặn
   if (!shift) {
     clear(
       main,
@@ -39,9 +49,12 @@ async function load() {
     ]);
     data = { ...report, attendance };
   } catch (err) {
+    if (my !== loadSeq || closedReport) return;
     clear(main, el('div', { class: 'alert danger' }, errorMessage(err)));
     return;
   }
+  // Lượt tải bắt đầu khi ca còn mở (vd. sau sự kiện hoàn tiền) có thể về sau màn "Đã đóng ca": lượt đã cũ thì bỏ (DEF-012)
+  if (my !== loadSeq || closedReport) return;
   render(data);
 }
 
@@ -96,8 +109,11 @@ function summary({ shift, report }) {
 
 function render(data) {
   const { shift, report } = data;
+  const mine = shift.openedBy.userId === shell.user.userId;
+  if (logoutAfter && !mine && !closingSelf) return void logout(); // ca của người khác → mình được đăng xuất ngay
   clear(
     main,
+    logoutAfter ? el('div', { class: 'alert warning', role: 'status' }, 'Bạn đang giữ ca này — đếm tiền trong két rồi bấm "Đóng ca" để đăng xuất.') : null,
     el(
       'div',
       { class: 'row between wrap', style: { marginBottom: '1rem' } },
@@ -178,6 +194,11 @@ function render(data) {
         )
       : null,
   );
+  // F-054: tới từ nút Đăng xuất → mở sẵn hộp đóng ca (một lần)
+  if (logoutAfter && !promptedClose) {
+    promptedClose = true;
+    closeShift(shift);
+  }
 }
 
 function renderClosed(data) {
@@ -192,18 +213,21 @@ function renderClosed(data) {
         'div',
         { class: 'row' },
         el('button', { class: 'btn btn-primary', type: 'button', onclick: () => window.print() }, 'In phiếu chốt ca'),
-        el(
-          'button',
-          {
-            class: 'btn',
-            type: 'button',
-            onclick: () => {
-              closedReport = null;
-              load();
-            },
-          },
-          'Xong',
-        ),
+        // F-054: đóng ca để đăng xuất → in phiếu (nếu cần) rồi bấm Đăng xuất
+        logoutAfter
+          ? el('button', { class: 'btn', type: 'button', onclick: logout }, 'Đăng xuất')
+          : el(
+              'button',
+              {
+                class: 'btn',
+                type: 'button',
+                onclick: () => {
+                  closedReport = null;
+                  load();
+                },
+              },
+              'Xong',
+            ),
       ),
     ),
     el(
@@ -311,6 +335,7 @@ async function closeShift(shift) {
             clear(msg, el('div', { class: 'field-error' }, 'Nhập số tiền đếm được'));
             return false;
           }
+          closingSelf = true;
           try {
             closedReport = await staffApi(`/api/shifts/${shift.shiftId}/close`, { method: 'POST', body: { countedCash: v, note: note.value.trim() || null } });
             shell.setShift(null);
@@ -319,6 +344,10 @@ async function closeShift(shift) {
             load();
           } catch (err) {
             clear(msg, el('div', { class: 'field-error' }, errorMessage(err)));
+          } finally {
+            closingSelf = false;
+            // Người khác đóng ca trước mình (lệnh đóng của mình lỗi) → không còn gì chặn, đăng xuất như đã định
+            if (logoutAfter && !closedReport && !shell.shift) load();
           }
           return false;
         },

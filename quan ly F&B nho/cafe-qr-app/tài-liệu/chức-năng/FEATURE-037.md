@@ -56,11 +56,14 @@
 
 ## Acceptance Criteria
 
-- AC-037-01: Phân khúc "Thân thiết, 30 ngày chưa ghé" trả đúng tập seed; người OptOut không có trong danh sách.
-- AC-037-02: Chạy EXPORT → CSV đúng số dòng, voucher tạo đúng, có nhật ký tải file.
+- AC-037-01: Hội viên mẫu: a (Thân thiết, 40 ngày chưa ghé), b (Thân thiết, 45 ngày), "recent" (Thân thiết, 5 ngày), "member" (hạng Hội viên, 40 ngày), "opt" (Thân thiết, 40 ngày, từ chối nhận tin) → phân khúc "Thân thiết, ≥ 30 ngày chưa ghé" trả đúng {a, b}: số người 2, bị loại vì từ chối nhận tin 1, danh sách mẫu đã che SĐT; điều kiện lạ → 400. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+- AC-037-02: Chạy chiến dịch kênh xuất danh sách (`EXPORT`) cho phân khúc 2 người, voucher 15 % hạn 7 ngày → kết quả {gửi 2, bỏ qua 0, lỗi 0}, trạng thái `DONE`, đúng 2 voucher gắn với 2 người đó; CSV = 1 dòng tiêu đề + 2 dòng, có SĐT đầy đủ và nội dung "giảm 15%"; đúng 1 dòng nhật ký `campaigns.export`. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
 - AC-037-03: Gửi lại trong 7 ngày → bỏ qua và ghi lý do.
 - AC-037-04: Zalo OA chưa cấu hình → 400; kênh giả: lỗi từng người ghi FAILED.
-- AC-037-05: Hẹn giờ → job chạy khi đến giờ; hiệu quả đếm voucher dùng / doanh thu / quay lại 14 ngày.
+- AC-037-05: Chiến dịch hẹn giờ → trạng thái `SCHEDULED`; khi tới giờ, job `campaigns-due` chạy → `DONE`; một người nhận dùng voucher ở 1 lượt thu → hiệu quả = {voucher đã dùng 1, doanh thu = số phải thu của lượt đó, khách quay lại trong 14 ngày 1}. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+- AC-037-06: Chạy lại chiến dịch đã chạy xong → 409 `CAMPAIGN_NOT_RUNNABLE`. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-037-07: Tạo chiến dịch kênh SMS → 400 `CHANNEL_NOT_SUPPORTED`. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-037-08: Sửa hoặc xóa chiến dịch đã chạy → 409 `CAMPAIGN_LOCKED`; xóa phân khúc đang được chiến dịch dùng → 409 `IN_USE`. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

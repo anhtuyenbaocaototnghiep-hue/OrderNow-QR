@@ -2,7 +2,6 @@
 // nhân viên gọi món giúp khách tại bàn (FEATURE-024).
 // ADR-005: giá mỗi dòng do bộ pricing tính (khuyến mãi, combo, tùy chọn) rồi truyền vào SP; mang đi tính thêm hội viên + giảm tay.
 // Ghi kho/thu tiền chỉ qua SP; realtime phát sau commit.
-import { config } from '../config.js';
 import { sqlErrorNumber, withDeadlockRetry } from '../db.js';
 import { AppError, conflict, forbidden, fromSqlError, idsFromMessage, notFound } from '../errors.js';
 import * as ordersRepo from '../repositories/ordersRepo.js';
@@ -14,9 +13,9 @@ import * as loyaltyService from './loyaltyService.js';
 import { refreshAvailability } from './menuService.js';
 import { invalidatePromotions, publicQuote, quote } from './pricingService.js';
 import { visibility } from './scheduleService.js';
-import { getSettings } from './settingsService.js';
+import { getSettings, shopInfo } from './settingsService.js';
 import { invalidateQueue } from './etaService.js';
-import { requireOpenShift } from './shiftService.js';
+import { assertShiftOpen, requireOpenShift } from './shiftService.js';
 import { todayVn, vnDayStartUtc } from '../utils/time.js';
 
 // ---- Idempotency-Key (chống double-tap): cùng client + key trong 60 giây → trả lại cùng kết quả ----
@@ -111,6 +110,8 @@ async function submitToSession({ sessionId, items, note }, staff = null) {
 export async function submitDineIn({ sessionId, items, note }, clientToken, idempotencyKey) {
   const settings = await getSettings();
   if (!settings.acceptingOrders) throw new AppError(503, 'STORE_CLOSED', settings.closedMessage);
+  // F-055 (ADR-017 D-64): chưa mở ca thì khách không gửi được đơn (vẫn xem menu)
+  await assertShiftOpen('Quán chưa mở ca nên chưa nhận đơn — vui lòng chờ nhân viên mở ca');
   if (!(await sessionsRepo.isMember(sessionId, clientToken))) {
     throw forbidden('Phiên này không thuộc thiết bị của bạn. Vui lòng quét lại mã QR tại bàn.');
   }
@@ -122,6 +123,7 @@ export async function submitDineIn({ sessionId, items, note }, clientToken, idem
  * phiên phải đang mở (SP khóa phiên — đã thu tiền → SESSION_CLOSED).
  */
 export async function submitByStaff(sessionId, { items, note }, user, idempotencyKey) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const session = await sessionsRepo.findById(sessionId);
   if (!session) throw notFound('Không tìm thấy phiên');
   if (session.status === 'CLOSED') throw conflict('SESSION_CLOSED', `${session.table.name} đã thanh toán — hãy mở bàn mới`);
@@ -155,6 +157,7 @@ export function listForDashboard({ statuses, since, type }) {
 }
 
 export async function accept(orderId) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const { changed, status } = await ordersRepo.accept(orderId);
   if (!status) throw notFound('Không tìm thấy đơn hàng');
   if (!changed) {
@@ -168,6 +171,7 @@ export async function accept(orderId) {
 }
 
 export async function complete(orderId, user) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const deducted = await withDeadlockRetry(() => ordersRepo.complete(orderId, user.userId));
   const order = await ordersRepo.getById(orderId);
   invalidateQueue();
@@ -188,6 +192,7 @@ export async function complete(orderId, user) {
 }
 
 export async function cancel(orderId, user, reason) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   await withDeadlockRetry(() => ordersRepo.cancel(orderId, user.userId, reason));
   const order = await ordersRepo.getById(orderId);
   invalidateQueue();
@@ -312,7 +317,7 @@ export async function receipt(orderId) {
   return {
     kind: 'order',
     mode: 'final',
-    shop: config.shop,
+    shop: await shopInfo(), // F-053
     table: null,
     order: { orderId, orderCode: order.orderCode, createdAt: order.createdAt, status: order.status },
     orders: [{ orderCode: order.orderCode, createdAt: order.createdAt }],

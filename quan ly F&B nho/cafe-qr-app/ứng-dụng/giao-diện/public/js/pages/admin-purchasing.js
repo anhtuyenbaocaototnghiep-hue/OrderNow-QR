@@ -4,6 +4,7 @@ import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { receivePoDialog } from '../receive-po.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, showFieldErrors, toast, todayVn } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('purchasing');
 
@@ -72,14 +73,27 @@ async function renderSuggest() {
   const dateIn = el('input', { class: 'input', type: 'date', min: addDays(todayVn(), 1), 'aria-label': 'Ngày giao kế tiếp' });
   const tableBox = el('div');
   const selected = new Map();
+  let selectable = 0;
+  // Chỉ đặt được dòng đã có nhà cung cấp và có số đề xuất > 0 — ô bị khóa thì nói rõ vì sao (DEF-016)
+  const lockReason = (p) => (!p.supplier ? 'Chưa gán nhà cung cấp' : !p.suggestPacks ? 'Chưa cần nhập — đủ dùng đến ngày giao' : null);
   async function refresh() {
     const q = new URLSearchParams();
     if (supplierSel.value) q.set('supplierId', supplierSel.value);
     if (dateIn.value) q.set('nextDeliveryDate', dateIn.value);
     const plan = await staffApi(`/api/admin/inventory/replenishment?${q}`);
     selected.clear();
+    selectable = plan.filter((p) => !lockReason(p)).length;
+    const noSupplier = plan.filter((p) => !p.supplier).length;
     clear(
       tableBox,
+      noSupplier
+        ? el(
+            'div',
+            { class: 'alert warning', id: 'no-supplier-hint', style: { marginBottom: '0.6rem' } },
+            `${noSupplier} nguyên liệu chưa gán nhà cung cấp nên chưa chọn để đặt được — bấm "Gán nhà cung cấp" ở cuối dòng. `,
+            'Cần đặt hàng không có trong đề xuất: tab Đơn đặt hàng › "+ Tạo đơn đặt hàng".',
+          )
+        : null,
       el(
         'div',
         { class: 'table-wrap' },
@@ -101,10 +115,12 @@ async function renderSuggest() {
             'tbody',
             {},
             plan.map((p) => {
+              const reason = lockReason(p);
               const box = el('input', {
                 type: 'checkbox',
-                disabled: !p.supplier || !p.suggestPacks,
-                'aria-label': `Chọn ${p.name}`,
+                disabled: Boolean(reason),
+                title: reason,
+                'aria-label': reason ? `Chọn ${p.name} — ${reason}` : `Chọn ${p.name}`,
                 onchange: (e) => (e.target.checked ? selected.set(p.ingredientId, p) : selected.delete(p.ingredientId)),
               });
               return el(
@@ -119,7 +135,9 @@ async function renderSuggest() {
                 el(
                   'td',
                   { class: 'num' },
-                  p.suggestPacks ? el('strong', {}, `${num(p.suggestPacks)} ${p.packUnitCode ?? p.unit}`) : '—',
+                  p.suggestPacks
+                    ? el('strong', {}, `${num(p.suggestPacks)} ${p.packUnitCode ?? p.unit}`)
+                    : el('span', { class: 'muted small' }, p.enoughData ? 'Chưa cần' : '—'),
                   p.suggestBase ? el('div', { class: 'small muted' }, `${num(p.suggestBase)} ${p.unit}`) : null,
                 ),
                 el(
@@ -128,7 +146,17 @@ async function renderSuggest() {
                   p.runOutDate ? fmtDate(p.runOutDate) : '',
                   p.runsOutBeforeDelivery ? el('div', { class: 'small' }, `trước ngày giao ${fmtDate(p.nextDeliveryDate)}`) : null,
                 ),
-                el('td', { class: 'small' }, p.supplier?.name ?? el('span', { class: 'muted' }, 'chưa gán')),
+                el(
+                  'td',
+                  { class: 'small' },
+                  p.supplier?.name ??
+                    el(
+                      'button',
+                      { class: 'btn btn-sm', type: 'button', 'aria-label': `Gán nhà cung cấp cho ${p.name}`, onclick: () => assignSupplier(p) },
+                      icon('plus'),
+                      'Gán nhà cung cấp',
+                    ),
+                ),
               );
             }),
           ),
@@ -176,7 +204,9 @@ async function renderSuggest() {
         type: 'button',
         style: { marginTop: '0.6rem' },
         onclick: async () => {
-          if (!selected.size) return toast('Tick các nguyên liệu cần đặt', 'warning');
+          if (!selected.size) {
+            return toast(selectable ? 'Tick các nguyên liệu cần đặt' : 'Chưa có dòng nào đặt được — gán nhà cung cấp cho nguyên liệu trước', 'warning');
+          }
           const bySupplier = new Map();
           for (const p of selected.values()) {
             if (!bySupplier.has(p.supplier.supplierId)) bySupplier.set(p.supplier.supplierId, []);
@@ -199,6 +229,43 @@ async function renderSuggest() {
     ),
   );
   await refresh();
+}
+
+/** DEF-016: gán nhà cung cấp ngay từ dòng đề xuất → mở form nhà cung cấp đã có sẵn dòng nguyên liệu này (ưu tiên). */
+function assignSupplier(p) {
+  const active = state.suppliers.filter((s) => s.isActive);
+  const m = modal({
+    title: `Gán nhà cung cấp cho ${p.name}`,
+    body: el(
+      'div',
+      { class: 'stack' },
+      el('p', { class: 'small muted' }, 'Chọn nhà cung cấp, rồi điền gói đặt hàng (đơn vị gói, số lượng gốc mỗi gói, giá) và bấm Lưu.'),
+      active.length
+        ? el(
+            'div',
+            { class: 'row wrap' },
+            active.map((s) =>
+              el(
+                'button',
+                {
+                  class: 'btn',
+                  type: 'button',
+                  onclick: () => {
+                    m.close();
+                    editSupplier(s, p.ingredientId);
+                  },
+                },
+                s.name,
+              ),
+            ),
+          )
+        : el('p', {}, 'Chưa có nhà cung cấp nào đang hợp tác.'),
+    ),
+    actions: [
+      { label: 'Hủy', value: false },
+      { label: '+ Nhà cung cấp mới', class: 'btn-primary', onClick: () => editSupplier(null, p.ingredientId) },
+    ],
+  });
 }
 
 /** Biểu đồ SVG: tiêu thụ 4 tuần qua (nâu) + dự báo 14 ngày tới (cam). */
@@ -436,12 +503,13 @@ function editPo(po) {
             {
               class: 'btn btn-sm btn-ghost',
               type: 'button',
+              'aria-label': 'Bỏ dòng',
               onclick: () => {
                 lines.splice(k, 1);
                 render();
               },
             },
-            '×',
+            icon('x'),
           ),
         );
       }),
@@ -546,7 +614,7 @@ function renderSuppliers() {
                       el(
                         'div',
                         {},
-                        i.isPreferred ? '★ ' : '',
+                        i.isPreferred ? icon('star', { filled: true, label: 'Nhà cung cấp ưu tiên' }) : '',
                         `${i.name}: gói ${i.packUnitCode} (${num(i.packSize)} ${i.unit})`,
                         i.lastPrice ? ` · ${money(i.lastPrice)}` : '',
                       ),
@@ -561,9 +629,15 @@ function renderSuppliers() {
   );
 }
 
-function editSupplier(s) {
+function editSupplier(s, addIngredientId = null) {
   const isNew = !s;
   const items = s ? s.items.map((i) => ({ ...i })) : [];
+  // Mở từ "Gán nhà cung cấp" (DEF-016): thêm sẵn dòng nguyên liệu, gói mặc định theo đơn vị gốc
+  if (addIngredientId && !items.some((i) => i.ingredientId === addIngredientId)) {
+    const unit = state.ingredients.find((i) => i.ingredientId === addIngredientId)?.unit;
+    const packUnitCode = state.units.some((u) => u.unitCode === unit) ? unit : state.units[0]?.unitCode;
+    items.push({ ingredientId: addIngredientId, packUnitCode, packSize: '', lastPrice: '', isPreferred: true });
+  }
   const rows = el('div');
   const render = () =>
     clear(
@@ -612,12 +686,13 @@ function editSupplier(s) {
             {
               class: 'btn btn-sm btn-ghost',
               type: 'button',
+              'aria-label': 'Bỏ dòng',
               onclick: () => {
                 items.splice(k, 1);
                 render();
               },
             },
-            '×',
+            icon('x'),
           ),
         ),
       ),
@@ -651,7 +726,7 @@ function editSupplier(s) {
       ),
     ),
     el('div', { class: 'field' }, el('label', {}, 'Ghi chú'), el('input', { class: 'input', name: 'note', maxlength: 200, value: s?.note ?? '' })),
-    el('label', {}, 'Nguyên liệu cung cấp (gói đặt hàng; ★ = nhà cung cấp ưu tiên khi đề xuất nhập)'),
+    el('label', {}, 'Nguyên liệu cung cấp (gói đặt hàng; ', icon('star', { filled: true, label: 'ngôi sao' }), '= nhà cung cấp ưu tiên khi đề xuất nhập)'),
     rows,
     el(
       'button',

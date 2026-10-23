@@ -8,7 +8,7 @@
 | Hạng mục | Quyết định | Trạng thái |
 | --- | --- | --- |
 | Môi trường | `dev` (máy cá nhân + SQL Server), `staging` (deploy thử, dữ liệu giả), `prod` (quán thử nghiệm) | PROPOSED |
-| Secrets | `.env` không commit; `.env.example` liệt kê tên biến: `DB_CONNECTION`, `JWT_SECRET`, `PUBLIC_BASE_URL` (URL in trong QR bàn), `SHOP_NAME`, `SHOP_ADDRESS` (in bill), `ADMIN_SEED_USERNAME`, `ADMIN_SEED_PASSWORD` | PROPOSED (`.env.example` tạo ở TASK-001) |
+| Secrets | `.env` không commit; `.env.example` liệt kê tên biến: `DB_CONNECTION`, `JWT_SECRET`, `PUBLIC_BASE_URL` (URL in trong QR bàn), `SHOP_NAME`, `SHOP_ADDRESS` (tên / địa chỉ quán mặc định — từ F-053 đổi được ở Quản lý → Cài đặt; đã lưu ở đó thì `.env` không còn tác dụng), `ADMIN_SEED_USERNAME`, `ADMIN_SEED_PASSWORD` | PROPOSED (`.env.example` tạo ở TASK-001) |
 | Dữ liệu nhạy cảm | Mật khẩu (hash); JWT secret; số liệu doanh thu/kho chỉ ADMIN xem | PROPOSED |
 | Audit | `CreatedBy/CompletedBy/CancelledAt` trên đơn; `InventoryTransactions` cho kho. Từ ADR-006 (F-035, D-26) có bảng `AuditLogs` chỉ đọc cho mọi thao tác đổi tiền/kho/quyền/giá, giữ 12 tháng (job `audit-retention`) | CONFIRMED (D-26) |
 | Rate limit | `POST /api/orders` 10 req/phút/clientToken; `POST /api/auth/login` 5 req/phút/IP | PROPOSED |
@@ -62,22 +62,41 @@ sqlcmd -S . -E -C -Q "SELECT SERVERPROPERTY('ProductVersion'), SERVERPROPERTY('E
    npm run db:seed:mau2        # (tùy chọn) mẫu giai đoạn 2: tùy chọn Size/Topping, combo, khuyến mãi, món ghim (ADR-005)
    ```
 
-## Lệnh hằng ngày — ĐÃ XÁC MINH (16/10/2026; test, lint chạy lại 18/10/2026)
+## Lệnh hằng ngày — ĐÃ XÁC MINH (16/10/2026; test, E2E, lint, ép tải chạy lại 20/10/2026)
 
 | Lệnh | Việc | Kết quả lần chạy gần nhất |
 | --- | --- | --- |
 | `npm run dev` | Chạy API + Socket.io + FE tĩnh tại `http://localhost:3000`, tự khởi động lại khi sửa `ứng-dụng/máy-chủ/src` (FE không cần build: sửa file trong `ứng-dụng/giao-diện/public` rồi F5) | Chạy được; in ra các địa chỉ LAN |
 | `npm start` | Như trên, không watch (dùng khi chạy thật ở quán) | Chạy được |
-| `npm test` | 217 test (16 file): unit (bộ tính giá, lịch thực đơn, ETA, đơn vị / dự báo / hao hụt, nhật ký / lãi lỗ / quyền, phân tích) + integration (SP, API, quyền, realtime, xóa, hội viên, combo, khuyến mãi, tùy chọn, ca, giảm tay, hoàn tiền, kho, gọi món tại bàn, và giai đoạn 4–8) trên DB `CafeQrTest` thật — **xóa sạch DB test mỗi lần**; chi tiết ở `chất-lượng/test-strategy.md` | 217/217 PASS (18/10/2026) |
-| `npm run test:e2e` | 27 test Playwright Chromium (điện thoại 390px + máy quầy + quản lý) trên server riêng cổng 3100, DB test sạch, `JOBS_ENABLED=false` | 27/27 PASS (18/10/2026) |
-| `npm run load` | Kịch bản §13.2 qua HTTP thật, 10 vòng × 30 khách (NFR-002) + đo độ trễ realtime (NFR-001) | 10/10 vòng PASS; NFR-001 p50 75 ms, p95 92 ms (18/10/2026) |
+| `npm test` | 314 test (28 file): unit (bộ tính giá, lịch thực đơn, ETA, đơn vị / dự báo / hao hụt, nhật ký / lãi lỗ / quyền, phân tích) + integration (SP, API, quyền, realtime, xóa, hội viên, combo, khuyến mãi, tùy chọn, ca, giảm tay, hoàn tiền, kho, gọi món tại bàn, giai đoạn 4–8, F-046 / F-047 và `acceptance.test.js` — AC bổ sung ở TASK-057) trên DB `CafeQrTest` thật — **xóa sạch DB test mỗi lần**; chi tiết ở `chất-lượng/test-strategy.md` | 304/304 PASS (23/10/2026, thêm `shift-required.test.js` — TASK-071); ghi thêm báo cáo JUnit `kiểm-thử/kết-quả/node-junit.xml` cho ma trận truy vết |
+| `npm run test:e2e` | 45 test Playwright Chromium: project `flow` (42 — điện thoại 390px + máy quầy + quản lý) rồi `a11y` (3 — kiểm khả năng tiếp cận WCAG 2.2 AA máy kiểm được + chụp ảnh chuẩn vào `kiểm-thử/kết-quả/ảnh/`), server riêng cổng 3100, DB test sạch, `JOBS_ENABLED=false`; ghi `kiểm-thử/kết-quả/e2e.json` | 43/43 PASS (23/10/2026, TASK-071) |
+| `npm run load` | Kịch bản §13.2 qua HTTP thật, 10 vòng × 30 khách (NFR-002) + đo độ trễ realtime (NFR-001). `npm run load:report` ghi kết quả vào `kiểm-thử/kết-quả/load.txt` | 10/10 vòng PASS; NFR-001 p50 79 ms, p95 239 ms (20/10/2026, ngưỡng < 2.000 ms) |
 | `npm run db:seed:mau2` | Thêm dữ liệu mẫu giai đoạn 2 (chỉ khi chưa có tùy chọn/combo/khuyến mãi) | Đã chạy trên DB test, chạy lại tự bỏ qua |
-| `npm run lint` / `npm run format:check` | ESLint 9 / Prettier 3 | 0 lỗi (18/10/2026) |
+| `npm run lint` / `npm run format:check` | ESLint 9 / Prettier 3 | 0 lỗi (20/10/2026) |
+| `npm run trace` | Sinh `tài-liệu/chất-lượng/traceability.md` (AC → Story → Module → Màn hình → Test → kết quả) từ `tc-map.md` + kết quả chạy thật trong `kiểm-thử/kết-quả/`. `npm run trace -- --check` thoát lỗi nếu có AC chưa có test / bằng chứng hỏng / test FAIL. Chạy **sau** `npm test`, `npm run test:e2e`, `npm run load:report` | 289 / 289 AC PASS (20/10/2026) |
 | `npm run skills:check` | Kiểm `.claude/skills` khớp `.agent/skills` | OK |
 | `npm run setup` | Cài đặt lần đầu có hỏi đáp (tạo `.env`, DB + login qua `sqlcmd -E`, migrate, seed, Chromium) — chạy lại an toàn | Đã chạy trên máy có sẵn và máy giả lập chưa có `.env` |
 | `npm run qr:links` | In link QR các bàn đang hoạt động (chỉ đọc) | OK |
+| `npm run db:backup` | Sao lưu CSDL (`DB_NAME`) + ảnh hóa đơn vào `BACKUP_DIR` (bước 15 — [backup-restore.md](backup-restore.md)) | Thử trên `CafeQrDev` 23/10/2026 vào thư mục thử: 14,1 MB / 0,2 giây; thiếu quyền ghi → báo lệnh `icacls` |
+| `npm run db:restore -- --drill` | Diễn tập khôi phục vào `CafeQrRestoreDrill` rồi xóa (cần quyền quản trị SQL Server, gọi `sqlcmd -E`) | ĐẠT 23/10/2026 (0,4 giây) |
+| `npm run ops:health` | Kiểm tra app + CSDL, ổ đĩa, sao lưu, job nền, dung lượng CSDL; mã thoát 0 / 1 / 2 ([monitoring.md](monitoring.md)) | ỔN khi app chạy, LỖI khi app tắt (23/10/2026) |
 
 Lần đầu chạy E2E cần cài trình duyệt: `node node_modules/@playwright/test/cli.js install chromium`.
+
+### Sao lưu & khôi phục khi chạy migration (bước 13 — TASK-057)
+
+Migration chỉ **cộng thêm** (bảng / cột mới, `IF NOT EXISTS`, SP `CREATE OR ALTER`), không có script "down". Phương án khôi phục là **sao lưu trước, khôi phục nếu lỗi**:
+
+```bash
+# 1. Sao lưu DB thật trước khi migrate (Windows auth; đổi đường dẫn theo máy)
+sqlcmd -S localhost -E -Q "BACKUP DATABASE CafeQrDev TO DISK = N'C:\SaoLuu\CafeQrDev-truoc-0034.bak' WITH INIT, COPY_ONLY"
+# 2. Chạy migration
+npm run db:migrate
+# 3. Nếu lỗi: dừng app (npm start / dev) rồi khôi phục bản vừa sao lưu
+sqlcmd -S localhost -E -Q "ALTER DATABASE CafeQrDev SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE CafeQrDev FROM DISK = N'C:\SaoLuu\CafeQrDev-truoc-0034.bak' WITH REPLACE; ALTER DATABASE CafeQrDev SET MULTI_USER"
+```
+
+Kiểm thử luôn chạy trên `CafeQrTest` (bị xóa sạch mỗi lần), không bao giờ trên `CafeQrDev`. Sao lưu định kỳ, khôi phục, diễn tập trên máy chạy thật: [backup-restore.md](backup-restore.md) (bước 15, TASK-070). Lệnh `sqlcmd` ở trên vẫn dùng được khi cần làm tay.
 
 ### Lưu ý môi trường
 
@@ -102,6 +121,10 @@ Lần đầu chạy E2E cần cài trình duyệt: `node node_modules/@playwrigh
 | `ZALO_OA_TOKEN` | trống | Có token → bật kênh `ZALO_OA` cho chiến dịch (F-037). Trống → chỉ dùng "Xuất danh sách (CSV)"; chọn Zalo OA báo `400 CHANNEL_NOT_CONFIGURED`, không gửi gì ra ngoài |
 | `ZALO_OA_URL` | `https://openapi.zalo.me/v3.0/oa/message/cs` | Cổng gửi tin Zalo OA; đổi khi tài khoản OA của quán dùng cổng khác |
 | `JWT_EXPIRES_IN` (đã có) | `8h` | Ngoài thời hạn token, nay còn là mốc job `attendance-autoclose` đóng chấm công quên đăng xuất: `ClockOut = ClockIn + thời hạn`. Nhận `8h`, `45m`, `1d` hoặc số giây; không đọc được → 8 giờ |
+| `BACKUP_DIR`, `BACKUP_COPY_DIR` | trống | Bước 15: thư mục bản sao lưu (đường dẫn đầy đủ; SQL Server phải có quyền ghi) và bản chép ngoài máy — [backup-restore.md](backup-restore.md). Trống `BACKUP_DIR` → `db:backup` báo lỗi, `ops:health` báo cần để ý |
+| `BACKUP_KEEP_DAYS`, `BACKUP_KEEP_MONTHS` | `14`, `12` | Giữ bản hằng ngày / bản đầu tháng (và bản có nhãn) |
+| `LOG_DIR` | `<repo>/nhật-ký` | Nơi `ops:health` ghi `health-latest.json`, `health-YYYYMM.log`; file `11-chạy-máy-chủ-quán.cmd` ghi `server-YYYYMMDD.log` vào `nhật-ký\` |
+| `RESTORE_SQL_SERVER`, `RESTORE_SQL_USER`, `RESTORE_SQL_PASSWORD` | `.` + đăng nhập Windows | `db:restore` trên VPS / Docker (không có đăng nhập Windows) hoặc bản Express (`.\SQLEXPRESS`) |
 
 **Job nền** (`src/jobs/index.js` đăng ký, `src/jobs/scheduler.js` chạy; giờ quán UTC+7):
 
@@ -161,7 +184,6 @@ Nguồn chính của skills là `.agent/skills/<name>/SKILL.md`. Công cụ AI k
 | `implement-feature` | Có. Đã đổi các tham chiếu "mẫu 19.4/19.5" thành đường dẫn thật (`tài-liệu/kế-hoạch/README.md`, `tài-liệu/chất-lượng/test-strategy.md#ban-giao`) |
 | `change-database` | Có. Thêm tham chiếu tới bảng mã lỗi và "ghi chú đối chiếu" trong data-model |
 | `verify-change` | Có. Đổi tham chiếu mẫu bàn giao thành đường dẫn thật |
-| `them-chuc-nang` | Có (19/10/2026). Gộp `extend-features` (giai đoạn 2) + `advanced-features` (giai đoạn 4–8), thêm F-024 / F-046 / F-047, đổi đường dẫn `docs/`, `db/`, `apps/` thành đường dẫn thật. Bản gốc: `tài-liệu/nguồn/skill-goc/`. Tóm tắt yêu cầu / kiến trúc: `Skill/YEU-CAU.md`, `Skill/KIEN-TRUC.md` |
 | `do-an-cafe-reviewer` | **CHƯA CÓ trong repo.** Đã tìm trên máy thiết lập (`~/.claude/skills`, Downloads, Documents, Desktop) nhưng không thấy. Việc cần làm: thành viên đang giữ skill copy `SKILL.md` vào `.agent/skills/do-an-cafe-reviewer/`, chạy `kịch-bản/sync-skills.sh`, rồi đối chiếu với `rules.md` và `verify-change`: rule nghiệp vụ/quyền viết tay trong skill thì thay bằng link `tài-liệu/nghiệp-vụ/*`; phần trùng `verify-change` thì gộp. Ghi kết quả đối chiếu vào bảng này |
 
 ## Kiểm tra thiết lập agent

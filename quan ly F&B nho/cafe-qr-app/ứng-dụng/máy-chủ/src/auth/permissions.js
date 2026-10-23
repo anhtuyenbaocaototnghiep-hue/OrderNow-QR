@@ -30,15 +30,17 @@ const bearer = (req) => {
   return h.startsWith('Bearer ') ? h.slice(7).trim() : null;
 };
 
-/** Middleware: cần quyền `permission` (401 chưa đăng nhập, 403 không đủ quyền). */
+/** Middleware: cần quyền `permission` (401 chưa đăng nhập, 403 không đủ quyền). Mang `.permission` để trang Tra cứu API đọc (F-052). */
 export function requirePermission(permission) {
-  return async (req, _res, next) => {
+  const middleware = async (req, _res, next) => {
     const user = req.user ?? (await userFromToken(bearer(req)));
     if (!user) throw unauthorized();
     if (!can(user, permission)) throw forbidden('Tài khoản của bạn không có quyền thực hiện thao tác này');
     req.user = user;
     next();
   };
+  middleware.permission = permission;
+  return middleware;
 }
 
 /** Ngưỡng giảm giá tay theo vai trò (D-14 nhân viên, D-24 trưởng ca; quản lý không giới hạn). */

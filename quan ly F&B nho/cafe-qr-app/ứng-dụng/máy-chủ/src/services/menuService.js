@@ -7,7 +7,8 @@ import { bestItemPromotion, isPromotionActive } from '../pricing/pricing.js';
 import { addDays, todayVn, vnDayStartUtc } from '../utils/time.js';
 import { activePromotions, getCatalog } from './pricingService.js';
 import { nextChange, visibility } from './scheduleService.js';
-import { getSettings } from './settingsService.js';
+import { getSettings, storeStatus } from './settingsService.js';
+import { menuRatings } from './reviewService.js';
 
 let lastStates = null;
 let chain = Promise.resolve();
@@ -66,7 +67,7 @@ const promoText = (p) => {
  */
 export async function getPublicMenu({ staff = false } = {}) {
   const now = new Date();
-  const [{ itemRows, comboRows, compRows }, catalog, promotions, settings, top, visible, nextChangeAt] = await Promise.all([
+  const [{ itemRows, comboRows, compRows }, catalog, promotions, settings, top, visible, nextChangeAt, ratings, store] = await Promise.all([
     menuRepo.publicMenuRows(),
     getCatalog(),
     activePromotions(),
@@ -74,6 +75,8 @@ export async function getPublicMenu({ staff = false } = {}) {
     topSelling(),
     visibility(now),
     nextChange(now),
+    menuRatings(), // F-051: sao trung bình (chỉ món đủ số lượt — D-48)
+    storeStatus(), // F-020 công tắc nhận đơn QR + F-055 có ca mở không
   ]);
   const live = promotions.filter((p) => !p.exhausted && isPromotionActive(p, now));
   const all = [];
@@ -103,6 +106,7 @@ export async function getPublicMenu({ staff = false } = {}) {
       pinOrder: row.PinOrder,
       hideFromSuggestions: Boolean(row.HideFromSuggestions),
       hiddenBySchedule: !visible({ id: row.MenuItemId, categoryId: row.CategoryId ?? null }),
+      rating: ratings.get(row.MenuItemId) ?? null,
     };
     all.push(item);
     return item;
@@ -151,7 +155,7 @@ export async function getPublicMenu({ staff = false } = {}) {
     }));
 
   return {
-    store: { acceptingOrders: settings.acceptingOrders, closedMessage: settings.closedMessage },
+    store,
     nextChangeAt,
     categories,
     combos,

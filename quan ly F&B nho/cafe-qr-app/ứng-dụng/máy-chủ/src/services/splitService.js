@@ -12,7 +12,9 @@ import { publish, ROOMS } from '../realtime/publisher.js';
 import { approvalFor, computeTotals, loyaltyInput, manualInput, orderForSplit } from './billingService.js';
 import * as loyaltyService from './loyaltyService.js';
 import { maskName } from './memberService.js';
-import { requireOpenShift } from './shiftService.js';
+import { assertShiftOpen, requireOpenShift } from './shiftService.js';
+
+const GUEST_NO_SHIFT = 'Quán chưa mở ca nên chưa chia bill được — vui lòng chờ nhân viên mở ca';
 import { assertViewer } from './sessionService.js';
 
 const billable = (orders) => orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
@@ -83,6 +85,7 @@ export async function view(sessionId, viewer) {
 
 export async function create(sessionId, { label }, viewer) {
   await assertViewer(sessionId, viewer);
+  await assertShiftOpen(viewer.user ? undefined : GUEST_NO_SHIFT); // F-055 (ADR-017 D-65)
   const r = await withDeadlockRetry(() => splitsRepo.create(sessionId, { label, clientToken: viewer.user ? null : viewer.clientToken }));
   if (r.error === 'NOT_FOUND') throw notFound('Không tìm thấy phiên');
   if (r.error === 'CLOSED') throw conflict('SESSION_CLOSED', 'Phiên đã đóng (đã thanh toán)');
@@ -93,6 +96,7 @@ export async function create(sessionId, { label }, viewer) {
 /** Gán dòng món cho phần (null = về Chung). Khách chỉ gán/bỏ dòng của phần mình hoặc dòng Chung. */
 export async function assign(sessionId, orderItemId, splitId, viewer) {
   await assertViewer(sessionId, viewer);
+  await assertShiftOpen(viewer.user ? undefined : GUEST_NO_SHIFT); // F-055 (ADR-017 D-65)
   const splits = await splitsRepo.listBySession(sessionId);
   if (!splits.length) throw conflict('NO_SPLITS', 'Bàn chưa chia bill — hãy tạo phần trước');
   let allowedFrom = null;
@@ -111,6 +115,7 @@ export async function assign(sessionId, orderItemId, splitId, viewer) {
 }
 
 export async function merge(sessionId, user) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const r = await withDeadlockRetry(() => splitsRepo.merge(sessionId));
   if (r.error === 'NOT_FOUND') throw notFound('Không tìm thấy phiên');
   if (r.error === 'CLOSED') throw conflict('SESSION_CLOSED', 'Phiên đã đóng (đã thanh toán)');

@@ -14,7 +14,10 @@ import * as shiftService from '../services/shiftService.js';
 export const financeRouter = express.Router();
 
 // ---- Đăng xuất: kết thúc chấm công (D-25) ----
-financeRouter.post('/auth/logout', requireStaff, async (req, res) => res.json({ clockedOut: await attendanceService.onLogout(req.user) }));
+financeRouter.post('/auth/logout', requireStaff, async (req, res) => {
+  await shiftService.assertCanLogout(req.user); // F-054: người mở ca phải đóng ca trước (409 SHIFT_OPEN, chưa ghi giờ ra)
+  res.json({ clockedOut: await attendanceService.onLogout(req.user) });
+});
 
 // ---- F-033 Sổ quỹ ----
 const approvalCreds = { adminUsername: zText(50).optional(), adminPassword: z.string().max(100).optional() };
@@ -51,6 +54,24 @@ financeRouter.get('/cash-transactions/:id/receipt', requireStaff, async (req, re
 financeRouter.post('/cash-transactions/:id/approve', requireStaff, async (req, res) => {
   const body = parse(z.object(approvalCreds), req.body ?? {});
   res.json(await cashService.review(paramId(req), true, body, req.user));
+});
+// F-050: hủy / sửa khoản đã duyệt (ca còn mở) — sửa = hủy + khoản thay thế
+financeRouter.post('/cash-transactions/:id/void', requireStaff, async (req, res) => {
+  const body = parse(
+    z.object({
+      reason: zText(200).min(1, 'Nhập lý do hủy / sửa khoản'),
+      replacement: z
+        .object({
+          categoryId: zId(),
+          amount: zMoney().min(1, 'Số tiền phải lớn hơn 0'),
+          reason: zText(180).min(1, 'Nhập nội dung khoản mới'),
+        })
+        .optional(),
+      ...approvalCreds,
+    }),
+    req.body ?? {},
+  );
+  res.json(await cashService.voidTxn(paramId(req), body, req.user));
 });
 financeRouter.post('/cash-transactions/:id/reject', requireStaff, async (req, res) => {
   const body = parse(z.object({ rejectReason: zText(200).min(1, 'Nhập lý do từ chối'), ...approvalCreds }), req.body ?? {});

@@ -19,7 +19,7 @@ Ngày 14/10/2026 chủ dự án chốt stack (D-4 → ADR-002) và yêu cầu tr
 | Q-005 | Hết nguyên liệu khi gửi | ĐÃ CHỐT — ADR-003 | Từ chối cả đơn, client bỏ món |
 | Q-006 | Hoàn tất theo đơn/món | ĐÃ CHỐT — ADR-003 | Theo đơn |
 | Q-007 | Mở ngăn kéo tiền | ĐÃ CHỐT — ADR-003 | Làm sau |
-| Q-008 | Hosting online | **MỞ** | Đang chạy local/LAN; deploy online cần tài khoản dịch vụ |
+| Q-008 | Hosting online | **ĐÃ CHỐT — [ADR-016](quyết-định/ADR-016-trien-khai-van-hanh.md)** (23/10/2026) | Máy tại quán (LAN) là chính, VPS dự phòng |
 | Q-009 | Phiên đóng khi nào | ĐÃ CHỐT — ADR-000 | Khi nhân viên bấm "Đã thu tiền" |
 | Q-010 | Hủy đơn | ĐÃ CHỐT — ADR-003 | Chỉ quầy hủy đơn `PENDING`, có lý do |
 | Q-011 | Nhập/điều chỉnh kho | ĐÃ CHỐT — ADR-003 | Điều chỉnh tay `ADJUST` có lý do |
@@ -30,6 +30,13 @@ Ngày 14/10/2026 chủ dự án chốt stack (D-4 → ADR-002) và yêu cầu tr
 | Q-016 | NFR-003 "dưới 3" hay "≤ 3" | ĐÃ CHỐT — ADR-003 | ≤ 3 chạm từ menu (đã kiểm bằng E2E) |
 | Q-017 | KDS riêng | ĐÃ CHỐT — ADR-003 | Một dashboard; KDS làm sau |
 | Q-018 | Phiên chỉ có đơn hủy | ĐÃ CHỐT — ADR-003 | Cho "Đóng bàn trống" |
+| Q-019 | Ngưỡng giảm giá tay của nhân viên | ĐÃ ÁP — ADR-005, **chờ chủ dự án xác nhận ở G1** | ≤ 10 % bill **và** ≤ 20.000đ, vượt → cần duyệt |
+| Q-020 | Hoàn tiền trong bao lâu | ĐÃ ÁP — ADR-005, **chờ xác nhận ở G1** | Trong ngày thu tiền (giờ Việt Nam) |
+| Q-021 | Mặc định Gọi món tại bàn (F-024) | ĐÃ ÁP PHƯƠNG ÁN ĐỀ XUẤT, **chờ xác nhận ở G1** | Xem mục Q-021 |
+| Q-022 | Lệch ma trận D-24 và cách hiểu giai đoạn 4–8 | ĐÃ ÁP PHƯƠNG ÁN, **chờ xác nhận ở G1** | Xem mục Q-022 |
+| Q-023 | Sheet chia bill mất chữ ở ô "Tên phần" | **ĐÃ ĐÓNG** (20/10/2026) — [TASK-058](công-việc/TASK-058.md) | Sửa + test hồi quy E2E |
+
+> **Cập nhật 20/10/2026 (TASK-057):** bảng tóm tắt trước đây chỉ tới Q-018 — đã thêm Q-019…Q-023. Còn **MỞ**: Q-000 (người chốt — trả lời bằng chữ ký Gate), Q-008 (hosting — thuộc bước 15, ngoài phạm vi). Q-019…Q-022 đã chạy theo phương án đề xuất, cần chủ dự án xác nhận khi duyệt [Gate G1](chất-lượng/quality-gates.md).
 
 ## Q-000 — Ai là người chốt nghiệp vụ và kỹ thuật?
 
@@ -89,10 +96,11 @@ Ngày 14/10/2026 chủ dự án chốt stack (D-4 → ADR-002) và yêu cầu tr
 - **Đề xuất:** Xếp **làm sau**; bản đầu chỉ in bill. Nếu máy in của quán thử nghiệm hỗ trợ kick-drawer ở driver thì ghi vào `vận-hành/`.
 - **Chặn:** Không chặn gì nếu chọn "làm sau".
 
-## Q-008 — Hosting cụ thể?
+## Q-008 — Hosting cụ thể? — **ĐÃ CHỐT (ADR-016 D-61, 23/10/2026): máy tại quán (LAN) là chính, VPS dự phòng**
 
 - **Điều chưa biết:** Tiến trình Node (API + FE tĩnh, D-4) deploy đâu, SQL Server chạy đâu (Azure SQL free tier / VPS Docker / máy trong quán?). Vì không còn webhook (D-1), hệ thống **có thể chạy hoàn toàn trong mạng LAN của quán** (một máy tính chạy API + SQL Server, điện thoại khách truy cập qua Wi-Fi quán) — đơn giản và không phụ thuộc Internet; nhưng Word yêu cầu "deploy chạy online" nên vẫn cần một bản trên Internet để bảo vệ đồ án.
 - **Chặn:** TASK-018 (deploy staging). Không còn chặn gì về webhook.
+- **Quyết định 23/10/2026 (chủ dự án, khi giao bước 15):** "Cả hai: LAN chính, VPS dự phòng" → [ADR-016](quyết-định/ADR-016-trien-khai-van-hanh.md) D-61…D-63; triển khai theo [deployment-checklist.md](vận-hành/deployment-checklist.md) ([TASK-070](công-việc/TASK-070.md)).
 
 ## Q-009 — Phiên (Session) đóng khi nào? — **ĐÃ CHỐT (D-2)**
 
@@ -224,6 +232,7 @@ Các câu hỏi Q-012 → Q-018 phát hiện khi đọc lại toàn bộ `tài-l
 - **Rủi ro:** thấp (chỉ là tên hiển thị của phần, tiền không sai), nhưng gây khó chịu cho khách và làm E2E chập chờn.
 - **Đề xuất (PROPOSED):** nhớ phần tử đang focus (và vị trí con trỏ) trước khi vẽ lại rồi focus lại ô "Tên phần" sau khi vẽ; hoặc không vẽ lại khối "Tạo phần của tôi" khi khách chưa tạo phần. Sửa kèm chạy lại E2E "chia bill…" nhiều lần.
 - **Chặn:** không. Cần nhóm đồng ý mở task riêng (đụng luồng chia bill F-026).
+- **Đã xử lý (20/10/2026):** chủ dự án yêu cầu hoàn thiện quy trình 15 bước (bước 14: không còn lỗi chưa xử lý / test chập chờn) → mở [TASK-058](công-việc/TASK-058.md), sửa theo phương án 2 (khối "Tạo phần" không bị vẽ lại) + thêm bước hồi quy E2E (fail với code cũ, pass với code mới). Ghi ở Defect Log DEF-001. **Trạng thái: CLOSED.**
 
 ---
 

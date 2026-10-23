@@ -75,6 +75,9 @@
   - `EARN_MISMATCH`;
   - `STAMP_CARD_OVERFLOW`;
   - CHECK điểm / tem không âm.
+- AC-039-07: Đổi thưởng cùng giảm tay trên một lượt thu → 400 `REWARD_WITH_MANUAL`; quà tặng món khi bill không có món đó → 409 `REWARD_ITEM_NOT_IN_BILL`. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-039-08: Quản lý điều chỉnh điểm thiếu lý do → 400; trừ quá số dư → 409 `POINTS_INSUFFICIENT`; điều chỉnh hợp lệ (+30, "Khách quen") ghi vào sổ điểm kèm lý do và nhật ký `members.points`. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-039-09: Đổi thưởng khi lượt thu chưa gắn hội viên → 400 `MEMBER_REQUIRED`. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

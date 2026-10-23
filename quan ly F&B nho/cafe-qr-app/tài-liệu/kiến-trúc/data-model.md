@@ -7,6 +7,12 @@
 > **Cập nhật 18/10/2026:** schema giai đoạn 4–8 (migration `0015`…`0032`), SP mới, mã lỗi và bất biến mới nằm ở mục "Mở rộng giai đoạn 4–8 (ADR-006)" cuối file.
 
 > **Cập nhật 18/10/2026 (ADR-007):** migration `0033_sua_xoa_mon.sql`, SP sửa / xóa món / hủy bàn, mã lỗi `50181`…`50186` và bất biến mới nằm ở mục "Sửa / xóa món, hủy bàn (FEATURE-046, ADR-007)" cuối file. Migration mới nhất: `0033`; số kế tiếp: **`0034`**.
+>
+> **Cập nhật 21/10/2026 (ADR-009):** migration `0034_sua_huy_phieu_kho.sql`, SP `sp_ReviseStockReceipt` / `sp_VoidStocktake`, mã lỗi `50190`…`50199` và bất biến mới — mục "Sửa / hủy phiếu kho" cuối file.
+>
+> **Cập nhật 21/10/2026 (ADR-010):** migration `0036_chuyen_ban.sql` (`SessionTableMoves`), SP `sp_MoveSession`, mã lỗi `50200`…`50204`, bất biến `ORDER_TABLE_MISMATCH` — mục "Chuyển bàn" cuối file; `0037_huy_khoan_so_quy.sql`, SP `sp_VoidCashTxn`, mã lỗi `50142`…`50145`, bất biến `CASH_REPLACE_LINK` — mục "Hủy / sửa khoản sổ quỹ"; `0038_danh_gia.sql` (`Reviews`, `ReviewItems`) — mục "Đánh giá món".
+
+> **Cập nhật 20/10/2026 (TASK-057, bước 10):** sơ đồ 11.1 chỉ vẽ 13 bảng của `0001_init.sql`. ERD đầy đủ 70 bảng (thêm 57 bảng của `0003`…`0033`) và các quan hệ `0001` còn thiếu nằm ở mục [ERD mở rộng (giai đoạn 2–F-047)](#erd-mo-rong) cuối file.
 
 ## 11.1. Data model (data-model) — PROPOSED, SQL Server
 
@@ -28,6 +34,8 @@ erDiagram
   Ingredients ||--o{ BomItems : used_in
   Ingredients ||--o{ InventoryTransactions : logs
 ```
+
+> Sơ đồ trên là bản ban đầu (chỉ bảng của `0001`). Toàn bộ bảng và khóa ngoại hiện tại: [ERD mở rộng (giai đoạn 2–F-047)](#erd-mo-rong).
 
 DDL cốt lõi (chạy được trên SQL Server 2019+; `ReservedQty` chỉ cần nếu Q-001 = A):
 
@@ -438,6 +446,16 @@ Phần DDL/SP ở trên được giữ **nguyên văn** từ tài liệu nguồn
 | 50181 | ITEM_NOT_EDITABLE | 409 | 50184 | SESSION_HAS_PAYMENTS | 409 |
 | 50182 | INVALID_QTY | 400 | 50185 | ITEM_NOT_FOUND | 404 |
 | 50183 | ADMIN_APPROVAL_REQUIRED (SP ném `APPROVAL_REQUIRED`) | 403 | 50186 | VALIDATION_ERROR (SP ném `REASON_REQUIRED`) | 400 |
+| 50190 | NOT_FOUND (phiếu nhập) | 404 | 50195 | NOT_FOUND (phiếu kiểm kê) | 404 |
+| 50191 | RECEIPT_VOIDED | 409 | 50196 | STOCKTAKE_NOT_POSTED | 409 |
+| 50192 | RECEIPT_AFTER_STOCKTAKE (message = tên nguyên liệu) | 409 | 50197 | STOCKTAKE_NOT_LATEST (message = tên nguyên liệu) | 409 |
+| 50193 | RECEIPT_STOCK_USED (message = tên nguyên liệu) | 409 | 50198 | STOCKTAKE_SURPLUS_USED (message = tên nguyên liệu) | 409 |
+| 50194 | RECEIPT_LOT_USED (message = tên nguyên liệu) | 409 | 50199 | VALIDATION_ERROR (SP ném `REASON_REQUIRED`) | 400 |
+| 50200 | NOT_FOUND (phiên) | 404 | 50203 | TABLE_INACTIVE | 409 |
+| 50201 | SESSION_CLOSED | 409 | 50204 | SAME_TABLE | 400 |
+| 50202 | TABLE_NOT_FOUND | 404 | 50205 | SESSION_MOVED | 409 |
+| 50142 | CASH_NOT_APPROVED | 409 | 50144 | VALIDATION_ERROR (SP ném `REASON_REQUIRED`) | 400 |
+| 50143 | NOT_FOUND (khoản thu chi) | 404 | 50145 | SHIFT_CLOSED | 409 |
 
 > **Cập nhật 18/10/2026 (ADR-006):** các dòng từ `50072` trở xuống là mã giai đoạn 4–8. Ngữ cảnh của từng mã nằm ở mục "Mở rộng giai đoạn 4–8" cuối file. Một số mã không phát ra từ SP: `50150` ném từ `sp_DeleteUser` và từ SQL nội tuyến của `usersRepo` (khi hạ vai trò hoặc khóa tài khoản); `50160` do trigger `TR_AuditLogs_ReadOnly` ném; `50174` ném từ SQL nội tuyến của `membersRepo`. `50132` mới chỉ được map sẵn, còn hiện tại service ném thẳng `409 PO_HAS_RECEIPTS`. Mã giai đoạn 2 (`50056`, `50060`–`50104`) xem mục ADR-005.
 
@@ -531,6 +549,8 @@ Quyết định: [ADR-006](../quyết-định/ADR-006-mo-rong-giai-doan-4-8.md) 
 | `0030_gioi_thieu.sql` | F-038 | `Members.ReferredByMemberId`, `ReferralRewardedAt`; `Vouchers(Code, MemberId, PromotionId, DiscountPercent, DiscountAmount, MaxDiscount, MinOrderAmount, StackWithMember, ExpiresAt, UsedAt, UsedPaymentId, Source, CampaignId, IssuedForPaymentId, CreatedBy)`; `Payments.VoucherId`, `VoucherDiscount` | `UX_Vouchers_Code`; **`UX_Vouchers_UsedPayment`** (một voucher / lượt thu); `CK_Vouchers_Value` (theo % **hoặc** theo số tiền); `CK_Vouchers_Used` (`UsedAt` ⇔ `UsedPaymentId`); `Source IN (REFERRAL, CAMPAIGN, MANUAL)`; `CK_Payments_Voucher` (có giảm thì phải có `VoucherId`); `IX_Members_ReferredBy`. Settings `referral.min_first_payment=30000`, `referral.voucher_percent=10`, `referral.voucher_days=30`, `referral.monthly_limit=5` |
 | `0031_chien_dich.sql` | F-037 | `Members.OptOut`, `LastContactedAt`; `Segments(Name, RuleJson)`; `Campaigns(Name, SegmentId, Channel, MessageTemplate, VoucherPercent, VoucherDays, VoucherMinOrder, ScheduledAt, Status, StartedAt, FinishedAt, Error)`; `CampaignDeliveries(CampaignId, MemberId, VoucherId, Status, SentAt, Error)`; FK `Vouchers.CampaignId` | `CK_Segments_Json (ISJSON)`; `Channel IN (EXPORT, ZALO_OA, SMS)`; `Status IN (DRAFT, SCHEDULED, RUNNING, DONE, FAILED)`; `CK_Campaigns_Voucher` (`VoucherPercent` và `VoucherDays` đi cùng nhau); `IX_Campaigns_Due (Status, ScheduledAt)`; **`UQ_Deliveries (CampaignId, MemberId)`** (chạy lại không gửi trùng); delivery `Status IN (SENT, EXPORTED, SKIPPED, FAILED)`; setting `campaign.min_days_between=7` |
 | `0032_tong_hop_ngay.sql` | F-043 | `DailySummaries(SummaryDate PK, RevenueNet, PaymentCount, OrderCount, AvgBill, Cogs, GrossProfit, CashVariance, ShiftCount, NewMembers, VouchersUsed, TopItemsJson, LowStockJson, ExpiringJson, PendingApprovals, ComputedAt)` | PK theo ngày quán; job `MERGE` nên chạy lại không nhân đôi. `CashVariance` NULL khi trong ngày không có ca nào đóng |
+
+Khóa `Settings.shop.name`, `Settings.shop.address` (F-053) cũng không có migration riêng: chỉ được ghi khi quản lý bấm Lưu ở Cài đặt; chưa có dòng → dùng `SHOP_NAME` / `SHOP_ADDRESS` của `.env`.
 
 Khóa job `Settings.job.<name>.running` không có migration riêng: bộ lập lịch tự tạo dòng này khi chạy lần đầu (xem [system-overview](system-overview.md)).
 
@@ -636,3 +656,523 @@ DB dev `CafeQrDev` đã áp `0033` ngày 18/10/2026 (chỉ thêm bảng / cột,
 | `COGS_MISMATCH` (sửa) | Đơn có giá vốn: Σ `OrderItems.CogsAmount` = làm tròn Σ `CostAmount` các dòng `DEDUCT` − Σ `OrderItemVoids.CogsReduction` của đơn | F-031, F-046 |
 | `OVER_RESTOCK` | Mỗi đơn × nguyên liệu: `RESTOCK` + `VOID_BACK` + lượng ghi hủy khi xóa món (`WasteLogs` gắn `VoidId`) ≤ lượng `DEDUCT` | F-046 |
 | `ORDER_LINES_MISMATCH` | Đơn không hủy: `SubtotalAmount` = Σ `Quantity × ListPrice` dòng cấp trên; `TotalAmount` = Σ `Quantity × UnitPrice` dòng cấp trên − lượt dùng khuyến mãi đơn | F-046 |
+
+<a id="erd-mo-rong"></a>
+
+## ERD mở rộng (giai đoạn 2–F-047) — cập nhật 20/10/2026
+
+> **Nguồn:** sinh từ các câu `CREATE TABLE` và `REFERENCES` / `FOREIGN KEY` trong `cơ-sở-dữ-liệu/chuyển-đổi/0001_init.sql` … `0033_sua_xoa_mon.sql` (đọc ngày 20/10/2026, TASK-057 bước 10). **Trạng thái:** mô tả schema **đã triển khai** (DB dev `CafeQrDev` đã áp tới `0033`); không đổi schema. Không xóa nội dung cũ ở trên.
+
+**Quy mô:** 70 bảng = 13 bảng của `0001` + 57 bảng thêm ở `0003`…`0033` (`0002`, `0004`, `0009`, `0010`, `0014`, `0025` chỉ thêm cột / ràng buộc, không tạo bảng). 159 cột khóa ngoại: 14 cột đã có trong sơ đồ 11.1 (13 đường, `Users → Orders` gộp `CreatedBy` / `CompletedBy`) + 145 quan hệ trong bốn sơ đồ dưới. Migration khai báo 160 lần vì `0005` xóa rồi tạo lại FK `MenuItems.CategoryId`.
+
+**Quy ước:**
+
+- Mỗi bảng chỉ liệt kê cột PK / FK; cột nghiệp vụ xem bảng migration ở các mục trên.
+- `||--o{` = khóa ngoại **NOT NULL**; `|o--o{` = khóa ngoại **cho phép NULL**; `||--o|` = khóa ngoại đồng thời là PK (quan hệ 1–0..1).
+- Nhãn quan hệ = tên cột khóa ngoại ở bảng con; "(00xx)" = cột / FK được thêm vào bảng **có sẵn** ở migration đó.
+- Bảng của `0001` (`Users`, `Tables`, `Sessions`, `Orders`, `OrderItems`, `Payments`, `MenuItems`, `Categories`, `Ingredients`, `InventoryTransactions`…) xuất hiện trong sơ đồ dưới chỉ để nối quan hệ, không vẽ lại cột.
+
+**Cột cố ý không có khóa ngoại:** `AuditLogs.UserId` (giữ nhật ký khi tài khoản bị xóa hẳn); `OrderItemVoids.OrderItemId` (dòng món có thể đã bị xóa); `IngredientLots.SourceId` (trỏ theo `Source`: phiếu nhập / mẻ sơ chế / điều chỉnh / hoàn kho); `SessionClients.ClientToken`, `SessionSplits.ClientToken` (cookie thiết bị, không phải bảng). Bảng không có khóa ngoại nào: `Settings`, `JobRuns`, `AuditLogs`, `FixedCosts`, `DailySummaries`.
+
+### 1. Bán hàng, thực đơn, thu tiền (`0005`–`0008`, `0011`, `0012`, `0016`–`0018`, `0033`) và quan hệ `0001` chưa vẽ ở 11.1
+
+Ghi chú: `0005` đổi `MenuItems.CategoryId` thành cho phép NULL (combo không thuộc danh mục; `CK_MenuItems_Category` buộc món `SINGLE` phải có danh mục). `Payments.SessionId` / `Payments.OrderId` đều cho phép NULL (lượt thu bàn hoặc mang đi).
+
+```mermaid
+erDiagram
+  Users |o--o{ Sessions : "ClosedBy"
+  Tables |o--o{ Orders : "TableId"
+  Users |o--o{ Orders : "CancelledBy"
+  Orders ||--o{ OrderIngredients : "OrderId"
+  Ingredients ||--o{ OrderIngredients : "IngredientId"
+  Users ||--o{ Payments : "ReceivedBy"
+  Users |o--o{ InventoryTransactions : "CreatedBy"
+  MenuItems ||--o{ ComboComponents : "ComboMenuItemId"
+  MenuItems ||--o{ ComboComponents : "ComponentMenuItemId"
+  OrderItems |o--o{ OrderItems : "ParentOrderItemId (0005)"
+  Promotions ||--o{ PromotionTargets : "PromotionId"
+  MenuItems |o--o{ PromotionTargets : "MenuItemId"
+  Categories |o--o{ PromotionTargets : "CategoryId"
+  Promotions |o--o{ OrderItems : "PromotionId (0006)"
+  Promotions |o--o{ Orders : "OrderPromotionId (0006)"
+  Promotions ||--o{ PromotionUsages : "PromotionId"
+  Orders ||--o{ PromotionUsages : "OrderId"
+  OrderItems |o--o{ PromotionUsages : "OrderItemId"
+  ModifierGroups ||--o{ ModifierOptions : "GroupId"
+  ModifierOptions ||--o{ ModifierOptionBom : "OptionId"
+  Ingredients ||--o{ ModifierOptionBom : "IngredientId"
+  MenuItems ||--o{ MenuItemModifierGroups : "MenuItemId"
+  ModifierGroups ||--o{ MenuItemModifierGroups : "GroupId"
+  OrderItems ||--o{ OrderItemModifiers : "OrderItemId"
+  ModifierOptions ||--o{ OrderItemModifiers : "OptionId"
+  Users |o--o{ Payments : "ApprovedBy (0009)"
+  Sessions ||--o{ StaffCalls : "SessionId"
+  Users |o--o{ StaffCalls : "HandledBy"
+  Payments ||--o{ Refunds : "PaymentId"
+  Users ||--o{ Refunds : "ApprovedBy"
+  Users ||--o{ Refunds : "CreatedBy"
+  Shifts |o--o{ Refunds : "ShiftId"
+  Users |o--o{ Sessions : "OpenedBy (0014)"
+  Users |o--o{ Sessions : "NoteUpdatedBy (0014)"
+  Categories |o--o{ MenuSchedules : "SourceCategoryId"
+  MenuSchedules ||--o{ MenuScheduleItems : "ScheduleId"
+  MenuItems |o--o{ MenuScheduleItems : "MenuItemId"
+  Categories |o--o{ MenuScheduleItems : "CategoryId"
+  MenuItems ||--o| ItemPrepStats : "MenuItemId"
+  Sessions ||--o{ SessionSplits : "SessionId"
+  Members |o--o{ SessionSplits : "MemberId"
+  Payments |o--o{ SessionSplits : "PaymentId"
+  SessionSplits |o--o{ OrderItems : "SplitId (0018)"
+  Payments |o--o{ OrderItems : "PaymentId (0018)"
+  SessionSplits |o--o{ Payments : "SplitId (0018)"
+  Orders ||--o{ OrderItemVoids : "OrderId"
+  Sessions |o--o{ OrderItemVoids : "SessionId"
+  MenuItems ||--o{ OrderItemVoids : "MenuItemId"
+  Users |o--o{ OrderItemVoids : "ApprovedBy"
+  Users ||--o{ OrderItemVoids : "CreatedBy"
+  OrderItemVoids |o--o{ InventoryTransactions : "VoidId (0033)"
+  Users |o--o{ Sessions : "CancelledBy (0033)"
+  ComboComponents {
+    int ComboMenuItemId PK, FK
+    int ComponentMenuItemId PK, FK
+  }
+  ModifierGroups {
+    int GroupId PK
+  }
+  ModifierOptions {
+    int OptionId PK
+    int GroupId FK
+  }
+  ModifierOptionBom {
+    int OptionId PK, FK
+    int IngredientId PK, FK
+  }
+  MenuItemModifierGroups {
+    int MenuItemId PK, FK
+    int GroupId PK, FK
+  }
+  OrderItemModifiers {
+    int OrderItemId PK, FK
+    int OptionId PK, FK
+  }
+  Promotions {
+    int PromotionId PK
+  }
+  PromotionTargets {
+    int TargetId PK
+    int PromotionId FK
+    int MenuItemId FK
+    int CategoryId FK
+  }
+  PromotionUsages {
+    bigint UsageId PK
+    int PromotionId FK
+    int OrderId FK
+    int OrderItemId FK
+  }
+  MenuSchedules {
+    int ScheduleId PK
+    int SourceCategoryId FK
+  }
+  MenuScheduleItems {
+    int ScheduleItemId PK
+    int ScheduleId FK
+    int MenuItemId FK
+    int CategoryId FK
+  }
+  ItemPrepStats {
+    int MenuItemId PK, FK
+  }
+  StaffCalls {
+    int CallId PK
+    uniqueidentifier SessionId FK
+    int HandledBy FK
+  }
+  SessionSplits {
+    int SplitId PK
+    uniqueidentifier SessionId FK
+    int MemberId FK
+    int PaymentId FK
+  }
+  Refunds {
+    int RefundId PK
+    int PaymentId FK
+    int ApprovedBy FK
+    int CreatedBy FK
+    int ShiftId FK
+  }
+  OrderItemVoids {
+    int VoidId PK
+    int OrderId FK
+    uniqueidentifier SessionId FK
+    int MenuItemId FK
+    int ApprovedBy FK
+    int CreatedBy FK
+  }
+```
+
+### 2. Kho (`0013`, `0019`–`0024`, `0033`)
+
+```mermaid
+erDiagram
+  Users ||--o{ StockReceipts : "ReceivedBy"
+  StockReceipts ||--o{ StockReceiptLines : "ReceiptId"
+  Ingredients ||--o{ StockReceiptLines : "IngredientId"
+  Users ||--o{ Stocktakes : "CountedBy"
+  Users |o--o{ Stocktakes : "PostedBy"
+  Stocktakes ||--o{ StocktakeLines : "StocktakeId"
+  Ingredients ||--o{ StocktakeLines : "IngredientId"
+  StockReceipts |o--o{ InventoryTransactions : "StockReceiptId (0013)"
+  Stocktakes |o--o{ InventoryTransactions : "StocktakeId (0013)"
+  Units |o--o{ Units : "BaseUnitCode"
+  Units |o--o{ Ingredients : "BaseUnitCode (0019)"
+  Units |o--o{ StockReceiptLines : "PackUnitCode"
+  Ingredients ||--o| SemiRecipes : "SemiIngredientId"
+  SemiRecipes ||--o{ SemiRecipeLines : "SemiIngredientId"
+  Ingredients ||--o{ SemiRecipeLines : "InputIngredientId"
+  Ingredients ||--o{ PrepBatches : "SemiIngredientId"
+  Users ||--o{ PrepBatches : "PreparedBy"
+  PrepBatches |o--o{ InventoryTransactions : "PrepBatchId (0020)"
+  Ingredients ||--o{ WasteLogs : "IngredientId"
+  Users ||--o{ WasteLogs : "CreatedBy"
+  WasteLogs |o--o{ InventoryTransactions : "WasteId (0021)"
+  Ingredients ||--o{ IngredientLots : "IngredientId"
+  IngredientLots |o--o{ InventoryTransactions : "LotId (0022)"
+  IngredientLots |o--o{ WasteLogs : "LotId"
+  Suppliers ||--o{ SupplierIngredients : "SupplierId"
+  Ingredients ||--o{ SupplierIngredients : "IngredientId"
+  Units ||--o{ SupplierIngredients : "PackUnitCode"
+  Suppliers ||--o{ PurchaseOrders : "SupplierId"
+  Users ||--o{ PurchaseOrders : "CreatedBy"
+  PurchaseOrders ||--o{ PurchaseOrderLines : "PoId"
+  Ingredients ||--o{ PurchaseOrderLines : "IngredientId"
+  Units ||--o{ PurchaseOrderLines : "PackUnitCode"
+  Suppliers ||--o{ SupplierPriceHistory : "SupplierId"
+  Ingredients ||--o{ SupplierPriceHistory : "IngredientId"
+  StockReceipts |o--o{ SupplierPriceHistory : "ReceiptId"
+  PurchaseOrders |o--o{ StockReceipts : "PoId"
+  Suppliers |o--o{ StockReceipts : "SupplierId"
+  PurchaseOrderLines |o--o{ StockReceiptLines : "PoLineId"
+  IngredientLots |o--o{ StockReceiptLines : "LotId"
+  Ingredients ||--o{ DemandForecasts : "IngredientId"
+  OrderItemVoids |o--o{ WasteLogs : "VoidId"
+  StockReceipts {
+    int ReceiptId PK
+    int ReceivedBy FK
+    int PoId FK
+    int SupplierId FK
+  }
+  StockReceiptLines {
+    int ReceiptId PK, FK
+    int IngredientId PK, FK
+    nvarchar PackUnitCode FK
+    int PoLineId FK
+    int LotId FK
+  }
+  Stocktakes {
+    int StocktakeId PK
+    int CountedBy FK
+    int PostedBy FK
+  }
+  StocktakeLines {
+    int StocktakeId PK, FK
+    int IngredientId PK, FK
+  }
+  Units {
+    nvarchar UnitCode PK
+    nvarchar BaseUnitCode FK
+  }
+  SemiRecipes {
+    int SemiIngredientId PK, FK
+  }
+  SemiRecipeLines {
+    int SemiIngredientId PK, FK
+    int InputIngredientId PK, FK
+  }
+  PrepBatches {
+    int BatchId PK
+    int SemiIngredientId FK
+    int PreparedBy FK
+  }
+  WasteLogs {
+    int WasteId PK
+    int IngredientId FK
+    int CreatedBy FK
+    int LotId FK
+    int VoidId FK
+  }
+  IngredientLots {
+    int LotId PK
+    int IngredientId FK
+  }
+  Suppliers {
+    int SupplierId PK
+  }
+  SupplierIngredients {
+    int SupplierId PK, FK
+    int IngredientId PK, FK
+    nvarchar PackUnitCode FK
+  }
+  PurchaseOrders {
+    int PoId PK
+    int SupplierId FK
+    int CreatedBy FK
+  }
+  PurchaseOrderLines {
+    int PoLineId PK
+    int PoId FK
+    int IngredientId FK
+    nvarchar PackUnitCode FK
+  }
+  SupplierPriceHistory {
+    int PriceId PK
+    int SupplierId FK
+    int IngredientId FK
+    int ReceiptId FK
+  }
+  DemandForecasts {
+    int IngredientId PK, FK
+    date ForecastDate PK
+  }
+```
+
+### 3. Hội viên, tích lũy, marketing (`0003`, `0015`, `0029`–`0031`)
+
+```mermaid
+erDiagram
+  MemberTiers ||--o{ Members : "TierCode"
+  Members |o--o{ Sessions : "MemberId (0003)"
+  Members |o--o{ Orders : "MemberId (0003)"
+  Members |o--o{ Payments : "MemberId (0003)"
+  Members ||--o{ MemberTransactions : "MemberId"
+  Payments ||--o{ MemberTransactions : "PaymentId"
+  Members ||--o{ MemberFavorites : "MemberId"
+  MenuItems ||--o{ MemberFavorites : "MenuItemId"
+  Members ||--o{ PointTransactions : "MemberId"
+  Payments |o--o{ PointTransactions : "PaymentId"
+  Users |o--o{ PointTransactions : "CreatedBy"
+  MenuItems |o--o{ RewardCatalog : "MenuItemId"
+  Members ||--o{ RewardRedemptions : "MemberId"
+  RewardCatalog ||--o{ RewardRedemptions : "RewardId"
+  Payments ||--o{ RewardRedemptions : "PaymentId"
+  MenuItems |o--o{ StampPrograms : "RewardMenuItemId"
+  StampPrograms ||--o{ StampProgramItems : "ProgramId"
+  MenuItems ||--o{ StampProgramItems : "MenuItemId"
+  Members ||--o{ StampCards : "MemberId"
+  StampPrograms ||--o{ StampCards : "ProgramId"
+  Members ||--o{ StampEvents : "MemberId"
+  StampPrograms ||--o{ StampEvents : "ProgramId"
+  Payments |o--o{ StampEvents : "PaymentId"
+  Users |o--o{ StampEvents : "CreatedBy"
+  RewardCatalog |o--o{ Payments : "RewardId (0029)"
+  StampPrograms |o--o{ Payments : "StampProgramId (0029)"
+  Members |o--o{ Members : "ReferredByMemberId"
+  Members |o--o{ Vouchers : "MemberId"
+  Promotions |o--o{ Vouchers : "PromotionId"
+  Payments |o--o{ Vouchers : "UsedPaymentId"
+  Payments |o--o{ Vouchers : "IssuedForPaymentId"
+  Users |o--o{ Vouchers : "CreatedBy"
+  Vouchers |o--o{ Payments : "VoucherId (0030)"
+  Users |o--o{ Segments : "CreatedBy"
+  Segments ||--o{ Campaigns : "SegmentId"
+  Users |o--o{ Campaigns : "CreatedBy"
+  Campaigns ||--o{ CampaignDeliveries : "CampaignId"
+  Members ||--o{ CampaignDeliveries : "MemberId"
+  Vouchers |o--o{ CampaignDeliveries : "VoucherId"
+  Campaigns |o--o{ Vouchers : "CampaignId"
+  MemberTiers {
+    varchar TierCode PK
+  }
+  Members {
+    int MemberId PK
+    varchar TierCode FK
+    int ReferredByMemberId FK
+  }
+  MemberTransactions {
+    bigint TxnId PK
+    int MemberId FK
+    int PaymentId FK
+  }
+  MemberFavorites {
+    int MemberId PK, FK
+    int MenuItemId PK, FK
+  }
+  PointTransactions {
+    bigint PtId PK
+    int MemberId FK
+    int PaymentId FK
+    int CreatedBy FK
+  }
+  RewardCatalog {
+    int RewardId PK
+    int MenuItemId FK
+  }
+  RewardRedemptions {
+    int RedId PK
+    int MemberId FK
+    int RewardId FK
+    int PaymentId FK
+  }
+  StampPrograms {
+    int ProgramId PK
+    int RewardMenuItemId FK
+  }
+  StampProgramItems {
+    int ProgramId PK, FK
+    int MenuItemId PK, FK
+  }
+  StampCards {
+    int MemberId PK, FK
+    int ProgramId PK, FK
+  }
+  StampEvents {
+    bigint EventId PK
+    int MemberId FK
+    int ProgramId FK
+    int PaymentId FK
+    int CreatedBy FK
+  }
+  Vouchers {
+    int VoucherId PK
+    int MemberId FK
+    int PromotionId FK
+    int UsedPaymentId FK
+    int CampaignId FK
+    int IssuedForPaymentId FK
+    int CreatedBy FK
+  }
+  Segments {
+    int SegmentId PK
+    int CreatedBy FK
+  }
+  Campaigns {
+    int CampaignId PK
+    int SegmentId FK
+    int CreatedBy FK
+  }
+  CampaignDeliveries {
+    int DeliveryId PK
+    int CampaignId FK
+    int MemberId FK
+    int VoucherId FK
+  }
+```
+
+### 4. Ca, sổ quỹ, nhân sự, hệ thống (`0003` `Settings`, `0008`, `0017` `JobRuns`, `0026`–`0028`, `0032`)
+
+```mermaid
+erDiagram
+  Users ||--o{ Shifts : "OpenedBy"
+  Users |o--o{ Shifts : "ClosedBy"
+  Shifts |o--o{ Payments : "ShiftId (0008)"
+  Shifts ||--o{ CashTransactions : "ShiftId"
+  CashCategories ||--o{ CashTransactions : "CategoryId"
+  Users ||--o{ CashTransactions : "CreatedBy"
+  Users |o--o{ CashTransactions : "ApprovedBy"
+  Users ||--o{ Attendance : "UserId"
+  Shifts |o--o{ Attendance : "ShiftId"
+  Users |o--o{ Attendance : "EditedBy"
+  Users ||--o{ Rosters : "UserId"
+  Users ||--o{ Rosters : "CreatedBy"
+  Settings {
+    nvarchar SettingKey PK
+  }
+  Shifts {
+    int ShiftId PK
+    int OpenedBy FK
+    int ClosedBy FK
+  }
+  CashCategories {
+    int CategoryId PK
+  }
+  CashTransactions {
+    int CashTxnId PK
+    int ShiftId FK
+    int CategoryId FK
+    int CreatedBy FK
+    int ApprovedBy FK
+  }
+  Attendance {
+    int AttId PK
+    int UserId FK
+    int ShiftId FK
+    int EditedBy FK
+  }
+  Rosters {
+    int RosterId PK
+    int UserId FK
+    int CreatedBy FK
+  }
+  AuditLogs {
+    bigint AuditId PK
+  }
+  FixedCosts {
+    int CostId PK
+  }
+  DailySummaries {
+    date SummaryDate PK
+  }
+  JobRuns {
+    bigint RunId PK
+  }
+```
+
+## Sửa / hủy phiếu kho (FEATURE-048, ADR-009, 21/10/2026)
+
+### Migration 0034
+
+| File | Feature | Thay đổi |
+| --- | --- | --- |
+| `0034_sua_huy_phieu_kho.sql` | F-048 | `StockReceipts` + `Status` (`POSTED` / `VOIDED`, mặc định `POSTED`), `VoidedBy / VoidedAt / VoidReason`, `EditedBy / EditedAt / EditReason`; `Stocktakes`: `CK_Stocktakes_Status` thêm `VOIDED`, + `VoidedBy / VoidedAt / VoidReason`; chỉ mục `IX_ReceiptLines_Ingredient` |
+
+Chỉ thêm cột / mở rộng CHECK — phiếu cũ thành `POSTED`, dữ liệu không đổi. `0035_chi_muc_phieu_kho.sql` (review G3): chỉ mục lọc `IX_InvTxn_Receipt (StockReceiptId, IngredientId)`, `IX_InvTxn_Stocktake (StocktakeId, IngredientId)`. Migration kế tiếp: `0036`.
+
+### SP
+
+| SP | Mô tả |
+| --- | --- |
+| `sp_ReviseStockReceipt` (mới) | `@ReceiptId, @UserId, @Mode ('EDIT' / 'VOID'), @Reason, @Supplier, @Note, @LinesJson, @ConfirmOver`. Một transaction, khóa phiếu + nguyên liệu (`UPDLOCK, HOLDLOCK`). Dòng đổi = bỏ dòng cũ + nhập dòng mới; `IMPORT` "+ mới" trước, "− cũ" sau. Giá vốn bình quân tính ngược: phần còn lại = tồn × `AvgCost` − SL cũ × giá trên dòng `IMPORT` gốc; còn hàng và giá trị > 0 → bình quân với dòng mới, không thì giá dòng mới hoặc giữ nguyên. Giá nhập gần nhất tính lại khi phiếu là lần nhập có giá mới nhất. Lô: đóng lô dòng cũ (phải còn nguyên), dòng mới → lô `RECEIPT`. PO: `ReceivedBaseQty` −cũ +mới, trạng thái `SENT` / `PARTIAL` / `RECEIVED`. Lịch sử giá NCC: bỏ giá của phiếu, sửa → ghi lại (`RecordedAt` = lúc nhập gốc), `LastPrice` = lần ghi mới nhất còn lại |
+| `sp_VoidStocktake` (mới) | `@StocktakeId, @UserId, @Reason`. Phiếu `POSTED`, là lần chốt gần nhất của mọi nguyên liệu trong phiếu, không có phiếu nháp chứa nguyên liệu, phần thừa còn đủ. `ADJUST` = −chênh lệch (cùng `StocktakeId`); lô: thiếu → trả đúng lô đã trừ (phần không có lô → lô `ADJUST` mới), thừa → trừ lô `ADJUST` của phiếu trước rồi FEFO. Phiếu → `VOIDED` |
+| `sp_DeleteUser` (sửa) | Thêm lịch sử: `StockReceipts.VoidedBy / EditedBy`, `Stocktakes.VoidedBy` |
+
+### Bất biến mới (kiểm sau mọi bộ test — `tests/helpers/testDb.js`)
+
+| Mã | Bất biến | Feature |
+| --- | --- | --- |
+| `RECEIPT_LEDGER_MISMATCH` | Σ `IMPORT.Delta` của phiếu nhập = Σ `StockReceiptLines.Qty` (phiếu `POSTED`) hoặc 0 (phiếu `VOIDED`) | F-023, F-048 |
+| `STOCKTAKE_LEDGER_MISMATCH` | Σ `Delta` giao dịch của phiếu kiểm kê = Σ `Diff` (phiếu `POSTED`) hoặc 0 (phiếu `VOIDED`) | F-023, F-048 |
+| `PO_RECEIVED_MISMATCH` | `PurchaseOrderLines.ReceivedBaseQty` = Σ dòng phiếu nhập `POSTED` trỏ vào dòng PO | F-030, F-048 |
+
+Báo cáo: hao hụt (`shrinkage`) vốn chỉ lấy phiếu `POSTED`; thất thoát (`lossReport`) chỉ tính giao dịch của phiếu `POSTED` (nối `Stocktakes`); "lần kiểm kê gần nhất" (`dashboardRepo.todos`) chỉ `POSTED`; hủy PO chỉ tính phiếu nhập `POSTED`.
+
+## Chuyển bàn (FEATURE-049, ADR-010, 21/10/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0036_chuyen_ban.sql` | `SessionTableMoves (MoveId PK, SessionId FK, FromTableId FK, ToTableId FK, MovedBy FK Users, MovedAt)`, `CK_Moves_Tables (FromTableId <> ToTableId)`, chỉ mục `(SessionId, MoveId)` |
+| SP `sp_MoveSession` | `@SessionId, @ToTableId, @UserId, OUT @FromTableId`. Khóa phiên (`UPDLOCK, HOLDLOCK` — chạy tuần tự với `sp_SubmitOrder` vốn khóa phiên trước khi đọc bàn) + bàn đích; đổi `Sessions.TableId`, `Orders.TableId` mọi đơn của phiên; ghi lịch sử |
+| Bất biến `ORDER_TABLE_MISMATCH` | Đơn có `SessionId` luôn có `TableId` = bàn hiện tại của phiên (kiểm sau mọi bộ test) |
+| `sp_DeleteTable`, `sp_DeleteUser` (sửa — review G3) | Bàn từng là bàn cũ / mới, tài khoản từng chuyển bàn → xóa mềm (lịch sử `SessionTableMoves` giữ khóa ngoại) |
+| `sp_MoveSession @ExpectedFromTableId` | Bàn máy quầy đang thấy; khác bàn hiện tại → `50205 SESSION_MOVED` |
+
+## Hủy / sửa khoản sổ quỹ (FEATURE-050, ADR-010, 21/10/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0037_huy_khoan_so_quy.sql` | `CK_CashTxn_Status` thêm `VOIDED`; `CashTransactions` + `VoidedBy` (FK Users), `VoidedAt`, `VoidReason`, `ReplacedById`, `ReplacesId` (FK tự tham chiếu); `CK_CashTxn_Voided` (khoản `VOIDED` phải có người / lúc / lý do); `UX_CashTxn_Replaces` (duy nhất, lọc `ReplacesId IS NOT NULL`) |
+| SP `sp_VoidCashTxn` | `@CashTxnId, @UserId (người duyệt), @ActorId (người đứng máy), @Reason, @NewCategoryId?, @NewAmount?, @NewReason?, @Threshold, OUT @NewTxnId, OUT @NewStatus`. Khóa khoản (`UPDLOCK, HOLDLOCK`) + ca (`HOLDLOCK`, như `sp_CreateCashTxn` → tuần tự với `sp_CloseShift`); chỉ `APPROVED` của ca mở; khoản thay thế theo quy tắc ghi khoản |
+| `sp_DeleteUser` (sửa) | `CashTransactions.VoidedBy` là lịch sử |
+| Bất biến `CASH_REPLACE_LINK` | Hai chiều: khoản có `ReplacesId` → khoản bị thay `VOIDED` và `ReplacedById` trỏ ngược lại; khoản có `ReplacedById` → đã `VOIDED` và khoản thay thế trỏ ngược lại |
+
+Tiền dự kiến (`sp_CloseShift`), ca (`shiftsRepo`), sổ quỹ (`cashService.book`), lãi / lỗ (`pnlRepo`) vốn chỉ tính `APPROVED` → không phải sửa. 
+
+## Đánh giá món (FEATURE-051, ADR-010, 21/10/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0038_danh_gia.sql` | `Reviews (ReviewId PK, SessionId FK, ClientToken CHAR(32), Comment NVARCHAR(300), HasLow, HandledBy FK Users, HandledAt, CreatedAt)`, `UQ_Reviews_SessionClient (SessionId, ClientToken)`; `ReviewItems (ReviewId FK, MenuItemId FK, Stars TINYINT CHECK 1–5, PK (ReviewId, MenuItemId))`; Settings `review.menu_min_count = 5`, `review.menu_days = 90` |
+| Ghi | `reviewsRepo.create`: một transaction (đánh giá + các dòng sao); trùng điện thoại / phiên → lỗi khóa duy nhất 2627 / 2601 → `409 ALREADY_REVIEWED` |
+| Sao trên menu | `reviewsRepo.ratingsSince`: trung bình theo (phiên, món) rồi theo món, số lượt = số phiên; lọc ngưỡng ở `reviewService.menuRatings` (cache 60 giây, xóa khi có đánh giá mới / đổi ngưỡng) |
+| `sp_DeleteUser` (sửa) | `Reviews.HandledBy` là lịch sử |
+
+Không có SP mới. Migration kế tiếp: `0039`.

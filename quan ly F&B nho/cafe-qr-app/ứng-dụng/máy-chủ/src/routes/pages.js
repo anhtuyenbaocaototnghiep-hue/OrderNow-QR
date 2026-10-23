@@ -44,6 +44,7 @@ const PAGES = {
   '/pos/payments/:id/receipt': 'pos/receipt.html',
   // Giai đoạn 6 — tài chính & nhân sự (chỉ ADMIN)
   '/admin/cash': 'admin/cash.html',
+  '/admin/reviews': 'admin/reviews.html', // F-051
   '/admin/staff': 'admin/staff.html',
   '/admin/audit': 'admin/audit.html',
   '/admin/pnl': 'admin/pnl.html',
@@ -52,6 +53,7 @@ const PAGES = {
   // Giai đoạn 8 — phân tích + dashboard chủ quán (/admin/today: quản lý + trưởng ca)
   '/admin/analytics': 'admin/analytics.html',
   '/admin/today': 'admin/today.html',
+  '/admin/api-docs': 'admin/api-docs.html', // F-052 tra cứu API
 };
 
 export const pagesRouter = express.Router();

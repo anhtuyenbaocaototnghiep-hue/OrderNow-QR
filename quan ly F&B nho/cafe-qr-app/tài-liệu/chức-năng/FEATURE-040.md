@@ -49,6 +49,7 @@
 - AC-040-03: Món vừa SHOW (lịch A) vừa HIDE (lịch B) đang hiệu lực → ẩn.
 - AC-040-04: Khách gửi đơn có món ngoài lịch → 409; quầy bán mang đi món đó → 201.
 - AC-040-05: Giờ bán danh mục (F-020) vẫn chạy như cũ (test F-020 cũ PASS không sửa).
+- AC-040-06: Tạo lịch thực đơn không có món / danh mục mục tiêu, hoặc chỉ có giờ bắt đầu mà không có giờ kết thúc → 400. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

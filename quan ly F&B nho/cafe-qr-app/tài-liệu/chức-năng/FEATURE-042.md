@@ -43,9 +43,10 @@
 ## Acceptance Criteria
 
 - AC-042-01: Seed đơn 10–11 h Thứ Bảy dày → ô (T7, 10 h) đậm nhất.
-- AC-042-02: So sánh tuần: số liệu khớp tính tay; % thay đổi đúng công thức.
+- AC-042-02: So sánh tuần trước (`offset = 1`): doanh thu thuần kỳ này và kỳ trước bằng đúng Σ số phải thu (trừ hoàn tiền) của các lượt thu trong từng tuần; % thay đổi = (kỳ này − kỳ trước) ÷ kỳ trước × 100 (kỳ trước = 0 → không tính); tuần đã qua → `partial = false`; so sánh tháng hiện tại → kỳ này tính tới hôm nay. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
 - AC-042-03: Dự báo hôm nay = WMA 4 cùng thứ (100k, 200k, 300k, 400k → 200k).
 - AC-042-04: Bàn 3 ngồi 3 giờ doanh thu 60.000đ → bị gắn cờ.
+- AC-042-05: Xem giờ cao điểm với `from > to` → 400. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

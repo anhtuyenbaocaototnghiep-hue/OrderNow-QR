@@ -1,28 +1,181 @@
 /* Nền dùng chung cho 3 khu vực (khách / quầy / quản lý). Không framework (ADR-002). */
+
+/* Phông tự lưu trong app (ADR-012 D-53, giấy phép OFL trong /fonts): chỉ phần latin + tiếng Việt, chạy được khi LAN không có Internet */
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/be-vietnam-pro-vietnamese-400-normal.woff2') format('woff2');
+  unicode-range:
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/be-vietnam-pro-latin-400-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('/fonts/be-vietnam-pro-vietnamese-500-normal.woff2') format('woff2');
+  unicode-range:
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('/fonts/be-vietnam-pro-latin-500-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/be-vietnam-pro-vietnamese-600-normal.woff2') format('woff2');
+  unicode-range:
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/be-vietnam-pro-latin-600-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('/fonts/be-vietnam-pro-vietnamese-700-normal.woff2') format('woff2');
+  unicode-range:
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('/fonts/be-vietnam-pro-latin-700-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 800 900;
+  src: url('/fonts/be-vietnam-pro-vietnamese-800-normal.woff2') format('woff2');
+  unicode-range:
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Be Vietnam Pro';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 800 900;
+  src: url('/fonts/be-vietnam-pro-latin-800-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  src: url('/fonts/lora-vietnamese-600-normal.woff2') format('woff2');
+  unicode-range:
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  src: url('/fonts/lora-latin-600-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700 900;
+  src: url('/fonts/lora-vietnamese-700-normal.woff2') format('woff2');
+  unicode-range:
+    U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700 900;
+  src: url('/fonts/lora-latin-700-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+/* Bảng màu "Mộc" (ADR-012 D-52): espresso · nâu rang · kem sữa · caramel · lá. Tỷ lệ tương phản ghi trong design-system.md */
 :root {
-  --c-bg: #f7f3ef;
-  --c-surface: #ffffff;
-  --c-surface-2: #f2ece6;
-  --c-border: #e4dad0;
-  --c-text: #2b2118;
-  --c-muted: #7a6a5c;
-  --c-primary: #8a4b2a;
-  --c-primary-600: #733d21;
-  --c-primary-50: #f6ebe4;
-  --c-accent: #d98c3b;
-  --c-success: #2f7d4f;
-  --c-success-50: #e6f3eb;
-  --c-warning: #b7791f;
-  --c-warning-50: #fdf3e1;
-  --c-danger: #b42318;
-  --c-danger-50: #fdecea;
-  --c-info: #2563a8;
-  --c-info-50: #e8f0fa;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 1px 2px rgba(43, 33, 24, 0.06), 0 4px 16px rgba(43, 33, 24, 0.06);
-  --shadow-lg: 0 12px 40px rgba(43, 33, 24, 0.18);
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --c-bg: #f6efe5; /* kem sữa */
+  --c-surface: #fffdf9;
+  --c-surface-2: #f0e6d8; /* bọt latte: hover nút, tiêu đề bảng, badge mặc định */
+  --c-border: #e2d3bf;
+  --c-text: #2a1b12; /* espresso */
+  --c-muted: #68533f; /* chữ phụ ≥ 4.5:1 trên mọi nền sáng (WCAG 1.4.3) */
+  --c-primary: #7a4527; /* nâu rang */
+  --c-primary-600: #5f341c;
+  --c-primary-50: #f5e9dc;
+  --c-accent: #c8873f; /* caramel — chỉ trang trí, viền, biểu đồ (không làm nền có chữ trắng) */
+  --c-accent-600: #8c5220; /* caramel đậm: nền có chữ trắng (menu đang chọn) — 6.28:1 */
+  --c-accent-100: #f3dcb8; /* caramel nhạt: nền có chữ espresso (số lượng trong giỏ) */
+  --c-focus: #8c5220; /* viền focus trên nền sáng ≥ 3:1 (WCAG 1.4.11); nền tối đặt lại --c-focus sáng */
+  --c-espresso: #24170f; /* nền tối: thanh quầy, thanh bên quản lý, đầu trang khách */
+  --c-espresso-2: #33231a;
+  --c-on-dark: #eadccb; /* chữ trên nền espresso — 12.95:1 */
+  --c-on-dark-muted: #cdb59a; /* chữ phụ trên nền espresso — 8.86:1 */
+  --c-focus-dark: #ffd38a;
+  --c-success: #2f6a45; /* xanh lá — 5.50:1 trên nền xanh nhạt */
+  --c-success-50: #e6f0e6;
+  --c-warning: #b7791f; /* nền / viền / biểu đồ cảnh báo (không dùng làm màu chữ) */
+  --c-warning-text: #85550f; /* chữ cảnh báo, nền có chữ trắng (banner trễ) */
+  --c-warning-50: #fbf0dc;
+  --c-danger: #b3261e;
+  --c-danger-50: #fbeae6;
+  --c-info: #2c5d88;
+  --c-info-50: #e6eef6;
+  /* Màu dữ liệu biểu đồ (ADR-015 D-60, chủ dự án chọn): chỉ tô nét / cột, không làm màu chữ. Thứ tự cố định: 1 doanh thu · 2 giá vốn / dự báo · 3 chi phí */
+  --viz-1: #3a9efd; /* xanh */
+  --viz-2: #f7a400; /* cam */
+  --viz-3: #1a1b4b; /* tím đen */
+  --viz-grid: #ece3d7; /* lưới mảnh */
+  --viz-axis: #c9b8a2; /* đường gốc 0 */
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 2px rgba(42, 27, 18, 0.05), 0 6px 18px -6px rgba(42, 27, 18, 0.12);
+  --shadow-lg: 0 18px 48px -12px rgba(42, 27, 18, 0.32);
+  --font: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-display: 'Lora', Georgia, 'Times New Roman', serif; /* tiêu đề, tên quán */
   --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
 }
 
@@ -40,9 +193,10 @@ body {
   margin: 0;
   font-family: var(--font);
   font-size: 15px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--c-text);
   background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
@@ -51,6 +205,12 @@ h3,
 h4 {
   margin: 0 0 0.5rem;
   line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 p {
@@ -59,6 +219,22 @@ p {
 
 a {
   color: var(--c-primary);
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
+}
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Bề mặt trình duyệt theo bảng màu (ADR-013 D-56): bôi chọn chữ, con trỏ nhập, ô chọn, thanh cuộn */
+:root {
+  accent-color: var(--c-primary);
+  caret-color: var(--c-primary);
+  scrollbar-color: #94795a transparent; /* ≥ 3:1 trên nền kem (review G3 TASK-066) */
+}
+::selection {
+  background: var(--c-accent-100);
+  color: var(--c-espresso);
 }
 
 img {
@@ -71,7 +247,7 @@ img {
 }
 
 :focus-visible {
-  outline: 3px solid var(--c-accent);
+  outline: 3px solid var(--c-focus);
   outline-offset: 2px;
 }
 
@@ -127,19 +303,21 @@ img {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  min-height: 40px;
-  padding: 0.5rem 1rem;
+  min-height: 42px;
+  padding: 0.5rem 1.05rem;
   border: 1px solid var(--c-border);
   border-radius: var(--radius-sm);
   background: var(--c-surface);
   color: var(--c-text);
   font: inherit;
   font-weight: 600;
+  line-height: 1.25;
   cursor: pointer;
   text-decoration: none;
   transition:
     background 0.15s,
     border-color 0.15s,
+    box-shadow 0.15s,
     transform 0.05s;
   touch-action: manipulation;
 }
@@ -159,9 +337,11 @@ img {
   background: var(--c-primary);
   border-color: var(--c-primary);
   color: #fff;
+  box-shadow: 0 2px 6px -2px rgba(95, 52, 28, 0.45);
 }
 .btn-primary:hover {
   background: var(--c-primary-600);
+  border-color: var(--c-primary-600);
 }
 .btn-success {
   background: var(--c-success);
@@ -185,14 +365,15 @@ img {
   border-color: transparent;
 }
 .btn-sm {
-  min-height: 32px;
-  padding: 0.25rem 0.65rem;
+  min-height: 36px;
+  padding: 0.3rem 0.75rem;
   font-size: 0.875rem;
 }
 .btn-lg {
   min-height: 52px;
-  padding: 0.75rem 1.25rem;
+  padding: 0.75rem 1.35rem;
   font-size: 1.05rem;
+  border-radius: 12px;
 }
 .btn-block {
   width: 100%;
@@ -234,18 +415,21 @@ label {
 select.input,
 textarea.input {
   width: 100%;
-  min-height: 40px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--c-border);
+  min-height: 42px;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #d9c8b2;
   border-radius: var(--radius-sm);
-  background: #fff;
+  background: var(--c-surface);
   color: var(--c-text);
   font: inherit;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 .input:focus {
   outline: none;
-  border-color: var(--c-accent);
-  box-shadow: 0 0 0 3px rgba(217, 140, 59, 0.2);
+  border-color: var(--c-accent-600);
+  box-shadow: 0 0 0 3px rgba(200, 135, 63, 0.25);
 }
 .input.invalid,
 .invalid .input {
@@ -265,18 +449,18 @@ textarea.input {
 }
 
 /* ---------- Thẻ, badge ---------- */
+/* Độ nổi khai báo một lần (ADR-013 D-56): thẻ phẳng có viền; bóng chỉ dành cho lớp nổi (hộp thoại, ngăn kéo, sheet, toast) */
 .card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 1rem;
+  padding: 1.05rem 1.1rem;
 }
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.1rem 0.55rem;
+  padding: 0.12rem 0.6rem;
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 700;
@@ -286,7 +470,7 @@ textarea.input {
 }
 .badge.pending {
   background: var(--c-warning-50);
-  color: var(--c-warning);
+  color: var(--c-warning-text);
 }
 .badge.preparing {
   background: var(--c-info-50);
@@ -311,6 +495,31 @@ textarea.input {
   background: var(--c-primary-50);
   color: var(--c-primary);
 }
+/* Chip dạng viên thuốc: danh mục (khách, quầy, quản lý), ghi chú nhanh, chọn nhóm — dùng chung cả 3 khu vực (TASK-065) */
+.chip {
+  min-height: 38px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  border-radius: 999px;
+  padding: 0.4rem 0.95rem;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  color: var(--c-text);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.chip:hover {
+  border-color: var(--c-accent);
+}
+.chip.active,
+.chip[aria-pressed='true'] {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
 
 .alert {
   border-radius: var(--radius-sm);
@@ -320,22 +529,22 @@ textarea.input {
 }
 .alert.warning {
   background: var(--c-warning-50);
-  border-color: #f3d9a4;
+  border-color: #efd5a6;
   color: #7a4f10;
 }
 .alert.danger {
   background: var(--c-danger-50);
-  border-color: #f5c2bd;
+  border-color: #f1c4bc;
   color: var(--c-danger);
 }
 .alert.info {
   background: var(--c-info-50);
-  border-color: #c4d7ef;
+  border-color: #c3d5e8;
   color: var(--c-info);
 }
 .alert.success {
   background: var(--c-success-50);
-  border-color: #bfe0cb;
+  border-color: #bcd8c0;
   color: var(--c-success);
 }
 
@@ -358,11 +567,16 @@ table.table {
   vertical-align: middle;
 }
 .table th {
-  font-size: 0.8rem;
+  font-size: 0.76rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   color: var(--c-muted);
   background: var(--c-surface-2);
+}
+/* :where → độ ưu tiên 0: dòng tô màu riêng (thất thoát, hôm nay…) vẫn giữ màu khi rê chuột */
+:where(.table tbody tr:hover) > td {
+  background: #fbf6ef;
 }
 .table tr:last-child td {
   border-bottom: none;
@@ -372,12 +586,27 @@ table.table {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+/* Tiêu đề cột số căn phải theo ô số bên dưới — nhiều trang dựng tiêu đề bằng hàm chung không gắn lớp .num (DEF-015) */
+.table:has(> tbody > tr > td.num:nth-child(1)) > thead > tr > th:nth-child(1),
+.table:has(> tbody > tr > td.num:nth-child(2)) > thead > tr > th:nth-child(2),
+.table:has(> tbody > tr > td.num:nth-child(3)) > thead > tr > th:nth-child(3),
+.table:has(> tbody > tr > td.num:nth-child(4)) > thead > tr > th:nth-child(4),
+.table:has(> tbody > tr > td.num:nth-child(5)) > thead > tr > th:nth-child(5),
+.table:has(> tbody > tr > td.num:nth-child(6)) > thead > tr > th:nth-child(6),
+.table:has(> tbody > tr > td.num:nth-child(7)) > thead > tr > th:nth-child(7),
+.table:has(> tbody > tr > td.num:nth-child(8)) > thead > tr > th:nth-child(8),
+.table:has(> tbody > tr > td.num:nth-child(9)) > thead > tr > th:nth-child(9),
+.table:has(> tbody > tr > td.num:nth-child(10)) > thead > tr > th:nth-child(10),
+.table:has(> tbody > tr > td.num:nth-child(11)) > thead > tr > th:nth-child(11),
+.table:has(> tbody > tr > td.num:nth-child(12)) > thead > tr > th:nth-child(12) {
+  text-align: right;
+}
 
 /* ---------- Modal / drawer / toast ---------- */
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(30, 20, 12, 0.45);
+  background: rgba(36, 23, 15, 0.5);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -400,7 +629,7 @@ table.table {
   flex-direction: column;
 }
 .modal-head {
-  padding: 1rem 1.25rem 0.5rem;
+  padding: 1.1rem 1.25rem 0.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -408,7 +637,10 @@ table.table {
 }
 .modal-head h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 .modal-body {
   padding: 0.5rem 1.25rem 1rem;
@@ -428,8 +660,8 @@ table.table {
   background: transparent;
   font-size: 1.4rem;
   line-height: 1;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   cursor: pointer;
   color: var(--c-muted);
@@ -469,7 +701,7 @@ table.table {
   background: var(--c-surface);
   width: min(640px, 100%);
   max-height: 92vh;
-  border-radius: 18px 18px 0 0;
+  border-radius: 22px 22px 0 0;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
@@ -496,7 +728,7 @@ table.table {
   pointer-events: none;
 }
 .toast {
-  background: #2b2118;
+  background: var(--c-espresso);
   color: #fff;
   padding: 0.75rem 1rem;
   border-radius: var(--radius-sm);
@@ -511,7 +743,7 @@ table.table {
   background: var(--c-danger);
 }
 .toast.warning {
-  background: #8a5a12;
+  background: var(--c-warning-text);
 }
 
 /* ---------- Trạng thái chung ---------- */
@@ -521,7 +753,7 @@ table.table {
   padding: 2rem 1rem;
 }
 .skeleton {
-  background: linear-gradient(90deg, #eee5dc 25%, #f6f0ea 50%, #eee5dc 75%);
+  background: linear-gradient(90deg, #ece1d3 25%, #f6efe5 50%, #ece1d3 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
   border-radius: var(--radius-sm);
@@ -530,6 +762,15 @@ table.table {
   to {
     background-position: -200% 0;
   }
+}
+/* Phiếu kho đã hủy (F-048): mờ, gạch số / mã phiếu — nhãn "Đã hủy" và nút vẫn đọc rõ */
+tr.voided td {
+  color: var(--c-muted);
+}
+tr.voided td.num,
+tr.voided td.mono,
+ul.voided li {
+  text-decoration: line-through;
 }
 .conn {
   display: inline-flex;
@@ -544,6 +785,12 @@ table.table {
   height: 9px;
   border-radius: 50%;
   background: var(--c-success);
+}
+.conn.connecting {
+  color: var(--c-muted);
+}
+.conn.connecting::before {
+  background: var(--c-muted);
 }
 .conn.offline {
   color: var(--c-danger);
@@ -565,26 +812,30 @@ table.table {
   text-align: center;
   font-weight: 600;
 }
+/* Banner nền đậm có nút ("Đã xem"): viền focus sáng — viền mặc định cùng tông với nền (review G3 TASK-065) */
 .banner.offline {
+  --c-focus: var(--c-focus-dark);
   background: var(--c-danger);
   color: #fff;
 }
 .banner.late {
-  background: var(--c-warning);
+  --c-focus: var(--c-focus-dark);
+  background: var(--c-warning-text);
   color: #fff;
 }
 .thumb {
   width: 64px;
   height: 64px;
-  border-radius: 10px;
+  border-radius: 12px;
   object-fit: cover;
   flex: none;
   background: var(--c-primary-50);
   color: var(--c-primary);
   display: grid;
   place-items: center;
-  font-weight: 800;
-  font-size: 1.4rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.5rem;
 }
 .badge.voided {
   background: var(--c-danger-50);
@@ -617,4 +868,67 @@ table.cash-book td.neg {
 }
 table.cash-book tr.muted td {
   opacity: 0.6;
+}
+
+/* ---------- Biểu tượng SVG (ADR-013 D-55, js/icons.js — nét Lucide, theo màu chữ) ---------- */
+.ic {
+  display: inline-block;
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  margin-inline-end: 0.35em;
+  vertical-align: -0.2em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ic.filled {
+  fill: currentColor;
+}
+/* Trong nút đã có khoảng cách (gap); trong ô bảng biểu tượng đứng cuối / một mình */
+.btn > .ic,
+.icon-btn > .ic,
+td > .ic {
+  margin-inline-end: 0;
+}
+td > .ic-check {
+  color: var(--c-success);
+}
+/* Dấu hiệu quán: tách cà phê trong vòng caramel nhạt, trước tên quán */
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  margin-inline-end: 0.6rem;
+  border-radius: 50%;
+  background: var(--c-accent-100);
+  color: var(--c-espresso);
+  vertical-align: middle;
+}
+.brand-mark .ic {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  stroke-width: 2.2;
+}
+
+/* ---------- Giảm chuyển động (ADR-013 D-56): trạng thái vẫn đổi ngay, chỉ bỏ trượt / nhấp nháy / lặp ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .drawer,
+  .sheet,
+  .toast,
+  .skeleton {
+    animation: none;
+  }
+  .btn:active {
+    transform: none;
+  }
+  .conn.offline::before {
+    animation: none;
+  }
 }

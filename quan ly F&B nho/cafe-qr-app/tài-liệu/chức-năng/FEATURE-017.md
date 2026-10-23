@@ -25,7 +25,7 @@
   - `GET/PUT /api/admin/suggestions`.
   - Realtime `menu.updated` → menu khách đang mở tự tải lại.
 - **Acceptance Criteria**
-  - AC-017-01: Có đơn đã thu → top xếp đúng theo số lượng.
+  - AC-017-01: Trong 7 ngày có đơn đã thu Cà phê đen ×5, Cà phê sữa ×3, Nước suối ×1, thêm một đơn Bạc xỉu ×9 đã hoàn toàn bộ (`VOIDED`) và một đơn Latte ×10 chưa thu → bảng bán chạy theo thứ tự Cà phê đen (5), Cà phê sữa (3), Nước suối (1); đơn hoàn và đơn chưa thu không được tính. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
   - AC-017-02: Ghim 1 món (nhãn "Món mới") → đứng đầu, sau đó là "Bán chạy".
   - AC-017-03: Chế độ PINNED → không còn món tự động.
   - AC-017-04: Món hết / ẩn khỏi gợi ý → không xuất hiện.

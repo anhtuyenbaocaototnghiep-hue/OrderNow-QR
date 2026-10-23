@@ -27,7 +27,7 @@ const bookFilter = (query) => {
     z
       .object({
         categoryId: zId().optional(),
-        status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+        status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'VOIDED']).optional(),
         direction: z.enum(['IN', 'OUT']).optional(),
       })
       .passthrough(),
@@ -39,7 +39,7 @@ financeAdminRouter.get('/cash-transactions', async (req, res) => {
   const { from, to, filter } = bookFilter(req.query);
   res.json({ from, to, ...(await cashService.book(filter)) });
 });
-const STATUS_VI = { PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Từ chối' };
+const STATUS_VI = { PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Từ chối', VOIDED: 'Đã hủy' };
 const vnTime = (d) => new Date(new Date(d).getTime() + 7 * 3600_000).toISOString().slice(0, 16).replace('T', ' ');
 financeAdminRouter.get('/cash-transactions/export.csv', async (req, res) => {
   const { from, to, filter } = bookFilter(req.query);
@@ -47,18 +47,41 @@ financeAdminRouter.get('/cash-transactions/export.csv', async (req, res) => {
   sendCsv(
     res,
     `so-quy_${from}_${to}.csv`,
-    ['Thời gian', 'Ca', 'Loại', 'Danh mục', 'Số tiền', 'Nội dung', 'Trạng thái', 'Người ghi', 'Người duyệt', 'Lý do từ chối', 'Có ảnh HĐ'],
+    // F-050: cột "Tính vào tổng" — chỉ khoản đã duyệt; khoản đã hủy / từ chối / chờ duyệt vẫn liệt kê để đối soát
+    [
+      'Khoản #',
+      'Thời gian',
+      'Ca',
+      'Loại',
+      'Danh mục',
+      'Số tiền',
+      'Tính vào tổng',
+      'Nội dung',
+      'Trạng thái',
+      'Người ghi',
+      'Người duyệt',
+      'Lý do từ chối',
+      'Người hủy',
+      'Lý do hủy',
+      'Thay bằng khoản #',
+      'Có ảnh HĐ',
+    ],
     rows.map((t) => [
+      t.cashTxnId,
       vnTime(t.createdAt),
       t.shiftId,
       t.direction === 'IN' ? 'Thu' : 'Chi',
       t.category.name,
       t.direction === 'IN' ? t.amount : -t.amount,
+      t.status === 'APPROVED' ? 'có' : 'không',
       t.reason,
-      STATUS_VI[t.status],
+      STATUS_VI[t.status] ?? t.status,
       t.createdBy.fullName,
       t.approvedBy?.fullName ?? '',
       t.rejectReason ?? '',
+      t.voidedBy?.fullName ?? '',
+      t.voidReason ?? '',
+      t.replacedById ?? '',
       t.hasReceipt ? 'có' : '',
     ]),
   );

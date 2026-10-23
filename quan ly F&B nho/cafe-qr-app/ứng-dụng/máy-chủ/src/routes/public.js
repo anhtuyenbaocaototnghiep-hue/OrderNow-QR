@@ -2,7 +2,6 @@
 // Khách chỉ chạm phiên/đơn của mình (SessionClients); không có endpoint nào cho khách đổi PaymentStatus (BR-007).
 import express from 'express';
 import { z } from 'zod';
-import { config } from '../config.js';
 import { request } from '../db.js';
 import { optionalStaff, requireStaff } from '../middleware/auth.js';
 import { loginLimiter, memberLimiters, orderLimiter } from '../middleware/rateLimit.js';
@@ -11,6 +10,7 @@ import * as memberService from '../services/memberService.js';
 import * as menuService from '../services/menuService.js';
 import * as orderService from '../services/orderService.js';
 import * as sessionService from '../services/sessionService.js';
+import * as settingsService from '../services/settingsService.js';
 import * as staffCallService from '../services/staffCallService.js';
 import * as userService from '../services/userService.js';
 
@@ -31,13 +31,14 @@ publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
   res.json(await userService.login(body.username, body.password));
 });
 
-publicRouter.get('/auth/me', requireStaff, (req, res) => res.json({ user: req.user, shop: config.shop }));
+// F-053: tên / địa chỉ quán đọc từ Cài đặt (chưa lưu → .env)
+publicRouter.get('/auth/me', requireStaff, async (req, res) => res.json({ user: req.user, shop: await settingsService.shopInfo() }));
 
 // ---- Menu (FEATURE-002) ----
 // Quầy gọi kèm Bearer → thấy cả danh mục ngoài giờ bán (bán mang đi); khách chỉ thấy danh mục đang trong giờ (F-020)
 publicRouter.get('/menu', optionalStaff, async (req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json({ shop: { name: config.shop.name }, ...(await menuService.getPublicMenu({ staff: Boolean(req.user) })) });
+  res.json({ shop: { name: (await settingsService.shopInfo()).name }, ...(await menuService.getPublicMenu({ staff: Boolean(req.user) })) });
 });
 
 // ---- Hội viên (FEATURE-014): khách thấy tên che; quầy (Bearer) thấy tên đầy đủ. Giới hạn tra cứu D-6 ----

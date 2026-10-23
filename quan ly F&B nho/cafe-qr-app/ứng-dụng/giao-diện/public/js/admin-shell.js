@@ -2,51 +2,134 @@
 import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, clear, confirmDialog, el, errorMessage, toast } from './ui.js';
+import { brandMark, icon } from './icons.js';
 
-// Chuỗi = tiêu đề nhóm (ADR-005: nhóm "Marketing & Khách hàng" và "Vận hành"; ADR-006: "Tài chính & nhân sự")
+// Menu quản lý (TASK-066, ADR-013 D-58): "Hôm nay" luôn ở trên; 6 nhóm thu gọn được, nhóm chứa trang đang mở tự mở.
+// Mục: [khóa trang, đường dẫn, tên ngắn một dòng, tên đầy đủ (tiêu đề trang — hiện khi rê chuột)].
+const HOME = ['today', '/admin/today', 'Hôm nay'];
 const NAV = [
-  ['today', '/admin/today', 'Hôm nay'],
-  ['reports', '/admin/reports', 'Báo cáo & lịch sử'],
-  ['analytics', '/admin/analytics', 'Phân tích & menu engineering'],
-  ['menu', '/admin/menu', 'Thực đơn & định lượng'],
-  ['modifiers', '/admin/modifiers', 'Tùy chọn món'],
-  ['schedules', '/admin/menu-schedules', 'Lịch thực đơn & thời gian pha'],
-  ['ingredients', '/admin/ingredients', 'Kho nguyên liệu'],
-  ['stock', '/admin/stock', 'Nhập kho & kiểm kê'],
-  ['purchasing', '/admin/purchasing', 'Nhà cung cấp & đặt hàng'],
-  ['tables', '/admin/tables', 'Bàn & mã QR'],
-  ['users', '/admin/users', 'Tài khoản'],
-  'Marketing & Khách hàng',
-  ['members', '/admin/members', 'Hội viên'],
-  ['loyalty', '/admin/loyalty', 'Tích điểm, voucher & chiến dịch'],
-  ['combos', '/admin/combos', 'Combo'],
-  ['promotions', '/admin/promotions', 'Khuyến mãi'],
-  ['suggestions', '/admin/suggestions', 'Gợi ý & ghim'],
-  'Tài chính & nhân sự',
-  ['shifts', '/admin/shifts', 'Ca & hoàn tiền'],
-  ['cash', '/admin/cash', 'Sổ quỹ'],
-  ['pnl', '/admin/pnl', 'Lãi / lỗ'],
-  ['staff', '/admin/staff', 'Nhân sự & chấm công'],
-  ['audit', '/admin/audit', 'Nhật ký thao tác'],
-  'Vận hành',
-  ['settings', '/admin/settings', 'Cài đặt'],
+  {
+    id: 'overview',
+    title: 'Tổng quan',
+    icon: 'chart-column',
+    items: [
+      ['reports', '/admin/reports', 'Báo cáo & lịch sử'],
+      ['analytics', '/admin/analytics', 'Phân tích', 'Phân tích & menu engineering'],
+      ['pnl', '/admin/pnl', 'Lãi / lỗ'],
+    ],
+  },
+  {
+    id: 'menu',
+    title: 'Thực đơn',
+    icon: 'utensils-crossed',
+    items: [
+      ['menu', '/admin/menu', 'Món & định lượng', 'Thực đơn & định lượng'],
+      ['modifiers', '/admin/modifiers', 'Tùy chọn món'],
+      ['combos', '/admin/combos', 'Combo'],
+      ['schedules', '/admin/menu-schedules', 'Lịch thực đơn', 'Lịch thực đơn & thời gian pha'],
+    ],
+  },
+  {
+    id: 'stock',
+    title: 'Kho hàng',
+    icon: 'package',
+    items: [
+      ['ingredients', '/admin/ingredients', 'Nguyên liệu', 'Kho nguyên liệu'],
+      ['stock', '/admin/stock', 'Nhập kho & kiểm kê'],
+      ['purchasing', '/admin/purchasing', 'Nhà cung cấp', 'Nhà cung cấp & đặt hàng'],
+    ],
+  },
+  {
+    id: 'customers',
+    title: 'Khách hàng',
+    icon: 'users',
+    items: [
+      ['members', '/admin/members', 'Hội viên'],
+      ['loyalty', '/admin/loyalty', 'Tích điểm & voucher', 'Tích điểm, voucher & chiến dịch'],
+      ['promotions', '/admin/promotions', 'Khuyến mãi'],
+      ['suggestions', '/admin/suggestions', 'Gợi ý & ghim'],
+      ['reviews', '/admin/reviews', 'Đánh giá món'],
+    ],
+  },
+  {
+    id: 'finance',
+    title: 'Thu chi & nhân sự',
+    icon: 'wallet',
+    items: [
+      ['shifts', '/admin/shifts', 'Ca & hoàn tiền'],
+      ['cash', '/admin/cash', 'Sổ quỹ'],
+      ['staff', '/admin/staff', 'Nhân sự & chấm công'],
+    ],
+  },
+  {
+    id: 'system',
+    title: 'Hệ thống',
+    icon: 'settings',
+    items: [
+      ['tables', '/admin/tables', 'Bàn & mã QR'],
+      ['users', '/admin/users', 'Tài khoản'],
+      ['audit', '/admin/audit', 'Nhật ký thao tác'],
+      ['settings', '/admin/settings', 'Cài đặt'],
+      ['api-docs', '/admin/api-docs', 'Tra cứu API'], // F-052
+    ],
+  },
 ];
+
+// Nhóm người dùng tự mở được nhớ trên máy (tiện ích riêng mỗi trình duyệt; bị chặn lưu thì chỉ mất ghi nhớ)
+const OPEN_KEY = 'admin.nav.open';
+function savedOpen() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(OPEN_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
+}
+function saveOpen(ids) {
+  try {
+    localStorage.setItem(OPEN_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* trình duyệt chặn lưu → bỏ qua */
+  }
+}
+
+const navLink = ([key, href, label, full], active, ...lead) =>
+  el('a', { href, class: key === active ? 'active' : '', 'aria-current': key === active ? 'page' : null, title: full || null }, ...lead, label);
+
+function navGroup(g, active, open) {
+  const here = g.items.some(([key]) => key === active);
+  const summary = el('summary', {}, icon(g.icon), el('span', { class: 'grow' }, g.title), icon('chevron-down'));
+  const group = el(
+    'details',
+    { class: 'nav-sec', open: here || open.has(g.id) },
+    summary,
+    el(
+      'div',
+      { class: 'nav-items' },
+      g.items.map((i) => navLink(i, active)),
+    ),
+  );
+  // Chỉ nhớ thao tác của người dùng (click / Enter / Space trên tiêu đề nhóm), không nhớ việc tự mở nhóm của trang đang xem
+  summary.addEventListener('click', () => {
+    if (group.open) open.delete(g.id);
+    else open.add(g.id);
+    saveOpen(open);
+  });
+  return group;
+}
 
 export async function mountAdminShell(active) {
   const user = await requireStaffPage({ admin: true });
   const side = $('#side');
+  const open = savedOpen();
   clear(
     side,
-    el('div', { class: 'brand' }, '☕ ', current.shop?.name || 'Quản lý'),
-    NAV.map((n) =>
-      typeof n === 'string'
-        ? el('div', { class: 'nav-group' }, n)
-        : el('a', { href: n[1], class: n[0] === active ? 'active' : '', 'aria-current': n[0] === active ? 'page' : null }, n[2]),
-    ),
-    el('a', { href: '/pos' }, '→ Màn hình quầy'),
+    el('div', { class: 'brand' }, brandMark(), current.shop?.name || 'Quản lý'),
+    navLink(HOME, active, icon('house')),
+    NAV.map((g) => navGroup(g, active, open)),
+    el('a', { href: '/pos', class: 'nav-pos' }, icon('monitor'), 'Màn hình quầy'),
     el('div', { class: 'spacer' }),
     el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small', title: 'Tên đăng nhập' }, `@${user.username}`)),
-    el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, 'Đăng xuất'),
+    el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, icon('log-out'), 'Đăng xuất'),
   );
   return user;
 }

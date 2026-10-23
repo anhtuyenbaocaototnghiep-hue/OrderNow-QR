@@ -3,6 +3,7 @@
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, el, errorMessage, modal, money, moneyInput, moneyValue, setMoney, showFieldErrors, thumb, toast } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('combos');
 
@@ -197,7 +198,7 @@ function edit(combo) {
                 refresh();
               },
             },
-            '×',
+            icon('x'),
           ),
         ),
       ),

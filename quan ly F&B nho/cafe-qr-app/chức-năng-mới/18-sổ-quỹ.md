@@ -53,6 +53,24 @@ Bấm **Duyệt** (hoặc **Từ chối**) trên dòng → hộp **Duyệt kho�
 
 **Không ai tự duyệt khoản chi mình ghi**, trừ quản lý: *"Không tự duyệt khoản chi do chính mình tạo — nhờ trưởng ca / quản lý khác"*. Hai người cùng bấm duyệt một khoản thì người sau nhận *"Khoản này đã được duyệt / từ chối"*.
 
+## Hủy / sửa khoản đã duyệt (ghi nhầm)
+
+Khoản **Đã duyệt** của **ca đang mở** có thêm 2 nút **Sửa** và **Hủy**:
+
+- **Hủy:** nhập **Lý do hủy** → khoản thành **Đã hủy** (dòng mờ, gạch số tiền, ghi người hủy + lý do). Tiền dự kiến trong két cộng / trừ lại ngay.
+- **Sửa:** hộp hiện sẵn danh mục, số tiền, nội dung cũ → sửa → nhập **Lý do sửa** → **Lưu khoản mới**.
+  - Khoản cũ thành **Đã hủy** ("thay bằng khoản #M").
+  - Khoản mới ghi *"… (thay khoản #N)"*.
+  - Khoản mới vượt 500.000đ hoặc thuộc danh mục cần duyệt thì **chờ duyệt** như khoản bình thường.
+
+**Ai làm được:** giống người duyệt.
+
+- Trưởng ca: khoản ≤ 2.000.000đ và **không phải khoản mình ghi**.
+- Quản lý: mọi khoản.
+- Nhân viên đứng máy: nhờ trưởng ca / quản lý nhập tài khoản ngay trong hộp.
+
+**Ca đã đóng thì không hủy / sửa được**: số đã chốt và phiếu chốt ca giữ nguyên.
+
 ## Đóng ca
 
 - **Tiền dự kiến trong két** = tiền đầu ca + đã thu − đã hoàn + **thu khác (đã duyệt)** − **chi quỹ (đã duyệt)**.
@@ -87,8 +105,8 @@ Bấm **Duyệt** (hoặc **Từ chối**) trên dòng → hộp **Duyệt kho�
 | Tình huống | Làm gì |
 | --- | --- |
 | *"Chưa mở ca — hãy mở ca trước khi thu tiền"* khi ghi khoản | Mở ca trước |
-| Ghi nhầm số tiền | Khoản **đang chờ duyệt**: nhờ trưởng ca / quản lý **Từ chối** rồi ghi lại khoản đúng. Khoản **đã duyệt** thì app không có nút sửa / xóa — báo quản lý |
+| Ghi nhầm số tiền | Khoản **đang chờ duyệt**: nhờ trưởng ca / quản lý **Từ chối** rồi ghi lại khoản đúng. Khoản **đã duyệt** (ca còn mở): bấm **Sửa** hoặc **Hủy** (xem mục trên). Ca đã đóng: báo quản lý, ghi bù ở ca sau |
 | Đóng ca bị chặn vì còn khoản chờ | Trưởng ca / quản lý **Duyệt** hoặc **Từ chối** hết các khoản chờ |
 | *"Ảnh hóa đơn tối đa 2 MB"* | Chụp lại ảnh nhỏ hơn hoặc gửi ảnh chụp màn hình |
 
-*Kỹ thuật: [FEATURE-033](../tài-liệu/chức-năng/FEATURE-033.md).*
+*Kỹ thuật: [FEATURE-033](../tài-liệu/chức-năng/FEATURE-033.md), [FEATURE-050](../tài-liệu/chức-năng/FEATURE-050.md) (hủy / sửa khoản).*

@@ -12,6 +12,8 @@
   - AC-009-02: Tạo trùng `staff2` (hoặc `STAFF2`) → 409 "Tên đăng nhập đã tồn tại, vui lòng chọn tên khác".
   - AC-009-03: Khóa `staff2` → request kế tiếp với token cũ → 403; đăng nhập lại → 403.
   - AC-009-04: Mật khẩu trong DB là hash (bcrypt/argon2), không phải plaintext.
-  - AC-009-05: ADMIN không tự khóa chính mình (PROPOSED).
+  - AC-009-05: ADMIN tự khóa tài khoản đang đăng nhập của mình → 400 `CANNOT_LOCK_SELF`, tài khoản vẫn hoạt động (PROPOSED). _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+  - AC-009-06: Đăng nhập sai mật khẩu → 401 "Sai tên đăng nhập hoặc mật khẩu" (cùng thông báo khi tên đăng nhập không tồn tại); tên đăng nhập không phân biệt hoa thường ("ADMIN" đăng nhập được tài khoản "admin"). _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-009-07: Xóa tài khoản (ADR-004): tự xóa mình → 400 `CANNOT_DELETE_SELF`; tài khoản chưa có thao tác → xóa hẳn; đã có thao tác → xóa mềm: token cũ → 401, đăng nhập lại → 401, báo cáo cũ vẫn giữ tên, tên đăng nhập dùng lại được cho tài khoản mới. _(bổ sung — TASK-057, 20/10/2026)_
 - **Liên kết:** Data `Users` · API [api-contract](../kiến-trúc/api-contract.md) (phần Quầy: auth; phần Quản trị: users) · UI S-09, S-20 · Rule BR-004, BR-017.
 - **Cập nhật ADR-004 (14/10/2026):** có nút Xóa tài khoản. Chưa có thao tác → xóa hẳn; đã có → xóa mềm (không đăng nhập được, token cũ 401; username dùng lại được). Không tự xóa mình.

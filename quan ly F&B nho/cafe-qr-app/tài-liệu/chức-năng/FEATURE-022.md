@@ -37,6 +37,7 @@
     - sai mật khẩu hoặc tài khoản nhân viên → 403;
     - đúng → thu 80.000đ, ghi người duyệt.
   - AC-022-03: Thiếu lý do → 400.
+  - AC-022-04: Giảm tay lớn hơn số còn phải thu (ví dụ 999.999đ trên bill 50.000đ) → số giảm chặn bằng 50.000đ, số phải thu = 0đ, không âm. _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:**
   - `tests/members.test.js` → "Giảm giá tay (F-022)".
   - `tests/pricing.test.js` (giảm tay, ngưỡng).

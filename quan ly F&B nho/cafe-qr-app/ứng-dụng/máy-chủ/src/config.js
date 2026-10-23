@@ -47,4 +47,7 @@ export const config = {
   // Kênh Zalo OA cho chiến dịch (F-037, D-29) — không có token → chỉ dùng Xuất danh sách (CSV)
   zaloOa: { token: env.ZALO_OA_TOKEN || '', url: env.ZALO_OA_URL || 'https://openapi.zalo.me/v3.0/oa/message/cs' },
   uploadsDir: env.UPLOADS_DIR || (env.NODE_ENV === 'test' ? path.join(os.tmpdir(), 'cafe-qr-test-uploads') : path.join(repoRoot, 'uploads')),
+  repoRoot,
+  // Trang Tra cứu API (F-052) ghép request / response / mã lỗi từ file này
+  apiContractFile: path.join(repoRoot, 'tài-liệu', 'kiến-trúc', 'api-contract.md'),
 };

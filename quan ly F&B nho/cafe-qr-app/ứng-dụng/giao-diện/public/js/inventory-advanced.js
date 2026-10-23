@@ -2,6 +2,7 @@
 // hao hụt định mức F-032), công thức sơ chế (F-027), danh sách lô + hủy lô (F-028). Server kiểm mọi ràng buộc.
 import { staffApi } from './api.js';
 import { clear, dateTime, el, errorMessage, modal, money, num, showFieldErrors, toast } from './ui.js';
+import { icon } from './icons.js';
 
 const KIND = { RAW: 'Nguyên liệu thô', SEMI: 'Bán thành phẩm (tự sơ chế)' };
 // Nguồn của lô (F-028)
@@ -142,7 +143,7 @@ export async function recipeDialog(i, ingredients, onDone) {
                 render();
               },
             },
-            '×',
+            icon('x'),
           ),
         ),
       ),

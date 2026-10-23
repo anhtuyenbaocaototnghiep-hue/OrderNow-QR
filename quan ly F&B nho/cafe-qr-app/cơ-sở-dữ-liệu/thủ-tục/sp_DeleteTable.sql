@@ -15,6 +15,7 @@ BEGIN
   BEGIN ROLLBACK; THROW 50053, 'TABLE_BUSY', 1; END
 
   IF EXISTS (SELECT 1 FROM dbo.Sessions WHERE TableId = @TableId) OR EXISTS (SELECT 1 FROM dbo.Orders WHERE TableId = @TableId)
+     OR EXISTS (SELECT 1 FROM dbo.SessionTableMoves WHERE FromTableId = @TableId OR ToTableId = @TableId)   -- F-049: từng là bàn cũ / mới khi chuyển
   BEGIN
     UPDATE dbo.Tables
        SET DeletedAt = SYSUTCDATETIME(), IsActive = 0, QrToken = LOWER(REPLACE(CAST(NEWID() AS CHAR(36)), '-', ''))

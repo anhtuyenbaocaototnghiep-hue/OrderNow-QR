@@ -29,4 +29,7 @@
   - AC-001-03: Như trên, chọn Cá nhân → phiên B mới, `TableId` = 05, B không thấy đơn của A; A không thấy đơn của B.
   - AC-001-04: Phiên A vừa `CLOSED`; B bấm Gộp → nhận 409, client báo "Đơn hàng nhóm đã được thanh toán, hệ thống sẽ tạo phiên mới cho bạn" và tạo phiên mới tự động.
   - AC-001-05: `qrToken` không tồn tại → 404; không tạo phiên.
+  - AC-001-06: Bàn đã bị xóa mềm (ADR-004) hoặc đang tắt → quét QR cũ của bàn → 404 `TABLE_NOT_FOUND`, không vào được menu. _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-001-07: Mở địa chỉ gốc `/` (không qua QR) → HTTP 200, trang SCR-43 hướng dẫn "quét mã QR dán trên bàn" và có 2 nút "Màn hình quầy (nhân viên)" → `/pos`, "Quản lý" → `/admin`; không tạo phiên. _(bổ sung — TASK-057, 20/10/2026: màn hình SCR-43 chưa có Story)_
+  - AC-001-08: Mở đường dẫn trang không tồn tại → HTTP 404, trang SCR-44 "Không tìm thấy trang" nhắc khách quét lại QR, có nút "Về trang chủ"; đường dẫn `/api/...` không tồn tại → luôn trả JSON, không trả trang HTML: chưa đăng nhập → 401 (không lộ API nào tồn tại), nhân viên đã đăng nhập → 404 mã `NOT_FOUND`. _(bổ sung — TASK-057, 20/10/2026: màn hình SCR-44 chưa có Story)_
 - **Liên kết:** Data: `Tables`, `Sessions`, `SessionClients` · API: `POST /api/sessions/scan`, `POST /api/sessions/{id}/join` · UI: màn hình S-01 · Rule: BR-008 · Hỏi: Q-009 (đã chốt — ADR-000), Q-012.

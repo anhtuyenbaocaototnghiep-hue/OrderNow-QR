@@ -44,7 +44,8 @@
 - AC-045-01: Gọi lại đơn có món đã hết → giỏ thiếu món đó + thông báo lý do.
 - AC-045-02: Giá món đã đổi → giỏ dùng giá mới.
 - AC-045-03: Khách phiên khác gọi API với `memberId` lạ → 403 (xem, gọi lại, ♥).
-- AC-045-04: ♥ lưu và hiện lại lần sau; "hay gọi" lấy đúng số lượng đã mua.
+- AC-045-04: Hội viên ♥ món Latte → đọc lại danh sách yêu thích của hội viên có Latte (♥); Cà phê sữa đã mua 2 ly trong đơn đã thu → "hay gọi" ghi 2; bỏ ♥ → Latte không còn trong danh sách ♥. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+- AC-045-05: Gọi lại đơn có món đang ngoài lịch thực đơn → dòng đó bị bỏ, lý do "không còn trên thực đơn lúc này"; dòng có tùy chọn không còn hợp lệ → bỏ, lý do "tùy chọn đã thay đổi — vui lòng chọn lại"; các dòng hợp lệ vẫn vào giỏ. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

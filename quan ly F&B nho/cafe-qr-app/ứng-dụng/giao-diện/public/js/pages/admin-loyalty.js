@@ -3,6 +3,7 @@
 import { staffApi, staffBlobUrl } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, dateTime, el, errorMessage, modal, money, showFieldErrors, toast, todayVn } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('loyalty');
 
@@ -695,7 +696,7 @@ async function showCampaign(id) {
             el('td', {}, d.fullName),
             el('td', { class: 'mono' }, d.phone),
             el('td', {}, DSTATUS[d.status], d.error ? el('div', { class: 'small muted' }, d.error) : null),
-            el('td', { class: 'mono' }, d.voucher ? `${d.voucher.code}${d.voucher.usedAt ? ' ✔' : ''}` : ''),
+            el('td', { class: 'mono' }, d.voucher ? [d.voucher.code, d.voucher.usedAt ? [' ', icon('check', { label: 'Đã dùng' })] : null] : ''),
           ),
         ),
       ),

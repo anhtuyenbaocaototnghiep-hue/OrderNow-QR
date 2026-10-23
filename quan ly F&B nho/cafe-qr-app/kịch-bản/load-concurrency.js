@@ -49,6 +49,8 @@ async function call(method, url, { body, token, cookie } = {}) {
 }
 
 const admin = (await call('POST', '/api/auth/login', { body: { username: 'admin', password: 'Admin@123' } })).body.accessToken;
+// F-055 (ADR-017): khách gửi đơn / quầy xử lý đơn cần ca đang mở
+await call('POST', '/api/shifts/open', { token: admin, body: { openingCash: 0 } });
 const menu = (await call('GET', '/api/admin/menu-items', { token: admin })).body;
 const traDao = menu.find((m) => m.name === 'Trà đào').menuItemId;
 const ingredients = (await call('GET', '/api/admin/ingredients', { token: admin })).body;

@@ -11,6 +11,7 @@ import { publish, publishOrderEvent, ROOMS } from '../realtime/publisher.js';
 import { refreshAvailability } from './menuService.js';
 import { invalidateQueue } from './etaService.js';
 import { resolveApproval } from './userService.js';
+import { assertShiftOpen } from './shiftService.js';
 
 const LIVE = ['PENDING', 'PREPARING', 'COMPLETED'];
 
@@ -51,6 +52,7 @@ async function announceClosed(sessionId) {
 
 /** Giảm số lượng / xóa một dòng món (quantity = số mới, 0 = xóa). */
 export async function voidItem(orderItemId, body, user) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const reason = reasonOf(body);
   const line = await voidRepo.lineInfo(orderItemId);
   if (!line) throw notFound('Không tìm thấy món trong đơn', 'ITEM_NOT_FOUND');
@@ -72,6 +74,7 @@ export async function voidItem(orderItemId, body, user) {
 
 /** Xóa cả một đơn tại bàn chưa thu (mọi trạng thái còn hiệu lực). */
 export async function voidOrder(orderId, body, user) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const reason = reasonOf(body);
   const order = await ordersRepo.getById(orderId);
   if (!order) throw notFound('Không tìm thấy đơn hàng');
@@ -90,6 +93,7 @@ export async function voidOrder(orderId, body, user) {
 
 /** Hủy lượt phục vụ bàn: mọi đơn chưa thu → CANCELLED, đóng phiên (không tạo lượt thu). */
 export async function cancelSession(sessionId, body, user) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const reason = reasonOf(body);
   const session = await sessionsRepo.findById(sessionId);
   if (!session) throw notFound('Không tìm thấy phiên');

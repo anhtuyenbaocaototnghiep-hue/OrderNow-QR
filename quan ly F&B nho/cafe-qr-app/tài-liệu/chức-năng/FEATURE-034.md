@@ -49,6 +49,8 @@ Ghi chú về giá vốn:
 - AC-034-02: Nhóm theo tháng phân bổ đủ 30.000.000 cho tháng 9; khoản hết hiệu lực giữa tháng chỉ tính tới ngày kết thúc.
 - AC-034-03: Đơn chưa có giá vốn chốt → ước tính theo định lượng × giá vốn hiện tại, `estimatedCogsRows` > 0.
 - AC-034-04: MANAGER gọi → 403.
+- AC-034-05: Báo cáo lãi / lỗ với `from > to` → 400. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-034-06: Thêm chi phí cố định có ngày kết thúc trước ngày bắt đầu → 400. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

@@ -47,7 +47,9 @@
   - AC-016-02: Hai khuyến mãi giá cùng món → áp giá thấp nhất.
   - AC-016-03: `MaxUsesPerDay = 1`, hai đơn gửi đồng thời → đúng một đơn được giảm, đơn kia giá gốc. Hết lượt thì không quảng bá trên menu nữa.
   - AC-016-04: `StackWithMember = 0` → thu tiền không chiết khấu hội viên lên dòng khuyến mãi.
-  - AC-016-05: Thống kê đúng số lượt và tiền giảm.
+  - AC-016-05: Khuyến mãi theo đơn "Giảm 5k đơn đầu ngày" (`ORDER_AMOUNT` 5.000đ, `MaxUsesPerDay = 1`) được dùng ở đúng 1 đơn trong ngày → thống kê của khuyến mãi: số lượt = 1, tiền giảm = 5.000đ. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+  - AC-016-06: Tạo khuyến mãi dữ liệu sai — khuyến mãi giá không chọn món / danh mục, phần trăm > 100, ngày kết thúc trước ngày bắt đầu → 400; khuyến mãi có khung giờ chưa tới không được áp vào báo giá (Bạc xỉu vẫn 32.000đ). _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-016-07: Đơn mang đi gửi đúng lúc khuyến mãi theo đơn vừa hết lượt trong ngày (`PROMO_EXHAUSTED`) → 409 `AMOUNT_CHANGED`, không tạo đơn, không thu tiền; quầy báo giá lại và thu theo tổng mới. _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:**
   - `tests/pricing.test.js` (lịch, giá thấp nhất, khuyến mãi đơn).
   - `tests/sales.test.js` → "Khuyến mãi (F-016)".

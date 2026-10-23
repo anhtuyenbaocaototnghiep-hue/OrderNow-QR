@@ -13,5 +13,7 @@
   - AC-011-02: Nhập `-10` hoặc để trống nguyên liệu → từ chối, highlight ô lỗi, "Định lượng không hợp lệ, phải lớn hơn 0"; BOM cũ giữ nguyên.
   - AC-011-03: Điều chỉnh kho tay tạo dòng `InventoryTransactions(ADJUST)` với lý do; điều chỉnh xuống dưới `ReservedQty` bị từ chối (nếu A).
   - AC-011-04: Nguyên liệu `available ≤ threshold` → hiển thị cảnh báo ở trang kho và báo cáo.
+  - AC-011-05: Xóa nguyên liệu (ADR-004) đang có trong định lượng món → 409 `IN_USE` nêu tên món; đang được giữ cho đơn chưa hoàn tất → 409 `HAS_RESERVED`; đã có lịch sử kho → xóa mềm (điều chỉnh tiếp → 404); nguyên liệu chưa dùng → xóa hẳn. _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-011-06: Điều chỉnh kho tay về số âm → 400; điều chỉnh thiếu lý do → 400 (BR-001). _(bổ sung — TASK-057, 20/10/2026)_
 - **Liên kết:** Data `Ingredients, BomItems, InventoryTransactions` · API [api-contract](../kiến-trúc/api-contract.md) (phần Quản trị) · UI S-23, S-24 · Rule BR-003, BR-016.
 - **Cập nhật ADR-004 (14/10/2026):** có nút Xóa nguyên liệu. Đang trong định lượng của món → chặn (báo tên món); đang giữ cho đơn → chặn; đã có lịch sử kho → xóa mềm.

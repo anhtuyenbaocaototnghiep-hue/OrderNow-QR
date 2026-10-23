@@ -2,6 +2,7 @@
 // Chiết khấu tính lúc thu tiền; ở đây chỉ gắn hội viên vào phiên.
 import { api } from './api.js';
 import { clear, dateOnly, el, errorMessage, modal, money, setBusy, toast, voucherValue } from './ui.js';
+import { icon } from './icons.js';
 
 const percentText = (m) =>
   m.firstOrderDiscount && m.firstOrderPercent > m.discountPercent ? `đơn đầu −${m.firstOrderPercent}%` : `giảm ${m.discountPercent}%`;
@@ -16,13 +17,14 @@ function loyaltyLines(l) {
   return el(
     'div',
     { class: 'small loyalty-lines' },
-    el('div', {}, `🏅 ${l.points} điểm`),
-    l.stampCards.map((c) => el('div', {}, `🎟 ${c.text}`)),
+    el('div', {}, icon('award'), `${l.points} điểm`),
+    l.stampCards.map((c) => el('div', {}, icon('stamp'), c.text)),
     l.vouchers.length
       ? el(
           'div',
           { class: 'save' },
-          `🎫 Bạn có ${l.vouchers.length} voucher (${l.vouchers.map((v) => (v.percent ? `−${v.percent}%` : `−${Number(v.amount).toLocaleString('vi-VN')}đ`)).join(', ')}) — báo nhân viên khi thanh toán`,
+          icon('ticket'),
+          `Bạn có ${l.vouchers.length} voucher (${l.vouchers.map((v) => (v.percent ? `−${v.percent}%` : `−${Number(v.amount).toLocaleString('vi-VN')}đ`)).join(', ')}) — báo nhân viên khi thanh toán`,
         )
       : null,
   );
@@ -44,9 +46,9 @@ function cardView(c) {
       el('div', {}, el('strong', {}, c.member.maskedName), el('div', { class: 'small muted' }, `${c.member.maskedPhone} · ${c.member.tierName ?? ''}`)),
       el('div', { class: 'card-points' }, el('strong', {}, String(c.points)), el('span', { class: 'small' }, ' điểm')),
     ),
-    el('p', { class: 'small' }, `⭐ ${perk}`),
+    el('p', { class: 'small' }, icon('star'), perk),
     section(
-      `🎫 Voucher của bạn (${c.vouchers.length})`,
+      [icon('ticket'), `Voucher của bạn (${c.vouchers.length})`],
       c.vouchers.length
         ? el(
             'ul',
@@ -69,24 +71,29 @@ function cardView(c) {
     ),
     c.stampCards.length
       ? section(
-          '🎟 Thẻ tem',
+          [icon('stamp'), 'Thẻ tem'],
           c.stampCards.map((s) => el('div', { class: 'small' }, `${s.name}: ${s.text}`)),
         )
       : null,
     c.rewards.length
       ? section(
-          '🎁 Đổi điểm lấy quà',
+          [icon('gift'), 'Đổi điểm lấy quà'],
           el(
             'ul',
             { class: 'card-list' },
             c.rewards.map((r) =>
-              el('li', { class: r.missing ? 'muted' : '' }, `${r.name} — ${r.pointsCost} điểm`, r.missing ? ` (còn thiếu ${r.missing})` : ' ✓ đủ điểm'),
+              el(
+                'li',
+                { class: r.missing ? 'muted' : '' },
+                `${r.name} — ${r.pointsCost} điểm`,
+                r.missing ? ` (còn thiếu ${r.missing})` : el('span', { class: 'save' }, ' ', icon('check'), 'đủ điểm'),
+              ),
             ),
           ),
         )
       : null,
     section(
-      '🏅 Lịch sử điểm gần đây',
+      [icon('award'), 'Lịch sử điểm gần đây'],
       c.pointHistory.length
         ? el(
             'ul',
@@ -137,10 +144,10 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
         el(
           'span',
           { class: 'grow' },
-          el('strong', {}, '⭐ Nhập SĐT để nhận ưu đãi'),
+          el('strong', {}, icon('star'), 'Nhập SĐT để nhận ưu đãi'),
           el('div', { class: 'small muted' }, 'Hội viên giảm 3–8%, đơn đầu tiên giảm 10%'),
         ),
-        el('span', { 'aria-hidden': 'true' }, '›'),
+        icon('chevron-right'),
       ),
     );
   }

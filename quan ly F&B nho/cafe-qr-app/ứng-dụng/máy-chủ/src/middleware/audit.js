@@ -4,7 +4,9 @@
 // Ảnh "trước" chụp trước khi xử lý; "sau" = dữ liệu gửi lên + kết quả trả về. Chỉ ghi khi thành công (sau commit, lúc response xong).
 // Không bao giờ ghi mật khẩu / hash / token; số điện thoại bị che.
 import * as auditRepo from '../repositories/auditRepo.js';
+import * as stockRepo from '../repositories/stockRepo.js';
 import { config } from '../config.js';
+import * as settingsService from '../services/settingsService.js';
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const MAX_JSON = 16000;
@@ -82,12 +84,15 @@ const RULES = [
   ['POST', /^\/order-items\/(\d+)\/void$/, 'order.item-void', 'OrderItem'], // F-046
   ['POST', /^\/orders\/(\d+)\/void$/, 'order.void', 'Order'],
   ['POST', /^\/sessions\/([0-9a-f-]{36})\/cancel$/i, 'session.cancel', 'Session'],
+  ['POST', /^\/sessions\/([0-9a-f-]{36})\/move$/i, 'session.move', 'Session'], // F-049
   ['POST', /^\/shifts\/open$/, 'shift.open', 'Shift'],
   ['POST', /^\/shifts\/(\d+)\/close$/, 'shift.close', 'Shift'],
   ['PUT', /^\/store$/, 'store.update', 'Settings'],
   ['POST', /^\/cash-transactions$/, 'cash.create', 'CashTransaction'],
   ['POST', /^\/cash-transactions\/(\d+)\/approve$/, 'cash.approve', 'CashTransaction'],
   ['POST', /^\/cash-transactions\/(\d+)\/reject$/, 'cash.reject', 'CashTransaction'],
+  ['POST', /^\/cash-transactions\/(\d+)\/void$/, 'cash.void', 'CashTransaction'], // F-050
+  ['POST', /^\/reviews\/(\d+)\/handle$/, 'review.handle', 'Review'], // F-051
   ['PUT', /^\/cash-transactions\/(\d+)\/receipt$/, 'cash.receipt', 'CashTransaction'],
   ['POST', /^\/prep\/batches$/, 'prep.batch', 'PrepBatch'],
   ['POST', /^\/waste$/, 'waste.create', 'WasteLog'],
@@ -98,6 +103,7 @@ const RULES = [
   ['PUT', /^\/ops\/stocktakes\/(\d+)\/lines$/, 'stocktake.lines', 'Stocktake'],
   ['POST', /^\/ops\/stocktakes\/(\d+)\/post$/, 'stocktake.post', 'Stocktake'],
   ['DELETE', /^\/ops\/stocktakes\/(\d+)$/, 'stocktake.delete', 'Stocktake'],
+  ['PUT', /^\/ops\/stocktakes\/(\d+)$/, 'stocktake.update', 'Stocktake'], // F-048
   ['POST', /^\/attendance$/, 'attendance.create', 'Attendance'],
   ['PUT', /^\/attendance\/(\d+)$/, 'attendance.update', 'Attendance'],
 ];
@@ -156,7 +162,13 @@ const toJson = (value) => {
 };
 
 async function before(rule) {
-  if (rule.entity === 'Settings') return auditRepo.settingsSnapshot();
+  if (rule.entity === 'Settings') {
+    // F-053: tên / địa chỉ quán chưa từng lưu vẫn có giá trị đang dùng (.env) → ghi vào ảnh "trước" để thấy tên cũ → mới
+    const [snap, shop] = await Promise.all([auditRepo.settingsSnapshot(), settingsService.shopInfo()]);
+    return { 'shop.name': shop.name, 'shop.address': shop.address, ...snap };
+  }
+  // F-048: ảnh "trước" của phiếu nhập gồm cả các dòng (sửa / hủy đổi dòng)
+  if (rule.entity === 'StockReceipt' && /^\d+$/.test(rule.entityId ?? '')) return stockRepo.getReceipt(Number(rule.entityId));
   const snap = SNAP[rule.entity];
   if (!snap || !/^\d+$/.test(rule.entityId ?? '')) return null;
   return auditRepo.snapshot(snap[0], snap[1], Number(rule.entityId));

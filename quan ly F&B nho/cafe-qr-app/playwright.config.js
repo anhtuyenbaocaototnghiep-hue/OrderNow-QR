@@ -8,7 +8,13 @@ export default defineConfig({
   timeout: 60_000,
   workers: 1,
   fullyParallel: false,
-  reporter: [['list']],
+  // JSON: kết quả thật cho ma trận truy vết (npm run trace — TASK-057)
+  reporter: [['list'], ['json', { outputFile: 'kiểm-thử/kết-quả/e2e.json' }]],
+  // a11y chạy SAU luồng chính (cần dữ liệu thật, không làm bẩn dữ liệu của flow)
+  projects: [
+    { name: 'flow', testMatch: /flow\.spec\.js$/ },
+    { name: 'a11y', testMatch: /a11y\.spec\.js$/, dependencies: ['flow'] },
+  ],
   use: {
     baseURL: `http://localhost:${port}`,
     locale: 'vi-VN',

@@ -4,6 +4,7 @@ import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { logout, requireStaffPage } from '../auth.js';
 import { $, clear, dateTime, el, errorMessage, money, toast } from '../ui.js';
+import { brandMark, icon } from '../icons.js';
 
 const user = await requireStaffPage();
 if (user.role === 'ADMIN') await mountAdminShell('today');
@@ -12,7 +13,7 @@ else if (user.role === 'MANAGER') {
   document.body.classList.add('today-lead');
   clear(
     $('#side'),
-    el('div', { class: 'brand' }, '☕ Hôm nay'),
+    el('div', { class: 'brand' }, brandMark(), 'Hôm nay'),
     el('a', { href: '/pos' }, '← Màn hình quầy'),
     el('div', { class: 'spacer' }),
     el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small' }, 'Trưởng ca')),
@@ -118,7 +119,9 @@ function render(d) {
           t.stocktakeAgeDays === null ? 'Chưa từng chốt kiểm kê' : `${t.stocktakeAgeDays} ngày chưa kiểm kê (quá 7 ngày)`,
           d.full ? '/admin/stock' : '/pos/stock',
         ),
-        !t.pendingCash && !t.posDue && !t.expiredLots && !t.stocktakeOverdue ? el('li', { class: 'muted' }, '✔ Không có việc tồn đọng.') : null,
+        !t.pendingCash && !t.posDue && !t.expiredLots && !t.stocktakeOverdue
+          ? el('li', { class: 'muted' }, icon('circle-check'), 'Không có việc tồn đọng.')
+          : null,
       ),
     ),
   );

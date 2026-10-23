@@ -22,7 +22,8 @@ import { mountMemberBox } from '../member-box.js';
 import { defaultChoice, groupsOf, pickOptions } from '../options.js';
 import { connectRealtime } from '../socket.js';
 import { $, clear, el, errorMessage, modal, money, setBusy, thumb, toast } from '../ui.js';
-import { getSessionId, goEntry, qrToken, setFlash, takeFlash } from '../customer.js';
+import { followTable, getSessionId, goEntry, isLeaving, qrToken, setFlash, takeFlash } from '../customer.js';
+import { icon } from '../icons.js';
 
 const qr = qrToken();
 const sessionId = getSessionId(qr);
@@ -52,6 +53,7 @@ async function loadSession() {
   try {
     const s = await api(`/api/sessions/${sessionId}`);
     if (s.status === 'CLOSED') return goEntry(qr, 'Phiên trước đã thanh toán. Hệ thống tạo phiên mới cho bạn.');
+    if (followTable(qr, sessionId, s.table)) return; // F-049: nhóm đã chuyển bàn trong lúc trang đóng / mất mạng
     const memberChanged = s.member?.memberId !== state.session?.member?.memberId;
     state.session = s;
     if (memberChanged) loadRecall();
@@ -179,7 +181,7 @@ function recallSection() {
                   disabled: !state.itemsById.get(f.menuItemId)?.isAvailable,
                   onclick: () => quickAdd(state.itemsById.get(f.menuItemId)),
                 },
-                f.hearted ? '♥ ' : '',
+                f.hearted ? icon('heart', { filled: true, label: 'Đã thích' }) : '',
                 f.name,
                 ' · ',
                 money(state.itemsById.get(f.menuItemId)?.price ?? f.price),
@@ -230,7 +232,7 @@ async function toggleFavorite(item, button) {
   const on = !r.favorites.hearted.includes(item.id);
   try {
     r.favorites = await api(`/api/members/${r.memberId}/favorites/${item.id}`, { method: on ? 'PUT' : 'DELETE' });
-    button.textContent = on ? '♥' : '♡';
+    button.replaceChildren(icon('heart', { filled: on }));
     button.setAttribute('aria-pressed', String(on));
     toast(on ? `Đã thêm ${item.name} vào món yêu thích` : `Đã bỏ ${item.name} khỏi món yêu thích`, 'success', 2000);
   } catch (err) {
@@ -238,14 +240,21 @@ async function toggleFavorite(item, button) {
   }
 }
 
-// ---------- Trạng thái nhận đơn (F-020) ----------
-function renderStore() {
+// ---------- Trạng thái nhận đơn: công tắc QR (F-020) + có ca đang mở (F-055, ADR-017 D-64) ----------
+const NO_SHIFT_MESSAGE = 'Quán chưa mở ca nên chưa nhận đơn — vui lòng chờ nhân viên mở ca. Bạn vẫn xem menu và chọn món được.';
+const acceptingOrders = () => state.menu?.store?.acceptingOrders !== false && state.menu?.store?.shiftOpen !== false;
+/** Lý do chưa gửi được đơn (null = gửi được). Công tắc QR tắt ưu tiên hơn chưa mở ca. */
+function closedReason() {
   const store = state.menu?.store;
-  const banner = $('#store-closed');
-  banner.hidden = !store || store.acceptingOrders;
-  if (store && !store.acceptingOrders) banner.textContent = store.closedMessage;
+  if (!store || acceptingOrders()) return null;
+  return store.acceptingOrders === false ? store.closedMessage : NO_SHIFT_MESSAGE;
 }
-const acceptingOrders = () => state.menu?.store?.acceptingOrders !== false;
+function renderStore() {
+  const banner = $('#store-closed');
+  const reason = closedReason();
+  banner.hidden = !reason;
+  if (reason) banner.textContent = reason;
+}
 
 // ---------- Menu ----------
 const SECTIONS = () => {
@@ -290,6 +299,15 @@ function itemCard(item, { badge = null } = {}) {
         badge ? el('span', { class: 'tag' }, badge) : null,
         item.promotionBadge ? el('span', { class: 'tag promo' }, item.promotionBadge) : null,
       ),
+      // F-051: sao trung bình (chỉ món đủ số lượt đánh giá)
+      item.rating
+        ? el(
+            'div',
+            { class: 'rating small' },
+            icon('star', { filled: true }),
+            ` ${item.rating.avg.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} (${item.rating.count})`,
+          )
+        : null,
       isCombo ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity > 1 ? `${c.quantity}× ` : ''}${c.name}`).join(' + ')) : null,
       priceNode(item),
       isCombo && item.savings > 0 ? el('div', { class: 'small save' }, `Tiết kiệm ${money(item.savings)}`) : null,
@@ -307,7 +325,7 @@ function itemCard(item, { badge = null } = {}) {
             'aria-label': `Yêu thích ${item.name}`,
             onclick: (e) => toggleFavorite(item, e.currentTarget),
           },
-          state.recall.favorites.hearted.includes(item.id) ? '♥' : '♡',
+          icon('heart', { filled: state.recall.favorites.hearted.includes(item.id) }),
         )
       : null,
     control,
@@ -337,7 +355,9 @@ function renderMenu() {
           onclick: (e) => {
             tabs.querySelectorAll('.chip').forEach((b) => b.classList.remove('active'));
             e.currentTarget.classList.add('active');
-            document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Người tắt chuyển động (prefers-reduced-motion) → nhảy thẳng tới nhóm, không cuộn mượt (review G3 TASK-066)
+            const still = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+            document.getElementById(s.id)?.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
           },
         },
         s.name,
@@ -351,7 +371,17 @@ function renderMenu() {
       el(
         'section',
         { class: `c-section ${s.kind}`, id: s.id },
-        el('h2', {}, s.kind === 'suggest' ? '⭐ Gợi ý cho bạn' : s.kind === 'promo' ? '🎁 Ưu đãi hôm nay' : s.kind === 'combo' ? '🍱 Combo' : s.name),
+        el(
+          'h2',
+          {},
+          s.kind === 'suggest'
+            ? [icon('sparkles'), 'Gợi ý cho bạn']
+            : s.kind === 'promo'
+              ? [icon('gift'), 'Ưu đãi hôm nay']
+              : s.kind === 'combo'
+                ? [icon('utensils'), 'Combo']
+                : s.name,
+        ),
         s.kind === 'promo'
           ? state.menu.promotions.map((p) =>
               el('div', { class: 'promo-card' }, el('strong', {}, p.badgeText || p.name), el('div', { class: 'small' }, p.description)),
@@ -617,19 +647,28 @@ function renderTotals() {
       ? el('div', { class: 'cart-sub save' }, el('span', {}, q.orderPromotion.name), el('span', {}, `−${money(q.orderPromotion.discount)}`))
       : null,
     el('div', { class: 'cart-total' }, el('span', {}, 'Tổng đơn này'), el('span', {}, money(shownTotal()))),
-    state.eta ? el('p', { class: 'small eta', id: 'cart-eta' }, `⏱ Dự kiến có món sau khoảng ${state.eta.minMinutes}–${state.eta.maxMinutes} phút`) : null,
+    state.eta
+      ? el('p', { class: 'small eta', id: 'cart-eta' }, icon('timer'), `Dự kiến có món sau khoảng ${state.eta.minMinutes}–${state.eta.maxMinutes} phút`)
+      : null,
     m ? el('p', { class: 'small save' }, `Ưu đãi hội viên (${m.maskedName}) được trừ khi thanh toán.`) : null,
     el('p', { class: 'muted small' }, 'Thanh toán bằng tiền mặt sau khi dùng xong — bấm "Gọi thanh toán" ở màn hình theo dõi đơn.'),
-    acceptingOrders() ? null : el('div', { class: 'alert warning' }, state.menu.store.closedMessage),
+    acceptingOrders() ? null : el('div', { class: 'alert warning' }, closedReason()),
   );
   sendBtn.disabled = !acceptingOrders();
-  sendBtn.textContent = acceptingOrders() ? `Gửi đơn · ${money(shownTotal())}` : 'Quán tạm ngưng nhận đơn';
+  sendBtn.textContent = acceptingOrders()
+    ? `Gửi đơn · ${money(shownTotal())}`
+    : state.menu.store.acceptingOrders === false
+      ? 'Quán tạm ngưng nhận đơn'
+      : 'Quán chưa mở ca';
 }
 
 let idempotencyKey = null;
+let submitting = false;
+let pendingMove = null; // F-049: nhóm được chuyển bàn đúng lúc đang gửi đơn → chuyển trang SAU khi gửi xong (không cắt ngang request)
 async function submit(button) {
   if (state.cart.length === 0) return;
   setBusy(button, true);
+  submitting = true;
   idempotencyKey ||= crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
   try {
     await api('/api/orders', {
@@ -641,10 +680,14 @@ async function submit(button) {
     state.cart = [];
     clearCart(sessionId);
     setFlash('Đặt món thành công! Quầy đã nhận đơn của bạn.', 'success');
+    submitting = false;
+    if (pendingMove && followTable(qr, sessionId, { ...pendingMove, path: '/track' })) return;
     location.href = `/t/${qr}/track`;
   } catch (err) {
     idempotencyKey = null;
+    submitting = false;
     setBusy(button, false);
+    if (pendingMove && followTable(qr, sessionId, pendingMove)) return;
     handleSubmitError(err);
   }
 }
@@ -667,8 +710,16 @@ function handleSubmitError(err) {
     return;
   }
   if (err.code === 'STORE_CLOSED') {
-    state.menu.store = { acceptingOrders: false, closedMessage: err.message };
+    state.menu.store = { ...state.menu.store, acceptingOrders: false, closedMessage: err.message };
     renderStore();
+  }
+  if (err.code === 'NO_OPEN_SHIFT') {
+    // Khóa nút gửi ngay; tải lại menu để đúng trạng thái nếu sự kiện "đã mở ca" tới trước phản hồi này (review G3)
+    state.menu.store = { ...state.menu.store, shiftOpen: false };
+    renderStore();
+    reloadMenuSoon();
+    if (state.sheet) renderTotals(); // khung giỏ tự hiện lý do — không thêm cảnh báo đỏ thứ hai
+    return;
   }
   if (err.code === 'SESSION_CLOSED' || err.status === 403) {
     state.sheet?.close();
@@ -719,5 +770,6 @@ socket?.on('session.member_changed', async () => {
   if (state.sheet) renderTotals();
 });
 socket?.on('order.created', () => loadSession().catch(() => {}));
-socket?.on('session.settled', () => (location.href = `/t/${qr}/track`));
+socket?.on('session.settled', () => !isLeaving() && (location.href = `/t/${qr}/track`));
 socket?.on('session.closed', () => goEntry(qr, 'Bàn đã được đóng. Vui lòng quét lại mã QR để gọi món.'));
+socket?.on('session.table_changed', (p) => (submitting ? (pendingMove = p.toTable) : followTable(qr, sessionId, p.toTable))); // F-049

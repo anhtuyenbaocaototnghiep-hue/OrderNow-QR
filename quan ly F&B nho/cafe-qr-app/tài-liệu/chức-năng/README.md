@@ -86,4 +86,24 @@ Task [TASK-056](../công-việc/TASK-056.md). Bằng chứng 18/10/2026: `npm te
 | --- | --- | --- | --- | --- | --- |
 | [F-047](FEATURE-047.md) | Hội viên khi gọi món tại bàn, Thẻ thành viên cho khách, quyền lợi trên bill | Staff/Khách | CONFIRMED (D-36…D-38) | READY_FOR_REVIEW | member-card.test (5: đăng ký bắt buộc đồng ý, thẻ không có mã voucher, 403 / 404 / 409, bill có / không khối thẻ), E2E "hội viên tại bàn + thẻ thành viên" |
 
-Không còn feature nào bị chặn bởi câu hỏi mở (ADR-000…008). Q-019, Q-020 đã áp phương án chặt hơn; Q-021 (gọi món tại bàn) và **Q-022** (ma trận quyền Trưởng ca của skill lệch docs: nhân viên vẫn mở / đóng ca và ghi chi quỹ, khoản lớn chờ duyệt) đang chạy theo mặc định — chờ nhóm xác nhận. "READY_FOR_REVIEW" = đã code + test tự động pass, chờ nhóm review theo DoD. Chi tiết câu hỏi: [open-questions.md](../open-questions.md).
+### Theo yêu cầu chủ dự án (21/10/2026) — ADR-009
+
+Task [TASK-060](../công-việc/TASK-060.md).
+
+| Feature | Tên | Actor | Trạng thái nghiệp vụ | Triển khai | Bằng chứng tự động |
+| --- | --- | --- | --- | --- | --- |
+| [F-048](FEATURE-048.md) | Sửa / hủy phiếu nhập kho, sửa / xóa phiếu kiểm kê nháp, hủy phiếu kiểm kê đã chốt | Quản lý / Trưởng ca | CONFIRMED (D-39…D-42) | READY_FOR_REVIEW | stock-revise.test (13 — AC-048-01…10 + 3 test theo review G3) + E2E "sửa / hủy phiếu nhập kho và phiếu kiểm kê" + bất biến RECEIPT_LEDGER / STOCKTAKE_LEDGER / PO_RECEIVED |
+
+### Theo yêu cầu chủ dự án (21/10/2026) — ADR-010
+
+| Feature | Tên | Actor | Trạng thái nghiệp vụ | Triển khai | Bằng chứng tự động |
+| --- | --- | --- | --- | --- | --- |
+| [F-049](FEATURE-049.md) | Chuyển bàn — cả nhóm sang bàn khác, bill riêng; điện thoại khách tự theo | Staff/Khách | CONFIRMED (D-43) | READY_FOR_REVIEW ([TASK-061](../công-việc/TASK-061.md)) | table-move.test (4) + E2E "chuyển bàn…" + bất biến ORDER_TABLE_MISMATCH |
+| [F-050](FEATURE-050.md) | Hủy / sửa khoản sổ quỹ đã duyệt (ca còn mở, quyền như duyệt) | Trưởng ca/Quản lý | CONFIRMED (D-44, D-45) | READY_FOR_REVIEW ([TASK-062](../công-việc/TASK-062.md)) | cash-void.test (4) + E2E "sổ quỹ: hủy / sửa…" + bất biến CASH_REPLACE_LINK, SHIFT_EXPECTED_CASH |
+| [F-051](FEATURE-051.md) | Đánh giá sau khi dùng món: sao từng món + góp ý, báo quầy khi ≤ 2 sao, sao trên menu, trang Đánh giá món | Khách/Staff/Quản lý | CONFIRMED (D-46…D-48) | READY_FOR_REVIEW ([TASK-063](../công-việc/TASK-063.md)) | reviews.test (5) + E2E "đánh giá sau khi dùng món…" + a11y /admin/reviews |
+| [F-052](FEATURE-052.md) | Tra cứu API trong Quản lý: mọi endpoint đang chạy, quyền theo middleware, request / response từ api-contract.md | Quản lý | CONFIRMED (D-49…D-51) | READY_FOR_REVIEW ([TASK-064](../công-việc/TASK-064.md)) | api-docs.test (6) + E2E "tra cứu API…" + a11y /admin/api-docs |
+| [F-053](FEATURE-053.md) | Đổi tên quán và địa chỉ in trên hóa đơn ngay trong Cài đặt (không sửa `.env`) | Quản lý | CONFIRMED (chủ dự án 23/10/2026) | READY_FOR_REVIEW ([TASK-067](../công-việc/TASK-067.md)) | shop-info.test (5) + E2E "đổi tên quán…" + a11y `/admin/settings` |
+| [F-054](FEATURE-054.md) | Người mở ca phải đếm tiền, đóng ca trước khi đăng xuất | Nhân viên / trưởng ca / quản lý | CONFIRMED (D-59) | READY_FOR_REVIEW ([TASK-068](../công-việc/TASK-068.md)) | logout-shift.test (3) + E2E "đăng xuất khi đang giữ ca…" |
+| [F-055](FEATURE-055.md) | Chưa mở ca thì không nhận và không xử lý đơn: khách xem menu nhưng không gửi đơn, quầy khóa xử lý đơn; tự mở lại khi mở ca | Khách/Staff | CONFIRMED (D-64…D-66) | READY_FOR_REVIEW ([TASK-071](../công-việc/TASK-071.md)) | shift-required.test (4) + E2E "chưa mở ca…" |
+
+Không còn feature nào bị chặn bởi câu hỏi mở (ADR-000…011). Q-019, Q-020 đã áp phương án chặt hơn; Q-021 (gọi món tại bàn) và **Q-022** (ma trận quyền Trưởng ca của skill lệch docs: nhân viên vẫn mở / đóng ca và ghi chi quỹ, khoản lớn chờ duyệt) đang chạy theo mặc định — chờ nhóm xác nhận. "READY_FOR_REVIEW" = đã code + test tự động pass, chờ nhóm review theo DoD. Chi tiết câu hỏi: [open-questions.md](../open-questions.md).

@@ -12,6 +12,7 @@ import { operationsRouter } from './operations.js';
 import { advancedRouter } from './advanced.js';
 import { financeAdminRouter } from './financeAdmin.js';
 import { analyticsAdminRouter } from './analytics.js';
+import { apiDocsRouter } from './apiDocs.js';
 
 export const adminRouter = express.Router();
 adminRouter.use(requireAdmin);
@@ -175,6 +176,7 @@ adminRouter.use(operationsRouter);
 adminRouter.use(advancedRouter); // ADR-006 giai đoạn 4–8
 adminRouter.use(financeAdminRouter); // ADR-006 giai đoạn 6: sổ quỹ, nhân sự, nhật ký, lãi/lỗ
 adminRouter.use(analyticsAdminRouter); // ADR-006 giai đoạn 8: menu engineering, phân tích
+adminRouter.use(apiDocsRouter); // F-052 (ADR-011): tra cứu API
 
 // ---- Báo cáo (FEATURE-012), lịch sử đơn (Q-014), thu tiền ----
 function range(query) {

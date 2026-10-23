@@ -50,6 +50,7 @@
 - AC-047-03: Khách trong phiên mở Thẻ thành viên → thấy điểm, lịch sử điểm, thẻ tem, quà, voucher kèm hạn và tên chiến dịch; **không** có mã voucher.
 - AC-047-04: Thiết bị không thuộc phiên → 403; phiên chưa có hội viên → 404; phiên đã đóng → 409.
 - AC-047-05: Bill thanh toán có hội viên in điểm hiện có, thẻ tem, voucher còn hạn; phiếu tạm tính không in; bill không có hội viên không in.
+- AC-047-06: Gỡ hội viên khỏi phiên đang mở → phiên không còn hội viên, quầy và điện thoại trong phiên nhận `session.member_changed` (`member = null`); thiết bị không thuộc phiên gỡ → 403; phiên đã đóng → 409 `SESSION_CLOSED`. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

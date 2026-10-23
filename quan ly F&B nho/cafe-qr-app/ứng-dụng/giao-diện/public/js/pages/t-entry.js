@@ -2,6 +2,7 @@
 import { api } from '../api.js';
 import { $, clear, el, errorMessage, setBusy, time, toast } from '../ui.js';
 import { qrToken, setFlash, setSessionId, takeFlash } from '../customer.js';
+import { icon } from '../icons.js';
 
 const qr = qrToken();
 const app = $('#app');
@@ -36,7 +37,7 @@ function showChoice({ table, openSessions }) {
     el(
       'div',
       { class: 'c-hero' },
-      el('div', { class: 'logo', 'aria-hidden': 'true' }, '☕'),
+      el('div', { class: 'logo' }, icon('coffee')),
       el('h1', {}, table.name),
       el('p', { class: 'muted' }, 'Bàn đang có người. Bạn đi cùng nhóm hay đi lẻ?'),
     ),
@@ -97,7 +98,7 @@ function showInvalid() {
     el(
       'div',
       { class: 'c-hero' },
-      el('div', { class: 'logo' }, '⚠️'),
+      el('div', { class: 'logo warn' }, icon('triangle-alert')),
       el('h1', {}, 'Mã bàn không hợp lệ'),
       el('p', { class: 'muted' }, 'Mã QR này không còn hiệu lực. Vui lòng quét lại mã dán trên bàn hoặc gọi nhân viên.'),
     ),
@@ -107,7 +108,13 @@ function showInvalid() {
 function showError(err) {
   clear(
     app,
-    el('div', { class: 'c-hero' }, el('div', { class: 'logo' }, '📶'), el('h1', {}, 'Chưa mở được thực đơn'), el('p', { class: 'muted' }, errorMessage(err))),
+    el(
+      'div',
+      { class: 'c-hero' },
+      el('div', { class: 'logo warn' }, icon('wifi-off')),
+      el('h1', {}, 'Chưa mở được thực đơn'),
+      el('p', { class: 'muted' }, errorMessage(err)),
+    ),
     el('button', { class: 'btn btn-primary btn-lg btn-block', type: 'button', onclick: start }, 'Thử lại'),
   );
 }

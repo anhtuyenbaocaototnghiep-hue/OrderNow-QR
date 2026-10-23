@@ -34,6 +34,8 @@
   - AC-015-02: Thành phần tắt "còn bán" → menu báo combo hết. Gửi đơn → `409 ITEM_UNAVAILABLE` ghi tên combo.
   - AC-015-03: Đổi giá lẻ thành phần → `savings` đổi. Đơn cũ giữ nguyên tổng.
   - AC-015-04: Bill và phiếu pha in dòng combo + các món thành phần (giá 0).
+  - AC-015-05: Tạo combo có thành phần là combo khác → 400 `COMBO_INVALID`; khai định lượng (BOM) riêng cho combo → 400 `COMBO_HAS_NO_BOM`. _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-015-06: Xóa món đang là thành phần combo → 409 `IN_COMBO`, thông báo nêu tên combo (ví dụ "Combo sáng"). _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:**
   - `tests/sales.test.js` → "Combo (F-015)".
   - `tests/pricing.test.js` (combo).

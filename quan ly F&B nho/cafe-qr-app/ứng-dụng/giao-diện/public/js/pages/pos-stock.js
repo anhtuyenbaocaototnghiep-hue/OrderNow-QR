@@ -9,6 +9,7 @@ import { connectRealtime } from '../socket.js';
 import { adjustDialog } from '../stock-adjust.js';
 import { stocktakeUi } from '../stocktake.js';
 import { $, clear, dateTime, el, errorMessage, money, num, setBusy, toast, todayVn } from '../ui.js';
+import { icon } from '../icons.js';
 
 const shell = await mountPosShell('stock');
 const isLead = ['MANAGER', 'ADMIN'].includes(shell.user.role);
@@ -128,7 +129,7 @@ async function renderPrep() {
                 el('td', {}, l.name),
                 el('td', { class: 'num' }, `${num(l.need)} ${l.unit}`),
                 el('td', { class: 'num' }, `${num(l.available)} ${l.unit}`),
-                el('td', {}, l.enough ? '✓' : el('strong', {}, 'Thiếu')),
+                el('td', {}, l.enough ? icon('check', { label: 'Đủ' }) : el('strong', {}, 'Thiếu')),
               ),
             ),
           ),
@@ -301,7 +302,7 @@ async function renderExpiry() {
       'Lô của nguyên liệu theo dõi hạn dùng: đã hết hạn (không bán) và sắp hết hạn trong 3 ngày. Lô hết hạn không còn tính vào khả dụng — hủy để trừ kho.',
     ),
     lots.length === 0
-      ? el('div', { class: 'empty card' }, 'Không có lô nào sắp hết hạn. 👍')
+      ? el('div', { class: 'empty card' }, icon('circle-check'), 'Không có lô nào sắp hết hạn.')
       : el(
           'div',
           { class: 'table-wrap' },

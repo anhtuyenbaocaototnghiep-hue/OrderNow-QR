@@ -58,6 +58,34 @@ export async function inventoryViolations(pool) {
     UNION ALL
     SELECT 'LOTS_MISMATCH', i.IngredientId FROM dbo.Ingredients i
     WHERE i.TrackLots = 1 AND i.StockQty <> ISNULL((SELECT SUM(l.Qty) FROM dbo.IngredientLots l WHERE l.IngredientId = i.IngredientId AND l.IsClosed = 0), 0)
+    -- Sửa / hủy phiếu (F-048): Σ IMPORT của phiếu = Σ dòng (0 nếu đã hủy); Σ giao dịch của phiếu kiểm kê = Σ chênh lệch (0 nếu đã hủy);
+    -- số đã nhận của dòng PO = Σ dòng phiếu nhập còn hiệu lực trỏ vào dòng đó
+    -- Sổ quỹ (F-050): khoản thay thế ↔ khoản bị thay nối hai chiều, khoản bị thay đã hủy
+    UNION ALL
+    SELECT 'CASH_REPLACE_LINK', n.CashTxnId FROM dbo.CashTransactions n
+    LEFT JOIN dbo.CashTransactions o ON o.CashTxnId = n.ReplacesId
+    WHERE n.ReplacesId IS NOT NULL AND (o.Status <> 'VOIDED' OR ISNULL(o.ReplacedById, 0) <> n.CashTxnId)
+    UNION ALL
+    SELECT 'CASH_REPLACE_LINK', o.CashTxnId FROM dbo.CashTransactions o
+    LEFT JOIN dbo.CashTransactions n ON n.CashTxnId = o.ReplacedById
+    WHERE o.ReplacedById IS NOT NULL AND (o.Status <> 'VOIDED' OR ISNULL(n.ReplacesId, 0) <> o.CashTxnId)
+    -- Chuyển bàn (F-049): đơn của phiên luôn ở đúng bàn hiện tại của phiên
+    UNION ALL
+    SELECT 'ORDER_TABLE_MISMATCH', o.OrderId FROM dbo.Orders o JOIN dbo.Sessions s ON s.SessionId = o.SessionId
+    WHERE ISNULL(o.TableId, -1) <> s.TableId
+    UNION ALL
+    SELECT 'RECEIPT_LEDGER_MISMATCH', sr.ReceiptId FROM dbo.StockReceipts sr
+    WHERE ISNULL((SELECT SUM(t.Delta) FROM dbo.InventoryTransactions t WHERE t.StockReceiptId = sr.ReceiptId AND t.Type = 'IMPORT'), 0)
+          <> CASE WHEN sr.Status = 'VOIDED' THEN 0 ELSE ISNULL((SELECT SUM(l.Qty) FROM dbo.StockReceiptLines l WHERE l.ReceiptId = sr.ReceiptId), 0) END
+    UNION ALL
+    SELECT 'STOCKTAKE_LEDGER_MISMATCH', s.StocktakeId FROM dbo.Stocktakes s
+    WHERE s.Status <> 'DRAFT'
+      AND ISNULL((SELECT SUM(t.Delta) FROM dbo.InventoryTransactions t WHERE t.StocktakeId = s.StocktakeId), 0)
+          <> CASE WHEN s.Status = 'VOIDED' THEN 0 ELSE ISNULL((SELECT SUM(l.Diff) FROM dbo.StocktakeLines l WHERE l.StocktakeId = s.StocktakeId), 0) END
+    UNION ALL
+    SELECT 'PO_RECEIVED_MISMATCH', pl.PoLineId FROM dbo.PurchaseOrderLines pl
+    WHERE pl.ReceivedBaseQty <> ISNULL((SELECT SUM(l.Qty) FROM dbo.StockReceiptLines l JOIN dbo.StockReceipts sr ON sr.ReceiptId = l.ReceiptId
+                                       WHERE l.PoLineId = pl.PoLineId AND sr.Status = 'POSTED'), 0)
     UNION ALL
     SELECT 'CLOSED_LOT_HAS_QTY', LotId FROM dbo.IngredientLots l
     WHERE l.IsClosed = 1 AND l.Qty > 0 AND EXISTS (SELECT 1 FROM dbo.Ingredients i WHERE i.IngredientId = l.IngredientId AND i.TrackLots = 1)

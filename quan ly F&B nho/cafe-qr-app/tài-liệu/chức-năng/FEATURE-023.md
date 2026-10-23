@@ -26,7 +26,7 @@
       - tạo `ADJUST` cho dòng có chênh lệch, lưu giá nhập để tính hao hụt;
       - thiếu số đếm → `400 STOCKTAKE_INCOMPLETE`;
       - số đếm < phần đang giữ cho đơn → `409 BELOW_RESERVED` (kèm tên).
-    - Phiếu đã chốt không sửa / chốt lại được.
+    - Phiếu đã chốt không sửa / chốt lại được. Từ 21/10/2026: sửa / hủy phiếu nhập, sửa phiếu nháp, hủy phiếu đã chốt — [FEATURE-048](FEATURE-048.md) (ADR-009).
   - **Báo cáo:**
     - Giá vốn món = Σ BOM × giá nhập gần nhất. Thiếu giá một nguyên liệu → "—".
     - Lãi gộp theo món trong khoảng ngày (doanh thu trước chiết khấu hội viên/giảm tay).
@@ -41,4 +41,6 @@
   - AC-023-02: Phiếu kiểm kê DRAFT → điều chỉnh tay 409. Chốt (đếm thiếu 100 ml) → `ADJUST` −100, hao hụt 3.000đ. Chốt lại → 409.
   - AC-023-03: Số đếm thấp hơn phần đang giữ → 409 kèm tên nguyên liệu.
   - AC-023-04: Báo cáo giá vốn: "Sữa tươi đường" (200 ml × 30 + 10 g × 20 = 6.200đ/ly), bán 2 ly 50.000đ → giá vốn 12.400đ, lãi gộp 37.600đ.
+  - AC-023-05: Phiếu nhập có 2 dòng cùng một nguyên liệu, hoặc dòng số lượng 0 → 400. _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-023-06: Chốt phiếu kiểm kê còn nguyên liệu chưa nhập số đếm → 400 `STOCKTAKE_INCOMPLETE`; phiếu vẫn ở trạng thái nháp, nhập đủ số đếm thì chốt được. _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:** `tests/operations.test.js` → "Nhập kho & kiểm kê (F-023)".

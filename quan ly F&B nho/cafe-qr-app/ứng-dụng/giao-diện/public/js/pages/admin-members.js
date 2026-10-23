@@ -4,6 +4,7 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, showFieldErrors, toast } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('members');
 
@@ -297,7 +298,12 @@ async function renderLoyalty(m, box) {
           'ul',
           { class: 'small' },
           d.cards.map((c) =>
-            el('li', {}, `🎟 ${c.name}: ${c.stamps}/${c.requiredStamps} tem · đã đủ ${c.completedCards} thẻ · còn ${c.rewardsAvailable} lượt món miễn phí`),
+            el(
+              'li',
+              {},
+              icon('stamp'),
+              `${c.name}: ${c.stamps}/${c.requiredStamps} tem · đã đủ ${c.completedCards} thẻ · còn ${c.rewardsAvailable} lượt món miễn phí`,
+            ),
           ),
         )
       : el('p', { class: 'small muted' }, 'Chưa có thẻ tem.'),
@@ -353,7 +359,8 @@ async function renderLoyalty(m, box) {
             el(
               'li',
               {},
-              `🎫 ${v.code} −${v.percent ? `${v.percent}%` : money(v.amount)} · hạn ${dateTime(v.expiresAt)} · ${VOUCHER_SOURCE[v.source] ?? v.source}`,
+              icon('ticket'),
+              `${v.code} −${v.percent ? `${v.percent}%` : money(v.amount)} · hạn ${dateTime(v.expiresAt)} · ${VOUCHER_SOURCE[v.source] ?? v.source}`,
               v.usedAt ? ` · đã dùng ${dateTime(v.usedAt)}` : new Date(v.expiresAt) < new Date() ? ' · hết hạn' : ' · còn dùng được',
             ),
           ),

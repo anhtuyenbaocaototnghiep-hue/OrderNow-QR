@@ -34,4 +34,7 @@
   - AC-003-04: Kho đủ **1** suất trà đào; 20 request đồng thời từ 20 phiên → đúng 1 đơn 201, 19 đơn 409; `StockQty − ReservedQty ≥ 0`.
   - AC-003-05: Phiên của client khác → 403; không ghi dữ liệu.
   - AC-003-06: Khách gửi đơn thứ hai trong cùng phiên → 201; màn hình theo dõi hiện cả 2 đơn; tổng phiên = tổng 2 đơn.
+  - AC-003-07: Gửi đơn vào phiên đã thu tiền (`CLOSED`) → 409 `SESSION_CLOSED` (BR-020), không tạo đơn; khách phải quét lại QR để mở phiên mới. _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-003-08: Giỏ có món đã tắt "còn bán" hoặc không còn tồn tại → 409 `ITEM_UNAVAILABLE` kèm danh sách mã món đó; cả đơn bị từ chối, không ghi dòng nào (BR-009). _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-003-09: Dòng có số lượng 0 hoặc 51, hoặc giỏ trống → 400 `VALIDATION_ERROR` (BR-015: 1..50), không tạo đơn. _(bổ sung — TASK-057, 20/10/2026)_
 - **Liên kết:** Data `Orders, OrderItems, Ingredients, BomItems` · SP `sp_SubmitOrder` · API `POST /api/orders` · UI S-03 · Rule BR-001, BR-009, BR-010, BR-011, BR-012, BR-015, BR-020 · Hỏi Q-001, Q-005, Q-013 (khóa phiên trong `sp_SubmitOrder`).

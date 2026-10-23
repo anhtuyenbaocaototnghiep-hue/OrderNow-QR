@@ -43,6 +43,12 @@ export async function current() {
   return map(r.recordset[0]);
 }
 
+/** Có ca đang mở không — truy vấn nhẹ (chỉ index UX_Shifts_OneOpen) cho menu khách và các thao tác xử lý đơn (F-055). */
+export async function isOpen() {
+  const r = await query('SELECT TOP 1 ShiftId FROM dbo.Shifts WHERE ClosedAt IS NULL');
+  return r.recordset.length > 0;
+}
+
 export async function findById(id) {
   const r = await query(`${SELECT} WHERE s.ShiftId = @id`, { id: [sql.Int, id] });
   return map(r.recordset[0]);

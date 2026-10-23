@@ -73,6 +73,9 @@ Realtime (room `staff`):
 - **AC-024-05:** Hai máy quầy cùng mở một bàn trống đồng thời → đúng 1 phiên được tạo, máy kia nhận `409`.
 - **AC-024-06:** Đang tạm ngưng nhận đơn QR → khách `503 STORE_CLOSED`, nhân viên vẫn gửi đơn tại bàn được.
 - **AC-024-07:** Sửa ghi chú → quầy nhận `session.note_changed`; điện thoại khách trong phiên **không** nhận. Ghi chú rỗng → `null`. Phiên đã thu tiền → `409`.
+- **AC-024-08:** Mở bàn không tồn tại hoặc đang tắt → 404 `TABLE_NOT_FOUND` (bàn tắt không hiện trên sơ đồ); khách không đăng nhập mở bàn / gửi đơn tại bàn → 401; gửi giỏ trống → 400; ghi chú bàn > 200 ký tự → 400. _(bổ sung — TASK-057, 20/10/2026)_
+- **AC-024-09:** Gửi cùng một đơn tại bàn 2 lần đồng thời với cùng `Idempotency-Key` → chỉ 1 đơn được tạo, hai lần trả cùng mã đơn. _(bổ sung — TASK-057, 20/10/2026)_
+- **AC-024-10:** Bàn đang gọi thanh toán, nhân viên gọi thêm → phiên về đang phục vụ (`OPEN`), quầy nhận `session.payment_cancelled`; phiên đã thu tiền → gửi đơn tại bàn → 409 `SESSION_CLOSED`, sửa ghi chú → 409. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

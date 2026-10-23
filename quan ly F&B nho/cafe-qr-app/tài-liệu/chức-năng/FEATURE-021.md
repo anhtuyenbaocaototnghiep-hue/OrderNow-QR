@@ -18,9 +18,10 @@
   - `POST /api/staff-calls/{id}/handle`.
   - Realtime `session.staff_called`, `session.staff_call_handled` (tới quầy + phiên).
 - **Acceptance Criteria**
-  - AC-021-01: Khách gọi → quầy nhận realtime kèm tên bàn + yêu cầu.
+  - AC-021-01: Khách gọi "Xin nước lọc" → trong ≤ 2 s (NFR-001) quầy nhận yêu cầu (`session.staff_called`) kèm mã bàn và nội dung, hiện ở dải "Gọi nhân viên". _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
   - AC-021-02: Gọi lại trong 60 giây → 429. Khách phiên khác → 403.
-  - AC-021-03: Quầy bấm "Đã xử lý" → khách được báo. Bấm lần 2 → 409.
+  - AC-021-03: Quầy bấm "Đã xử lý" → trong ≤ 2 s (NFR-001) điện thoại khách nhận báo (`session.staff_call_handled`) và hiện "Nhân viên đã nhận yêu cầu"; yêu cầu ghi tên người xử lý; bấm "Đã xử lý" lần 2 → 409 `ALREADY_PROCESSED`. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+  - AC-021-04: Khách gọi nhân viên khi phiên đã thu tiền (`CLOSED`) → 409 `SESSION_CLOSED`, quầy không nhận yêu cầu. _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:**
   - `tests/sales.test.js` → "Gọi nhân viên (F-021)".
   - E2E "gọi nhân viên…".

@@ -4,6 +4,8 @@
 
 > **Cập nhật 18/10/2026:** khối mới giai đoạn 4–8 (bộ lập lịch job, ma trận quyền, nhật ký thao tác, tích điểm trong giao dịch thu tiền, kênh Zalo OA, thư mục ảnh hóa đơn, bảng tổng hợp ngày) nằm ở mục 9.4.
 
+> **Cập nhật 20/10/2026 (TASK-057, bước 10):** sơ đồ kiến trúc vẽ theo code hiện tại và quy tắc ranh giới tầng nằm ở mục 9.5. Bản đồ module: [module-map.md](module-map.md); mô hình bảo mật: [security-model.md](security-model.md).
+
 ## 9.1. Thành phần và trách nhiệm
 
 ```
@@ -120,3 +122,86 @@ Biến môi trường mới (đọc trong `src/config.js`):
 | `UPLOADS_DIR` | Thư mục gốc chứa ảnh hóa đơn |
 | `ZALO_OA_TOKEN`, `ZALO_OA_URL` | Bật kênh Zalo OA |
 | `JWT_EXPIRES_IN` | Thời hạn token; nay còn là mốc job đóng chấm công quên đăng xuất |
+
+## 9.5. Sơ đồ kiến trúc và ranh giới tầng (bước 10, cập nhật 20/10/2026)
+
+> **Trạng thái:** sơ đồ mô tả code **đã có** (đối chiếu `src/app.js`, `src/server.js`, `src/routes/*`, ngày 20/10/2026). Quy tắc tầng là CONFIRMED (`.agent/rules.md`: "controller/hub → service → repository/SP; Controller không gọi DB; service không biết HTTP"). Bảng "Hiện trạng lệch" bên dưới chờ duyệt ở Gate G2.
+
+### Sơ đồ
+
+```mermaid
+flowchart LR
+  subgraph B["Trình duyệt (HTML/CSS/JS thuần)"]
+    CUS["Khách — điện thoại<br/>/t/{qrToken}…"]
+    POS["Quầy POS<br/>/pos/*"]
+    ADM["Quản lý<br/>/admin/*"]
+  end
+  PRN["Máy in nhiệt 58/80 mm"]
+
+  subgraph N["Một tiến trình Node.js (server.js)"]
+    PAGES["routes/pages.js + express.static<br/>trang HTML, CSS, JS"]
+    MW["Middleware /api: helmet · express.json 100kb · cookie-parser<br/>ensureClientToken (cf_client) · auditTrail<br/>rateLimit · requireStaff / requireAdmin / requirePermission · zod"]
+    RT["routes/*: public · engagement · admin (+ marketing, operations,<br/>advanced, financeAdmin, analyticsAdmin) · ops · finance · loyalty · dashboard · staff"]
+    SV["services/*<br/>+ pricing/pricing.js + domain/* (hàm thuần)"]
+    RP["repositories/* + db.js<br/>mssql, tham số, inTransaction, withDeadlockRetry"]
+    IO["realtime/io.js + publisher.js<br/>Socket.io: public · staff · session:{id}"]
+    JOB["jobs/scheduler.js + jobs/index.js<br/>setInterval 30 giây, khóa job, JobRuns"]
+    CH["channels/zaloOa.js"]
+  end
+
+  DB[("SQL Server<br/>bảng + SP + trigger")]
+  UP[("UPLOADS_DIR/receipts")]
+  ZL["Zalo OA API (tùy chọn)"]
+
+  CUS -->|"GET trang"| PAGES
+  POS -->|"GET trang"| PAGES
+  ADM -->|"GET trang"| PAGES
+  CUS -->|"HTTP JSON /api/* + cookie cf_client"| MW
+  POS -->|"HTTP JSON /api/* + Bearer JWT"| MW
+  ADM -->|"HTTP JSON /api/* + Bearer JWT"| MW
+  MW --> RT
+  RT --> SV
+  SV --> RP
+  RP -->|"truy vấn / gọi SP"| DB
+  SV -->|"publish sau commit"| IO
+  IO -->|"WebSocket (server → client)"| CUS
+  IO -->|"WebSocket"| POS
+  JOB -->|"runJob"| SV
+  SV --> CH
+  CH -->|"HTTPS, chỉ chiều đi"| ZL
+  SV -->|"ảnh hóa đơn ≤ 2 MB"| UP
+  POS -->|"window.print()"| PRN
+```
+
+Ghi chú sơ đồ:
+
+- Một tiến trình phục vụ cả trang tĩnh, REST API và Socket.io; một SQL Server; một quán, một kho. Không có cổng thanh toán, không có webhook vào (D-1).
+- Socket.io chỉ phát từ server xuống client; client không gửi lệnh qua socket. Quyền vào room kiểm lúc handshake ([security-model.md](security-model.md) §12).
+- Trang quản lý không mở socket (chỉ REST). Trưởng ca dùng `/admin/today` qua `/api/dashboard/*`.
+- Thứ tự router trong `/api` như mục 9.4. `staffRouter` gắn `requireStaff` cho mọi đường dẫn tới được nó, nên đường dẫn `/api` lạ trả 401 khi chưa đăng nhập và 404 khi đã đăng nhập.
+
+### Quy tắc ranh giới tầng
+
+Hướng phụ thuộc một chiều: `routes` → `services` → (`pricing`, `domain`, `repositories`, `realtime/publisher`, `channels`) → `db.js` → SQL Server. `middleware` dùng chung cho `routes`; `jobs` gọi `services`.
+
+| Tầng | Được làm | Không được làm |
+| --- | --- | --- |
+| `routes/*` (controller) | Gắn middleware quyền; parse + validate bằng zod; gọi **một** service; trả JSON / status | Viết SQL hoặc gọi repository; tính tiền; phát realtime; chứa quy tắc nghiệp vụ |
+| `services/*` | Use case; kiểm quyền theo tài nguyên (phiên của khách, ngưỡng theo vai, người duyệt); gọi `pricing` / `domain`; gọi repository / SP; phát realtime **sau commit**; ném `AppError` có mã | Đọc `req` / `res` hay biết status HTTP; viết SQL trực tiếp |
+| `pricing/pricing.js`, `domain/*` | Hàm thuần (tính tiền, ETA, lịch thực đơn, quy đổi đơn vị, dự báo, phân tích), test độc lập | Truy cập DB, Express, realtime |
+| `repositories/*` | SQL có tham số; gọi SP; transaction (`inTransaction`), retry deadlock 1205 | Biết HTTP; phát realtime; quyết định quyền |
+| SP (`cơ-sở-dữ-liệu/thủ-tục/`) | Giữ bất biến kho / tiền bằng transaction + khóa dòng + CHECK; `THROW 5000x` → `errors.js` map ra HTTP | "Đọc rồi ghi" tách rời ngoài transaction |
+| `realtime/*` | Handshake, room, `publish` | Là nguồn sự thật; nhận lệnh từ client |
+| `jobs/*` | Lập lịch, khóa chống chạy trùng, gọi service | Gọi route |
+| Giao diện (`public/js`) | Hiển thị số do server tính; ẩn / hiện theo vai | Tính tiền; là nơi kiểm quyền thật |
+
+Kiểm ngày 20/10/2026: không file nào trong `services/`, `repositories/`, `domain/`, `pricing/` import `express`; `repositories/`, `domain/`, `pricing/` không import `realtime`; `domain/`, `pricing/` không import `db.js` hay repository.
+
+### Hiện trạng lệch (chờ duyệt G2)
+
+| # | Lệch | Vị trí | Đề xuất | Trạng thái |
+| --- | --- | --- | --- | --- |
+| 1 | Route gọi thẳng repository (chỉ đọc) | `routes/ops.js` → `ingredientsRepo.list`; `routes/finance.js` → `usersRepo.list`; `routes/loyalty.js` → `membersRepo.findById`; `routes/financeAdmin.js` → `auditRepo.list` / `facets` | Chấp nhận cho truy vấn đọc một bước, hoặc bọc bằng service ở task sau (không đổi hành vi) | NEEDS_CONFIRMATION |
+| 2 | Route chạy SQL | `routes/public.js` `GET /api/health` chạy `SELECT 1` qua `db.request()` | Chấp nhận (health check), hoặc chuyển sang hàm `db.ping()` | NEEDS_CONFIRMATION |
+| 3 | Job gọi repository | `jobs/index.js` → `auditRepo.purgeOlderThan` (job `audit-retention`) | Chấp nhận (job đóng vai service) | PROPOSED |
+| 4 | Mục 9.2 ghi "một thư mục theo module (`orders/`, `sessions/`…)" | Code xếp theo tầng (`routes/`, `services/`, `repositories/`) | Giữ cách xếp theo tầng; ranh giới module ghi ở [module-map.md](module-map.md) | PROPOSED |

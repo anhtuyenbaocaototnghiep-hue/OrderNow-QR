@@ -215,7 +215,7 @@ export async function markSent(id) {
   return r.rowsAffected[0] > 0;
 }
 
-/** Hủy PO chưa nhận gì (DRAFT / SENT). → 'OK' | 'HAS_RECEIPTS' | 'NOT_FOUND' | 'STATE' */
+/** Hủy PO chưa nhận gì (DRAFT / SENT; phiếu nhập đã hủy không tính — F-048). → 'OK' | 'HAS_RECEIPTS' | 'NOT_FOUND' | 'STATE' */
 export async function cancelPo(id) {
   return inTransaction(async (tx) => {
     const r = await txQuery(tx, 'SELECT Status FROM dbo.PurchaseOrders WITH (UPDLOCK, HOLDLOCK) WHERE PoId = @id', { id: [sql.Int, id] });
@@ -224,7 +224,7 @@ export async function cancelPo(id) {
     if (
       st === 'PARTIAL' ||
       st === 'RECEIVED' ||
-      (await txQuery(tx, 'SELECT TOP 1 1 AS x FROM dbo.StockReceipts WHERE PoId = @id', { id: [sql.Int, id] })).recordset.length
+      (await txQuery(tx, "SELECT TOP 1 1 AS x FROM dbo.StockReceipts WHERE PoId = @id AND Status = 'POSTED'", { id: [sql.Int, id] })).recordset.length
     ) {
       return 'HAS_RECEIPTS';
     }

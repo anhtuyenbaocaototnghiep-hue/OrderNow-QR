@@ -53,6 +53,8 @@
 - AC-031-02: AvgCost đúng sau 2 lần nhập giá khác (100 rồi 200 → 125 với tồn 2.000 + 1.000 + 1.000).
 - AC-031-03: Hoàn tất ly cà phê → `CogsAmount = 25 ml × giá cốt + 10 g × giá đường`; giá đổi sau đó không làm đổi đơn cũ.
 - AC-031-04: Bất biến: Σ `CogsAmount` của đơn = Σ `CostAmount` các dòng DEDUCT (`COGS_MISMATCH`).
+- AC-031-05: Nhập kho theo đơn vị không quy được về đơn vị gốc (ví dụ "kg" cho Sữa tươi tính theo ml) → 400 `UNIT_MISMATCH`. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-031-06: Khai đơn vị tạo vòng quy đổi (ml → hộp1l → ml) → 400; xóa đơn vị đang dùng ("ml") → 409 `IN_USE`; xóa đơn vị chưa dùng → thành công. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

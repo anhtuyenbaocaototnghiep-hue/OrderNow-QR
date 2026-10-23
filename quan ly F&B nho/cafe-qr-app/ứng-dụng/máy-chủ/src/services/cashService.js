@@ -2,6 +2,7 @@
 // Chi > cash.approve_threshold hoặc danh mục cần duyệt → PENDING; trưởng ca duyệt ≤ manager.cash_out_approve_max, quản lý không giới hạn.
 // Người đứng quầy là nhân viên → duyệt bằng xác thực lại tài khoản trưởng ca / quản lý (như giảm giá vượt ngưỡng — D-14).
 // Không tự duyệt khoản do chính mình tạo (trừ quản lý). Ảnh hóa đơn ≤ 2 MB (jpg/png/webp, kiểm chữ ký file) lưu uploads/receipts/.
+// F-050 (ADR-010 D-44, D-45): hủy / sửa khoản ĐÃ DUYỆT khi ca còn mở — quyền như duyệt, sửa = hủy + khoản thay thế (đi qua duyệt như thường).
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -82,6 +83,37 @@ export async function review(id, approve, body, user) {
   return updated;
 }
 
+/**
+ * Hủy / sửa khoản đã duyệt (F-050). body: { reason, replacement?: { categoryId, amount, reason }, adminUsername?, adminPassword? }.
+ * Quyền như duyệt: trưởng ca ≤ manager.cash_out_approve_max, quản lý mọi khoản; không tự hủy khoản mình ghi (trừ quản lý); nhân viên nhập tài khoản.
+ */
+export async function voidTxn(id, body, user) {
+  const txn = await get(id);
+  if (txn.status !== 'APPROVED') throw conflict('CASH_NOT_APPROVED', 'Chỉ hủy / sửa được khoản đã duyệt — khoản chờ duyệt dùng Từ chối');
+  const settings = await getSettings();
+  const allowManager = txn.amount <= settings.managerCashApproveMax;
+  const actor = body.adminUsername ? { ...user, role: 'STAFF' } : user;
+  const approver = await resolveApproval(actor, body, body.replacement ? 'việc sửa khoản sổ quỹ' : 'việc hủy khoản sổ quỹ', { allowManager });
+  if (approver.userId === txn.createdBy.userId && approver.role !== 'ADMIN') {
+    throw forbidden('Không tự hủy / sửa khoản do chính mình ghi — nhờ trưởng ca / quản lý khác', 'SELF_APPROVAL');
+  }
+  const r = await withDeadlockRetry(() =>
+    cashRepo.voidTxn({
+      id,
+      approverId: approver.userId,
+      actorId: user.userId,
+      reason: body.reason,
+      replacement: body.replacement ?? null,
+      threshold: settings.cashApproveThreshold,
+    }),
+  );
+  const voided = await cashRepo.getById(id);
+  publish([ROOMS.staff], 'cash.reviewed', { txn: voided });
+  const replacement = r.newTxnId ? await cashRepo.getById(r.newTxnId) : null;
+  if (replacement) publish([ROOMS.staff], 'cash.created', { txn: replacement });
+  return { voided, replacement };
+}
+
 /** Ảnh hóa đơn: người tạo khoản hoặc trưởng ca / quản lý. Ghi file mới rồi mới đổi đường dẫn; xóa file cũ (nếu có). */
 export async function attachReceipt(id, buf, user) {
   if (!Buffer.isBuffer(buf) || buf.length === 0) throw badRequest('RECEIPT_INVALID', 'Chọn ảnh hóa đơn (jpg, png hoặc webp)');
@@ -90,6 +122,8 @@ export async function attachReceipt(id, buf, user) {
   if (!sig) throw badRequest('RECEIPT_INVALID', 'Ảnh hóa đơn phải là jpg, png hoặc webp');
   const txn = await get(id);
   if (txn.createdBy.userId !== user.userId && !can(user, 'cash.approve')) throw forbidden('Chỉ người ghi khoản này hoặc trưởng ca được gắn ảnh');
+  // F-050: ảnh hóa đơn của khoản đã hủy / từ chối giữ nguyên làm chứng từ (gắn ảnh mới sẽ xóa ảnh cũ)
+  if (txn.status === 'VOIDED' || txn.status === 'REJECTED') throw conflict('CASH_NOT_APPROVED', 'Khoản đã hủy / từ chối — không đổi ảnh hóa đơn');
   const old = await cashRepo.receiptPath(id);
   await fs.mkdir(receiptsDir(), { recursive: true });
   const name = `${id}-${crypto.randomBytes(8).toString('hex')}.${sig[0]}`;

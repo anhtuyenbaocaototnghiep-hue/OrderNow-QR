@@ -3,6 +3,7 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { $, clear, confirmDialog, el, errorMessage, modal, money, toast } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('modifiers');
 
@@ -143,7 +144,7 @@ function edit(g) {
                   renderList();
                 },
               },
-              '×',
+              icon('x'),
             ),
           ),
           o.bom.map((b, bi) =>
@@ -165,12 +166,13 @@ function edit(g) {
                 {
                   class: 'btn btn-sm btn-ghost',
                   type: 'button',
+                  'aria-label': 'Bỏ dòng',
                   onclick: () => {
                     o.bom.splice(bi, 1);
                     renderList();
                   },
                 },
-                '×',
+                icon('x'),
               ),
             ),
           ),

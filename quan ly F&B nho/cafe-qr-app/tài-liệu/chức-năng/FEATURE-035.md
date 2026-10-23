@@ -79,8 +79,10 @@
 - AC-035-02: Sửa chấm công thiếu lý do → 400; trưởng ca sửa ngày trước → 403; chồng giờ → 409.
 - AC-035-03: Hoàn tiền → đúng một dòng nhật ký `payment.refund` có trước / sau.
 - AC-035-04: Nhật ký không chứa `PasswordHash`, mật khẩu, token; UPDATE `AuditLogs` bị chặn.
-- AC-035-05: Lịch làm cảnh báo vắng / đi muộn > 15 phút; kéo ca sang ngày khác cập nhật đúng.
+- AC-035-05: Lịch làm hôm nay 00:00–23:59: người chưa chấm công khi đã quá giờ bắt đầu 15 phút → `ABSENT`; người chấm công vào muộn hơn giờ bắt đầu > 15 phút → `LATE`; ca ngày mai → `UPCOMING`. Kéo ca 07:00–15:00 từ ô thứ Hai sang ô thứ Ba của cùng người → ô thứ Ba hiện ca 07:00–15:00 và báo "Đã chuyển ca 07:00–15:00". _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
 - AC-035-06: Bất biến `MANY_OPEN_ATTENDANCE`: mỗi người tối đa một lần chấm công đang mở.
+- AC-035-07: Báo cáo năng suất trong ngày: tiền thu của mỗi nhân viên = Σ số phải thu các lượt thu người đó nhận, số lượt thu khớp, số phút làm lấy từ chấm công (≥ 0). _(bổ sung — TASK-057, 20/10/2026)_
+- AC-035-08: Thêm / sửa chấm công có giờ vào hoặc giờ ra ở tương lai, giờ ra trước giờ vào, hoặc dài hơn 24 giờ → 400 `VALIDATION_ERROR`. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

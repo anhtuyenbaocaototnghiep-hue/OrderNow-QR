@@ -9,7 +9,8 @@
 - **Biên:** Mất kết nối → hiện "Đang kết nối lại"; reconnect → fetch lại ảnh chụp (không tin sự kiện bị nhỡ). Đóng tab rồi mở lại từ QR → vào lại phiên cũ (cookie còn) và thấy đơn. Phiên `CLOSED` → màn hình "Cảm ơn, đã thanh toán 125.000đ" + nút "Gọi món mới" (quét lại QR / tạo phiên mới).
 - **Acceptance Criteria**
   - AC-004-01: Khách mở màn hình theo dõi; quầy bấm Tiếp nhận → ≤ 2 s khách thấy "Đang chuẩn bị"; quầy bấm Hoàn tất → ≤ 2 s khách thấy "Đã xong" + pop-up, không F5.
-  - AC-004-02: Rớt mạng 30 s trong lúc đơn được hoàn tất → sau khi có mạng, màn hình tự cập nhật đúng trạng thái.
+  - AC-004-02: Rớt mạng 30 s trong lúc đơn được hoàn tất → trong lúc mất mạng màn hình báo mất kết nối; khi có mạng lại, màn hình tự tải lại phiên và trong ≤ 2 s (NFR-001) kể từ lúc kết nối lại thẻ đơn hiện "đã xong, vui lòng nhận tại quầy" (đúng trạng thái đã lưu), không tải lại trang. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
   - AC-004-03: Client của phiên khác không nhận được sự kiện của phiên này.
   - AC-004-04: Tổng tạm tính trên màn hình = Σ đơn không hủy trong phiên; cập nhật khi gọi thêm hoặc đơn bị hủy.
+  - AC-004-05: Khách đang ở màn theo dõi đơn; quầy thu tiền phiên → màn khách tự chuyển sang lời cảm ơn "Đã thanh toán <số tiền>" (ví dụ "Đã thanh toán 39.000đ") kèm nút "Gọi món mới", không F5. _(bổ sung — TASK-057, 20/10/2026)_
 - **Liên kết:** Realtime [realtime-events](../kiến-trúc/realtime-events.md) · API `GET /api/sessions/{id}` · UI S-05 · NFR-001.

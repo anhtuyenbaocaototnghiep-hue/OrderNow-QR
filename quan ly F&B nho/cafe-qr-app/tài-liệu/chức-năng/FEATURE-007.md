@@ -25,4 +25,6 @@
   - AC-007-05: Rớt mạng 2 phút, có 3 đơn mới + 1 yêu cầu thanh toán → sau reconnect thấy đủ + banner "Có đơn hàng bị trễ".
   - AC-007-06: Khách bấm Gọi thanh toán → thẻ bàn xuất hiện ở dải Gọi thanh toán với âm thanh riêng; nhấp mở S-14 đúng phiên.
   - AC-007-07: Token khách / không token gọi `accept`/`complete` → 401; đơn không đổi.
+  - AC-007-08: Hủy đơn `PENDING` → đơn `CANCELLED`, phần nguyên liệu đang giữ trả lại đủ (`ReservedQty` về như trước khi gửi); hủy đơn đã tiếp nhận (`PREPARING`) → 409 `INVALID_STATE` (BR-013, BR-010). _(bổ sung — TASK-057, 20/10/2026)_
+  - AC-007-09: Bấm Hoàn tất đơn còn `PENDING` → 409 `INVALID_STATE` (BR-013); bấm Tiếp nhận đơn đã được tiếp nhận ở máy khác → 409 `ALREADY_PROCESSED`. _(bổ sung — TASK-057, 20/10/2026)_
 - **Liên kết:** SP `sp_CompleteOrder` · API [api-contract](../kiến-trúc/api-contract.md) · UI S-10, S-11, S-14 · Rule BR-001, BR-002, BR-013 · NFR-001, NFR-002 · Hỏi: Q-001, Q-004b, Q-006, Q-017 (KDS riêng).

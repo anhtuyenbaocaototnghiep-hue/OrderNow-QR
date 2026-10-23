@@ -22,7 +22,28 @@
 - **Giá nhập gần nhất** được cập nhật để tính giá vốn.
 - Món đang "hết món" vì thiếu nguyên liệu tự bán lại.
 
-Bên dưới là danh sách phiếu nhập theo khoảng ngày. Bấm vào một phiếu để xem chi tiết.
+Bên dưới là danh sách phiếu nhập theo khoảng ngày. Bấm vào một phiếu (hoặc nút **Chi tiết**) để xem.
+
+### Sửa / hủy phiếu nhập (chỉ Quản lý)
+
+Nhập sai số lượng, giá, nguyên liệu hay nhà cung cấp:
+
+- **Sửa:** **Chi tiết** → **Sửa** → chỉnh các dòng như lúc nhập → nhập **Lý do sửa** → **Lưu thay đổi**.
+  - Số phiếu giữ nguyên.
+  - Dòng không đổi thì giữ nguyên. Dòng đổi thì lịch sử kho ghi *"Sửa phiếu nhập #… — lý do"*: cộng dòng mới, trừ dòng cũ.
+  - Tồn, giá vốn bình quân, lô / hạn dùng và đơn đặt hàng được tính lại.
+  - Danh sách hiện nhãn **Đã sửa**.
+- **Hủy phiếu:** **Chi tiết** → **Hủy phiếu** → nhập **lý do**.
+  - Kho trừ lại đúng số đã nhập. Lịch sử kho ghi *"Hủy phiếu nhập #… — lý do"*.
+  - Phiếu vẫn còn trong danh sách, nhãn **Đã hủy**, dòng mờ gạch ngang.
+  - Phiếu nhận theo đơn đặt hàng thì đơn đó trở lại "chưa nhận".
+
+**Không sửa / hủy được khi** (hệ thống báo tên nguyên liệu, không đổi gì):
+
+- **Hàng của phiếu đã được dùng:** tồn còn lại không đủ để trừ lại, kể cả phần đang giữ cho đơn chưa hoàn tất.
+- **Đã kiểm kê nguyên liệu đó sau lúc nhập:** tồn đã chốt theo số đếm. Muốn chỉnh, làm phiếu kiểm kê mới.
+- **Nguyên liệu đang nằm trong phiếu kiểm kê nháp:** chốt hoặc xóa phiếu nháp trước.
+- **Nguyên liệu theo lô mà lô của phiếu đã bị dùng / hủy một phần.**
 
 ![Phiếu nhập kho](ảnh/quanly-13-nhap-kho.jpg)
 
@@ -42,7 +63,12 @@ Bên dưới là danh sách phiếu nhập theo khoảng ngày. Bấm vào một
 - **Trong lúc phiếu còn nháp:** các nguyên liệu trong phiếu **không điều chỉnh tay được** (trang Kho nguyên liệu báo "đang được kiểm kê"), để số liệu không lệch. Chốt hoặc **Xóa phiếu** để mở khóa.
 - **Đơn vẫn chạy bình thường khi đang đếm.** Hệ thống tính chênh lệch theo **tồn thực tế lúc chốt**, nên đơn hoàn tất trong lúc đếm không làm sai kết quả.
 - **Số đếm thấp hơn phần "đang giữ cho đơn"** (đơn đã gửi chưa hoàn tất) → báo lỗi kèm tên nguyên liệu. Hoàn tất / hủy các đơn đó rồi chốt lại.
-- **Phiếu đã chốt không sửa được.**
+- **Phiếu nháp:** trên danh sách có nút **Sửa** (đổi ghi chú, thêm / bớt nguyên liệu; bớt thì mất số đếm của nguyên liệu đó) và **Xóa**. Trưởng ca làm được ở quầy.
+- **Phiếu đã chốt không sửa số đếm được.** Đếm sai thì Quản lý bấm **Hủy phiếu** (nhập lý do):
+  - tồn trở lại như trước khi chốt;
+  - phiếu thành **Đã hủy**, không còn tính vào hao hụt / thất thoát.
+
+  Sau đó tạo phiếu mới để đếm lại. Chỉ hủy được **phiếu chốt gần nhất** của các nguyên liệu trong phiếu. Nếu phần "thừa" đã ghi khi chốt nay đã dùng hết thì không hủy được.
 
 ## Tab "Giá vốn & hao hụt"
 

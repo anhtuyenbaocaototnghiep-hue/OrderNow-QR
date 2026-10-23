@@ -45,7 +45,7 @@ Mã nguồn: `ứng-dụng/máy-chủ/src/realtime/{io,publisher}.js`, client `�
 | `session.member_changed` | staff, session | `{ sessionId, member: { memberId, maskedName, tierName, discountPercent, firstOrderDiscount, firstOrderPercent } \| null }` | Gắn / gỡ hội viên |
 | `session.staff_called` | staff, session | `{ callId, sessionId, table, message, requestedAt }` | Khách gọi nhân viên (POS phát âm `bell`) |
 | `session.staff_call_handled` | staff, session | như trên + `handledAt`, `handledBy` | Quầy bấm "Đã xử lý" |
-| `store.status_changed` | public, staff | `{ acceptingOrders, closedMessage }` | Bật/tắt nhận đơn QR |
+| `store.status_changed` | public, staff | `{ acceptingOrders, closedMessage, shiftOpen }` | Bật/tắt nhận đơn QR; **mở / đóng ca** (F-055 — khách gửi được đơn khi `acceptingOrders && shiftOpen`) |
 | `menu.updated` | public, staff | `{}` | Quản lý đổi món/combo/khuyến mãi/gợi ý/tùy chọn/giờ bán → trang khách tải lại menu |
 | `shift.opened` / `shift.closed` | staff | `{ shift }` | Mở / đóng ca |
 | `payment.refunded` | staff | `{ paymentId, refund }` | Hoàn tiền (kèm `order.status_changed` cho đơn `VOIDED`) |
@@ -107,3 +107,19 @@ Không có sự kiện mới.
 | `session.member_changed` | `staff`, `session:{id}` | Như giai đoạn 2: `{ sessionId, member: { memberId, maskedName, tierName, discountPercent, firstOrderDiscount, firstOrderPercent } \| null }` — **chỉ tên che** | Nhân viên gắn / thay / gỡ hội viên ở **Gọi món tại bàn** (S-16, `POST` / `DELETE /api/sessions/{id}/member` bằng Bearer). Trang Gọi món tại bàn tải lại danh sách bàn để hiện tên đầy đủ; khung hội viên của khách cùng phiên cập nhật ngay |
 
 Thẻ thành viên (`GET /api/sessions/{id}/member-card`) không có sự kiện riêng: khách mở sheet là tải số liệu mới; phiên đóng (`session.settled` / `session.closed`) thì thẻ không xem được nữa (`409 SESSION_CLOSED`).
+
+## Bổ sung F-049 — chuyển bàn (ADR-010, 21/10/2026)
+
+| Sự kiện | Room | Payload | Phát khi |
+| --- | --- | --- | --- |
+| `session.table_changed` | `staff` | `{ sessionId, fromTable, toTable }` (không có mã QR) | `POST /api/sessions/{id}/move` — quầy tải lại thẻ đơn, danh sách bàn, ngăn kéo |
+| `session.table_changed` | `session:{id}` | `{ sessionId, fromTable, toTable: { …, qrToken } }` | như trên — điện thoại chuyển `sessionId` sang khóa bàn mới và mở lại trang ở `/t/{qrToken}/…` |
+
+Bỏ lỡ sự kiện (mất mạng): `GET /api/sessions/{id}` của người trong nhóm có `table.qrToken`, trang tự chuyển khi khác URL.
+
+## Bổ sung F-051 — đánh giá món (ADR-010, 21/10/2026)
+
+| Sự kiện | Room | Payload | Phát khi |
+| --- | --- | --- | --- |
+| `review.low` | `staff` | `{ reviewId, sessionId, table: { name }, items[{ menuItemId, name, stars }], comment, createdAt, ring }` (`ring = false` khi nhóm đã có đánh giá thấp chưa xử lý — không rung lại) | khách gửi đánh giá có món ≤ 2 sao — quầy hiện dải "Đánh giá thấp" + chuông |
+| `review.handled` | `staff` | `{ reviewId, handledBy }` | nhân viên bấm Đã xử lý |

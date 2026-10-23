@@ -3,6 +3,7 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, showFieldErrors, toast, todayVn } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('schedules');
 
@@ -272,7 +273,8 @@ function preview() {
   const run = async () => {
     try {
       const r = await staffApi(`/api/admin/menu-schedules/preview?at=${encodeURIComponent(at.value.slice(0, 16))}`);
-      const row = (i) => el('li', { class: i.visible ? '' : 'muted' }, i.visible ? '✓ ' : '✗ ', i.name, i.visible ? '' : ' (ẩn)');
+      const row = (i) =>
+        el('li', { class: i.visible ? '' : 'muted' }, icon(i.visible ? 'check' : 'x', { label: i.visible ? 'Hiện' : 'Ẩn' }), i.name, i.visible ? '' : ' (ẩn)');
       clear(
         out,
         r.categories.map((c) => el('div', {}, el('strong', {}, c.name), el('ul', { class: 'small' }, c.items.map(row)))),

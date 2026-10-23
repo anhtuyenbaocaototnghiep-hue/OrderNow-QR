@@ -4,6 +4,7 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { $, clear, el, errorMessage, money, num, toast, todayVn } from '../ui.js';
+import { attachHover, compact, niceScale, svg } from '../chart-kit.js';
 
 await mountAdminShell('analytics');
 
@@ -86,16 +87,6 @@ const select = (key, label, options) => {
   });
   return el('div', { class: 'field' }, el('label', {}, label), s);
 };
-
-const SVG = 'http://www.w3.org/2000/svg';
-function svg(tag, attrs = {}, ...children) {
-  const n = document.createElementNS(SVG, tag);
-  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
-  for (const c of children.flat(Infinity))
-    if (c !== null && c !== undefined && c !== false) n.append(c instanceof Node ? c : document.createTextNode(String(c)));
-  return n;
-}
-const short = (v) => (Math.abs(v) >= 1e6 ? `${(v / 1e6).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}tr` : `${Math.round(v / 1000)}k`);
 
 // ---------- F-041 Menu engineering ----------
 const CLASS = {
@@ -213,8 +204,8 @@ function scatter(r) {
     svg('text', { x: W - pad.r, y: H - pad.b - 4, 'text-anchor': 'end' }, 'Ngựa kéo'),
     svg('text', { x: pad.l + 4, y: H - pad.b - 4 }, 'Chó'),
     svg('text', { x: (W + pad.l) / 2, y: H - 6, 'text-anchor': 'middle' }, 'Số lượng bán →'),
-    svg('text', { x: pad.l - 6, y: y(maxY / 1.1) + 4, 'text-anchor': 'end' }, short(maxY / 1.1)),
-    svg('text', { x: pad.l - 6, y: y(r.medianMarginPerUnit) + 4, 'text-anchor': 'end' }, short(r.medianMarginPerUnit)),
+    svg('text', { x: pad.l - 6, y: y(maxY / 1.1) + 4, 'text-anchor': 'end' }, compact(maxY / 1.1)),
+    svg('text', { x: pad.l - 6, y: y(r.medianMarginPerUnit) + 4, 'text-anchor': 'end' }, compact(r.medianMarginPerUnit)),
     pts.map((p) =>
       svg(
         'circle',
@@ -271,7 +262,7 @@ async function renderHeatmap() {
                     title: `${DOW[d]} ${h}h: ${state.metric === 'revenue' ? money(row[h]) : `${row[h]} đơn`}`,
                     class: row[h] === r.max && r.max > 0 ? 'peak' : '',
                   },
-                  row[h] ? (state.metric === 'revenue' ? short(row[h]) : row[h]) : '',
+                  row[h] ? (state.metric === 'revenue' ? compact(row[h]) : row[h]) : '',
                 ),
               ),
             ),
@@ -283,7 +274,7 @@ async function renderHeatmap() {
   );
 }
 
-// ---------- F-042 Dự báo doanh thu ----------
+// ---------- F-042 Dự báo doanh thu (TASK-069, ADR-015 D-60: thực tế xanh --viz-1 nét liền, dự báo cam --viz-2 nét đứt nối tiếp + dải mờ, mốc "Hôm nay") ----------
 async function renderForecast() {
   const r = await staffApi('/api/admin/reports/revenue-forecast?days=7');
   const pts = [
@@ -291,44 +282,79 @@ async function renderForecast() {
     ...r.forecast.map((f) => ({ date: f.date, value: f.forecast, low: f.low, high: f.high, kind: 'fc' })),
   ];
   const W = Math.max(640, pts.length * 22);
-  const H = 260;
-  const pad = { l: 56, r: 12, t: 12, b: 30 };
-  const max = Math.max(1, ...pts.map((p) => p.high ?? p.value));
+  const H = 280;
+  const pad = { l: 56, r: 16, t: 22, b: 34 };
+  const base = H - pad.b;
+  const { top, ticks } = niceScale(Math.max(...pts.map((p) => p.high ?? p.value)));
   const x = (i) => pad.l + ((W - pad.l - pad.r) * i) / Math.max(1, pts.length - 1);
-  const y = (v) => pad.t + (H - pad.t - pad.b) * (1 - v / max);
-  const line = (filter) =>
-    pts
-      .map((p, i) => [p, i])
-      .filter(([p]) => filter(p))
-      .map(([p, i], k) => `${k ? 'L' : 'M'}${x(i)},${y(p.value)}`)
-      .join(' ');
-  const fcIdx = pts.findIndex((p) => p.kind === 'fc');
-  const band = pts.map((p, i) => [p, i]).filter(([p]) => p.kind === 'fc');
-  const bandPath = band.length
-    ? `M${band.map(([p, i]) => `${x(i)},${y(p.high)}`).join(' L')} L${[...band]
-        .reverse()
-        .map(([p, i]) => `${x(i)},${y(p.low)}`)
-        .join(' L')} Z`
-    : '';
+  const y = (v) => pad.t + (base - pad.t) * (1 - Math.max(0, v) / top);
+  const path = (list, key = 'value') => list.map((i, k) => `${k ? 'L' : 'M'}${x(i)},${y(pts[i][key])}`).join(' ');
+  const histIdx = pts.flatMap((p, i) => (p.kind === 'hist' ? [i] : []));
+  const fcIdx = pts.flatMap((p, i) => (p.kind === 'fc' ? [i] : []));
+  // Đường dự báo / dải mờ bắt đầu từ ngày thực tế cuối (hôm qua) để hai đoạn liền nhau, không bị hở.
+  const lastHist = histIdx.at(-1);
+  const fcLine = lastHist === undefined ? fcIdx : [lastHist, ...fcIdx];
+  const edge = (key) => fcLine.map((i) => `${x(i)},${y(i === lastHist ? pts[i].value : pts[i][key])}`);
+  const bandPath = fcIdx.length ? `M${edge('high').join(' L')} L${edge('low').reverse().join(' L')} Z` : '';
+  const today = fcIdx[0];
+  const anchor = today ?? pts.length - 1;
+  const dm = (d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+  const dow = (d) => DOW[(new Date(`${d}T00:00:00Z`).getUTCDay() + 6) % 7];
+  const chart = svg(
+    'svg',
+    {
+      class: 'chart fc-chart',
+      viewBox: `0 0 ${W} ${H}`,
+      role: 'img',
+      'aria-label': 'Biểu đồ doanh thu thuần 28 ngày qua và dự báo 7 ngày tới — rê chuột hoặc dùng phím mũi tên để xem số từng ngày',
+    },
+    ticks.map((t) => [
+      svg('line', { class: t ? 'grid' : 'axis-line', x1: pad.l, x2: W - pad.r, y1: y(t), y2: y(t) }),
+      svg('text', { class: 'tick', x: pad.l - 8, y: y(t) + 4, 'text-anchor': 'end' }, compact(t)),
+    ]),
+    today !== undefined
+      ? [
+          svg('line', { class: 'fc-today', x1: x(today), x2: x(today), y1: pad.t - 6, y2: base }),
+          svg('text', { class: 'fc-today-label', x: x(today) + 6, y: pad.t - 8 }, 'Hôm nay'),
+        ]
+      : null,
+    bandPath ? svg('path', { class: 'fc-band', d: bandPath }) : null,
+    histIdx.length ? svg('path', { class: 'fc-hist', d: path(histIdx) }) : null,
+    fcIdx.length ? svg('path', { class: 'fc-line', d: path(fcLine) }) : null,
+    fcIdx.map((i) => svg('circle', { class: 'fc-dot', cx: x(i), cy: y(pts[i].value), r: 4 })),
+    pts.map((p, i) =>
+      (i - anchor) % 7 === 0 || i === pts.length - 1 ? svg('text', { class: 'tick', x: x(i), y: base + 18, 'text-anchor': 'middle' }, dm(p.date)) : null,
+    ),
+  );
+  const plot = el('div', {}, chart);
+  attachHover(chart, {
+    width: W,
+    count: pts.length,
+    xAt: x,
+    yTop: pad.t,
+    yBottom: base,
+    title: (i) => `${dow(pts[i].date)} ${dm(pts[i].date)}${pts[i].kind === 'fc' ? ' · dự báo' : ''}`,
+    rows: (i) =>
+      pts[i].kind === 'fc'
+        ? [
+            ['Dự báo', money(pts[i].value)],
+            ['Khoảng', `${money(pts[i].low)} – ${money(pts[i].high)}`],
+          ]
+        : [['Doanh thu thuần', money(pts[i].value)]],
+  });
   clear(
     body,
     el(
       'div',
       { class: 'card' },
       el('h2', {}, 'Doanh thu thuần 28 ngày qua + dự báo 7 ngày tới'),
-      svg(
-        'svg',
-        { class: 'chart fc-chart', viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': 'Biểu đồ dự báo doanh thu' },
-        [0, 0.5, 1].map((f) => [
-          svg('line', { class: 'grid', x1: pad.l, x2: W - pad.r, y1: y(max * f), y2: y(max * f) }),
-          svg('text', { x: pad.l - 6, y: y(max * f) + 4, 'text-anchor': 'end' }, short(max * f)),
-        ]),
-        bandPath ? svg('path', { class: 'fc-band', d: bandPath }) : null,
-        svg('path', { class: 'fc-hist', d: line((p) => p.kind === 'hist') }),
-        fcIdx >= 0 ? svg('path', { class: 'fc-line', d: line((p) => p.kind === 'fc') }) : null,
-        pts.map((p, i) =>
-          i % 7 === 0 || p.kind === 'fc' ? svg('text', { x: x(i), y: H - 8, 'text-anchor': 'middle' }, p.date.slice(8, 10) + '/' + p.date.slice(5, 7)) : null,
-        ),
+      plot,
+      el(
+        'div',
+        { class: 'row small legend' },
+        el('span', {}, el('i', { class: 'fc-key fc-key-line' }), 'Thực tế'),
+        el('span', {}, el('i', { class: 'fc-key fc-key-dash' }), 'Dự báo'),
+        el('span', {}, el('i', { class: 'fc-key fc-key-band' }), 'Khoảng ± 1 độ lệch chuẩn'),
       ),
       el('p', { class: 'small muted' }, 'Mỗi ngày tới = trung bình có trọng số 4 cùng thứ gần nhất (0,4 · 0,3 · 0,2 · 0,1); dải mờ = ± 1 độ lệch chuẩn.'),
     ),
@@ -354,7 +380,7 @@ async function renderForecast() {
             el(
               'tr',
               {},
-              el('td', {}, `${DOW[(new Date(`${f.date}T00:00:00Z`).getUTCDay() + 6) % 7]} ${f.date.slice(8, 10)}/${f.date.slice(5, 7)}`),
+              el('td', {}, `${dow(f.date)} ${dm(f.date)}`),
               el('td', { class: 'num' }, money(f.forecast)),
               el('td', { class: 'num' }, `${money(f.low)} – ${money(f.high)}`),
               el('td', { class: 'num' }, f.samples),

@@ -6,13 +6,18 @@
 
 ## Mở ca (đầu ngày / đầu ca)
 
-1. Vào **Quầy**. Thanh trên có nút đỏ **⚠ Chưa mở ca**, dưới có dải *"Chưa mở ca — chưa thu tiền được"*.
+1. Vào **Quầy**. Thanh trên có nút đỏ **⚠ Chưa mở ca**, dưới có dải *"Chưa mở ca — chưa nhận, xử lý đơn và thu tiền được"*.
 2. Bấm **Mở ca** → nhập **tiền mặt đầu ca** trong két (tiền lẻ để thối; có thể là 0) → **Mở ca**.
 3. Nút đổi thành **Ca #1 · từ 08:00**.
 
 ![Quầy khi chưa mở ca](ảnh/quay-12-chua-mo-ca.jpg)
 
-> Chưa mở ca thì **khách vẫn gọi món, quầy vẫn tiếp nhận / hoàn tất bình thường**. Chỉ có **thu tiền** (bàn và mang đi) và **hoàn tiền** bị chặn.
+> **Từ 23/10/2026 (F-055): chưa mở ca thì quán không nhận và không xử lý đơn.**
+>
+> - **Khách** quét QR vẫn xem menu, chọn món, nhưng nút gửi hiện **"Quán chưa mở ca"** và bị khóa. Quầy bấm Mở ca là điện thoại khách tự mở lại nút gửi, không cần tải lại trang.
+> - **Quầy** không tiếp nhận, hoàn tất, hủy đơn, gọi món tại bàn, sửa / xóa món, chuyển bàn, chia bill được — các nút bị khóa, ghi "Chưa mở ca". Thu tiền, bán mang đi, hoàn tiền, sổ quỹ vẫn cần ca như trước.
+> - **Vẫn làm được khi chưa mở ca:** xem đơn / bàn, mở bàn và ghi chú bàn, kho ở quầy (sơ chế, hủy hàng, nhận hàng, kiểm kê), mọi trang Quản lý.
+> - Đóng ca khi còn đơn chưa xong vẫn được; các đơn đó chờ ca sau mở rồi xử lý tiếp.
 
 ## Trong ca
 

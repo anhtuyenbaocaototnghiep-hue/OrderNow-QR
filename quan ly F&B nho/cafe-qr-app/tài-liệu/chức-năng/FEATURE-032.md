@@ -49,6 +49,8 @@
 - AC-032-01: WastePercent 5 %, tiêu thụ 1.000 ml, kiểm kê thiếu 40 ml → "bình thường".
 - AC-032-02: Thiếu 120 ml → thất thoát 70 ml, tô đỏ.
 - AC-032-03: Phiếu hủy trừ tồn + dòng ADJUST "WASTE:…"; hủy vượt phần khả dụng → 409.
+- AC-032-04: Phiếu hủy có lý do ngoài danh sách (ví dụ `LOST`) → 400. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-032-05: Ghi phiếu hủy cho nguyên liệu đang trong phiếu kiểm kê nháp → 409 `STOCKTAKE_LOCKED`. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

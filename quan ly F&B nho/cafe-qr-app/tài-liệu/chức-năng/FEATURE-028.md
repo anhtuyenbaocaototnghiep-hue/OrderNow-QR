@@ -56,7 +56,7 @@
 
 - AC-028-01: Hai lô sữa (hạn +3 và +8 ngày): hủy 300 ml → trừ lô sớm trước; 400 ml tiếp → phần dư sang lô sau, 2 dòng.
 - AC-028-02: Hoàn tất đơn vượt lô → nhiều dòng DEDUCT (khóa đơn × nguyên liệu × lô). FIFO dùng giá lô.
-- AC-028-03: Lô hết hạn còn hàng → không tính vào khả dụng, quầy thấy cảnh báo; hủy lô → phiếu `EXPIRED`, đóng lô.
+- AC-028-03: Nhập lô "C" 1.000 ml Sữa tươi có hạn dùng là hôm qua → tồn tăng 1.000 nhưng khả dụng không đổi (phần hết hạn = 1.000); lô hiện ở danh sách sắp / đã hết hạn của quầy (Kho & sơ chế → Hạn dùng) với số ngày còn lại −1; hủy lô → phiếu hủy lý do `EXPIRED`, lô đóng, tồn về như trước, phần hết hạn = 0. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
 - AC-028-04: Σ lô = tồn sau 40 thao tác ngẫu nhiên (nhập có hạn, hủy, điều chỉnh, bán).
 
 ## Bằng chứng

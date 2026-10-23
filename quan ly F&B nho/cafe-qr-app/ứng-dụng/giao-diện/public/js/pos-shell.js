@@ -1,20 +1,28 @@
 // Khung trang quầy: kiểm đăng nhập, thanh trên (điều hướng, ca, nhận đơn QR, kết nối, âm thanh, đăng xuất).
-// ADR-005: thu tiền cần ca đang mở (F-018) — banner "Chưa mở ca" + nút mở ca; công tắc nhận đơn QR (F-020).
+// ADR-005: thu tiền cần ca đang mở (F-018); ADR-017 (F-055): tiếp nhận / xử lý đơn cũng cần ca — banner "Chưa mở ca" + nút mở ca; công tắc nhận đơn QR (F-020).
 import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, moneyValue, playSound, time, toast, unlockAudio } from './ui.js';
+import { brandMark, icon } from './icons.js';
 
 export async function mountPosShell(active) {
   const user = await requireStaffPage();
   const { shop } = current;
-  const conn = el('span', { class: 'conn offline', id: 'conn' }, 'Đang kết nối…');
-  const soundBtn = el('button', { class: 'btn btn-sm', type: 'button', title: 'Trình duyệt chỉ phát âm thanh sau khi bạn bấm nút này' }, '🔇 Bật âm thanh');
+  // Chưa kết nối xong: trạng thái trung tính, không đỏ (đỏ chỉ khi mất kết nối thật — DEF-011)
+  const conn = el('span', { class: 'conn connecting', id: 'conn' }, 'Đang kết nối…');
+  const soundBtn = el(
+    'button',
+    { class: 'btn btn-sm', type: 'button', title: 'Trình duyệt chỉ phát âm thanh sau khi bạn bấm nút này' },
+    icon('volume-x'),
+    'Bật âm thanh',
+  );
   const shiftBtn = el('button', { class: 'btn btn-sm', type: 'button', id: 'shift-btn' }, 'Ca…');
   const storeBtn = el('button', { class: 'btn btn-sm', type: 'button', id: 'store-btn', title: 'Bật/tắt nhận đơn khách gọi qua QR' }, 'QR…');
   const refreshSound = () => {
     const on = audioReady();
-    soundBtn.textContent = on ? '🔔 Âm thanh: bật' : '🔇 Bật âm thanh';
+    soundBtn.replaceChildren(icon(on ? 'volume-2' : 'volume-x'), on ? 'Âm thanh: bật' : 'Bật âm thanh');
     soundBtn.classList.toggle('sound-on', on);
+    fitHeader();
   };
   soundBtn.addEventListener('click', () => {
     unlockAudio();
@@ -34,47 +42,64 @@ export async function mountPosShell(active) {
   );
 
   const nav = [
-    ['orders', '/pos', 'Đơn hàng'],
-    ['tables', '/pos/table-order', 'Gọi món tại bàn'],
-    ['takeaway', '/pos/takeaway', 'Bán mang đi'],
-    ['stock', '/pos/stock', 'Kho & sơ chế'],
-    ['shift', '/pos/shift', 'Ca & hoàn tiền'],
+    ['orders', '/pos', 'Đơn hàng', 'ticket'],
+    ['tables', '/pos/table-order', 'Gọi món tại bàn', 'utensils'],
+    ['takeaway', '/pos/takeaway', 'Bán mang đi', 'shopping-bag'],
+    ['stock', '/pos/stock', 'Kho & sơ chế', 'package'],
+    ['shift', '/pos/shift', 'Ca & hoàn tiền', 'wallet'],
   ];
-  if (user.role === 'MANAGER') nav.push(['today', '/admin/today', 'Hôm nay']); // F-043 bản rút gọn
-  if (user.role === 'ADMIN') nav.push(['admin', '/admin', 'Quản lý']);
+  if (user.role === 'MANAGER') nav.push(['today', '/admin/today', 'Hôm nay', 'chart-column']); // F-043 bản rút gọn
+  if (user.role === 'ADMIN') nav.push(['admin', '/admin', 'Quản lý', 'settings']);
 
+  // ADR-018 D-67: trái tên quán + điều hướng; phải cụm trạng thái (ca, QR, kết nối, âm thanh) rồi người dùng
   const header = el(
     'header',
     { class: 'pos-top' },
-    el('div', { class: 'brand' }, '☕ ', shop?.name || 'Quầy'),
+    el('div', { class: 'brand' }, brandMark(), shop?.name || 'Quầy'),
     el(
       'nav',
       { class: 'pos-nav', 'aria-label': 'Điều hướng quầy' },
-      nav.map(([key, href, label]) => el('a', { href, class: key === active ? 'active' : '' }, label)),
+      nav.map(([key, href, label, ic]) =>
+        el('a', { href, class: key === active ? 'active' : '', 'aria-current': key === active ? 'page' : null }, icon(ic), label),
+      ),
     ),
     el(
       'div',
       { class: 'pos-tools' },
-      shiftBtn,
-      storeBtn,
-      conn,
-      soundBtn,
+      el('div', { class: 'pos-status', role: 'group', 'aria-label': 'Trạng thái quầy' }, shiftBtn, storeBtn, conn, soundBtn),
       el(
-        'span',
-        { class: 'small' },
-        user.fullName,
-        user.role === 'MANAGER' ? el('span', { class: 'badge ok', style: { marginLeft: '.35rem' } }, 'Trưởng ca') : null,
+        'div',
+        { class: 'pos-user' },
+        el('span', { class: 'user-name' }, user.fullName, user.role === 'MANAGER' ? el('span', { class: 'badge ok' }, 'Trưởng ca') : null),
+        el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, icon('log-out'), 'Đăng xuất'),
       ),
-      el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, 'Đăng xuất'),
     ),
   );
   const noShift = el(
     'div',
-    { class: 'banner no-shift', id: 'no-shift', hidden: true },
-    'Chưa mở ca — chưa thu tiền được. ',
+    { class: 'banner no-shift', id: 'no-shift', role: 'status', hidden: true },
+    icon('triangle-alert'),
+    'Chưa mở ca — chưa nhận, xử lý đơn và thu tiền được. ',
     el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => openShiftDialog() }, 'Mở ca'),
   );
-  document.body.prepend(header, noShift);
+  // Trang có vùng "Cần xử lý ngay" (màn Đơn hàng) thì dải chưa mở ca đứng đầu vùng đó
+  const alerts = $('#pos-alerts');
+  if (alerts) {
+    document.body.prepend(header);
+    alerts.prepend(noShift);
+  } else document.body.prepend(header, noShift);
+  // Thanh trên một hàng khi đủ chỗ; không thì đưa điều hướng xuống hàng hai (không để nút xuống dòng lộn xộn)
+  const fitHeader = () => {
+    header.classList.remove('stacked');
+    header.classList.toggle('stacked', header.scrollWidth > header.clientWidth + 1);
+  };
+  let headerWidth = 0;
+  new ResizeObserver(([entry]) => {
+    if (entry.contentRect.width === headerWidth) return; // chỉ đo lại khi đổi bề ngang (đổi hàng làm đổi chiều cao)
+    headerWidth = entry.contentRect.width;
+    requestAnimationFrame(fitHeader); // đổi hàng ngoài lượt đo — tránh lỗi "ResizeObserver loop"
+  }).observe(header);
+  document.fonts?.ready.then(fitHeader); // phông web nạp xong làm chữ rộng ra
   if (new URLSearchParams(location.search).get('denied') === 'admin') toast('Chức năng quản lý chỉ dành cho tài khoản Quản lý', 'warning');
 
   const listeners = new Set();
@@ -84,6 +109,7 @@ export async function mountPosShell(active) {
     shift: null,
     store: null,
     setOnline(online) {
+      conn.classList.remove('connecting');
       conn.classList.toggle('offline', !online);
       conn.textContent = online ? 'Đã kết nối' : 'Mất kết nối';
       $('#offline-banner')?.toggleAttribute('hidden', online);
@@ -118,15 +144,17 @@ export async function mountPosShell(active) {
   function renderShift() {
     const s = shell.shift;
     shiftBtn.classList.toggle('btn-danger', !s);
-    shiftBtn.textContent = s ? `Ca #${s.shiftId} · từ ${time(s.openedAt)}` : '⚠ Chưa mở ca';
+    shiftBtn.replaceChildren(...(s ? [`Ca #${s.shiftId} · từ ${time(s.openedAt)}`] : [icon('triangle-alert'), 'Chưa mở ca']));
     shiftBtn.onclick = s ? () => (location.href = '/pos/shift') : () => openShiftDialog();
     noShift.hidden = Boolean(s) || active === 'shift';
+    fitHeader();
   }
 
   function renderStore() {
     const on = shell.store?.acceptingOrders !== false;
     storeBtn.textContent = on ? 'QR: đang nhận đơn' : 'QR: tạm ngưng';
     storeBtn.classList.toggle('btn-danger', !on);
+    fitHeader();
   }
 
   storeBtn.addEventListener('click', async () => {

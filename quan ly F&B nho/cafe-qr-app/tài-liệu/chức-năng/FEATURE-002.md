@@ -14,5 +14,6 @@
   - AC-002-02: Thêm món, tăng/giảm số lượng, nhập ghi chú "ít đường" → giỏ cập nhật tổng tạm tính = Σ qty×price.
   - AC-002-03: Món `isAvailable = false` không thêm được vào giỏ.
   - AC-002-04: Reload trang → giỏ vẫn còn (cùng `sessionId`).
-  - AC-002-05: Nhận sự kiện realtime `menu.availability_changed` → món đổi trạng thái hết/còn ngay trên màn hình.
+  - AC-002-05: Khách đang mở menu; quản lý hoặc quầy tắt / bật lại "còn bán" của một món (sự kiện `menu.availability_changed`) → trong ≤ 2 s (NFR-001), không tải lại trang, thẻ món đổi sang "Hết món" (không thêm vào giỏ được) hoặc hiện lại nút thêm. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
+  - AC-002-06: Thực đơn không có món nào → menu khách hiện "Quán chưa có món nào trên thực đơn."; tải menu lỗi mạng → hiện thông báo lỗi kèm nút "Thử lại", bấm khi đã có mạng → menu tải lại được. _(bổ sung — TASK-057, 20/10/2026)_
 - **Liên kết:** API `GET /api/menu` · UI S-02 · NFR-003, NFR-004 · Hỏi: Q-012 (giỏ chung), Q-016 (định nghĩa thao tác).

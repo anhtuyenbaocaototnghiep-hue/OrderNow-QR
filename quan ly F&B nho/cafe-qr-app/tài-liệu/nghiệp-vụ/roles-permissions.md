@@ -88,6 +88,9 @@ Kiểm ở server cho mọi endpoint (`/api/admin/*` → `requireAdmin`; quầy 
 | Các trang `/admin/*` khác | Chuyển về `/pos?denied=admin` | Chuyển về `/pos?denied=admin` | ✔ | API `/api/admin/*` → 403 |
 | Hạ vai trò / khóa / xóa ADMIN cuối cùng | — | — | `409 LAST_ADMIN` | Tự đổi vai trò / tự khóa chính mình → 400 như FEATURE-009 (Q-022) |
 | Sửa / xóa món, xóa đơn, hủy bàn (F-046, ADR-007 D-33) | Đơn chờ tiếp nhận (`PENDING`): tự làm. Đơn đã tiếp nhận / đã pha (`PREPARING` / `COMPLETED`): cần trưởng ca / quản lý nhập tài khoản | Tự làm mọi đơn chưa thu | Tự làm | Luôn bắt buộc lý do. Thiếu người duyệt → `403 ADMIN_APPROVAL_REQUIRED`; sai mật khẩu hoặc tài khoản nhân viên khác → `403 ADMIN_APPROVAL_INVALID`. SP kiểm lại trạng thái lúc ghi. `OrderItemVoids.ApprovedBy` = người duyệt; nhật ký không lưu mật khẩu. BR-066…BR-070 |
+| Sửa / hủy phiếu nhập kho, hủy phiếu kiểm kê đã chốt (F-048, ADR-009 D-42) | ✘ | ✘ (`/api/admin/*` → 403) | ✔ | Bắt buộc lý do; chỉ khi chưa kiểm kê sau lúc nhập và còn đủ hàng (BR-075); hủy kiểm kê chỉ phiếu chốt gần nhất (BR-077) |
+| Hủy / sửa khoản sổ quỹ đã duyệt (F-050, ADR-010 D-45) | Cần trưởng ca / quản lý nhập tài khoản | Khoản ≤ 2.000.000đ, không phải khoản mình ghi, ca còn mở | Mọi khoản (kể cả khoản mình ghi), ca còn mở | Bắt buộc lý do; ca đã đóng → `409 SHIFT_CLOSED` |
+| Sửa / xóa phiếu kiểm kê nháp (F-048) | ✘ | ✔ (quầy — `stocktake.post`, `PUT /api/ops/stocktakes/{id}`) | ✔ | Như tạo / chốt kiểm kê (F-036) |
 
 Ngưỡng chỉnh ở Quản lý → Cài đặt → thẻ **"Trưởng ca & sổ quỹ"**: `manager.discount_max_percent` = 20, `manager.discount_max_amount` = 50.000, `manager.refund_same_shift_only` = bật, `manager.cash_out_approve_max` = 2.000.000, `cash.approve_threshold` = 500.000. Ngưỡng STAFF ở thẻ "Giảm giá tay của nhân viên".
 
@@ -106,8 +109,18 @@ Ngưỡng chỉnh ở Quản lý → Cài đặt → thẻ **"Trưởng ca & s�
 | Sơ chế, hủy hàng, hủy lô, nhận hàng theo PO (S-17) | — | Có | Có | Có |
 | Sửa / xóa món chưa thu, xóa đơn, hủy bàn (F-046, S-14) | — (chỉ thấy đơn / tổng cập nhật) | Đơn chờ tiếp nhận; đơn đã tiếp nhận / đã pha khi trưởng ca / quản lý nhập tài khoản | Có | Có |
 | Xem lịch sử "Đã sửa / xóa món" của bàn (F-046) | — | Có | Có | Có |
+| Chuyển bàn — cả nhóm sang bàn khác, bill riêng (F-049, S-10) | — (điện thoại tự theo) | Có | Có | Có |
+| Hủy / sửa khoản sổ quỹ đã duyệt (F-050, S-15 / S-36) | — | Khi trưởng ca / quản lý nhập tài khoản | Có (≤ 2.000.000đ, không phải khoản mình ghi) | Có |
+| Đánh giá món sau khi thanh toán (F-051, SCR-05) | Có (điện thoại trong nhóm, 1 lần / lượt, 24 giờ) | — | — | — |
+| Xem / xử lý dải "Đánh giá thấp" (F-051, SCR-10) | — | Có | Có | Có |
+| Trang Đánh giá món, ngưỡng hiện sao (F-051, SCR-45 / SCR-33) | — | — | — | Có |
+| Gửi đơn QR / xử lý đơn khi **chưa mở ca** (F-055, BR-087) | Không (xem menu được) | Không (phải mở ca) | Không (phải mở ca) | Không (phải mở ca) |
+| Tra cứu API — mọi endpoint, quyền, request / response (F-052, SCR-46; `GET /api/admin/api-docs`) | — | — (403) | — (403) | Có |
+| Đổi tên quán / địa chỉ in trên hóa đơn (F-053, SCR-33; `PUT /api/admin/settings`) | — | — (403) | — (403) | Có |
 | Điều chỉnh điểm, quà đổi điểm, chương trình tem, voucher tay, phân khúc & chiến dịch, opt-out | — | — | — | Có |
 | Lịch thực đơn, đơn vị, bán thành phẩm & công thức, bật theo lô, nhà cung cấp & PO (tạo / gửi / hủy) | — | — | — | Có |
+| Sửa / hủy phiếu nhập kho, hủy phiếu kiểm kê đã chốt (F-048, S-31) | — | — | — | Có |
+| Sửa / xóa phiếu kiểm kê nháp (F-048, S-17 / S-31) | — | — | Có | Có |
 | Sổ quỹ tổng + CSV, danh mục thu chi, lịch làm, năng suất, nhật ký thao tác, lãi/lỗ & chi phí cố định, phân tích, chạy job thủ công | — | — | — | Có |
 
 Test: `member-card.test.js` → AC-047-01/02 (quầy đăng ký nhanh + gắn ở Gọi món tại bàn), AC-047-04 (thiết bị khác 403, chưa gắn hội viên 404, phiên đóng 409); `void.test.js` → AC-046-02 (nhân viên không / sai người duyệt → 403, trưởng ca duyệt → OK), AC-046-05 (hủy bàn cần duyệt khi có đơn đã tiếp nhận), "đua với tiếp nhận đơn"; `finance.test.js` → "ma trận actor × endpoint sinh từ PERMISSIONS" (mỗi quyền × mỗi vai: vai được phép không nhận 401/403, vai khác nhận 403) và "khách (không token) … → 401"; `finance-unit.test.js` → ngưỡng giảm tay theo vai, `can`.

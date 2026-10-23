@@ -12,7 +12,7 @@ import * as purchasingService from '../services/purchasingService.js';
 import * as stockService from '../services/stockService.js';
 import { adjustBody } from './admin.js';
 import { receiveBody } from './advanced.js';
-import { stocktakeBody, stocktakeLinesBody } from './operations.js';
+import { stocktakeBody, stocktakeEditBody, stocktakeLinesBody } from './operations.js';
 
 export const opsRouter = express.Router();
 
@@ -93,3 +93,6 @@ opsRouter.put('/ops/stocktakes/:id/lines', canCount, async (req, res) =>
 );
 opsRouter.post('/ops/stocktakes/:id/post', canCount, async (req, res) => res.json(await stockService.post(paramId(req), req.user)));
 opsRouter.delete('/ops/stocktakes/:id', canCount, async (req, res) => res.json(await stockService.removeDraft(paramId(req))));
+opsRouter.put('/ops/stocktakes/:id', canCount, async (req, res) =>
+  res.json(await stockService.updateStocktake(paramId(req), parse(stocktakeEditBody, req.body ?? {}))),
+); // F-048: sửa phiếu nháp

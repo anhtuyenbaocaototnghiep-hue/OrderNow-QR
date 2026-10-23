@@ -38,7 +38,7 @@
 ## Acceptance Criteria
 
 - AC-029-01: Tiêu thụ 4 tuần có thứ Bảy cao (300) → dự báo thứ Bảy 300 > thứ Ba 100.
-- AC-029-02: Tồn 1.000, nhu cầu 3 ngày 1.500 → đề xuất ≥ 500 + an toàn.
+- AC-029-02: Khả dụng 1.000, nhu cầu tới ngày giao 3 ngày × 500 = 1.500, gói 1.000 → đề xuất gốc = 1.500 + 20 % × 1.500 − 1.000 = 800, quy ra 1 gói (làm tròn lên); nguyên liệu được đánh dấu sẽ hết trước ngày giao. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
 - AC-029-03: Có PO đang về 800 → đề xuất giảm 800.
 - AC-029-04: Nguyên liệu chưa có lịch sử → "Không đủ dữ liệu", không đề xuất.
 

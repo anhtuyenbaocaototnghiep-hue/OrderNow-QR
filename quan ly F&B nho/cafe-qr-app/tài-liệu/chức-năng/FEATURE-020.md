@@ -31,9 +31,10 @@
   - `PUT /api/admin/categories/{id}` thêm `sellFrom`, `sellTo`.
   - `GET /api/menu` trả `store`.
 - **Acceptance Criteria**
-  - AC-020-01: Tắt nhận đơn → khách 503 `STORE_CLOSED`, khách đang mở menu nhận sự kiện realtime. Mang đi vẫn 201. Bật lại → đặt được.
+  - AC-020-01: Nhân viên tắt nhận đơn QR → trong ≤ 2 s (NFR-001) khách đang mở menu nhận trạng thái mới (`store.status_changed`): banner "tạm ngưng nhận đơn", nút Gửi đơn bị khóa; khách gửi đơn → 503 `STORE_CLOSED`; quầy bán mang đi vẫn 201. Bật lại → khách gửi đơn được (201). _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
   - AC-020-02: Danh mục ngoài giờ → khách không thấy và không đặt được; quầy vẫn thấy.
   - AC-020-03: Món hết nguyên liệu tự hiện "Hết món", nhập kho xong tự bán lại (đã có từ MVP — api.test "hết nguyên liệu…").
+  - AC-020-04: Đặt giờ bán danh mục chỉ có giờ bắt đầu, thiếu giờ kết thúc → 400; xóa cả hai giờ → danh mục hiện lại với khách. _(bổ sung — TASK-057, 20/10/2026)_
 - **Bằng chứng:**
   - `tests/sales.test.js` → "Công tắc nhận đơn + giờ bán (F-020)".
   - E2E "tạm ngưng nhận đơn QR…".

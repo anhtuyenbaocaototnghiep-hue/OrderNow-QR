@@ -52,6 +52,8 @@
 - AC-027-03: A dùng B dùng A → 400 `RECIPE_CYCLE`.
 - AC-027-04: Bán ly cà phê có BOM 25 ml cốt → trừ cốt 25 ml; giá vốn ly = 25 × giá cốt.
 - AC-027-05: Bất biến: mỗi mẻ Σ giá trị `PREP_OUT` = giá trị `PREP_IN` (`PREP_UNBALANCED`).
+- AC-027-06: Công thức bán thành phẩm lồng 4 cấp → `RECIPE_TOO_DEEP` (400); lồng 3 cấp → hợp lệ. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-027-07: Nguyên liệu đầu vào đang trong phiếu kiểm kê nháp → ghi mẻ sơ chế → 409 `STOCKTAKE_LOCKED`, kho không đổi. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

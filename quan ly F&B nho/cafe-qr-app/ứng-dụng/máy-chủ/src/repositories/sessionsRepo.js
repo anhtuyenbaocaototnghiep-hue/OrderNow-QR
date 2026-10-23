@@ -1,5 +1,6 @@
 // Phiên (Session) trên bàn: tạo/gộp, tổng tạm tính, gọi thanh toán, thu tiền, đóng bàn trống, hội viên gắn với phiên (F-014).
 // F-024: nhân viên mở bàn (OpenedBy) + ghi chú bàn (Note — chỉ nhân viên thấy; service bỏ đi trước khi trả cho khách).
+// F-049: chuyển bàn (sp_MoveSession) + lần chuyển gần nhất của phiên.
 import { inTransaction, query, request, sql, txQuery } from '../db.js';
 import { mapPayment, PAYMENT_SELECT } from './ordersRepo.js';
 
@@ -12,7 +13,8 @@ const SESSION_SELECT = `
          (SELECT COUNT(*) FROM dbo.StaffCalls sc WHERE sc.SessionId = s.SessionId AND sc.HandledAt IS NULL) AS OpenCalls,
          s.OpenedBy, ob.FullName AS OpenedByName, s.Note, s.NoteUpdatedAt, nu.FullName AS NoteUpdatedByName,
          (SELECT COUNT(*) FROM dbo.SessionSplits sp WHERE sp.SessionId = s.SessionId AND sp.IsCommon = 0) AS SplitCount,
-         ISNULL((SELECT SUM(pp.AmountDue) FROM dbo.Payments pp WHERE pp.SessionId = s.SessionId), 0) AS PaidAmount
+         ISNULL((SELECT SUM(pp.AmountDue) FROM dbo.Payments pp WHERE pp.SessionId = s.SessionId), 0) AS PaidAmount,
+         mv.MovedFromName, mv.MovedAt
   FROM dbo.Sessions s
   JOIN dbo.Tables t ON t.TableId = s.TableId
   LEFT JOIN dbo.Users ob ON ob.UserId = s.OpenedBy
@@ -25,7 +27,9 @@ const SESSION_SELECT = `
                FROM dbo.Orders o WHERE o.SessionId = s.SessionId AND o.Status NOT IN ('CANCELLED', 'VOIDED')) a
   OUTER APPLY (SELECT SUM(oi.Quantity) AS ItemCount
                FROM dbo.OrderItems oi JOIN dbo.Orders o ON o.OrderId = oi.OrderId
-               WHERE o.SessionId = s.SessionId AND o.Status NOT IN ('CANCELLED', 'VOIDED') AND oi.ParentOrderItemId IS NULL) q`;
+               WHERE o.SessionId = s.SessionId AND o.Status NOT IN ('CANCELLED', 'VOIDED') AND oi.ParentOrderItemId IS NULL) q
+  OUTER APPLY (SELECT TOP 1 ft.Name AS MovedFromName, m.MovedAt FROM dbo.SessionTableMoves m JOIN dbo.Tables ft ON ft.TableId = m.FromTableId
+               WHERE m.SessionId = s.SessionId ORDER BY m.MoveId DESC) mv`;
 
 export const mapSession = (r) =>
   r && {
@@ -48,6 +52,7 @@ export const mapSession = (r) =>
     noteUpdatedBy: r.NoteUpdatedByName ?? null,
     splitCount: r.SplitCount ?? 0, // F-026
     paidAmount: r.PaidAmount ?? 0,
+    lastMove: r.MovedFromName ? { fromTable: r.MovedFromName, movedAt: r.MovedAt } : null, // F-049
     // Hội viên đang gắn (tên đầy đủ — service che tên trước khi trả cho khách)
     member: r.MemberId
       ? {
@@ -217,6 +222,20 @@ export async function settle(
     .output('AmountDue', sql.Decimal(12, 0))
     .execute('dbo.sp_SettleSession');
   return { paymentId: r.output.PaymentId, amountDue: r.output.AmountDue };
+}
+
+/** Chuyển cả nhóm sang bàn khác — sp_MoveSession (F-049). → TableId bàn cũ. */
+export async function move(sessionId, toTableId, userId, expectedFromTableId = null) {
+  const r = await (
+    await request()
+  )
+    .input('SessionId', sql.UniqueIdentifier, sessionId)
+    .input('ToTableId', sql.Int, toTableId)
+    .input('UserId', sql.Int, userId)
+    .input('ExpectedFromTableId', sql.Int, expectedFromTableId)
+    .output('FromTableId', sql.Int)
+    .execute('dbo.sp_MoveSession');
+  return r.output.FromTableId;
 }
 
 export async function closeEmpty(sessionId, userId) {

@@ -1,3 +1,4 @@
+import { icon } from './icons.js';
 // Tiện ích giao diện dùng chung. Dữ liệu người dùng luôn đưa vào DOM qua textContent (el/clear) — không innerHTML.
 
 /** el('div', { class: 'x', onclick: fn }, 'text', childNode, [nhiều con]) */
@@ -15,7 +16,24 @@ export function el(tag, attrs = {}, ...children) {
     else node.setAttribute(key, String(value));
   }
   appendChildren(node, children);
+  if (tag === 'div' && node.classList.contains('field')) linkFieldLabel(node);
+  // Thông báo lỗi chèn động → trình đọc màn hình đọc ngay (WCAG 4.1.3 — NFR-A11Y-08, TASK-057)
+  const isError = node.classList.contains('field-error') || (node.classList.contains('alert') && node.classList.contains('danger'));
+  if (isError && !node.hasAttribute('role')) node.setAttribute('role', 'alert');
   return node;
+}
+
+let fieldSeq = 0;
+/**
+ * Khối `.field` = một nhãn + đúng một ô nhập (mẫu dùng ở mọi form): tự gắn `<label for>` để trình đọc màn hình
+ * đọc đúng nhãn và bấm nhãn thì focus ô (WCAG 1.3.1 / 4.1.2 — TASK-057). Không đổi giao diện.
+ */
+function linkFieldLabel(field) {
+  const label = [...field.children].find((c) => c.tagName === 'LABEL' && !c.htmlFor && !c.querySelector('input, select, textarea'));
+  const controls = [...field.children].filter((c) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(c.tagName));
+  if (!label || controls.length !== 1) return;
+  if (!controls[0].id) controls[0].id = `fld-${++fieldSeq}`;
+  label.htmlFor = controls[0].id;
 }
 
 function appendChildren(node, children) {
@@ -139,7 +157,7 @@ export function modal({ title, body, actions = [], drawer = false, sheet = false
       'div',
       { class: 'modal-head' },
       el('h2', {}, title),
-      dismissable ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Đóng', onclick: () => close(null) }, '×') : null,
+      dismissable ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Đóng', onclick: () => close(null) }, icon('x')) : null,
     ),
     el('div', { class: 'modal-body' }, body),
     foot,
@@ -154,15 +172,41 @@ export function modal({ title, body, actions = [], drawer = false, sheet = false
   return { close, root: box, result };
 }
 
-export function confirmDialog(title, message, { okLabel = 'Đồng ý', danger = false } = {}) {
+export function confirmDialog(title, message, { okLabel = 'Đồng ý', cancelLabel = 'Hủy', danger = false } = {}) {
   return modal({
     title,
     body: el('p', {}, message),
     actions: [
-      { label: 'Hủy', value: false },
+      { label: cancelLabel, value: false },
       { label: okLabel, class: danger ? 'btn-danger' : 'btn-primary', value: true },
     ],
   }).result.then((v) => v === true);
+}
+
+/** Hỏi lý do bắt buộc (sửa / hủy phiếu kho — F-048). → lý do (đã bỏ khoảng trắng) hoặc null nếu bỏ qua. */
+export function reasonDialog(title, message, { okLabel = 'Đồng ý', danger = false, placeholder = '' } = {}) {
+  const input = el('input', { class: 'input', maxlength: 200, placeholder });
+  const err = el('p', { class: 'field-error', hidden: true }, 'Nhập lý do');
+  return modal({
+    title,
+    body: el('div', { class: 'stack' }, message ? el('p', {}, message) : null, el('div', { class: 'field' }, el('label', {}, 'Lý do (bắt buộc)'), input), err),
+    actions: [
+      { label: 'Thôi', value: false },
+      {
+        label: okLabel,
+        class: danger ? 'btn-danger' : 'btn-primary',
+        onClick: (close) => {
+          const v = input.value.trim();
+          if (v) close(v);
+          else {
+            err.hidden = false;
+            input.focus();
+          }
+          return false;
+        },
+      },
+    ],
+  }).result.then((v) => (typeof v === 'string' ? v : null));
 }
 
 export function setBusy(button, busy) {

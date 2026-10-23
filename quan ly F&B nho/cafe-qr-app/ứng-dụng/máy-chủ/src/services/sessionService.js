@@ -3,7 +3,7 @@
 // ADR-005: thu tiền tính hội viên + giảm tay + làm tròn bằng pricing (D-7), bắt buộc ca mở (F-018).
 // FEATURE-024: nhân viên mở bàn + ghi chú bàn (chỉ nhân viên thấy — customerView bỏ đi).
 // FEATURE-026: phiên đã chia bill thu từng phần (splitService); ước tính / hóa đơn tính theo dòng chưa thu.
-import { config } from '../config.js';
+// FEATURE-049: chuyển bàn — cả nhóm sang bàn khác, điện thoại khách tự theo (mã QR bàn mới chỉ gửi cho người trong nhóm).
 import { conflict, forbidden, fromSqlError, idsFromMessage, notFound } from '../errors.js';
 import { withDeadlockRetry } from '../db.js';
 import * as membersRepo from '../repositories/membersRepo.js';
@@ -17,8 +17,8 @@ import * as loyaltyService from './loyaltyService.js';
 import { partOrders } from '../pricing/pricing.js';
 import { maskName, maskPhone } from './memberService.js';
 import { paymentBreakdown, receiptLines } from './orderService.js';
-import { getSettings } from './settingsService.js';
-import { requireOpenShift } from './shiftService.js';
+import { getSettings, shopInfo } from './settingsService.js';
+import { assertShiftOpen, requireOpenShift } from './shiftService.js';
 
 const publicTable = (t) => ({ tableId: t.tableId, code: t.code, name: t.name });
 const billable = (orders) => orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
@@ -153,7 +153,12 @@ export async function getDetail(sessionId, viewer) {
     ),
     bill,
   };
-  return viewer.user ? detail : customerView(detail);
+  if (viewer.user) return detail;
+  // F-049: nhóm CÒN MỞ và ĐÃ chuyển bàn → người trong nhóm nhận mã QR bàn hiện tại để điện thoại mở ở URL bàn cũ (lỡ sự kiện) tự chuyển.
+  // Không gửi cho phiên đã đóng / chưa từng chuyển: người từng vào nhóm không lấy được mã QR mới sau khi quán "Tạo lại QR" (AC-010-04).
+  if (session.status === 'CLOSED' || !session.lastMove) return customerView(detail);
+  const table = await tablesRepo.findById(session.table.tableId);
+  return customerView({ ...detail, table: { ...detail.table, qrToken: table?.qrToken } });
 }
 
 export async function requestPayment(sessionId, clientToken) {
@@ -289,6 +294,18 @@ export async function settle(sessionId, body, user) {
   return { session: { ...session, member: memberView(session.member, true) }, payment, amountDue: result.amountDue, totals };
 }
 
+/** Chuyển cả nhóm sang bàn khác (FEATURE-049, D-43): bàn trống hoặc bàn có nhóm khác (bill vẫn riêng). */
+export async function moveSession(sessionId, { toTableId, fromTableId: expected = null }, user) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
+  const fromTableId = await withDeadlockRetry(() => sessionsRepo.move(sessionId, toTableId, user.userId, expected));
+  const [session, from, to] = await Promise.all([sessionsRepo.findById(sessionId), tablesRepo.findById(fromTableId), tablesRepo.findById(toTableId)]);
+  const payload = { sessionId, fromTable: publicTable(from), toTable: publicTable(to) };
+  publish([ROOMS.staff], 'session.table_changed', payload);
+  // Điện thoại trong nhóm nhận thêm mã QR bàn mới để mở lại trang ở /t/{qr mới}/…
+  publish([ROOMS.session(sessionId)], 'session.table_changed', { ...payload, toTable: { ...payload.toTable, qrToken: to.qrToken } });
+  return { session: { ...session, member: memberView(session.member, true) }, fromTable: payload.fromTable, toTable: payload.toTable };
+}
+
 export async function closeEmpty(sessionId, user) {
   await withDeadlockRetry(() => sessionsRepo.closeEmpty(sessionId, user.userId));
   const session = await sessionsRepo.findById(sessionId);
@@ -312,7 +329,7 @@ export async function receipt(sessionId, mode) {
   return {
     kind: 'session',
     mode,
-    shop: config.shop,
+    shop: await shopInfo(), // F-053
     table: session.table,
     session: { sessionId, code: sessionId.slice(0, 8).toUpperCase(), openedAt: session.openedAt, closedAt: session.closedAt },
     orders: orders.map((o) => ({ orderCode: o.orderCode, createdAt: o.createdAt })),
@@ -337,7 +354,7 @@ export async function paymentReceipt(paymentId) {
   return {
     kind: 'session',
     mode: 'final',
-    shop: config.shop,
+    shop: await shopInfo(), // F-053
     table: session.table,
     session: { sessionId: payment.sessionId, code: payment.sessionId.slice(0, 8).toUpperCase(), openedAt: session.openedAt, closedAt: session.closedAt },
     splitLabel: split?.label ?? null,

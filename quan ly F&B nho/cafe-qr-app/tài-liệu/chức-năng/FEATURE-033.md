@@ -51,6 +51,7 @@
    - chỉ người ghi khoản hoặc trưởng ca / quản lý được gắn;
    - xem ảnh cần đăng nhập.
 6. **Danh mục đã dùng** → xóa thành "ngừng dùng" (ADR-004).
+7. **Khoản đã duyệt nhập sai** (từ 21/10/2026): hủy / sửa khi ca còn mở, quyền như duyệt — [FEATURE-050](FEATURE-050.md) (ADR-010 D-44, D-45).
 
 ## API
 
@@ -78,6 +79,11 @@ Realtime `staff`: `cash.created`, `cash.reviewed` `{ txn }`.
 - AC-033-05: Bất biến:
   - `SHIFT_EXPECTED_CASH`: ca đã đóng có `ExpectedCash` đúng công thức;
   - `CLOSED_SHIFT_CASH_PENDING`: ca đã đóng không còn khoản chờ duyệt.
+- AC-033-06: Khoản chi thuộc danh mục "Khác (chi)" luôn chờ duyệt (kể cả 10.000đ); từ chối không có lý do → 400; khoản bị từ chối không trừ vào tiền dự kiến trong két. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-033-07: Ghi khoản thu / chi với số tiền ≤ 0 hoặc lý do trống → 400; danh mục không tồn tại → 400 `CASH_CATEGORY_INVALID`. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-033-08: Sau khi ca đã đóng, ghi khoản sổ quỹ → 409 `NO_OPEN_SHIFT`. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-033-09: Màn Sổ quỹ của quản lý (S-36), lọc hôm nay: tổng chi = Σ khoản chi đã duyệt; tổng theo danh mục đúng (Mua đá = 50.000đ); lọc trạng thái "Từ chối" chỉ trả khoản bị từ chối (1 khoản); Xuất CSV có BOM UTF-8 (ký tự đầu U+FEFF), có dòng "Mua đá" với số "-50000"; trưởng ca gọi → 403. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-033-10: File CSV xuất ra chặn công thức Excel: ô bắt đầu bằng "=" được thêm dấu ' phía trước; ô có dấu phẩy / ngoặc kép / xuống dòng được bọc ngoặc kép; số âm giữ nguyên. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

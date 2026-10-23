@@ -8,6 +8,7 @@ import { defaultChoice, groupsOf, pickOptions } from '../options.js';
 import { mountPosShell } from '../pos-shell.js';
 import { connectRealtime } from '../socket.js';
 import { $, breakdownRows, clear, el, errorMessage, money, setBusy, statusBadge, time, toast } from '../ui.js';
+import { icon } from '../icons.js';
 
 const shell = await mountPosShell('tables');
 const COMBO_TAB = 'combo';
@@ -144,16 +145,37 @@ async function loadTables({ quiet = false } = {}) {
     state.sessionId = null;
     state.newGroup = false;
   } else if (state.sessionId && !session()) {
+    const movedTo = state.tables.find((x) => x.sessions.some((s) => s.sessionId === state.sessionId));
+    if (movedTo) return followGroup(t, movedTo); // F-049: nhóm đang chọn vừa được chuyển bàn
     // Nhóm đang chọn vừa thanh toán / đóng → đơn tiếp theo là nhóm mới, không gộp nhầm vào hóa đơn nhóm khác
     state.sessionId = null;
     state.newGroup = t.sessions.length > 0;
     if (!quiet) toast(`${t.name}: nhóm đang chọn đã thanh toán / đóng`, 'info');
   } else if (!state.sessionId && !state.newGroup && t.sessions.length) {
-    state.sessionId = t.sessions[0].sessionId;
-    if (!quiet) toast(`${t.name} vừa có khách mở bàn — đơn sẽ thêm vào nhóm đang mở`, 'info');
+    const opened = t.sessions.find((s) => !s.lastMove);
+    if (opened) {
+      state.sessionId = opened.sessionId;
+      if (!quiet) toast(`${t.name} vừa có khách mở bàn — đơn sẽ thêm vào nhóm đang mở`, 'info');
+    } else {
+      // F-049: bàn đang chọn vừa có nhóm CHUYỂN tới → món đang soạn không tự gộp vào bill nhóm đó (D-43), gửi thành nhóm mới
+      state.newGroup = true;
+      if (!quiet) toast(`${t.name} vừa có nhóm chuyển tới — món đang soạn sẽ gửi thành nhóm mới (bill riêng)`, 'info');
+    }
   }
   renderTables();
   renderTarget();
+}
+
+/** F-049: nhóm đang chọn được chuyển sang bàn khác → đi theo nhóm, chuyển cả món đang soạn sang giỏ của bàn mới. */
+function followGroup(from, to) {
+  const moving = state.cart;
+  saveCart(cartScope(from.tableId), []);
+  state.tableId = to.tableId;
+  const target = loadCart(cartScope(to.tableId));
+  state.cart = [...target, ...moving];
+  saveCart(cartScope(to.tableId), state.cart);
+  toast(`Nhóm đã chuyển từ ${from.name} sang ${to.name}${moving.length ? ' — món đang soạn chuyển theo' : ''}`, 'info', 6000);
+  afterSelect();
 }
 
 function renderTables() {
@@ -185,7 +207,7 @@ function renderTables() {
             ? 'Trống'
             : `${t.sessions.length > 1 ? `${t.sessions.length} nhóm · ` : ''}${ordered ? money(amount) : 'Chưa gọi món'}${pay ? ' · gọi thanh toán' : ''}`,
         ),
-        notes.length ? el('span', { class: 'note', title: notes.join(' | ') }, `📝 ${notes.join(' | ')}`) : null,
+        notes.length ? el('span', { class: 'note', title: notes.join(' | ') }, icon('notebook-pen', { label: 'Ghi chú' }), notes.join(' | ')) : null,
         unsent ? el('span', { class: 'in-cart', title: 'Món đã chọn nhưng chưa gửi' }, unsent) : null,
       );
     }),
@@ -267,7 +289,7 @@ function renderTarget() {
           'p',
           { class: 'muted small' },
           `Mở ${time(s.openedAt)}${s.openedBy ? ` bởi ${s.openedBy.fullName}` : ' (khách quét QR)'} · ${s.orderCount} đơn · ${money(s.amountDue)}`,
-          s.member ? ` · ⭐ ${s.member.fullName}` : '',
+          s.member ? [' · ', icon('star', { label: 'Hội viên' }), s.member.fullName] : '',
         )
       : el('p', { class: 'muted small' }, state.newGroup ? 'Gửi đơn sẽ mở thêm một nhóm (hóa đơn riêng) trên bàn này.' : 'Bàn trống — gửi đơn sẽ mở bàn.'),
   );
@@ -305,7 +327,7 @@ function renderNote() {
   if (!box.contains(noteInput)) {
     clear(
       box,
-      el('label', { for: 'table-note' }, '📝 Ghi chú bàn'),
+      el('label', { for: 'table-note' }, icon('notebook-pen'), 'Ghi chú bàn'),
       noteInput,
       el('div', { class: 'row between', style: { margin: '0.3rem 0 0.6rem' } }, noteMeta, noteBtn),
     );
@@ -389,7 +411,7 @@ function renderMember() {
   if (!box.contains(memberPhone)) {
     clear(
       box,
-      el('label', { for: 'member-phone' }, '⭐ Hội viên'),
+      el('label', { for: 'member-phone' }, icon('star'), 'Hội viên'),
       memberCurrent,
       el('div', { class: 'row member-row' }, memberPhone, memberLookupBtn),
       memberMsg,
@@ -401,7 +423,7 @@ function renderMember() {
       ? el(
           'div',
           { class: 'member-on row between' },
-          el('span', {}, `⭐ ${s.member.fullName} · ${memberPerk(s.member)}`),
+          el('span', {}, icon('star', { label: 'Hội viên' }), `${s.member.fullName} · ${memberPerk(s.member)}`),
           el('button', { class: 'btn btn-sm', type: 'button', onclick: detachMember }, 'Gỡ'),
         )
       : el('p', { class: 'muted small' }, 'Nhập SĐT để khách tích điểm / dùng ưu đãi (tính lúc thu tiền). Khách quét QR bàn cũng thấy điểm, voucher.'),
@@ -621,9 +643,11 @@ function updateSend() {
   const t = table();
   const btn = $('#send');
   if (btn.classList.contains('loading')) return;
-  btn.disabled = !t || state.cart.length === 0;
-  btn.textContent = t ? `Gửi đơn ${t.name}` : 'Chọn bàn để gọi món';
+  // F-055 (ADR-017 D-65): đơn nhân viên nhập vào thẳng "Đang pha" → cần ca đang mở như mọi thao tác xử lý đơn
+  btn.disabled = !t || state.cart.length === 0 || !shell.shift;
+  btn.textContent = !shell.shift ? 'Chưa mở ca — mở ca để gọi món' : t ? `Gửi đơn ${t.name}` : 'Chọn bàn để gọi món';
 }
+shell.onShiftChange(() => updateSend());
 
 // ---------- Gửi đơn ----------
 let idempotencyKey = null;
@@ -636,6 +660,9 @@ $('#send').addEventListener('click', async () => {
   try {
     let sid = state.sessionId;
     if (!sid) {
+      // F-055: ca có thể đã bị đóng ở máy khác lúc mất kết nối — kiểm lại trước khi mở bàn để không để lại bàn trống
+      await shell.reloadShift();
+      if (!shell.shift) return;
       sid = await openSession(noteDirty ? noteInput.value.trim() || null : null);
       if (!sid) return;
       noteDirty = false;
@@ -663,6 +690,7 @@ $('#send').addEventListener('click', async () => {
       renderTiles();
     }
     if (err.code === 'SESSION_CLOSED') await loadTables();
+    if (err.code === 'NO_OPEN_SHIFT') shell.reloadShift();
     clear($('#send-error'), el('div', { class: 'alert danger', style: { marginBottom: '0.5rem' } }, errorMessage(err)));
   } finally {
     setBusy(btn, false);
@@ -773,6 +801,7 @@ for (const evt of [
   'session.payment_requested',
   'session.payment_cancelled',
   'session.member_changed',
+  'session.table_changed', // F-049
 ]) {
   socket?.on(evt, refreshSoon);
 }

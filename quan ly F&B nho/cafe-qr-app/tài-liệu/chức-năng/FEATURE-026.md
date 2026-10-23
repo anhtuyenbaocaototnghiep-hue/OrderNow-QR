@@ -59,12 +59,15 @@ Realtime: `session.split_changed { sessionId }` tới room `staff` + `session:{i
 
 ## Acceptance Criteria
 
-- AC-026-01: 2 khách, 4 dòng: mỗi người nhận dòng của mình → 2 phần + Chung, tổng đúng.
+- AC-026-01: 2 khách gộp bàn, 4 dòng (A gọi Cà phê sữa, Bạc xỉu; B gọi Latte, Trà đào); A nhận 2 dòng của mình, B nhận Latte → 3 phần: "Anh A" = {Cà phê sữa, Bạc xỉu} (tạm tính 29.000 + 32.000 = 61.000đ), "Chị B" = {Latte}, "Chung" = {Trà đào}; mỗi dòng thuộc đúng một phần. _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
 - AC-026-02: Thu phần A → phiên vẫn `OPEN`; thu phần B (cuối) → tự gộp Chung, phiên `CLOSED`.
 - AC-026-03: Hội viên chỉ giảm phần có hội viên.
 - AC-026-04: Thu đồng thời cùng một phần → 1 OK, 1 409; đúng một `Payments`.
-- AC-026-05: Thu cả bàn khi đã chia → `409 SESSION_HAS_SPLITS`; "Thu chung" khi chưa thu phần nào → thu cả bàn như cũ.
+- AC-026-05: Bàn đã chia bill → thu cả bàn → 409 `SESSION_HAS_SPLITS`; bấm "Thu chung" khi chưa thu phần nào → bỏ chia (không còn phần nào), thu cả bàn như bàn không chia: một lượt thu bằng tổng bàn (ví dụ Cà phê đen 25.000 + Nước suối 10.000 = 35.000đ). _(viết lại cho kiểm được — TASK-057, 20/10/2026)_
 - AC-026-06: Bất biến: Σ (tạm tính − khuyến mãi) các phần = Σ đơn; mọi dòng phiên đã đóng có `PaidAt`; mỗi phần một lượt thu.
+- AC-026-07: Khách nhận dòng đã thuộc phần người khác → 409 (`LINE_LOCKED`); khách gán dòng vào phần của người khác → 403. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-026-08: Phần Chung không còn món (mọi dòng đã có chủ) → thu phần Chung → 409 `SPLIT_EMPTY`. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-026-09: Bàn đã chia bill còn đơn chưa tiếp nhận → thu một phần → 409 `HAS_PENDING_ORDERS` (BR-019), không tạo lượt thu. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
 

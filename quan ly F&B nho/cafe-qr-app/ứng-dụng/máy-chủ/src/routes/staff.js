@@ -8,6 +8,7 @@ import { requireStaff } from '../middleware/auth.js';
 import { paramGuid, paramId, parse, zId, zManualDiscount, zMoney, zOrderItems, zText } from '../middleware/validate.js';
 import * as orderService from '../services/orderService.js';
 import * as refundService from '../services/refundService.js';
+import * as reviewService from '../services/reviewService.js';
 import * as sessionService from '../services/sessionService.js';
 import * as settingsService from '../services/settingsService.js';
 import * as shiftService from '../services/shiftService.js';
@@ -126,6 +127,11 @@ staffRouter.post('/sessions/:id/cancel', async (req, res) =>
 );
 staffRouter.get('/sessions/:id/voids', async (req, res) => res.json(await voidService.voidsOfSession(paramGuid(req))));
 
+// F-049: chuyển cả nhóm sang bàn khác (bàn trống hoặc có nhóm khác — bill vẫn riêng)
+staffRouter.post('/sessions/:id/move', async (req, res) =>
+  res.json(await sessionService.moveSession(paramGuid(req), parse(z.object({ toTableId: zId(), fromTableId: zId().optional() }), req.body ?? {}), req.user)),
+);
+
 staffRouter.post('/sessions/:id/close', async (req, res) => {
   res.json({ session: await sessionService.closeEmpty(paramGuid(req), req.user) });
 });
@@ -201,6 +207,9 @@ staffRouter.post('/payments/:id/refunds', async (req, res) => {
 
 // ---- Gọi nhân viên (FEATURE-021) ----
 staffRouter.get('/staff-calls', async (_req, res) => res.json(await staffCallService.listOpen()));
+// F-051: dải "Đánh giá thấp" (món ≤ 2 sao, chưa xử lý, trong ngày)
+staffRouter.get('/reviews/alerts', async (_req, res) => res.json(await reviewService.alerts()));
+staffRouter.post('/reviews/:id/handle', async (req, res) => res.json(await reviewService.handle(paramId(req), req.user)));
 staffRouter.post('/staff-calls/:id/handle', async (req, res) => res.json(await staffCallService.handle(paramId(req), req.user)));
 
 // ---- Công tắc nhận đơn QR (FEATURE-020) — nhân viên quầy bật/tắt được ----

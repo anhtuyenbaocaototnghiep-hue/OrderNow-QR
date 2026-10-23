@@ -3,13 +3,14 @@ import { staffApi, staffBlobUrl } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { current } from '../auth.js';
 import { $, clear, el, errorMessage } from '../ui.js';
+import { icon } from '../icons.js';
 
 await mountAdminShell('tables');
 
 clear(
   $('#head-actions'),
   el('a', { class: 'btn', href: '/admin/tables' }, '← Về danh sách bàn'),
-  el('button', { class: 'btn btn-primary', type: 'button', onclick: () => window.print() }, '🖨 In'),
+  el('button', { class: 'btn btn-primary', type: 'button', onclick: () => window.print() }, icon('printer'), 'In'),
 );
 
 try {

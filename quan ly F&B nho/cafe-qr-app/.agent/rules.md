@@ -3,7 +3,7 @@
 MUST = bắt buộc khi điều kiện xuất hiện · SHOULD = mặc định nên làm · MAY = tùy chọn.
 
 ## Phạm vi và nghiệp vụ
-- MUST không tự thêm quyền, trạng thái, business rule, chi nhánh/kho thứ hai, CRM, nhân sự. Ngoại lệ đã được chủ dự án giao: các chức năng giai đoạn 2 trong ADR-005 (hội viên, khuyến mãi, ca, hoàn tiền… — skill `them-chuc-nang`) và giai đoạn 4–8 trong ADR-006 (chia bill, kho nâng cao, trưởng ca, sổ quỹ, chấm công, CRM, phân tích).
+- MUST không tự thêm quyền, trạng thái, business rule, API contract, migration, chi nhánh/kho thứ hai, lương. Ngoại lệ đã được chủ dự án duyệt bằng ADR: giai đoạn 2 (ADR-005 — skill `extend-features`), giai đoạn 4–8 gồm CRM / chấm công (ADR-006 — skill `advanced-features`), F-046 (ADR-007), F-047 (ADR-008).
 - MUST tính mọi số tiền bằng bộ `ứng-dụng/máy-chủ/src/pricing/pricing.js` (ADR-005 D-7); không tính tiền ở route/FE; thu tiền phải gắn ca đang mở.
 - MUST không trả dữ liệu chỉ-nhân-viên cho khách: ghi chú bàn / người mở bàn (F-024, BR-032) đi qua `customerView` trong `sessionService`, sự kiện `session.note_changed` chỉ phát room `staff`.
 - MUST dùng rule theo ID trong `tài-liệu/nghiệp-vụ/business-rules.md`; rule PROPOSED/NEEDS_CONFIRMATION
@@ -29,7 +29,10 @@ MUST = bắt buộc khi điều kiện xuất hiện · SHOULD = mặc định n
 
 ## Dữ liệu, quyền, bảo mật
 - MUST kiểm permission và ownership ở server: khách chỉ chạm phiên/đơn của mình; STAFF không vào `/admin`.
-- MUST không đưa secret thật vào source, client bundle, docs, log, test fixture. Dùng `.env` + `.env.example`.
+- MUST không đưa secret thật vào source, client bundle, docs, log, test fixture, prompt, commit. Dùng `.env` + `.env.example`.
+- MUST không đưa dữ liệu cá nhân thật (SĐT, họ tên hội viên trong `CafeQrDev`) vào prompt, commit, log, báo cáo; test dùng dữ liệu giả.
+- MUST xin chủ dự án duyệt trước khi: xóa / sửa hàng loạt dữ liệu thật, triển khai production, đổi phân quyền, thêm dependency lớn,
+  migration phá hủy (DROP / đổi kiểu cột có dữ liệu), push lên remote, duyệt Gate G1–G5 (agent không tự duyệt).
 - MUST có migration đánh số cho mọi thay đổi schema; không sửa migration đã chạy; SP dùng `CREATE OR ALTER` trong `cơ-sở-dữ-liệu/thủ-tục/`.
 - MUST giữ CHECK constraint `StockQty >= 0` và unique index chống trừ kho 2 lần; không nới constraint để test pass.
 - MUST không có bất kỳ API nào cho khách đổi `PaymentStatus`; thu tiền chỉ qua `sp_SettleSession` / `sp_SubmitOrder` (mang đi) do STAFF/ADMIN gọi.

@@ -21,6 +21,8 @@
 | D-15 | Hoàn tiền sau thu: quản lý, hoặc nhân viên có quản lý xác thực; bắt buộc lý do; tùy chọn hoàn kho cho món đã làm; chỉ trong **ngày thu tiền** (giờ VN) |
 | D-16 | Đăng ký hội viên có ô đồng ý + mục đích; danh sách quản lý che số (`09xx***678`); có "Ẩn danh theo yêu cầu" |
 
+> Ghi chú D-5: tỷ lệ "1 điểm / 1.000đ" đã được thay bằng [ADR-006](ADR-006-mo-rong-giai-doan-4-8.md) D-27 (1 điểm / 10.000đ thực trả, tích trong `sp_ApplyLoyalty`, từ migration `0029`) _(cập nhật 20/10/2026 theo ADR-006 D-27 — TASK-057)_.
+
 ## Thích nghi theo hiện trạng repo (skill mục 8)
 
 | Skill đề xuất | Repo dùng | Lý do |
