@@ -184,6 +184,7 @@ Nguồn chính của skills là `.agent/skills/<name>/SKILL.md`. Công cụ AI k
 | `implement-feature` | Có. Đã đổi các tham chiếu "mẫu 19.4/19.5" thành đường dẫn thật (`tài-liệu/kế-hoạch/README.md`, `tài-liệu/chất-lượng/test-strategy.md#ban-giao`) |
 | `change-database` | Có. Thêm tham chiếu tới bảng mã lỗi và "ghi chú đối chiếu" trong data-model |
 | `verify-change` | Có. Đổi tham chiếu mẫu bàn giao thành đường dẫn thật |
+| `them-gop-tach-chuyen-khoan` | Có (24/10/2026, TASK-073). Ghi lại F-056 thu bằng chuyển khoản, F-057 gộp hóa đơn (thu chung nhiều bàn), F-058 tách hóa đơn theo món: quyết định ADR-019, dữ liệu / SP / API / giao diện, bẫy đã gặp, test, cách làm lại |
 | `do-an-cafe-reviewer` | **CHƯA CÓ trong repo.** Đã tìm trên máy thiết lập (`~/.claude/skills`, Downloads, Documents, Desktop) nhưng không thấy. Việc cần làm: thành viên đang giữ skill copy `SKILL.md` vào `.agent/skills/do-an-cafe-reviewer/`, chạy `kịch-bản/sync-skills.sh`, rồi đối chiếu với `rules.md` và `verify-change`: rule nghiệp vụ/quyền viết tay trong skill thì thay bằng link `tài-liệu/nghiệp-vụ/*`; phần trùng `verify-change` thì gộp. Ghi kết quả đối chiếu vào bảng này |
 
 ## Kiểm tra thiết lập agent

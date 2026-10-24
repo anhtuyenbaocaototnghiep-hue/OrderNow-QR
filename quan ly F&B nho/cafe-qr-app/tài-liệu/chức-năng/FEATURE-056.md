@@ -33,7 +33,7 @@
 | --- | --- |
 | `POST /api/sessions/{id}/settle`, `POST /api/splits/{id}/settle` | Body thêm `method` (`CASH` mặc định / `TRANSFER`); `amountReceived` chỉ bắt buộc khi `CASH`. Kết quả `payment.method` |
 | `POST /api/orders/takeaway` | Như trên |
-| `GET /api/shifts/current`, `GET /api/shifts/{id}` (+ báo cáo ca) | Thêm `transferIn`, `transferCount`, `transferRefunds`; `cashIn` chỉ còn tiền mặt; `expectedCash` theo Quy tắc 5; mỗi lượt thu có `method` |
+| `GET /api/shifts/current`, `GET /api/shifts/{id}/report`, `GET /api/admin/shifts` | Thêm `transferIn`, `transferCount`, `transferRefunds`; `cashIn` chỉ còn tiền mặt; `expectedCash` theo Quy tắc 5; mỗi lượt thu có `method` |
 | `GET /api/admin/reports/*` (tổng hợp) | Thêm `byMethod: { CASH, TRANSFER }`; danh sách lượt thu có `method` |
 | Bill (`/api/sessions/{id}/receipt`, `/api/payments/{id}/receipt`, `/api/orders/{id}/receipt`) | Thêm `payment.method` |
 
