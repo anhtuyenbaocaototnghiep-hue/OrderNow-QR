@@ -88,6 +88,7 @@
 | [TASK-070](TASK-070.md) | Bước 15 — triển khai & vận hành: kế hoạch phát hành, checklist (LAN + VPS), sổ bí mật, sao lưu / khôi phục / kiểm tra hệ thống (script), giám sát, sự cố (ADR-016) | — (NFR-AVL-06, 07; G5) | TASK-057 (hồ sơ 01–14) | Agent | — | chủ dự án yêu cầu 23/10 | READY_FOR_REVIEW |
 | [TASK-071](TASK-071.md) | Chưa mở ca thì không nhận và không xử lý đơn (F-055, ADR-017) | FEATURE-055 | TASK-029 (F-018), TASK-068 (F-054) | Agent | — | chủ dự án yêu cầu 23/10 | READY_FOR_REVIEW |
 | [TASK-072](TASK-072.md) | Bố cục màn quầy "Đơn hàng": đơn cần làm + lưới bàn (ADR-018) | — (giao diện SCR-10) | TASK-071 | Agent | — | chủ dự án yêu cầu 23/10 | READY_FOR_REVIEW |
+| [TASK-073](TASK-073.md) | Thu bằng chuyển khoản (két chỉ tính tiền mặt), thu chung nhiều bàn, tách hóa đơn theo món (F-056…F-058, ADR-019) | FEATURE-056, FEATURE-057, FEATURE-058 | TASK-072 (bản release/2026-10-23) | Agent | — | chủ dự án yêu cầu 24/10 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 
