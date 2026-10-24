@@ -176,6 +176,16 @@ function renderRevenue(r) {
         el('div', { class: 'value' }, money(r.totalRevenue)),
         r.refunded ? el('div', { class: 'small muted' }, `đã trừ hoàn tiền ${money(r.refunded)}`) : null,
       ),
+      // F-056 (ADR-019 D-72): doanh thu theo cách trả — tiền mặt đối chiếu két, chuyển khoản đối chiếu tài khoản ngân hàng
+      ['CASH', 'TRANSFER'].map((k) =>
+        el(
+          'div',
+          { class: 'card kpi' },
+          el('div', { class: 'label' }, k === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'),
+          el('div', { class: 'value' }, money(r.byMethod?.[k]?.revenue ?? 0)),
+          el('div', { class: 'small muted' }, `${num(r.byMethod?.[k]?.payments ?? 0)} lượt thu`),
+        ),
+      ),
       el('div', { class: 'card kpi' }, el('div', { class: 'label' }, 'Số hóa đơn (đơn đã thu)'), el('div', { class: 'value' }, num(r.orderCount))),
       el(
         'div',
@@ -458,8 +468,8 @@ function renderPayments(list) {
               el(
                 'tr',
                 {},
-                ['Thời gian', 'Bàn / đơn', 'Giảm', 'Phải thu', 'Khách đưa', 'Tiền thừa', 'Đã hoàn', 'Thu ngân'].map((h, i) =>
-                  el('th', { class: i >= 2 && i <= 6 ? 'num' : '' }, h),
+                ['Thời gian', 'Bàn / đơn', 'Cách trả', 'Giảm', 'Phải thu', 'Khách đưa', 'Tiền thừa', 'Đã hoàn', 'Thu ngân'].map((h, i) =>
+                  el('th', { class: i >= 3 && i <= 7 ? 'num' : '' }, h),
                 ),
               ),
             ),
@@ -478,6 +488,7 @@ function renderPayments(list) {
                     p.member ? el('div', { class: 'small muted' }, icon('star', { label: 'Hội viên' }), p.member) : null,
                     p.manualReason ? el('div', { class: 'small muted' }, `Giảm tay: ${p.manualReason}`) : null,
                   ),
+                  el('td', {}, p.method === 'TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt'),
                   el('td', { class: 'num' }, p.discount ? `−${money(p.discount)}` : '—'),
                   el('td', { class: 'num' }, money(p.amountDue)),
                   el('td', { class: 'num' }, money(p.amountReceived)),

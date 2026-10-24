@@ -6,7 +6,7 @@ import { api } from '../api.js';
 import { mountMemberBox } from '../member-box.js';
 import { connectRealtime } from '../socket.js';
 import { $, clear, el, elapsed, errorMessage, modal, money, setBusy, time, toast } from '../ui.js';
-import { CUSTOMER_STATUS, clearSessionId, followTable, getSessionId, goEntry, qrToken, takeFlash } from '../customer.js';
+import { CUSTOMER_STATUS, clearSessionId, followMerged, followTable, getSessionId, goEntry, qrToken, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
 
 const qr = qrToken();
@@ -51,6 +51,8 @@ async function load() {
     return;
   }
   if (session.status !== 'CLOSED' && followTable(qr, sessionId, session.table)) return; // F-049: nhóm đã chuyển bàn trong lúc trang đóng / mất mạng
+  // F-057: bàn đã được thu chung vào bàn khác (kể cả khi lỡ sự kiện) → sang trang theo dõi của bàn đó
+  if (followMerged(qr, session.mergedInto)) return;
   $('#table').textContent = session.table.name;
   const waiting = session.orders.some((o) => o.status === 'PENDING' || o.status === 'PREPARING');
   const [e, sp, rv] = await Promise.all([
@@ -621,6 +623,8 @@ for (const evt of [
   socket?.on(evt, scheduleLoad);
 }
 socket?.on('session.table_changed', (p) => followTable(qr, sessionId, p.toTable)); // F-049
+// F-057: bàn này được thu chung vào bàn khác → sang trang theo dõi của bàn đó (đánh giá món ở đó)
+socket?.on('session.settled', (p) => followMerged(qr, p.mergedInto));
 socket?.on('session.staff_called', (c) => {
   lastCall = { at: new Date(c.requestedAt).getTime(), handled: false };
   scheduleLoad();

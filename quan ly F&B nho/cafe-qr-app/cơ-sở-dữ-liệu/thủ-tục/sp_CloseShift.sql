@@ -1,4 +1,5 @@
--- Đóng ca tiền mặt (FEATURE-018): ExpectedCash = OpeningCash + Σ AmountDue thu trong ca − Σ hoàn tiền trong ca
+-- Đóng ca tiền mặt (FEATURE-018): ExpectedCash = OpeningCash + Σ AmountDue thu TIỀN MẶT trong ca − Σ hoàn tiền (của lượt tiền mặt) trong ca
+--   (ADR-019 D-72: lượt chuyển khoản và hoàn tiền của lượt chuyển khoản không vào két)
 --   + Σ thu khác − Σ chi quỹ ĐÃ DUYỆT (FEATURE-033, ADR-006 D-23). Còn khoản chi chờ duyệt → không đóng được (50072).
 -- Khóa dòng ca (X) → các lượt thu tiền/hoàn tiền/sổ quỹ đang chạy (giữ khóa S trên ca) phải xong trước; lượt sau thấy ca đã đóng.
 -- Lỗi: 50071 SHIFT_NOT_OPEN, 50072 CASH_PENDING.
@@ -25,8 +26,8 @@ BEGIN
   BEGIN ROLLBACK; THROW 50072, 'CASH_PENDING', 1; END
 
   SET @ExpectedCash = @Opening
-    + ISNULL((SELECT SUM(AmountDue) FROM dbo.Payments WHERE ShiftId = @ShiftId), 0)
-    - ISNULL((SELECT SUM(Amount) FROM dbo.Refunds WHERE ShiftId = @ShiftId), 0)
+    + ISNULL((SELECT SUM(AmountDue) FROM dbo.Payments WHERE ShiftId = @ShiftId AND Method = 'CASH'), 0)
+    - ISNULL((SELECT SUM(r.Amount) FROM dbo.Refunds r JOIN dbo.Payments p ON p.PaymentId = r.PaymentId WHERE r.ShiftId = @ShiftId AND p.Method = 'CASH'), 0)
     + ISNULL((SELECT SUM(Amount) FROM dbo.CashTransactions WHERE ShiftId = @ShiftId AND Status = 'APPROVED' AND Direction = 'IN'), 0)
     - ISNULL((SELECT SUM(Amount) FROM dbo.CashTransactions WHERE ShiftId = @ShiftId AND Status = 'APPROVED' AND Direction = 'OUT'), 0);
   SET @Difference = @CountedCash - @ExpectedCash;

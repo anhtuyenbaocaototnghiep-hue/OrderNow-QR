@@ -1461,3 +1461,110 @@ test('đề xuất nhập hàng: nguyên liệu chưa gán nhà cung cấp — �
   await expect(P.locator('.toast', { hasText: 'Đã lưu nhà cung cấp' })).toBeVisible();
   await expect(P.locator('#content tbody tr', { has: P.getByRole('button', { name: 'Sữa đặc', exact: true }) })).toContainText('NCC E2E');
 });
+
+/** Khách (ngữ cảnh trình duyệt riêng — cookie riêng) quét QR bàn rồi gửi đơn qua API; quầy tiếp nhận. → sessionId */
+async function guestOrderAccepted(request, qrToken, items) {
+  const g = await browser.newContext();
+  try {
+    await g.request.get('/api/menu');
+    const scan = await (await g.request.post('/api/sessions/scan', { data: { qrToken } })).json();
+    const sessionId = scan.session?.sessionId ?? (await (await g.request.post('/api/sessions', { data: { qrToken } })).json()).session.sessionId;
+    const order = await (await g.request.post('/api/orders', { data: { sessionId, items } })).json();
+    await apiAs(request, 'post', `/api/orders/${order.orderId}/accept`);
+    return sessionId;
+  } finally {
+    await g.close();
+  }
+}
+
+test('thu bằng chuyển khoản: ngăn Thu tiền chọn "Chuyển khoản" → không nhập tiền khách đưa, bàn đóng; trang Ca tách riêng chuyển khoản, két không cộng khoản đó (F-056, AC-056-06)', async ({
+  request,
+}) => {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'CK1', name: 'Bàn CK1' });
+  await guestOrderAccepted(request, t.qrToken, [{ menuItemId: ids['Nước suối'], quantity: 2 }]);
+  const before = (await apiAs(request, 'get', '/api/shifts/current')).shift;
+
+  await P.goto('/pos');
+  await P.locator('#tables .table-row', { hasText: 'Bàn CK1' }).getByRole('button', { name: 'Thu tiền' }).click();
+  const drawer = P.locator('.drawer');
+  await expect(drawer.getByLabel('Tiền khách đưa')).toBeVisible();
+  await drawer.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
+  await expect(drawer.getByLabel('Tiền khách đưa')).toBeHidden();
+  const pay = drawer.locator('.modal-foot .btn-success');
+  await expect(pay).toHaveText('Đã nhận chuyển khoản & In bill');
+  await expect(pay).toBeEnabled();
+  await pay.click();
+  await expect(P.locator('.toast', { hasText: 'đã nhận chuyển khoản' })).toBeVisible();
+  await expect(P.locator('#tables .table-row', { hasText: 'Bàn CK1' })).toHaveCount(0);
+
+  const after = (await apiAs(request, 'get', '/api/shifts/current')).shift;
+  expect(after.transferIn - before.transferIn).toBe(20000);
+  expect(after.expectedCash).toBe(before.expectedCash);
+  await P.goto('/pos/shift');
+  await expect(P.locator('.kpi', { hasText: 'không vào két' })).toContainText(`${after.transferIn.toLocaleString('vi-VN')}đ`);
+  await expect(P.locator('table .badge', { hasText: 'Chuyển khoản' }).first()).toBeVisible();
+});
+
+test('thu chung nhiều bàn: ngăn Thu tiền Bàn GH1 → "Thu chung với bàn khác" → tích Bàn GH2 → tổng chung → thu một lần, cả hai bàn đóng (F-057, AC-057-05)', async ({
+  request,
+}) => {
+  const t1 = await apiAs(request, 'post', '/api/admin/tables', { code: 'GH1', name: 'Bàn GH1' });
+  const t2 = await apiAs(request, 'post', '/api/admin/tables', { code: 'GH2', name: 'Bàn GH2' });
+  await guestOrderAccepted(request, t1.qrToken, [{ menuItemId: ids['Cà phê đen'], quantity: 1 }]);
+  await guestOrderAccepted(request, t2.qrToken, [{ menuItemId: ids['Nước suối'], quantity: 1 }]);
+
+  await P.goto('/pos');
+  await P.locator('#tables .table-row', { hasText: 'Bàn GH1' }).getByRole('button', { name: 'Thu tiền' }).click();
+  const drawer = P.locator('.drawer');
+  await drawer.getByRole('button', { name: 'Thu chung với bàn khác' }).click();
+  const pick = P.locator('.modal', { hasText: 'Thu chung với Bàn GH1' });
+  await pick.getByLabel(/^Bàn GH2/).check();
+  await pick.getByRole('button', { name: 'Thu chung', exact: true }).click();
+  await expect(drawer.locator('h3')).toHaveText('Thu chung: Bàn GH1 + Bàn GH2');
+  await expect(drawer).toContainText('Nước suối');
+  await expect(drawer.locator('.due span').last()).toHaveText('35.000đ');
+  await P.fill('#amount-received', '50000');
+  await drawer.locator('.modal-foot .btn-success').click();
+  await expect(P.locator('.toast', { hasText: 'Đã thu chung 2 bàn' })).toBeVisible();
+  await expect(P.locator('#tables .table-row', { hasText: 'Bàn GH1' })).toHaveCount(0);
+  await expect(P.locator('#tables .table-row', { hasText: 'Bàn GH2' })).toHaveCount(0);
+});
+
+test('tách hóa đơn theo món: "Tách hóa đơn" → tích món → "Anh A" + "Phần còn lại"; thu "Anh A" bằng chuyển khoản, phần còn lại bằng tiền mặt (F-058, AC-058-03)', async ({
+  request,
+}) => {
+  const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'TH1', name: 'Bàn TH1' });
+  await guestOrderAccepted(request, t.qrToken, [
+    { menuItemId: ids['Cà phê đen'], quantity: 1 },
+    { menuItemId: ids['Nước suối'], quantity: 1 },
+  ]);
+
+  await P.goto('/pos');
+  await P.locator('#tables .table-row', { hasText: 'Bàn TH1' }).getByRole('button', { name: 'Thu tiền' }).click();
+  const drawer = P.locator('.drawer');
+  await drawer.getByRole('button', { name: 'Tách hóa đơn' }).click();
+  const dlg = P.locator('.modal', { hasText: 'Tách hóa đơn — Bàn TH1' });
+  await dlg.getByLabel(/Nước suối/).check();
+  await dlg.getByLabel('Tên hóa đơn tách ra').fill('Anh A');
+  await dlg.getByRole('button', { name: 'Tách ra hóa đơn riêng' }).click();
+  await expect(drawer.locator('.split-block')).toContainText('Bàn chia bill: 2 phần');
+  const partA = drawer.locator('.split-card').filter({ has: P.locator('strong', { hasText: /^Anh A$/ }) });
+  await expect(partA).toContainText('Nước suối');
+  await partA.getByRole('button', { name: 'Thu phần này' }).click();
+  await drawer.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
+  await expect(drawer.locator('.due span').last()).toHaveText('10.000đ');
+  await drawer.locator('.modal-foot .btn-success').click();
+  await expect(P.locator('.toast', { hasText: 'Đã thu phần Anh A: đã nhận chuyển khoản' })).toBeVisible();
+  await drawer
+    .locator('.split-card')
+    .filter({ has: P.locator('strong', { hasText: /^Phần còn lại$/ }) })
+    .getByRole('button', { name: 'Thu phần này' })
+    .click();
+  // Phần sau tự về Tiền mặt — không ghi nhầm chuyển khoản theo lượt trước (review G3)
+  await expect(drawer.getByRole('button', { name: 'Tiền mặt', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await drawer.locator('.quick-cash .btn').first().click();
+  await drawer.locator('.modal-foot .btn-success').click();
+  await expect(P.locator('.drawer')).toHaveCount(0);
+  await expect(P.locator('#tables .table-row', { hasText: 'Bàn TH1' })).toHaveCount(0);
+});

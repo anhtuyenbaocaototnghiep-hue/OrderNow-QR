@@ -282,3 +282,15 @@ Mọi trang `/admin/*` có chung khung (`mountAdminShell`): HTML có sẵn "Đan
 - **Phiếu đơn:** tên bàn to; mã đơn + giờ đặt + "Nhân viên nhập" ở dòng nhỏ; đồng hồ chờ từ 8 phút nền vàng, từ 15 phút nền đỏ; nút Tiếp nhận / Tiếp nhận & Hoàn tất / Hủy / Hoàn tất cao 44 px. Phiếu đã xong một dòng: bàn · mã · món · tổng · đã / chưa thu · giờ xong.
 - **Lưới bàn:** đầu khung "Bàn" + Gọi món + Mang đi + dòng đếm (có khách, gọi thanh toán, có đơn chờ, trống). Thẻ nhóm: tên bàn (nhiều nhóm: "Nhóm n"), trạng thái chấm màu + chữ, tạm tính, số đơn + giờ mở, chia bill / hội viên / chuyển bàn / ghi chú; nút biểu tượng Ghi chú, Chuyển bàn; nút Gọi món + Thu tiền (chưa có đơn: Đóng bàn). Thẻ bàn trống: nét đứt, "Trống", Gọi món.
 - **Co giãn:** ≥ 1200 px ba vùng cạnh nhau; 760–1199 px lưới bàn là ngăn trượt bên phải (nút "Bàn · n có khách" + số gọi thanh toán; Esc / Đóng / bấm nền mờ để đóng, focus vào ngăn và trả về nút); < 760 px một cột, trang cuộn bình thường.
+
+## ADR-019 — Chuyển khoản, thu chung nhiều bàn, tách hóa đơn (TASK-073, 24/10/2026)
+
+- **S-14 Ngăn Thu tiền bàn:**
+  - Hai nút **Tiền mặt** / **Chuyển khoản** trên ô "Tiền khách đưa". Chuyển khoản → ẩn ô tiền khách đưa và nút tiền nhanh, hiện ghi chú "xem tiền đã về rồi bấm…", nút thu thành **"Đã nhận chuyển khoản & In bill"** (F-056). Áp cả khi thu từng phần chia bill.
+  - Nút **"Tách hóa đơn"** → hộp thoại ô tích các món chưa thu + tên hóa đơn → **"Tách ra hóa đơn riêng"**; bàn chưa chia thì món còn lại thành "Phần còn lại" (F-058).
+  - Nút **"Thu chung với bàn khác"** → hộp thoại ô tích các bàn đang phục vụ (bàn đang chia bill bị khóa) → ngăn ghi "Thu chung: Bàn A + Bàn B", đơn của bàn khác xếp theo bàn, tổng chung, nút **"Bỏ thu chung"**; In tạm tính in tổng chung (F-057).
+- **S-13 Bán mang đi:** cùng hai nút Tiền mặt / Chuyển khoản.
+- **S-15 Ca & hoàn tiền:** KPI "Tiền mặt đã thu", "Chuyển khoản (n lượt) — không vào két", "Đã hoàn tiền mặt" (+ "Đã hoàn chuyển khoản" khi có); bảng lượt thu có cột "Cách trả"; hộp hoàn tiền của lượt chuyển khoản ghi "chuyển trả lại cho khách, không lấy tiền trong két".
+- **S-12 Bill:** dòng "Thanh toán: Chuyển khoản" (không in tiền khách đưa / tiền thừa); bill thu chung ghi các bàn, món nhóm theo bàn.
+- **S-21 Báo cáo:** KPI "Tiền mặt" / "Chuyển khoản" (doanh thu sau hoàn, số lượt); danh sách lượt thu có cột "Cách trả".
+- **S-05 Theo dõi đơn (khách):** bàn được thu chung → tự chuyển sang trang theo dõi của bàn đã thu (màn "Đã thanh toán", đánh giá món).

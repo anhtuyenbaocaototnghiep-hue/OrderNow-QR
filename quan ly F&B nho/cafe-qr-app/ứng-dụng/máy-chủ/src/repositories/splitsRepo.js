@@ -43,6 +43,71 @@ async function lockSession(tx, sessionId) {
 }
 
 /**
+ * F-058 (ADR-019 D-74): tách các dòng đã chọn ra một phần mới — một transaction.
+ * Dòng phải thuộc phiên, chưa thu, là món chính, đơn còn hiệu lực, đang ở Chung hoặc phần còn mở; thiếu dòng nào → rollback.
+ * Tạo phần "Chung" nếu chưa có. Sau khi tách mà không còn phần nào khác đang mở → các món Chung chưa thu vào phần "Phần còn lại"
+ * (nếu để ở Chung thì phần vừa tách là phần cuối, sẽ tự gộp món Chung theo F-026). Món gọi thêm sau đó vào Chung như F-026.
+ * → { splitId } | { error: 'NOT_FOUND' | 'CLOSED' | 'LINE' }
+ */
+export async function separate(sessionId, { label, orderItemIds }) {
+  try {
+    return await inTransaction(async (tx) => {
+      const status = await lockSession(tx, sessionId);
+      if (!status) return { error: 'NOT_FOUND' };
+      if (status === 'CLOSED') return { error: 'CLOSED' };
+      const s = { s: [sql.UniqueIdentifier, sessionId] };
+      await txQuery(
+        tx,
+        `IF NOT EXISTS (SELECT 1 FROM dbo.SessionSplits WHERE SessionId = @s AND IsCommon = 1)
+           INSERT dbo.SessionSplits (SessionId, Label, IsCommon) VALUES (@s, N'Chung', 1)`,
+        s,
+      );
+      const r = await txQuery(tx, 'INSERT dbo.SessionSplits (SessionId, Label) OUTPUT inserted.SplitId VALUES (@s, @l)', {
+        ...s,
+        l: [sql.NVarChar(50), label],
+      });
+      const splitId = r.recordset[0].SplitId;
+      const moved = await txQuery(
+        tx,
+        `UPDATE oi SET SplitId = @sp
+         FROM dbo.OrderItems oi JOIN dbo.Orders o ON o.OrderId = oi.OrderId
+         LEFT JOIN dbo.SessionSplits cur ON cur.SplitId = oi.SplitId
+         WHERE oi.OrderItemId IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@ids, ','))
+           AND o.SessionId = @s AND o.Status NOT IN ('CANCELLED', 'VOIDED')
+           AND oi.ParentOrderItemId IS NULL AND oi.PaidAt IS NULL
+           AND (oi.SplitId IS NULL OR cur.Status = 'OPEN')`,
+        { ...s, sp: [sql.Int, splitId], ids: [sql.VarChar(1200), orderItemIds.join(',')] },
+      );
+      if (moved.rowsAffected[0] !== orderItemIds.length) throw Object.assign(new Error('LINE'), { lineLocked: true });
+      const left = await txQuery(
+        tx,
+        `SELECT (SELECT COUNT(*) FROM dbo.SessionSplits WHERE SessionId = @s AND IsCommon = 0 AND Status = 'OPEN' AND SplitId <> @sp) AS OpenParts,
+                (SELECT COUNT(*) FROM dbo.OrderItems oi JOIN dbo.Orders o ON o.OrderId = oi.OrderId
+                 WHERE o.SessionId = @s AND o.Status NOT IN ('CANCELLED', 'VOIDED') AND oi.ParentOrderItemId IS NULL
+                   AND oi.PaidAt IS NULL AND oi.SplitId IS NULL) AS CommonLines`,
+        { ...s, sp: [sql.Int, splitId] },
+      );
+      {
+        const { OpenParts, CommonLines } = left.recordset[0];
+        if (OpenParts === 0 && CommonLines > 0) {
+          const other = await txQuery(tx, "INSERT dbo.SessionSplits (SessionId, Label) OUTPUT inserted.SplitId VALUES (@s, N'Phần còn lại')", s);
+          await txQuery(
+            tx,
+            `UPDATE oi SET SplitId = @sp FROM dbo.OrderItems oi JOIN dbo.Orders o ON o.OrderId = oi.OrderId
+             WHERE o.SessionId = @s AND o.Status NOT IN ('CANCELLED', 'VOIDED') AND oi.ParentOrderItemId IS NULL AND oi.PaidAt IS NULL AND oi.SplitId IS NULL`,
+            { ...s, sp: [sql.Int, other.recordset[0].SplitId] },
+          );
+        }
+      }
+      return { splitId };
+    });
+  } catch (err) {
+    if (err.lineLocked) return { error: 'LINE' };
+    throw err;
+  }
+}
+
+/**
  * Tạo phần (kèm phần "Chung" nếu phiên chưa chia). Khách: mỗi điện thoại một phần (trả lại phần đang mở nếu đã có).
  * → { splitId } | { error: 'NOT_FOUND' | 'CLOSED' }
  */
@@ -172,6 +237,7 @@ export async function settle(splitId, p) {
     .input('VoucherDiscount', sql.Decimal(12, 0), p.totals.voucherDiscount ?? 0)
     .input('RewardDiscount', sql.Decimal(12, 0), p.totals.rewardDiscount ?? 0)
     .input('LoyaltyJson', sql.NVarChar(sql.MAX), p.loyaltyJson ?? null)
+    .input('Method', sql.VarChar(10), p.method ?? 'CASH')
     .output('PaymentId', sql.Int)
     .output('AmountDue', sql.Decimal(12, 0))
     .output('SessionClosed', sql.Bit)

@@ -39,6 +39,19 @@ export function followTable(qr, sessionId, toTable) {
   return true;
 }
 
+/**
+ * F-057: nhóm này đã được thu chung vào nhóm khác (cùng bàn hoặc bàn khác) — điện thoại đã là thành viên nhóm đó →
+ * lưu phiên đó cho URL bàn hiện tại rồi mở trang theo dõi (bill chung, đánh giá món). Không cần mã QR bàn kia. → true nếu đang chuyển trang.
+ */
+export function followMerged(qr, mergedInto) {
+  if (!mergedInto?.sessionId || getSessionId(qr) === mergedInto.sessionId) return false;
+  leaving = true;
+  setSessionId(qr, mergedInto.sessionId);
+  setFlash(`Nhóm của bạn đã được thanh toán chung với ${mergedInto.table?.name ?? 'bàn khác'}`, 'info');
+  location.replace(`/t/${qr}/track`);
+  return true;
+}
+
 export function goEntry(qr, flash) {
   leaving = true;
   clearSessionId(qr);

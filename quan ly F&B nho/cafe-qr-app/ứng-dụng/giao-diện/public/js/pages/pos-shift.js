@@ -1,4 +1,5 @@
 // S-15 Ca tiền mặt (FEATURE-018): mở ca, tiền dự kiến trong két, lượt thu trong ca, đóng ca (đếm tiền → chênh lệch), in phiếu chốt ca.
+// F-056 (ADR-019 D-72): tiền mặt và chuyển khoản tách riêng — két chỉ tính tiền mặt.
 // Hoàn tiền sau thu (FEATURE-019, D-15): chọn lượt thu → số tiền, lý do, đơn bị hủy, hoàn kho; nhân viên cần quản lý nhập tài khoản.
 // ADR-006: sổ quỹ ca — chi tiền / thu khác, duyệt khoản chờ (F-033); trưởng ca / quản lý sửa chấm công trong ngày (F-035, F-036).
 import { staffApi } from '../api.js';
@@ -58,6 +59,9 @@ async function load() {
   render(data);
 }
 
+// F-056: cách trả của một lượt thu
+const methodBadge = (m) => (m === 'TRANSFER' ? el('span', { class: 'badge preparing' }, 'Chuyển khoản') : el('span', { class: 'badge' }, 'Tiền mặt'));
+
 const kpi = (label, value, cls = '') => el('div', { class: `card kpi ${cls}` }, el('div', { class: 'label' }, label), el('div', { class: 'value' }, value));
 
 function summary({ shift, report }) {
@@ -66,8 +70,10 @@ function summary({ shift, report }) {
       'div',
       { class: 'kpis' },
       kpi('Tiền đầu ca', money(shift.openingCash)),
-      kpi(`Đã thu (${shift.paymentCount} lượt)`, money(shift.cashIn)),
-      kpi('Đã hoàn', money(shift.cashOut)),
+      kpi(`Tiền mặt đã thu (${shift.paymentCount - (shift.transferCount ?? 0)} lượt)`, money(shift.cashIn)),
+      kpi(`Chuyển khoản (${shift.transferCount ?? 0} lượt) — không vào két`, money(shift.transferIn ?? 0)),
+      kpi('Đã hoàn tiền mặt', money(shift.cashOut)),
+      shift.transferRefunds ? kpi('Đã hoàn chuyển khoản', money(shift.transferRefunds)) : null,
       shift.cashBookIn ? kpi('Thu khác (sổ quỹ)', money(shift.cashBookIn)) : null,
       kpi('Chi quỹ (đã duyệt)', money(shift.cashBookOut)),
       kpi(shift.status === 'OPEN' ? 'Tiền dự kiến trong két' : 'Tiền dự kiến', money(shift.expectedCash), 'strong'),
@@ -151,7 +157,9 @@ function render(data) {
                 el(
                   'tr',
                   {},
-                  ['Giờ', 'Bàn / đơn', 'Phải thu', 'Đã hoàn', 'Thu ngân', ''].map((h, i) => el('th', { class: i === 2 || i === 3 ? 'num' : '' }, h)),
+                  ['Giờ', 'Bàn / đơn', 'Cách trả', 'Phải thu', 'Đã hoàn', 'Thu ngân', ''].map((h, i) =>
+                    el('th', { class: i === 3 || i === 4 ? 'num' : '' }, h),
+                  ),
                 ),
               ),
               el(
@@ -163,6 +171,7 @@ function render(data) {
                     {},
                     el('td', {}, time(p.paidAt)),
                     el('td', {}, p.target),
+                    el('td', {}, methodBadge(p.method)),
                     el('td', { class: 'num' }, money(p.amountDue)),
                     el('td', { class: 'num' }, p.refunded ? money(p.refunded) : '—'),
                     el('td', {}, p.receivedBy),
@@ -188,7 +197,11 @@ function render(data) {
             'ul',
             {},
             report.refunds.map((r) =>
-              el('li', {}, `${time(r.createdAt)} · ${money(r.amount)} — ${r.reason} (thực hiện: ${r.createdBy}, duyệt: ${r.approvedBy})`),
+              el(
+                'li',
+                {},
+                `${time(r.createdAt)} · ${money(r.amount)} ${r.method === 'TRANSFER' ? '(chuyển khoản)' : '(tiền mặt)'} — ${r.reason} (thực hiện: ${r.createdBy}, duyệt: ${r.approvedBy})`,
+              ),
             ),
           ),
         )
@@ -387,6 +400,10 @@ async function openRefund(paymentId) {
         { class: 'small muted' },
         `Thu lúc ${dateTime(payment.paidAt)} bởi ${payment.receivedBy.fullName}. Đã hoàn ${money(payment.refunded)}. Chỉ hoàn được trong ngày thu tiền.`,
       ),
+      // F-056 (ADR-019 D-72): hoàn theo cách khách đã trả
+      payment.method === 'TRANSFER'
+        ? el('p', { class: 'transfer-note' }, 'Lượt này khách trả bằng chuyển khoản — chuyển trả lại cho khách, không lấy tiền trong két.')
+        : null,
       refunds.length
         ? el(
             'ul',

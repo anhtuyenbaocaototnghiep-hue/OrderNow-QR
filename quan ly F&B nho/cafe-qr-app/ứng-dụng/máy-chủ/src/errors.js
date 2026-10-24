@@ -113,6 +113,11 @@ const SQL_ERRORS = {
   50203: [409, 'TABLE_INACTIVE', 'Bàn đích đang tắt'],
   50204: [400, 'SAME_TABLE', 'Nhóm đang ngồi ở bàn này rồi'],
   50205: [409, 'SESSION_MOVED', 'Nhóm vừa được chuyển sang bàn khác ở máy khác — xem lại bàn hiện tại rồi chuyển'],
+  // FEATURE-057 thu chung nhiều bàn (ADR-019 D-73)
+  50210: [400, 'VALIDATION_ERROR', 'Chọn 1–10 bàn khác (không trùng, không chọn chính bàn này) để thu chung'],
+  50211: [404, 'NOT_FOUND', 'Không tìm thấy bàn được chọn để thu chung'],
+  50212: [409, 'SESSION_CLOSED', 'Có bàn được chọn vừa thanh toán / đã đóng — chọn lại các bàn thu chung'],
+  50213: [409, 'SESSION_HAS_SPLITS', 'Có bàn được chọn đang chia bill — hãy bấm "Thu chung" ở bàn đó để gộp lại trước'],
 };
 
 /** Chuyển lỗi THROW 5000x của SP thành AppError; trả null nếu không phải lỗi nghiệp vụ. */

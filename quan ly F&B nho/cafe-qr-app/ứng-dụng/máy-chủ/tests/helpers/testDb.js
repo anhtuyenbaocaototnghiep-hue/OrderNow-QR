@@ -69,10 +69,21 @@ export async function inventoryViolations(pool) {
     SELECT 'CASH_REPLACE_LINK', o.CashTxnId FROM dbo.CashTransactions o
     LEFT JOIN dbo.CashTransactions n ON n.CashTxnId = o.ReplacedById
     WHERE o.ReplacedById IS NOT NULL AND (o.Status <> 'VOIDED' OR ISNULL(n.ReplacesId, 0) <> o.CashTxnId)
-    -- Chuyển bàn (F-049): đơn của phiên luôn ở đúng bàn hiện tại của phiên
+    -- Chuyển bàn (F-049): đơn của phiên luôn ở đúng bàn hiện tại của phiên —
+    -- trừ đơn được thu chung từ bàn khác (F-057): giữ bàn gốc = bàn của một phiên đã gộp vào phiên này
     UNION ALL
     SELECT 'ORDER_TABLE_MISMATCH', o.OrderId FROM dbo.Orders o JOIN dbo.Sessions s ON s.SessionId = o.SessionId
     WHERE ISNULL(o.TableId, -1) <> s.TableId
+      AND NOT EXISTS (SELECT 1 FROM dbo.Sessions m WHERE m.MergedIntoSessionId = o.SessionId AND m.TableId = o.TableId)
+    -- Thu chung (F-057): phiên đã gộp thì đóng, không còn đơn, phiên đích đã đóng và có lượt thu
+    UNION ALL
+    SELECT 'MERGED_SESSION_STATE', 0 FROM dbo.Sessions m JOIN dbo.Sessions t ON t.SessionId = m.MergedIntoSessionId
+    WHERE m.Status <> 'CLOSED' OR t.Status <> 'CLOSED' OR t.MergedIntoSessionId IS NOT NULL
+       OR EXISTS (SELECT 1 FROM dbo.Orders o WHERE o.SessionId = m.SessionId)
+       OR NOT EXISTS (SELECT 1 FROM dbo.Payments p WHERE p.SessionId = t.SessionId)
+    -- Chuyển khoản (F-056): không có tiền thừa
+    UNION ALL
+    SELECT 'TRANSFER_WITH_CHANGE', p.PaymentId FROM dbo.Payments p WHERE p.Method = 'TRANSFER' AND p.AmountReceived <> p.AmountDue
     UNION ALL
     SELECT 'RECEIPT_LEDGER_MISMATCH', sr.ReceiptId FROM dbo.StockReceipts sr
     WHERE ISNULL((SELECT SUM(t.Delta) FROM dbo.InventoryTransactions t WHERE t.StockReceiptId = sr.ReceiptId AND t.Type = 'IMPORT'), 0)
@@ -142,10 +153,12 @@ export async function inventoryViolations(pool) {
     -- Sổ quỹ + chấm công (ADR-006 F-033, F-035): tiền dự kiến chốt ca đúng công thức có sổ quỹ; ca đã đóng không còn khoản chờ duyệt;
     -- mỗi người tối đa một lần chấm công đang mở
     UNION ALL
+    -- F-056 (ADR-019 D-72): két chỉ tính lượt thu tiền mặt và hoàn tiền của lượt tiền mặt
     SELECT 'SHIFT_EXPECTED_CASH', s.ShiftId FROM dbo.Shifts s
     WHERE s.ClosedAt IS NOT NULL AND s.ExpectedCash <> s.OpeningCash
-      + ISNULL((SELECT SUM(p.AmountDue) FROM dbo.Payments p WHERE p.ShiftId = s.ShiftId), 0)
-      - ISNULL((SELECT SUM(r.Amount) FROM dbo.Refunds r WHERE r.ShiftId = s.ShiftId), 0)
+      + ISNULL((SELECT SUM(p.AmountDue) FROM dbo.Payments p WHERE p.ShiftId = s.ShiftId AND p.Method = 'CASH'), 0)
+      - ISNULL((SELECT SUM(r.Amount) FROM dbo.Refunds r JOIN dbo.Payments rp ON rp.PaymentId = r.PaymentId
+                WHERE r.ShiftId = s.ShiftId AND rp.Method = 'CASH'), 0)
       + ISNULL((SELECT SUM(c.Amount) FROM dbo.CashTransactions c WHERE c.ShiftId = s.ShiftId AND c.Status = 'APPROVED' AND c.Direction = 'IN'), 0)
       - ISNULL((SELECT SUM(c.Amount) FROM dbo.CashTransactions c WHERE c.ShiftId = s.ShiftId AND c.Status = 'APPROVED' AND c.Direction = 'OUT'), 0)
     UNION ALL

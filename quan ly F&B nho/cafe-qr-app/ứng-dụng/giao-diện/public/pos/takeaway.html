@@ -30,10 +30,21 @@
         <div id="breakdown" class="breakdown"></div>
         <div class="due"><span>Tổng</span><span id="total">0đ</span></div>
         <form id="pay-form" novalidate>
-          <label for="received">Tiền khách đưa</label>
-          <div id="received-slot"></div>
-          <div class="quick-cash" id="quick"></div>
-          <div class="change" id="change"><span>Tiền thừa</span><span>—</span></div>
+          <!-- F-056 (ADR-019 D-71): cách trả — chuyển khoản không nhập tiền khách đưa, không vào két -->
+          <div class="pay-method" role="group" aria-label="Cách trả">
+            <button class="btn" type="button" id="method-cash" aria-pressed="true">Tiền mặt</button>
+            <button class="btn" type="button" id="method-transfer" aria-pressed="false">Chuyển khoản</button>
+          </div>
+          <div class="cash-fields" id="cash-fields">
+            <label for="received">Tiền khách đưa</label>
+            <div id="received-slot"></div>
+            <div class="quick-cash" id="quick"></div>
+            <div class="change" id="change"><span>Tiền thừa</span><span>—</span></div>
+          </div>
+          <p class="transfer-note" id="transfer-note" hidden>
+            Khách chuyển khoản vào tài khoản quán — xem tiền đã về rồi bấm "Đã nhận chuyển khoản &amp; In bill". Không có tiền thừa, không tính vào tiền mặt
+            trong két.
+          </p>
           <div id="pay-error"></div>
           <button class="btn btn-success btn-lg btn-block" id="pay" type="submit" disabled>Thu tiền &amp; In bill</button>
           <button class="btn btn-ghost btn-sm btn-block" id="clear" type="button" style="margin-top: 0.4rem">Xóa giỏ</button>

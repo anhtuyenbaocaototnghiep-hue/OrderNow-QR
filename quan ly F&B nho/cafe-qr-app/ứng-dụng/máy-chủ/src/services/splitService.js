@@ -114,6 +114,17 @@ export async function assign(sessionId, orderItemId, splitId, viewer) {
   return view(sessionId, viewer);
 }
 
+/** F-058 (ADR-019 D-74): quầy tách các món đã chọn ra một hóa đơn (phần) mới — một transaction. */
+export async function separate(sessionId, { label, orderItemIds }, user) {
+  await assertShiftOpen(); // F-055 (ADR-017 D-65): chia bill cần ca mở
+  const r = await withDeadlockRetry(() => splitsRepo.separate(sessionId, { label, orderItemIds }));
+  if (r.error === 'NOT_FOUND') throw notFound('Không tìm thấy phiên');
+  if (r.error === 'CLOSED') throw conflict('SESSION_CLOSED', 'Phiên đã đóng (đã thanh toán)');
+  if (r.error === 'LINE') throw conflict('LINE_LOCKED', 'Có món đã thu tiền, không thuộc bàn này hoặc không tách được — tải lại rồi chọn lại');
+  changed(sessionId);
+  return { splitId: r.splitId, ...(await view(sessionId, { user })) };
+}
+
 export async function merge(sessionId, user) {
   await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const r = await withDeadlockRetry(() => splitsRepo.merge(sessionId));
@@ -189,6 +200,7 @@ export async function settle(splitId, body, user) {
         loyaltyJson: calc.loyaltyJson,
         approvedBy,
         shiftId: shift.shiftId,
+        method: body.method ?? 'CASH', // F-056
       }),
     );
   } catch (err) {

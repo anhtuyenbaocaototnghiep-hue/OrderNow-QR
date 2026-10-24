@@ -1,13 +1,19 @@
 // Ca tiền mặt (FEATURE-018). Một ca mở tại một thời điểm (UX_Shifts_OneOpen); đóng ca qua sp_CloseShift.
 // F-033: tiền dự kiến trong két gồm cả thu khác / chi quỹ ĐÃ DUYỆT; khoản chờ duyệt chặn đóng ca.
+// F-056 (ADR-019 D-72): két chỉ tính lượt thu TIỀN MẶT và hoàn tiền của lượt tiền mặt; chuyển khoản tách riêng.
 import { query, request, sql } from '../db.js';
 
 const SELECT = `
   SELECT s.ShiftId, s.OpenedBy, ou.FullName AS OpenedByName, s.OpenedAt, s.OpeningCash, s.ClosedBy, cu.FullName AS ClosedByName,
          s.ClosedAt, s.ExpectedCash, s.CountedCash, s.Difference, s.Note,
-         ISNULL((SELECT SUM(p.AmountDue) FROM dbo.Payments p WHERE p.ShiftId = s.ShiftId), 0) AS CashIn,
+         ISNULL((SELECT SUM(p.AmountDue) FROM dbo.Payments p WHERE p.ShiftId = s.ShiftId AND p.Method = 'CASH'), 0) AS CashIn,
          ISNULL((SELECT COUNT(*) FROM dbo.Payments p WHERE p.ShiftId = s.ShiftId), 0) AS PaymentCount,
-         ISNULL((SELECT SUM(r.Amount) FROM dbo.Refunds r WHERE r.ShiftId = s.ShiftId), 0) AS CashOut,
+         ISNULL((SELECT SUM(p.AmountDue) FROM dbo.Payments p WHERE p.ShiftId = s.ShiftId AND p.Method = 'TRANSFER'), 0) AS TransferIn,
+         ISNULL((SELECT COUNT(*) FROM dbo.Payments p WHERE p.ShiftId = s.ShiftId AND p.Method = 'TRANSFER'), 0) AS TransferCount,
+         ISNULL((SELECT SUM(r.Amount) FROM dbo.Refunds r JOIN dbo.Payments rp ON rp.PaymentId = r.PaymentId
+                 WHERE r.ShiftId = s.ShiftId AND rp.Method = 'CASH'), 0) AS CashOut,
+         ISNULL((SELECT SUM(r.Amount) FROM dbo.Refunds r JOIN dbo.Payments rp ON rp.PaymentId = r.PaymentId
+                 WHERE r.ShiftId = s.ShiftId AND rp.Method = 'TRANSFER'), 0) AS TransferRefunds,
          ISNULL((SELECT SUM(c.Amount) FROM dbo.CashTransactions c WHERE c.ShiftId = s.ShiftId AND c.Status = 'APPROVED' AND c.Direction = 'IN'), 0) AS BookIn,
          ISNULL((SELECT SUM(c.Amount) FROM dbo.CashTransactions c WHERE c.ShiftId = s.ShiftId AND c.Status = 'APPROVED' AND c.Direction = 'OUT'), 0) AS BookOut,
          (SELECT COUNT(*) FROM dbo.CashTransactions c WHERE c.ShiftId = s.ShiftId AND c.Status = 'PENDING') AS BookPending
@@ -27,6 +33,9 @@ const map = (r) =>
     cashIn: Number(r.CashIn),
     cashOut: Number(r.CashOut),
     paymentCount: r.PaymentCount,
+    transferIn: Number(r.TransferIn), // F-056: không vào két
+    transferCount: r.TransferCount,
+    transferRefunds: Number(r.TransferRefunds),
     cashBookIn: Number(r.BookIn),
     cashBookOut: Number(r.BookOut),
     cashPending: r.BookPending,
@@ -100,7 +109,7 @@ export async function report(id) {
       p,
     ),
     query(
-      `SELECT p.PaymentId, p.PaidAt, p.AmountDue, p.AmountReceived, p.ChangeGiven, u.FullName, COALESCE(t.Name, N'Mang đi') AS Target, o.OrderCode,
+      `SELECT p.PaymentId, p.PaidAt, p.Method, p.AmountDue, p.AmountReceived, p.ChangeGiven, u.FullName, COALESCE(t.Name, N'Mang đi') AS Target, o.OrderCode,
               ISNULL((SELECT SUM(r.Amount) FROM dbo.Refunds r WHERE r.PaymentId = p.PaymentId), 0) AS Refunded
        FROM dbo.Payments p JOIN dbo.Users u ON u.UserId = p.ReceivedBy
        LEFT JOIN dbo.Sessions s ON s.SessionId = p.SessionId LEFT JOIN dbo.Tables t ON t.TableId = s.TableId
@@ -109,8 +118,9 @@ export async function report(id) {
       p,
     ),
     query(
-      `SELECT r.RefundId, r.PaymentId, r.Amount, r.Reason, r.CreatedAt, cu.FullName AS CreatedBy, au.FullName AS ApprovedBy
+      `SELECT r.RefundId, r.PaymentId, rp.Method, r.Amount, r.Reason, r.CreatedAt, cu.FullName AS CreatedBy, au.FullName AS ApprovedBy
        FROM dbo.Refunds r JOIN dbo.Users cu ON cu.UserId = r.CreatedBy JOIN dbo.Users au ON au.UserId = r.ApprovedBy
+       JOIN dbo.Payments rp ON rp.PaymentId = r.PaymentId
        WHERE r.ShiftId = @id ORDER BY r.CreatedAt DESC`,
       p,
     ),
@@ -130,6 +140,7 @@ export async function report(id) {
     payments: payments.recordset.map((x) => ({
       paymentId: x.PaymentId,
       paidAt: x.PaidAt,
+      method: x.Method,
       target: x.OrderCode ? `${x.Target} · #${x.OrderCode}` : x.Target,
       amountDue: Number(x.AmountDue),
       amountReceived: Number(x.AmountReceived),
@@ -140,6 +151,7 @@ export async function report(id) {
     refunds: refunds.recordset.map((x) => ({
       refundId: x.RefundId,
       paymentId: x.PaymentId,
+      method: x.Method, // F-056: hoàn theo cách khách đã trả
       amount: Number(x.Amount),
       reason: x.Reason,
       createdAt: x.CreatedAt,

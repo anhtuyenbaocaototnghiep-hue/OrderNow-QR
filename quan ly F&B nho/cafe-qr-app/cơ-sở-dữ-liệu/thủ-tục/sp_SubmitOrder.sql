@@ -11,7 +11,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_SubmitOrder
   @Type             VARCHAR(10),               -- 'DINE_IN' | 'TAKE_AWAY'
   @SessionId        UNIQUEIDENTIFIER = NULL,   -- dine-in
   @CreatedBy        INT = NULL,                -- mang đi: nhân viên tạo đơn và nhận tiền
-  @PaymentMethod    VARCHAR(10) = NULL,        -- mang đi: 'CASH'; dine-in: NULL (trả sau — ADR-000)
+  @PaymentMethod    VARCHAR(10) = NULL,        -- mang đi: 'CASH' | 'TRANSFER' (ADR-019 F-056); dine-in: NULL (trả sau — ADR-000)
   @AmountReceived   DECIMAL(12,0) = NULL,      -- mang đi: tiền khách đưa
   @Note             NVARCHAR(200) = NULL,
   @Items            dbo.OrderItemInput READONLY,        -- chế độ cũ
@@ -43,7 +43,7 @@ BEGIN
 
   IF @Type NOT IN ('DINE_IN', 'TAKE_AWAY') THROW 50012, 'INVALID_ORDER', 1;
   IF @Type = 'DINE_IN' AND (@SessionId IS NULL OR @PaymentMethod IS NOT NULL) THROW 50012, 'INVALID_ORDER', 1;
-  IF @Type = 'TAKE_AWAY' AND (@PaymentMethod IS NULL OR @CreatedBy IS NULL OR @SessionId IS NOT NULL) THROW 50012, 'INVALID_ORDER', 1;
+  IF @Type = 'TAKE_AWAY' AND (ISNULL(@PaymentMethod, '') NOT IN ('CASH', 'TRANSFER') OR @CreatedBy IS NULL OR @SessionId IS NOT NULL) THROW 50012, 'INVALID_ORDER', 1;
   IF @Type = 'DINE_IN' AND (@MemberId IS NOT NULL OR @MemberDiscount <> 0 OR @ManualDiscount <> 0 OR @RoundingAdj <> 0) THROW 50012, 'INVALID_ORDER', 1;
   IF ISNULL(@AcceptNow, 0) = 1 AND (@Type <> 'DINE_IN' OR @CreatedBy IS NULL) THROW 50012, 'INVALID_ORDER', 1;
   IF ISNULL(@OrderPromoDiscount, -1) < 0 OR ISNULL(@MemberDiscount, -1) < 0 OR ISNULL(@ManualDiscount, -1) < 0 OR ISNULL(@RoundingAdj, -1) < 0
@@ -82,7 +82,7 @@ BEGIN
   INSERT @Report SELECT l.LineNum, COALESCE(p.MenuItemId, l.MenuItemId) FROM @L l LEFT JOIN @L p ON p.LineNum = l.ParentLineNum;
 
   DECLARE @TableId INT = NULL, @SessionStatus VARCHAR(20) = NULL;
-  DECLARE @IsCash BIT = CASE WHEN @PaymentMethod = 'CASH' THEN 1 ELSE 0 END;
+  DECLARE @IsCash BIT = CASE WHEN @PaymentMethod IN ('CASH', 'TRANSFER') THEN 1 ELSE 0 END;   -- trả ngay (mang đi), tên giữ từ ADR-000
 
   BEGIN TRAN;
 
@@ -141,6 +141,7 @@ BEGIN
     SET @AmountDue = @Total - @MemberDiscount - @VoucherDiscount - @RewardDiscount - @ManualDiscount - @RoundingAdj;
     IF @AmountDue < 0 BEGIN ROLLBACK; THROW 50012, 'INVALID_ORDER', 1; END
     IF @ExpectedDue IS NOT NULL AND @ExpectedDue <> @AmountDue BEGIN ROLLBACK; THROW 50034, 'AMOUNT_CHANGED', 1; END
+    IF @PaymentMethod = 'TRANSFER' SET @AmountReceived = @AmountDue;   -- chuyển khoản: không có tiền thừa
     IF @AmountReceived IS NULL OR @AmountReceived < @AmountDue BEGIN ROLLBACK; THROW 50020, 'INSUFFICIENT_AMOUNT', 1; END
     -- Ca còn mở (khóa S tới hết transaction → sp_CloseShift chờ lượt thu này xong mới tính tiền ca)
     IF @ShiftId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.Shifts WITH (HOLDLOCK) WHERE ShiftId = @ShiftId AND ClosedAt IS NULL)
@@ -221,7 +222,7 @@ BEGIN
   VALUES (@OrderCode, @SessionId, @TableId, @Type,
           CASE WHEN @IsCash = 1 OR @AcceptNow = 1 THEN 'PREPARING' ELSE 'PENDING' END,
           CASE WHEN @IsCash = 1 THEN 'PAID' ELSE 'UNPAID' END,
-          CASE WHEN @IsCash = 1 THEN 'CASH' END,
+          CASE WHEN @IsCash = 1 THEN @PaymentMethod END,
           @Total, @Subtotal, @Subtotal - @Total, @OrderPromotionId, @MemberId,
           NULLIF(LTRIM(RTRIM(@Note)), ''), @CreatedBy,
           CASE WHEN @IsCash = 1 OR @AcceptNow = 1 THEN SYSUTCDATETIME() END,
@@ -276,7 +277,7 @@ BEGIN
     DECLARE @PaymentId INT;
     INSERT dbo.Payments (OrderId, Method, AmountDue, AmountReceived, ReceivedBy, MemberId, MemberPercent, SubtotalAmount, PromoDiscount,
                          MemberDiscount, ManualDiscount, ManualReason, ApprovedBy, RoundingAdj, ShiftId, VoucherDiscount, RewardDiscount, VoucherId)
-    VALUES (@OrderId, 'CASH', @AmountDue, @AmountReceived, @CreatedBy, @MemberId, @MemberPercent, @Subtotal, @Subtotal - @Total,
+    VALUES (@OrderId, @PaymentMethod, @AmountDue, @AmountReceived, @CreatedBy, @MemberId, @MemberPercent, @Subtotal, @Subtotal - @Total,
             @MemberDiscount, @ManualDiscount, NULLIF(LTRIM(RTRIM(@ManualReason)), ''), @ApprovedBy, @RoundingAdj, @ShiftId, @VoucherDiscount, @RewardDiscount,
           TRY_CAST(JSON_VALUE(@LoyaltyJson, '$.voucherId') AS INT));
     SET @PaymentId = SCOPE_IDENTITY();

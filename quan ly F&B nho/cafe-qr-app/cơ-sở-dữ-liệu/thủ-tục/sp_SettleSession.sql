@@ -7,6 +7,8 @@
 --      50033 HAS_PENDING_ORDERS (message = danh sách OrderId), 50034 AMOUNT_CHANGED, 50070 NO_OPEN_SHIFT, 50080 MEMBER_NOT_FOUND,
 --      50113 SESSION_HAS_SPLITS (phiên đã chia bill → thu từng phần bằng sp_SettleSplit hoặc gộp lại trước — F-026).
 -- ADR-006 F-038/F-039: @VoucherDiscount, @RewardDiscount (pricing tính) + @LoyaltyJson → sp_ApplyLoyalty trong cùng transaction.
+-- ADR-019 F-056: @Method 'CASH' | 'TRANSFER'; chuyển khoản không có tiền khách đưa → AmountReceived = AmountDue (tiền thừa 0).
+-- F-057 thu chung: service gọi sp_MergeSessions rồi thủ tục này trong cùng một transaction (lỗi ở đây rollback cả phần gộp).
 CREATE OR ALTER PROCEDURE dbo.sp_SettleSession
   @SessionId      UNIQUEIDENTIFIER,
   @AmountReceived DECIMAL(12,0),
@@ -24,6 +26,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_SettleSession
   @VoucherDiscount DECIMAL(12,0) = 0,
   @RewardDiscount DECIMAL(12,0) = 0,
   @LoyaltyJson    NVARCHAR(MAX) = NULL,
+  @Method         VARCHAR(10) = 'CASH',
   @PaymentId      INT OUTPUT,
   @AmountDue      DECIMAL(12,0) OUTPUT
 AS
@@ -33,6 +36,7 @@ BEGIN
      OR ISNULL(@VoucherDiscount, -1) < 0 OR ISNULL(@RewardDiscount, -1) < 0 OR (@RewardDiscount > 0 AND @MemberId IS NULL)
      OR (@MemberDiscount > 0 AND @MemberId IS NULL)
      OR (@ManualDiscount > 0 AND NULLIF(LTRIM(RTRIM(@ManualReason)), '') IS NULL)
+     OR ISNULL(@Method, '') NOT IN ('CASH', 'TRANSFER')
     THROW 50012, 'INVALID_ORDER', 1;
 
   BEGIN TRAN;
@@ -68,6 +72,7 @@ BEGIN
   SET @AmountDue = @Sum - @MemberDiscount - @VoucherDiscount - @RewardDiscount - @ManualDiscount - @RoundingAdj;
   IF @AmountDue < 0 BEGIN ROLLBACK; THROW 50012, 'INVALID_ORDER', 1; END
   IF @ExpectedDue IS NOT NULL AND @ExpectedDue <> @AmountDue BEGIN ROLLBACK; THROW 50034, 'AMOUNT_CHANGED', 1; END
+  IF @Method = 'TRANSFER' SET @AmountReceived = @AmountDue;
   IF @AmountReceived IS NULL OR @AmountReceived < @AmountDue BEGIN ROLLBACK; THROW 50020, 'INSUFFICIENT_AMOUNT', 1; END
 
   -- Ca còn mở (khóa S tới hết transaction → sp_CloseShift chờ lượt thu này)
@@ -77,12 +82,12 @@ BEGIN
   -- 4. Ghi nhận
   DECLARE @Now DATETIME2(0) = SYSUTCDATETIME();
   UPDATE dbo.Orders
-     SET PaymentStatus = 'PAID', PaymentMethod = 'CASH', PaidAt = @Now
+     SET PaymentStatus = 'PAID', PaymentMethod = @Method, PaidAt = @Now
    WHERE SessionId = @SessionId AND Status <> 'CANCELLED' AND PaymentStatus = 'UNPAID';
 
   INSERT dbo.Payments (SessionId, Method, AmountDue, AmountReceived, ReceivedBy, PaidAt, MemberId, MemberPercent, SubtotalAmount, PromoDiscount,
                        MemberDiscount, ManualDiscount, ManualReason, ApprovedBy, RoundingAdj, ShiftId, VoucherDiscount, RewardDiscount, VoucherId)
-  VALUES (@SessionId, 'CASH', @AmountDue, @AmountReceived, @UserId, @Now, @MemberId, @MemberPercent, @Subtotal, @Promo,
+  VALUES (@SessionId, @Method, @AmountDue, @AmountReceived, @UserId, @Now, @MemberId, @MemberPercent, @Subtotal, @Promo,
           @MemberDiscount, @ManualDiscount, NULLIF(LTRIM(RTRIM(@ManualReason)), ''), @ApprovedBy, @RoundingAdj, @ShiftId, @VoucherDiscount, @RewardDiscount,
           TRY_CAST(JSON_VALUE(@LoyaltyJson, '$.voucherId') AS INT));
   SET @PaymentId = SCOPE_IDENTITY();

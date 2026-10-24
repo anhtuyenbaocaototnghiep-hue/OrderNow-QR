@@ -1,5 +1,6 @@
 // S-12 In hóa đơn: /pos/sessions/{id}/receipt?mode=final|provisional (phiên), /pos/orders/{id}/receipt (mang đi),
 // /pos/payments/{id}/receipt (một phần chia bill — F-026).
+// ADR-019: ghi cách trả (tiền mặt / chuyển khoản — F-056); bill thu chung nhiều bàn in món theo từng bàn (F-057, ?merge= khi tạm tính).
 // Bản tạm tính có chữ TẠM TÍNH (BR-014). ?autoprint=1 → tự gọi window.print(); ?embed=1 → báo trang cha qua postMessage.
 import { staffApi } from '../api.js';
 import { receiptWidth, setReceiptWidth } from '../print.js';
@@ -23,11 +24,20 @@ function kv(label, value, cls = '') {
   return el('div', { class: `kv ${cls}` }, el('span', {}, label), el('span', {}, value));
 }
 
+/** Dòng món của bill; thu chung nhiều bàn (F-057) → nhóm theo bàn, mỗi bàn một dòng tiêu đề. */
+function lineGroups(data) {
+  if (!(data.tables?.length > 1)) return [{ table: null, lines: data.lines }];
+  const groups = new Map(data.tables.map((t) => [t, []]));
+  for (const l of data.lines) (groups.get(l.table) ?? groups.set(l.table, []).get(l.table)).push(l);
+  return [...groups].filter(([, lines]) => lines.length).map(([table, lines]) => ({ table, lines }));
+}
+
 function render(data) {
   const provisional = data.mode === 'provisional';
+  const tableNames = data.tables?.length > 1 ? data.tables.join(' + ') : data.table?.name;
   const where =
     data.kind === 'session'
-      ? `${data.table.name} · Phiên ${data.session.code}${data.splitLabel ? ` · Phần: ${data.splitLabel}` : ''}`
+      ? `${tableNames} · Phiên ${data.session.code}${data.splitLabel ? ` · Phần: ${data.splitLabel}` : ''}`
       : `Mang đi · Đơn #${data.order.orderCode}`;
   clear(
     $('#receipt'),
@@ -47,16 +57,19 @@ function render(data) {
       el(
         'tbody',
         {},
-        data.lines.map((l) => [
-          el('tr', {}, el('td', {}, l.name), el('td', { class: 'q' }, `x${l.quantity}`), el('td', { class: 'm' }, money(l.lineTotal))),
-          l.options?.length ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  + ${l.options.join(', ')}`)) : null,
-          (l.children ?? []).map((c) =>
-            el('tr', { class: 'child' }, el('td', {}, `  · ${c.name}`), el('td', { class: 'q' }, `x${c.quantity}`), el('td', { class: 'm' }, money(0))),
-          ),
-          l.listPrice > l.unitPrice
-            ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  ${l.promotionName ?? 'Khuyến mãi'} (giá gốc ${money(l.listPrice)})`))
-            : null,
-          l.note ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  (${l.note})`)) : null,
+        lineGroups(data).map((g) => [
+          g.table ? el('tr', { class: 'group' }, el('td', { colspan: 3 }, el('strong', {}, g.table))) : null,
+          g.lines.map((l) => [
+            el('tr', {}, el('td', {}, l.name), el('td', { class: 'q' }, `x${l.quantity}`), el('td', { class: 'm' }, money(l.lineTotal))),
+            l.options?.length ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  + ${l.options.join(', ')}`)) : null,
+            (l.children ?? []).map((c) =>
+              el('tr', { class: 'child' }, el('td', {}, `  · ${c.name}`), el('td', { class: 'q' }, `x${c.quantity}`), el('td', { class: 'm' }, money(0))),
+            ),
+            l.listPrice > l.unitPrice
+              ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  ${l.promotionName ?? 'Khuyến mãi'} (giá gốc ${money(l.listPrice)})`))
+              : null,
+            l.note ? el('tr', {}, el('td', { class: 'note', colspan: 3 }, `  (${l.note})`)) : null,
+          ]),
         ]),
       ),
     ),
@@ -68,9 +81,10 @@ function render(data) {
     (data.breakdown ?? []).filter((b) => b.info).map((b) => kv(b.label, '')),
     data.payment
       ? [
-          kv('Tiền khách đưa', money(data.payment.amountReceived)),
-          kv('Tiền thừa', money(data.payment.changeGiven)),
-          kv('Thanh toán', 'Tiền mặt'),
+          // F-056: chuyển khoản không có tiền khách đưa / tiền thừa
+          data.payment.method === 'TRANSFER' ? null : kv('Tiền khách đưa', money(data.payment.amountReceived)),
+          data.payment.method === 'TRANSFER' ? null : kv('Tiền thừa', money(data.payment.changeGiven)),
+          kv('Thanh toán', data.payment.method === 'TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt'),
           kv('Thu ngân', data.payment.receivedBy.fullName),
           data.payment.member ? kv('Hội viên', data.payment.member.fullName) : null,
           data.payment.refunded > 0 ? kv('Đã hoàn tiền', money(data.payment.refunded)) : null,
@@ -107,11 +121,15 @@ async function main() {
   applyWidth();
   try {
     const url =
-      kind === 'sessions' ? `/api/sessions/${id}/receipt?mode=${mode}` : kind === 'payments' ? `/api/payments/${id}/receipt` : `/api/orders/${id}/receipt`;
+      kind === 'sessions'
+        ? `/api/sessions/${id}/receipt?mode=${mode}${params.get('merge') ? `&merge=${encodeURIComponent(params.get('merge'))}` : ''}`
+        : kind === 'payments'
+          ? `/api/payments/${id}/receipt`
+          : `/api/orders/${id}/receipt`;
     const data = await staffApi(url);
     render(data);
     applyWidth();
-    document.title = `${data.mode === 'provisional' ? 'Tạm tính' : 'Hóa đơn'} — ${data.kind === 'session' ? data.table.name : data.order.orderCode}`;
+    document.title = `${data.mode === 'provisional' ? 'Tạm tính' : 'Hóa đơn'} — ${data.kind === 'session' ? (data.tables ?? [data.table.name]).join(' + ') : data.order.orderCode}`;
     if (params.get('autoprint') === '1') {
       window.addEventListener('afterprint', () => notifyParent({ type: 'receipt-done' }), { once: true });
       setTimeout(() => window.print(), 150);

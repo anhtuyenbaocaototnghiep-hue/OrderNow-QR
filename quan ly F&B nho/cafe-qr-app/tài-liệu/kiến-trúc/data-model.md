@@ -1176,3 +1176,17 @@ Tiền dự kiến (`sp_CloseShift`), ca (`shiftsRepo`), sổ quỹ (`cashServic
 | `sp_DeleteUser` (sửa) | `Reviews.HandledBy` là lịch sử |
 
 Không có SP mới. Migration kế tiếp: `0039`.
+
+## Chuyển khoản, thu chung nhiều bàn, tách hóa đơn (FEATURE-056…058, ADR-019, 24/10/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0039_chuyen_khoan_gop_hoa_don.sql` | `CK_Payments_Method` và `CK_Orders_PaymentMethod` nới thành `('CASH','TRANSFER')`; `Sessions.MergedIntoSessionId UNIQUEIDENTIFIER NULL` FK tự tham chiếu + `IX_Sessions_MergedInto` (lọc khác NULL). Không đổi dữ liệu cũ |
+| `sp_SettleSession`, `sp_SettleSplit` (sửa) | Tham số `@Method` (`CASH` mặc định / `TRANSFER`); chuyển khoản → `AmountReceived = AmountDue`; ghi `Payments.Method`, `Orders.PaymentMethod` |
+| `sp_SubmitOrder` (sửa) | Mang đi nhận `@PaymentMethod` `CASH` / `TRANSFER` (chuyển khoản: `AmountReceived = AmountDue`) |
+| `sp_CloseShift` (sửa) | `ExpectedCash` chỉ cộng lượt `CASH`, chỉ trừ hoàn tiền của lượt `CASH` (BR-089) |
+| `sp_MergeSessions` (mới) | `@TargetSessionId, @SourceIds (CSV ≤ 10), @UserId`. Khóa phiên đích rồi phiên nguồn (UPDLOCK); kiểm còn mở, không chia bill; `Orders.SessionId` → phiên đích (**giữ `Orders.TableId`**); chép `SessionClients`; đóng phiên nguồn + `MergedIntoSessionId`. Service gọi rồi `sp_SettleSession` **trong cùng transaction** (`sessionsRepo.mergeAndSettle`) |
+| Tách hóa đơn | `splitsRepo.separate`: một transaction — (bàn chưa chia: phần "Chung") + phần mới + chuyển dòng; còn món chưa chọn → phần "Phần còn lại" |
+| Bất biến (test) | `ORDER_TABLE_MISMATCH` cho phép đơn giữ bàn của phiên đã gộp vào; mới `MERGED_SESSION_STATE`, `TRANSFER_WITH_CHANGE`; `SHIFT_EXPECTED_CASH` theo công thức tiền mặt |
+
+Migration kế tiếp: `0040`.

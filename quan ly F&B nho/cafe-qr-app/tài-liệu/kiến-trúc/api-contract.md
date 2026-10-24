@@ -462,3 +462,28 @@ Chi tiết: [FEATURE-055](../chức-năng/FEATURE-055.md), BR-087. Không có en
 | `POST /api/sessions/{id}/splits/merge` | Như trên (chỉ quầy) |
 | `POST /api/shifts/open` · `POST /api/shifts/{id}/close` | Phát thêm `store.status_changed` (có `shiftOpen`) tới phòng `public` + `staff` |
 
+
+## Bổ sung F-056 / F-057 / F-058 — chuyển khoản, thu chung nhiều bàn, tách hóa đơn (ADR-019, 24/10/2026)
+
+Chi tiết: [FEATURE-056](../chức-năng/FEATURE-056.md), [FEATURE-057](../chức-năng/FEATURE-057.md), [FEATURE-058](../chức-năng/FEATURE-058.md); BR-088…BR-091.
+
+**Endpoint mới:**
+
+| Method & path | Quyền | Body | Kết quả | Lỗi |
+| --- | --- | --- | --- | --- |
+| `POST /api/sessions/{id}/splits/separate` | NV | `{ label (1–50), orderItemIds: int[1..100] }` | `201 { splitId, …view chia bill }` (bàn chưa chia: thêm phần "Phần còn lại") | 400 `VALIDATION_ERROR`; 404; 409 `SESSION_CLOSED`, `LINE_LOCKED`, `NO_OPEN_SHIFT` |
+
+**Thay đổi trên endpoint đã có:**
+
+| Method & path | Thay đổi |
+| --- | --- |
+| `POST /api/sessions/{id}/settle` · `POST /api/splits/{id}/settle` · `POST /api/orders/takeaway` | Body thêm `method: 'CASH' \| 'TRANSFER'` (mặc định `CASH`); `amountReceived` chỉ bắt buộc khi `CASH` (thiếu → `400 VALIDATION_ERROR` "Nhập tiền khách đưa"). Chuyển khoản lưu `amountReceived = amountDue`, `changeGiven = 0`. `payment.method` trong kết quả |
+| `POST /api/sessions/{id}/settle/preview` · `POST /api/sessions/{id}/settle` | Body thêm `mergeSessionIds: uuid[0..10]` (thu chung). Preview trả thêm `mergedSessions[{ sessionId, table, ordersTotal }]`; settle trả thêm `mergedSessionIds`. Lỗi thêm: `400 VALIDATION_ERROR` (trùng / chọn chính bàn), `404`, `409 SESSION_CLOSED`, `409 SESSION_HAS_SPLITS` (bàn được chọn đang chia bill); `HAS_PENDING_ORDERS` / `AMOUNT_CHANGED` sau khi gộp → không gộp gì |
+| `GET /api/sessions/{id}/receipt?mode=provisional&merge=id1,id2` | Phiếu tạm tính thu chung; bill có `tables[]`, `lines[].table`, `orders[].table`; phiên đã gộp → trả bill của phiên đích |
+| `GET /api/sessions/{id}` (khách / quầy) | Phiên đã gộp có `mergedInto: { sessionId, table }` (khách nhận thêm `table.qrToken` để chuyển sang) |
+| Sự kiện `session.settled` | Thêm `mergedSessionIds` (phòng `staff` + phiên đích); mỗi phiên được gộp nhận `session.settled { sessionId, table, mergedInto }` |
+| `GET /api/shifts/current` · `GET /api/shifts/{id}/report` · `GET /api/admin/shifts` | `cashIn` chỉ tiền mặt; thêm `transferIn`, `transferCount`, `transferRefunds`; `cashOut` = hoàn tiền của lượt tiền mặt; `expectedCash` theo BR-089; lượt thu trong báo cáo ca có `method` |
+| `GET /api/admin/reports/revenue` · `GET /api/admin/payments` | Thêm `byMethod: { CASH, TRANSFER: { collected, refunded, revenue, payments } }`; mỗi lượt thu có `method` |
+| Bill (`/api/sessions/{id}/receipt`, `/api/payments/{id}/receipt`, `/api/orders/{id}/receipt`) | `payment.method` |
+
+Mã lỗi SP mới: 50210 `VALIDATION_ERROR`, 50211 `NOT_FOUND`, 50212 `SESSION_CLOSED`, 50213 `SESSION_HAS_SPLITS` (thu chung).

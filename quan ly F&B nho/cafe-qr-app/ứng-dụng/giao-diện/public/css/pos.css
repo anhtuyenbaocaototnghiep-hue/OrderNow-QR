@@ -816,6 +816,50 @@ body.pos .tc-main .btn {
   }
 }
 
+/* F-056 cách trả (ADR-019): hai nút bật/tắt cùng hàng — nút đang chọn tô nâu, chữ trắng */
+.pay-method {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.6rem;
+}
+.pay-method .btn {
+  flex: 1;
+}
+.pay-method .btn[aria-pressed='true'] {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
+.transfer-note {
+  background: var(--c-info-50);
+  color: var(--c-info);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.7rem;
+  font-weight: 600;
+}
+/* F-057 thu chung nhiều bàn · F-058 tách hóa đơn */
+.merge-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--c-primary-50);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+.merge-table {
+  margin: 0.6rem 0 0.35rem;
+  font-size: 1rem;
+}
+.merge-pick,
+.sep-pick {
+  min-height: 44px;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+
 /* Drawer thu tiền (S-14) */
 .due {
   display: flex;

@@ -4,7 +4,7 @@
 // FEATURE-024: nhân viên mở bàn + ghi chú bàn (chỉ nhân viên thấy — customerView bỏ đi).
 // FEATURE-026: phiên đã chia bill thu từng phần (splitService); ước tính / hóa đơn tính theo dòng chưa thu.
 // FEATURE-049: chuyển bàn — cả nhóm sang bàn khác, điện thoại khách tự theo (mã QR bàn mới chỉ gửi cho người trong nhóm).
-import { conflict, forbidden, fromSqlError, idsFromMessage, notFound } from '../errors.js';
+import { badRequest, conflict, forbidden, fromSqlError, idsFromMessage, notFound } from '../errors.js';
 import { withDeadlockRetry } from '../db.js';
 import * as membersRepo from '../repositories/membersRepo.js';
 import * as ordersRepo from '../repositories/ordersRepo.js';
@@ -154,6 +154,8 @@ export async function getDetail(sessionId, viewer) {
     bill,
   };
   if (viewer.user) return detail;
+  // F-057: phiên đã thu chung vào nhóm khác → điện thoại mở bill chung (đã là thành viên nhóm đó) ngay dưới URL bàn của mình;
+  // KHÔNG gửi mã QR bàn đích — người từng ở nhóm này không được giữ mã QR bàn khác (AC-010-04, review G3); detail.mergedInto chỉ có tên bàn
   // F-049: nhóm CÒN MỞ và ĐÃ chuyển bàn → người trong nhóm nhận mã QR bàn hiện tại để điện thoại mở ở URL bàn cũ (lỡ sự kiện) tự chuyển.
   // Không gửi cho phiên đã đóng / chưa từng chuyển: người từng vào nhóm không lấy được mã QR mới sau khi quán "Tạo lại QR" (AC-010-04).
   if (session.status === 'CLOSED' || !session.lastMove) return customerView(detail);
@@ -220,6 +222,26 @@ export async function setNote(sessionId, note, user) {
 }
 
 /** memberId: undefined → hội viên đang gắn với phiên; null → không áp hội viên; số → hội viên đó. */
+/**
+ * F-057 (ADR-019 D-73): các phiên được chọn thu chung với phiên chính — kiểm sớm để báo lỗi rõ tên bàn;
+ * sp_MergeSessions kiểm lại dưới khóa trong transaction thu tiền.
+ */
+async function mergeCandidates(sessionId, ids = []) {
+  const unique = [...new Set(ids.map((id) => id.toLowerCase()))];
+  if (unique.length !== ids.length || unique.includes(sessionId.toLowerCase())) {
+    throw badRequest('VALIDATION_ERROR', 'Chọn các bàn khác nhau và khác bàn đang thu để thu chung');
+  }
+  const sessions = await Promise.all(unique.map((id) => sessionsRepo.findById(id)));
+  for (const s of sessions) {
+    if (!s) throw notFound('Không tìm thấy bàn được chọn để thu chung');
+    if (s.status === 'CLOSED') throw conflict('SESSION_CLOSED', `${s.table.name} đã thanh toán / đã đóng — chọn lại các bàn thu chung`);
+    if (await splitsRepo.hasSplits(s.sessionId)) {
+      throw conflict('SESSION_HAS_SPLITS', `${s.table.name} đang chia bill — bấm "Thu chung" ở bàn đó để gộp lại trước`);
+    }
+  }
+  return sessions;
+}
+
 async function sessionTotals(sessionId, body, role = 'STAFF') {
   const { memberId, manualDiscount, manualReason } = body;
   const session = await sessionsRepo.findById(sessionId);
@@ -228,7 +250,14 @@ async function sessionTotals(sessionId, body, role = 'STAFF') {
   if (await splitsRepo.hasSplits(sessionId)) {
     throw conflict('SESSION_HAS_SPLITS', 'Bàn đã chia bill — hãy thu từng phần hoặc bấm "Thu chung" để gộp lại');
   }
-  const orders = billable(await ordersRepo.listBySession(sessionId));
+  const mergeWith = await mergeCandidates(sessionId, body.mergeSessionIds ?? []);
+  const mergedOrders = await Promise.all(mergeWith.map((s) => ordersRepo.listBySession(s.sessionId).then(billable)));
+  const orders = [...billable(await ordersRepo.listBySession(sessionId)), ...mergedOrders.flat()];
+  const merged = mergeWith.map((s, i) => ({
+    sessionId: s.sessionId,
+    table: s.table,
+    ordersTotal: mergedOrders[i].reduce((sum, o) => sum + o.totalAmount, 0),
+  }));
   const resolvedMember = memberId === undefined ? (session.member?.memberId ?? null) : memberId;
   const calc = await computeTotals({
     orders: orders.map(orderForTotals),
@@ -237,15 +266,16 @@ async function sessionTotals(sessionId, body, role = 'STAFF') {
     role,
     loyalty: loyaltyInput(body),
   });
-  return { session, orders, ...calc };
+  return { session, orders, merged, ...calc };
 }
 
 /** Xem trước số phải thu (drawer Thu tiền) — cùng kết quả với lúc bấm "Đã thu tiền". */
 export async function settlePreview(sessionId, body, user) {
-  const { session, orders, totals, memberView: member, needsApproval } = await sessionTotals(sessionId, body, user?.role);
+  const { session, orders, merged, totals, memberView: member, needsApproval } = await sessionTotals(sessionId, body, user?.role);
   return {
     session: { ...session, member: await withFirstOrder(memberView(session.member, true), { staff: true }) },
     orderCount: orders.length,
+    mergedSessions: merged, // F-057
     totals,
     member,
     needsApproval,
@@ -260,20 +290,24 @@ export async function settle(sessionId, body, user) {
     throw conflict('AMOUNT_CHANGED', 'Tổng tiền của phiên vừa thay đổi, vui lòng kiểm tra lại', { amountDue: totals.amountDue });
   }
   const approvedBy = await approvalFor(user, calc, body);
+  const args = {
+    amountReceived: body.amountReceived ?? null, // chuyển khoản: SP ghi bằng số phải thu (F-056)
+    expectedAmountDue: totals.amountDue,
+    userId: user.userId,
+    shiftId: shift.shiftId,
+    memberId: calc.member?.memberId ?? null,
+    totals,
+    manualReason: totals.manualDiscount > 0 ? body.manualReason.trim() : null,
+    approvedBy,
+    loyaltyJson: calc.loyaltyJson,
+    method: body.method ?? 'CASH',
+  };
+  const mergedIds = calc.merged.map((m) => m.sessionId);
   let result;
   try {
+    // F-057: thu chung → gộp + thu trong một transaction; lỗi thì không gộp gì
     result = await withDeadlockRetry(() =>
-      sessionsRepo.settle(sessionId, {
-        amountReceived: body.amountReceived,
-        expectedAmountDue: totals.amountDue,
-        userId: user.userId,
-        shiftId: shift.shiftId,
-        memberId: calc.member?.memberId ?? null,
-        totals,
-        manualReason: totals.manualDiscount > 0 ? body.manualReason.trim() : null,
-        approvedBy,
-        loyaltyJson: calc.loyaltyJson,
-      }),
+      mergedIds.length ? sessionsRepo.mergeAndSettle(sessionId, mergedIds, user.userId, args) : sessionsRepo.settle(sessionId, args),
     );
   } catch (err) {
     const appErr = fromSqlError(err);
@@ -290,8 +324,12 @@ export async function settle(sessionId, body, user) {
     amountReceived: payment.amountReceived,
     changeGiven: payment.changeGiven,
     paidAt: payment.paidAt,
+    mergedSessionIds: mergedIds,
   });
-  return { session: { ...session, member: memberView(session.member, true) }, payment, amountDue: result.amountDue, totals };
+  // Điện thoại ở các bàn / nhóm được thu chung: mở bill chung (F-057) — không kèm mã QR bàn này
+  const mergedInto = { sessionId, table: session.table };
+  for (const m of calc.merged) publish([ROOMS.session(m.sessionId)], 'session.settled', { sessionId: m.sessionId, table: m.table, mergedInto });
+  return { session: { ...session, member: memberView(session.member, true) }, payment, amountDue: result.amountDue, totals, mergedSessionIds: mergedIds };
 }
 
 /** Chuyển cả nhóm sang bàn khác (FEATURE-049, D-43): bàn trống hoặc bàn có nhóm khác (bill vẫn riêng). */
@@ -313,14 +351,20 @@ export async function closeEmpty(sessionId, user) {
   return session;
 }
 
+/** Tên các bàn có đơn trên bill (bàn chính trước) — bill thu chung (F-057) in món theo từng bàn. */
+const tablesOf = (orders, main) => [...new Set([main.name, ...orders.map((o) => o.table?.name).filter(Boolean)])];
+
 /** Dữ liệu in hóa đơn phiên: final chỉ khi đã thu tiền (BR-014); provisional = phiếu tạm tính (ước tính hội viên). */
-export async function receipt(sessionId, mode) {
+export async function receipt(sessionId, mode, mergeIds = []) {
   const session = await sessionsRepo.findById(sessionId);
   if (!session) throw notFound('Không tìm thấy phiên');
+  if (session.mergedInto) return receipt(session.mergedInto.sessionId, mode); // F-057: bàn đã thu chung → bill chung
   const payments = session.status === 'CLOSED' ? await sessionsRepo.paymentsForSession(sessionId) : [];
   const payment = payments.find((p) => !p.splitId) ?? null;
   if (mode === 'final' && !payments.length) throw conflict('UNPAID', 'Phiên chưa thu tiền — chỉ in được phiếu tạm tính');
-  const all = await ordersRepo.listBySession(sessionId);
+  // F-057: phiếu tạm tính thu chung — cộng đơn của các bàn được chọn (chưa gộp thật)
+  const mergeWith = mode === 'provisional' && session.status !== 'CLOSED' && mergeIds.length ? await mergeCandidates(sessionId, mergeIds) : [];
+  const all = [...(await ordersRepo.listBySession(sessionId)), ...(await Promise.all(mergeWith.map((m) => ordersRepo.listBySession(m.sessionId)))).flat()];
   // Bill chính thức in đúng các đơn đã thu (kể cả đơn bị hoàn sau đó); tạm tính bỏ đơn hủy
   const orders = all.filter((o) => o.status !== 'CANCELLED' && (payment || o.status !== 'VOIDED'));
   const ordersTotal = orders.reduce((s, o) => s + o.totalAmount, 0);
@@ -331,9 +375,10 @@ export async function receipt(sessionId, mode) {
     mode,
     shop: await shopInfo(), // F-053
     table: session.table,
+    tables: tablesOf(orders, session.table), // F-057: bill thu chung — các bàn có món trên bill
     session: { sessionId, code: sessionId.slice(0, 8).toUpperCase(), openedAt: session.openedAt, closedAt: session.closedAt },
-    orders: orders.map((o) => ({ orderCode: o.orderCode, createdAt: o.createdAt })),
-    lines: orders.flatMap((o) => receiptLines(o.items)),
+    orders: orders.map((o) => ({ orderCode: o.orderCode, createdAt: o.createdAt, table: o.table?.name ?? null })),
+    lines: orders.flatMap((o) => receiptLines(o.items).map((l) => ({ ...l, table: o.table?.name ?? null }))),
     amountDue: payment?.amountDue ?? (splitPaid ? payments.reduce((s, p) => s + p.amountDue, 0) : (est?.amountDue ?? ordersTotal)),
     breakdown: payment ? paymentBreakdown(payment, ordersTotal) : splitPaid ? null : (est?.breakdown ?? null),
     payment,

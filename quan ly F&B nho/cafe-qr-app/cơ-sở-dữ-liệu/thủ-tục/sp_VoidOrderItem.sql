@@ -205,7 +205,8 @@ AS
 BEGIN
   SET NOCOUNT ON; SET XACT_ABORT ON;
   SET @Closed = 0;
-  UPDATE o SET PaymentStatus = 'PAID', PaymentMethod = 'CASH',
+  UPDATE o SET PaymentStatus = 'PAID',
+               PaymentMethod = ISNULL((SELECT TOP 1 p.Method FROM dbo.Payments p WHERE p.SessionId = @SessionId ORDER BY p.PaidAt DESC, p.PaymentId DESC), 'CASH'),
                PaidAt = (SELECT MAX(x.PaidAt) FROM dbo.OrderItems x WHERE x.OrderId = o.OrderId)
   FROM dbo.Orders o
   WHERE o.SessionId = @SessionId AND o.Status NOT IN ('CANCELLED', 'VOIDED') AND o.PaymentStatus = 'UNPAID'

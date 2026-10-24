@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 314 test, sửa lúc 2026-10-23 11:36 UTC
-- `npm run test:e2e` (JSON): 45 test, sửa lúc 2026-10-23 11:38 UTC
+- `npm test` (JUnit): 328 test, sửa lúc 2026-10-24 07:51 UTC
+- `npm run test:e2e` (JSON): 48 test, sửa lúc 2026-10-24 07:49 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 133 |
-| Acceptance Criteria | 335 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 335 |
+| User Story | 137 |
+| Acceptance Criteria | 349 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 349 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -34,7 +34,7 @@
 - **BR chưa gắn Story nào:** 0 — mọi BR đều có Story
 - **Màn hình (SCR trong sitemap) chưa gắn Story nào:** 0 — mọi màn hình đều có Story
 - **Test FAIL bất kỳ (kể cả test không gắn AC, file test không nạp được):** 0 — không có
-- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 51
+- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 55
   - kiểm-thử/e2e/a11y.spec.js › khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn nhóm, màn cảm ơn + đánh giá — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px
   - kiểm-thử/e2e/a11y.spec.js › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm
   - kiểm-thử/e2e/a11y.spec.js › quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính
@@ -55,6 +55,10 @@
   - ứng-dụng/máy-chủ/tests/loyalty.test.js › khách gắn hội viên vào bàn → màn theo dõi thấy điểm + "còn N ly nữa được tặng", không thấy mã voucher
   - ứng-dụng/máy-chủ/tests/member-card.test.js › chuẩn bị: chiến dịch tặng voucher cho mọi hội viên
   - ứng-dụng/máy-chủ/tests/members.test.js › hạng hội viên: sửa % và mức chi tiêu
+  - ứng-dụng/máy-chủ/tests/merge-bills.test.js › hai nhóm cùng một bàn thu chung → điện thoại nhóm sau nhận mergedInto (không có mã QR), xem bill chung và đánh giá được; bill một bàn
+  - ứng-dụng/máy-chủ/tests/merge-bills.test.js › hoàn tiền lượt thu chung kèm hủy đơn của bàn B → đơn B VOIDED (vẫn ở phiên A, giữ bàn B); chi tiết lượt thu liệt kê đơn cả hai bàn
+  - ứng-dụng/máy-chủ/tests/merge-bills.test.js › thu chung có hội viên → giảm giá hội viên tính trên tổng chung các bàn; số thu khớp xem trước
+  - ứng-dụng/máy-chủ/tests/merge-bills.test.js › thu chung lỗi SAU bước gộp (tổng đơn đổi so với lúc tính) → rollback cả bước gộp: bàn B giữ phiên, đơn, điện thoại; không có lượt thu
   - ứng-dụng/máy-chủ/tests/operations.test.js › báo cáo marketing: hội viên mới, hội viên vs khách lẻ, chiết khấu theo loại, hoàn tiền
   - ứng-dụng/máy-chủ/tests/operations.test.js › cài đặt: đọc/sửa ngưỡng giảm tay, làm tròn; giá trị sai → 400; STAFF không sửa được
   - ứng-dụng/máy-chủ/tests/ops.test.js › giữ 14 ngày + bản đầu tháng + bản có nhãn trong 12 tháng; chỉ xóa file đúng mẫu của đúng CSDL
@@ -426,4 +430,18 @@
 | AC-055-03 | TC-055-03 | F-055 | US-055-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03, UC-11 | MOD-ORDER, MOD-SHIFT | SCR-10, SCR-14, SCR-16 | BR-087 | Integration: `shift-required.test.js` › AC-055-03: đơn từ ca trước còn chờ, ca đã đóng — tiếp nhận, hoàn tất, hủy, gọi món tại bàn, sửa / xóa món, xóa đơn, hủy bàn, chuyển bàn, chia bill → 409 NO_OPEN_SHIFT, dữ liệu không đổi; mở ca → xử lý được — **PASS** | **PASS** |
 | AC-055-04 | TC-055-04 | F-055 | US-055-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03, UC-11 | MOD-ORDER, MOD-SHIFT | SCR-10, SCR-14, SCR-16 | BR-087 | Integration: `shift-required.test.js` › AC-055-04: chưa mở ca vẫn làm được — mở bàn + ghi chú bàn, xem đơn / bàn, xem tồn kho ở quầy, ghi phiếu hủy hàng, xem báo cáo quản lý, mở ca — **PASS** | **PASS** |
 | AC-055-05 | TC-055-05 | F-055 | US-055-1, US-055-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN, ACT-GUEST, ACT-MEMBER | UC-03, UC-11, UC-02 | MOD-ORDER, MOD-SHIFT, MOD-NOTIFY | SCR-10, SCR-14, SCR-16, SCR-02, SCR-03 | BR-087 | E2E: `flow.spec.js` › chưa mở ca: quầy thấy dải "Chưa mở ca — chưa nhận, xử lý đơn…", nút Tiếp nhận khóa; điện thoại khách thấy "Quán chưa mở ca", nút gửi khóa; quầy Mở ca → điện thoại tự mở lại nút gửi, khách gửi được, quầy tiếp nhận được (F-055, AC-055-05) — **PASS** | **PASS** |
+| AC-056-01 | TC-056-01 | F-056 | US-056-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14, SCR-13 | BR-088 | Integration: `payment-method.test.js` › AC-056-01: thu tiền bàn bằng TRANSFER không gửi tiền khách đưa → Payments TRANSFER, AmountReceived = AmountDue, tiền thừa 0; thu CASH thiếu tiền khách đưa → 400 — **PASS** | **PASS** |
+| AC-056-02 | TC-056-02 | F-056 | US-056-2 | ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT, MOD-REPORT | SCR-15, SCR-21, SCR-12 | BR-089 | Integration: `payment-method.test.js` › AC-056-02: ca có tiền mặt và chuyển khoản → cashIn chỉ tiền mặt, transferIn riêng, tiền dự kiến = đầu ca + tiền mặt; đóng ca đếm đúng → chênh lệch 0 — **PASS** | **PASS** |
+| AC-056-03 | TC-056-03 | F-056 | US-056-2 | ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT, MOD-REPORT | SCR-15, SCR-21, SCR-12 | BR-089 | Integration: `payment-method.test.js` › AC-056-03: hoàn tiền lượt chuyển khoản → tiền dự kiến trong két không đổi, transferRefunds tăng; hoàn lượt tiền mặt → két giảm — **PASS** | **PASS** |
+| AC-056-04 | TC-056-04 | F-056 | US-056-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14, SCR-13 | BR-088 | Integration: `payment-method.test.js` › AC-056-04: thu từng phần chia bill bằng chuyển khoản và bán mang đi bằng chuyển khoản → ghi TRANSFER, không cần tiền khách đưa — **PASS** | **PASS** |
+| AC-056-05 | TC-056-05 | F-056 | US-056-2 | ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT, MOD-REPORT | SCR-15, SCR-21, SCR-12 | BR-089 | Integration: `payment-method.test.js` › AC-056-05: báo cáo có byMethod đúng từng cách trả, tổng không đổi; bill in ghi cách trả — **PASS** | **PASS** |
+| AC-056-06 | TC-056-06 | F-056 | US-056-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14, SCR-13 | BR-088 | E2E: `flow.spec.js` › thu bằng chuyển khoản: ngăn Thu tiền chọn "Chuyển khoản" → không nhập tiền khách đưa, bàn đóng; trang Ca tách riêng chuyển khoản, két không cộng khoản đó (F-056, AC-056-06) — **PASS** | **PASS** |
+| AC-057-01 | TC-057-01 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | Integration: `merge-bills.test.js` › AC-057-01: bàn A + bàn B → xem trước tổng chung; thu chung một lượt ở phiên A; A, B đóng, B trỏ về A; đơn của B sang phiên A nhưng giữ bàn B — **PASS** | **PASS** |
+| AC-057-02 | TC-057-02 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | Integration: `merge-bills.test.js` › AC-057-02: tiền đổi / bàn B còn đơn chờ / bàn B đang chia bill → 409, không gộp, không thu — **PASS** | **PASS** |
+| AC-057-03 | TC-057-03 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | Integration: `merge-bills.test.js` › AC-057-03, AC-057-04: điện thoại bàn B nhận session.settled có mergedInto; phiên B có mergedInto; đánh giá được trên phiên A; bill nhóm món theo bàn — **PASS** | **PASS** |
+| AC-057-04 | TC-057-04 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | Integration: `merge-bills.test.js` › AC-057-03, AC-057-04: điện thoại bàn B nhận session.settled có mergedInto; phiên B có mergedInto; đánh giá được trên phiên A; bill nhóm món theo bàn — **PASS** | **PASS** |
+| AC-057-05 | TC-057-05 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | E2E: `flow.spec.js` › thu chung nhiều bàn: ngăn Thu tiền Bàn GH1 → "Thu chung với bàn khác" → tích Bàn GH2 → tổng chung → thu một lần, cả hai bàn đóng (F-057, AC-057-05) — **PASS** | **PASS** |
+| AC-058-01 | TC-058-01 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | Integration: `merge-bills.test.js` › AC-058-01: tách 2 trong 3 món ra "Anh A" → "Anh A" + "Phần còn lại" (Chung trống); thu "Anh A" đúng tổng 2 món, bàn còn mở — **PASS** | **PASS** |
+| AC-058-02 | TC-058-02 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | Integration: `merge-bills.test.js` › AC-058-02: dòng đã thu / dòng bàn khác / dòng thành phần combo → 409 LINE_LOCKED, không tạo phần; chưa mở ca → 409 NO_OPEN_SHIFT; khách → 401 — **PASS** | **PASS** |
+| AC-058-03 | TC-058-03 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | E2E: `flow.spec.js` › tách hóa đơn theo món: "Tách hóa đơn" → tích món → "Anh A" + "Phần còn lại"; thu "Anh A" bằng chuyển khoản, phần còn lại bằng tiền mặt (F-058, AC-058-03) — **PASS** | **PASS** |
 

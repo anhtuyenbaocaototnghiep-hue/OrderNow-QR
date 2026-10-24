@@ -2,7 +2,7 @@
 import { query, request, sql } from '../db.js';
 
 const SELECT = `
-  SELECT r.RefundId, r.PaymentId, r.Amount, r.Reason, r.RestockInventory, r.VoidedOrderIds, r.CreatedAt, cu.FullName AS CreatedBy,
+  SELECT r.RefundId, r.PaymentId, p.Method, r.Amount, r.Reason, r.RestockInventory, r.VoidedOrderIds, r.CreatedAt, cu.FullName AS CreatedBy,
          au.FullName AS ApprovedBy, COALESCE(t.Name, N'Mang đi') + ISNULL(N' · #' + o.OrderCode, N'') AS Target
   FROM dbo.Refunds r
   JOIN dbo.Users cu ON cu.UserId = r.CreatedBy
@@ -15,6 +15,7 @@ const SELECT = `
 const map = (x) => ({
   refundId: x.RefundId,
   paymentId: x.PaymentId,
+  method: x.Method, // F-056
   amount: Number(x.Amount),
   reason: x.Reason,
   restockInventory: Boolean(x.RestockInventory),

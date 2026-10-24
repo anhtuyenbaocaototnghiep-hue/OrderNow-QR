@@ -321,9 +321,11 @@ describe('Sổ quỹ (F-033)', () => {
 
   test('đóng ca: tiền dự kiến = đầu ca + thu − hoàn + thu khác − chi đã duyệt; két khớp → chênh 0; ca đóng không ghi quỹ được', async () => {
     const shift = await currentShift();
+    // Chỉ tiền mặt vào / ra két (ADR-019 D-72): lượt thu CASH, hoàn của lượt thu CASH
     const [{ Pay, Ref }] = await q1(
-      `SELECT ISNULL((SELECT SUM(AmountDue) FROM dbo.Payments WHERE ShiftId = ${shift.shiftId}), 0) AS Pay,
-              ISNULL((SELECT SUM(Amount) FROM dbo.Refunds WHERE ShiftId = ${shift.shiftId}), 0) AS Ref`,
+      `SELECT ISNULL((SELECT SUM(AmountDue) FROM dbo.Payments WHERE ShiftId = ${shift.shiftId} AND Method = 'CASH'), 0) AS Pay,
+              ISNULL((SELECT SUM(r.Amount) FROM dbo.Refunds r JOIN dbo.Payments p ON p.PaymentId = r.PaymentId
+                      WHERE r.ShiftId = ${shift.shiftId} AND p.Method = 'CASH'), 0) AS Ref`,
     );
     const expected = 5_000_000 + Number(Pay) - Number(Ref) + 200_000 - (600_000 + 50_000 + 800_000 + 2_500_000 + 600_000 + 30_000);
     assert.equal(shift.expectedCash, expected);

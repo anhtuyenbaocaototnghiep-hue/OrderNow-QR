@@ -258,7 +258,7 @@ export async function cancel(orderId, userId, reason) {
 }
 
 export const PAYMENT_SELECT = `
-  SELECT p.PaymentId, p.SessionId, p.OrderId, p.SplitId, p.AmountDue, p.AmountReceived, p.ChangeGiven, p.PaidAt, p.ReceivedBy, u.FullName,
+  SELECT p.PaymentId, p.SessionId, p.OrderId, p.SplitId, p.Method, p.AmountDue, p.AmountReceived, p.ChangeGiven, p.PaidAt, p.ReceivedBy, u.FullName,
          p.SubtotalAmount, p.PromoDiscount, p.MemberDiscount, p.MemberPercent, p.ManualDiscount, p.ManualReason, p.RoundingAdj, p.ShiftId,
          p.VoucherDiscount, p.RewardDiscount, p.PointsEarned, p.StampsEarned, v.Code AS VoucherCode,
          p.MemberId, mem.FullName AS MemberName, ap.FullName AS ApprovedByName,
@@ -284,7 +284,7 @@ export async function paymentById(paymentId) {
 /** Thanh toán + breakdown (ADR-005). `member` chỉ có tên — SĐT không đưa ra ngoài (D-16). */
 export const mapPayment = (p) => ({
   paymentId: p.PaymentId,
-  method: 'CASH',
+  method: p.Method ?? 'CASH', // F-056: CASH | TRANSFER
   amountDue: p.AmountDue,
   amountReceived: p.AmountReceived,
   changeGiven: p.ChangeGiven,

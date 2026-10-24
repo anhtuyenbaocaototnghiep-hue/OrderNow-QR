@@ -65,8 +65,9 @@ function render(shifts, refunds) {
               el(
                 'tr',
                 {},
-                ['Ca', 'Mở', 'Đóng', 'Đầu ca', 'Đã thu', 'Đã hoàn', 'Dự kiến', 'Đếm thực tế', 'Chênh lệch', ''].map((h, i) =>
-                  el('th', { class: i >= 3 && i <= 8 ? 'num' : '' }, h),
+                // F-056 (ADR-019 D-72): két chỉ tính tiền mặt; chuyển khoản hiện riêng
+                ['Ca', 'Mở', 'Đóng', 'Đầu ca', 'Tiền mặt thu', 'Hoàn tiền mặt', 'Chuyển khoản', 'Dự kiến trong két', 'Đếm thực tế', 'Chênh lệch', ''].map(
+                  (h, i) => el('th', { class: i >= 3 && i <= 9 ? 'num' : '' }, h),
                 ),
               ),
             ),
@@ -89,6 +90,7 @@ function render(shifts, refunds) {
                   el('td', { class: 'num' }, money(s.openingCash)),
                   el('td', { class: 'num' }, money(s.cashIn)),
                   el('td', { class: 'num' }, money(s.cashOut)),
+                  el('td', { class: 'num' }, money((s.transferIn ?? 0) - (s.transferRefunds ?? 0))),
                   el('td', { class: 'num' }, money(s.expectedCash)),
                   el('td', { class: 'num' }, s.countedCash === null ? '—' : money(s.countedCash)),
                   el('td', { class: `num ${s.difference < 0 ? 'neg' : s.difference > 0 ? 'pos-val' : ''}` }, s.difference === null ? '—' : money(s.difference)),
@@ -113,7 +115,9 @@ function render(shifts, refunds) {
               el(
                 'tr',
                 {},
-                ['Thời gian', 'Bàn / đơn', 'Số tiền', 'Lý do', 'Hoàn kho', 'Thực hiện', 'Duyệt'].map((h, i) => el('th', { class: i === 2 ? 'num' : '' }, h)),
+                ['Thời gian', 'Bàn / đơn', 'Số tiền', 'Cách hoàn', 'Lý do', 'Hoàn kho', 'Thực hiện', 'Duyệt'].map((h, i) =>
+                  el('th', { class: i === 2 ? 'num' : '' }, h),
+                ),
               ),
             ),
             el(
@@ -126,6 +130,7 @@ function render(shifts, refunds) {
                   el('td', { class: 'nowrap' }, dateTime(r.createdAt)),
                   el('td', {}, r.target, r.voidedOrderIds.length ? el('div', { class: 'small muted' }, `hủy ${r.voidedOrderIds.length} đơn`) : null),
                   el('td', { class: 'num' }, money(r.amount)),
+                  el('td', {}, r.method === 'TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt'),
                   el('td', {}, r.reason),
                   el('td', {}, r.restockInventory ? 'Có' : 'Không'),
                   el('td', {}, r.createdBy),
@@ -153,7 +158,12 @@ async function report(id) {
           el(
             'li',
             {},
-            `Đầu ca ${money(shift.openingCash)} + đã thu ${money(shift.cashIn)} − đã hoàn ${money(shift.cashOut)} = dự kiến ${money(shift.expectedCash)}`,
+            `Đầu ca ${money(shift.openingCash)} + tiền mặt thu ${money(shift.cashIn)} − hoàn tiền mặt ${money(shift.cashOut)} = dự kiến ${money(shift.expectedCash)}`,
+          ),
+          el(
+            'li',
+            {},
+            `Chuyển khoản ${money(shift.transferIn ?? 0)} (${shift.transferCount ?? 0} lượt)${shift.transferRefunds ? `, đã hoàn ${money(shift.transferRefunds)}` : ''} — vào tài khoản quán, không tính vào két`,
           ),
           shift.countedCash !== null
             ? el(

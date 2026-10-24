@@ -221,7 +221,8 @@ export async function takeawayQuote(body, user) {
 }
 
 /**
- * FEATURE-008: bán mang đi — đơn PREPARING/PAID + Payments(CASH) trong cùng transaction (sp_SubmitOrder).
+ * FEATURE-008: bán mang đi — đơn PREPARING/PAID + Payments trong cùng transaction (sp_SubmitOrder).
+ * F-056 (ADR-019 D-71): body.method CASH (mặc định) | TRANSFER — chuyển khoản không cần tiền khách đưa.
  * ADR-005: bắt buộc ca mở (F-018), hội viên (F-014), giảm tay có ngưỡng (F-022); expectedAmountDue lệch → AMOUNT_CHANGED.
  */
 export async function takeaway(body, user) {
@@ -238,7 +239,7 @@ export async function takeaway(body, user) {
     ({ orderId } = await submitWithRetry({
       type: 'TAKE_AWAY',
       createdBy: user.userId,
-      paymentMethod: 'CASH',
+      paymentMethod: body.method ?? 'CASH',
       note: body.note,
       lines: rows,
       options,

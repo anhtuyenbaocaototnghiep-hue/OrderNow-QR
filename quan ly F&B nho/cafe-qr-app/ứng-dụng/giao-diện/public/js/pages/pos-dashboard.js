@@ -3,6 +3,7 @@
 // ADR-005: dải Gọi nhân viên (F-021), thu tiền có hội viên (F-014) + giảm giá tay (F-022) xem trước bằng số server tính, cần ca mở (F-018).
 // F-024: ghi chú bàn (chỉ nhân viên thấy), nút "Gọi món" sang trang gọi món tại bàn, phiếu ghi nhân viên nhập đơn.
 // ADR-006: hàng chờ + thời gian chờ ước tính ở cột Mới (F-025); bàn chia bill → thu từng phần, in bill từng phần, "Thu chung" (F-026).
+// ADR-019: thu bằng chuyển khoản (F-056), thu chung nhiều bàn (F-057), tách hóa đơn theo món (F-058) trong ngăn Thu tiền bàn.
 import { staffApi } from '../api.js';
 import { billingControls } from '../billing-controls.js';
 import { mountPosShell } from '../pos-shell.js';
@@ -884,6 +885,44 @@ function openSettle(sessionId) {
   let seq = 0;
   let splitData = null; // F-026: bàn đã chia bill
   let partId = null; // phần đang thu
+  let method = 'CASH'; // F-056: CASH | TRANSFER
+  let mergeIds = []; // F-057: các phiên thu chung với bàn này
+  let merged = []; // chi tiết các phiên đó (đơn, bàn)
+
+  // F-056: chọn cách trả — chuyển khoản không nhập tiền khách đưa, không có tiền thừa, không vào két
+  const cashBtn = el('button', { class: 'btn', type: 'button', 'aria-pressed': 'true', onclick: () => setMethod('CASH') }, icon('wallet'), 'Tiền mặt');
+  const transferBtn = el('button', { class: 'btn', type: 'button', 'aria-pressed': 'false', onclick: () => setMethod('TRANSFER') }, 'Chuyển khoản');
+  const methodBox = el('div', { class: 'pay-method', role: 'group', 'aria-label': 'Cách trả' }, cashBtn, transferBtn);
+  const cashFields = el(
+    'div',
+    { class: 'cash-fields' },
+    el('label', { for: 'amount-received' }, 'Tiền khách đưa'),
+    amount,
+    el('div', { class: 'quick-cash', id: 'quick-cash' }),
+    changeBox,
+  );
+  const transferNote = el(
+    'p',
+    { class: 'transfer-note', hidden: true },
+    'Khách chuyển khoản vào tài khoản quán — xem tiền đã về rồi bấm "Đã nhận chuyển khoản & In bill". Không có tiền thừa, không tính vào tiền mặt trong két.',
+  );
+  const payBox = el(
+    'div',
+    {},
+    methodBox,
+    cashFields,
+    transferNote,
+    el('p', { class: 'muted small' }, 'Không ghi nợ / trả thiếu. Trả một phần tiền mặt, một phần chuyển khoản: bấm "Tách hóa đơn" rồi thu từng phần.'),
+  );
+  function setMethod(next) {
+    method = next;
+    cashBtn.setAttribute('aria-pressed', String(next === 'CASH'));
+    transferBtn.setAttribute('aria-pressed', String(next === 'TRANSFER'));
+    cashFields.hidden = next !== 'CASH';
+    transferNote.hidden = next !== 'TRANSFER';
+    settleBtn.textContent = next === 'TRANSFER' ? 'Đã nhận chuyển khoản & In bill' : 'Đã thu tiền & In bill';
+    updateChange();
+  }
 
   // Hội viên của cả phiên (gắn vào phiên) hoặc của một phần (chỉ áp cho lượt thu phần đó)
   const sessionBilling = billingControls({ sessionId, onChange: () => loadPreview() });
@@ -897,7 +936,7 @@ function openSettle(sessionId) {
   const updateChange = () => {
     if (!session) return;
     const got = moneyValue(amount);
-    const pending = session.orders.some((o) => o.status === 'PENDING');
+    const pending = [...session.orders, ...merged.flatMap((x) => x.orders)].some((o) => o.status === 'PENDING');
     if (got === null) clear(changeBox, el('span', {}, 'Tiền thừa'), el('span', {}, '—'));
     else if (got < due()) {
       changeBox.classList.add('short');
@@ -906,7 +945,8 @@ function openSettle(sessionId) {
       changeBox.classList.remove('short');
       clear(changeBox, el('span', {}, 'Tiền thừa trả khách'), el('span', {}, money(got - due())));
     }
-    settleBtn.disabled = busy || !preview || !shell.shift || pending || got === null || got < due() || session.status === 'CLOSED';
+    const paidEnough = method === 'TRANSFER' || (got !== null && got >= due());
+    settleBtn.disabled = busy || !preview || !shell.shift || pending || !paidEnough || session.status === 'CLOSED';
     settleBtn.title = shell.shift ? '' : 'Chưa mở ca — bấm "Chưa mở ca" trên thanh trên để mở ca';
   };
   amount.addEventListener('input', updateChange);
@@ -924,7 +964,7 @@ function openSettle(sessionId) {
         updateChange();
         return;
       }
-      const p = await staffApi(url, { method: 'POST', body: billing.body() });
+      const p = await staffApi(url, { method: 'POST', body: { ...billing.body(), ...(mergeIds.length && !partId ? { mergeSessionIds: mergeIds } : {}) } });
       if (my !== seq) return;
       preview = p;
       billing.setApproval(p.needsApproval);
@@ -981,11 +1021,22 @@ function openSettle(sessionId) {
     ]);
     splitData = splits;
     const splitMode = Boolean(splitData?.hasSplits);
+    // F-057: chi tiết các bàn thu chung; bàn nào vừa đóng / chia bill thì bỏ khỏi danh sách
+    if (splitMode) mergeIds = [];
+    merged = (await Promise.all(mergeIds.map((id) => staffApi(`/api/sessions/${id}`).catch(() => null)))).filter(
+      (x) => x && x.status !== 'CLOSED' && !x.splitCount,
+    );
+    if (merged.length !== mergeIds.length) {
+      if (mergeIds.length) toast('Có bàn thu chung vừa thanh toán / chia bill — đã bỏ khỏi danh sách', 'warning');
+      mergeIds = merged.map((x) => x.sessionId);
+    }
     if (splitMode && partId && !splitData.splits.some((s) => s.splitId === partId && (s.isCommon || s.status === 'OPEN'))) partId = null;
     billing = splitMode ? partBilling : sessionBilling;
     if (!splitMode) billing.showMember(session.member);
     const active = session.orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
     const pending = active.filter((o) => o.status === 'PENDING');
+    const mergedPending = merged.flatMap((x) => x.orders).filter((o) => o.status === 'PENDING').length;
+    const mergedMembers = merged.filter((x) => x.member && x.member.memberId !== session.member?.memberId);
     closeBtn.hidden = active.length > 0;
     provisionalBtn.disabled = active.length === 0;
     clear(
@@ -993,7 +1044,11 @@ function openSettle(sessionId) {
       el(
         'div',
         { class: 'row between' },
-        el('h3', { style: { margin: 0 } }, session.table.name),
+        el(
+          'h3',
+          { style: { margin: 0 } },
+          merged.length ? `Thu chung: ${[session.table.name, ...merged.map((x) => x.table.name)].join(' + ')}` : session.table.name,
+        ),
         session.status === 'PAYMENT_REQUESTED'
           ? el('span', { class: 'badge pending' }, `Gọi thanh toán · ${elapsed(session.paymentRequestedAt)}`)
           : el('span', { class: 'badge preparing' }, 'Đang phục vụ'),
@@ -1002,7 +1057,7 @@ function openSettle(sessionId) {
       session.note ? el('div', { class: 'table-note', style: { marginBottom: '0.4rem' } }, icon('notebook-pen', { label: 'Ghi chú' }), session.note) : null,
       el(
         'div',
-        { class: 'row', style: { gap: '0.3rem', marginBottom: '0.5rem' } },
+        { class: 'row wrap', style: { gap: '0.3rem', marginBottom: '0.5rem' } },
         el('a', { class: 'btn btn-sm', href: tableOrderUrl(session) }, 'Gọi thêm món'),
         el('button', { class: 'btn btn-sm', type: 'button', onclick: () => editNote(session) }, session.note ? 'Sửa ghi chú' : 'Ghi chú bàn'),
         el('button', { class: 'btn btn-sm', type: 'button', ...shiftGate(), onclick: () => moveTable(session) }, 'Chuyển bàn'),
@@ -1010,10 +1065,43 @@ function openSettle(sessionId) {
         active.length && !session.paidAmount
           ? el('button', { class: 'btn btn-sm btn-danger', type: 'button', ...shiftGate(), onclick: () => cancelTable(session) }, 'Hủy bàn')
           : null,
+        // F-058 tách hóa đơn theo món · F-057 thu chung nhiều bàn
+        active.length && !merged.length
+          ? el('button', { class: 'btn btn-sm', type: 'button', ...shiftGate(), onclick: () => separateItems() }, icon('receipt'), 'Tách hóa đơn')
+          : null,
+        active.length && !splitMode
+          ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => pickMerge() }, icon('layout-grid'), 'Thu chung với bàn khác')
+          : null,
       ),
+      merged.length
+        ? el(
+            'div',
+            { class: 'merge-note' },
+            `Thu một lần cho ${merged.length + 1} bàn — các bàn được gộp vào ${session.table.name} lúc bấm thu, in một bill, đóng tất cả. `,
+            mergedMembers.length
+              ? `Hội viên của ${mergedMembers.map((x) => x.table.name).join(', ')} không tự áp — chọn hội viên trong mục thanh toán nếu cần. `
+              : '',
+            el(
+              'button',
+              {
+                class: 'btn btn-sm',
+                type: 'button',
+                onclick: () => {
+                  mergeIds = [];
+                  reload();
+                },
+              },
+              'Bỏ thu chung',
+            ),
+          )
+        : null,
       shell.shift ? null : el('div', { class: 'alert warning' }, 'Chưa mở ca — hãy mở ca trước khi tiếp nhận, sửa món, chuyển bàn, chia bill và thu tiền.'),
-      pending.length
-        ? el('div', { class: 'alert warning' }, `Còn ${pending.length} đơn chưa tiếp nhận — hãy Tiếp nhận hoặc Hủy trước khi thu tiền (BR-019).`)
+      pending.length + mergedPending
+        ? el(
+            'div',
+            { class: 'alert warning' },
+            `Còn ${pending.length + mergedPending} đơn chưa tiếp nhận${mergedPending ? ' (kể cả bàn thu chung)' : ''} — hãy Tiếp nhận hoặc Hủy trước khi thu tiền (BR-019).`,
+          )
         : null,
       active.length === 0 ? el('div', { class: 'alert info' }, 'Phiên chưa có đơn nào. Có thể "Đóng bàn trống".') : null,
       splitMode ? splitsBlock() : null,
@@ -1077,20 +1165,27 @@ function openSettle(sessionId) {
               : null,
         ),
       ),
+      merged.map((x) => [
+        el('h4', { class: 'merge-table' }, x.table.name),
+        x.orders
+          .filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED')
+          .map((o) =>
+            el(
+              'div',
+              { class: `mini-order ${o.status === 'PENDING' ? 'pending' : ''}` },
+              el('div', { class: 'row between' }, el('strong', {}, `#${o.orderCode} · ${time(o.createdAt)}`), statusBadge(o.status)),
+              el(
+                'ul',
+                { class: 'small' },
+                o.items.map((i) => el('li', {}, `${i.quantity} × ${i.name}`, i.note ? ` (${i.note})` : '', ` — ${money(i.lineTotal)}`)),
+              ),
+            ),
+          ),
+      ]),
       voidHistory(voids),
       active.length && (!splitMode || partId) ? billing.node : null,
       breakdown,
-      active.length && (!splitMode || partId)
-        ? el(
-            'div',
-            {},
-            el('label', { for: 'amount-received' }, 'Tiền khách đưa'),
-            amount,
-            el('div', { class: 'quick-cash', id: 'quick-cash' }),
-            changeBox,
-            el('p', { class: 'muted small' }, 'Chỉ thu tiền mặt. Không hỗ trợ ghi nợ / trả thiếu.'),
-          )
-        : null,
+      active.length && (!splitMode || partId) ? payBox : null,
     );
     await loadPreview();
   }
@@ -1169,6 +1264,7 @@ function openSettle(sessionId) {
                 onclick: () => {
                   partId = s.splitId;
                   partBilling.reset();
+                  setMethod('CASH'); // mỗi lượt thu chọn lại cách trả (review G3)
                   reload();
                 },
               },
@@ -1235,6 +1331,112 @@ function openSettle(sessionId) {
     );
   }
 
+  /** F-057: chọn các bàn đang phục vụ để thu chung với bàn này. */
+  async function pickMerge() {
+    const others = state.sessions.filter((x) => x.sessionId !== sessionId);
+    if (!others.length) return toast('Không có bàn nào khác đang phục vụ', 'info');
+    const boxes = others.map((x) =>
+      el(
+        'label',
+        { class: 'check merge-pick' },
+        el('input', { type: 'checkbox', value: x.sessionId, checked: mergeIds.includes(x.sessionId), disabled: x.splitCount > 0 }),
+        `${x.table.name} · ${x.orderCount} đơn · ${money(x.amountDue)} · mở ${time(x.openedAt)}`,
+        x.splitCount > 0 ? el('span', { class: 'small muted' }, ' (đang chia bill)') : null,
+      ),
+    );
+    const ok = await modal({
+      title: `Thu chung với ${session.table.name}`,
+      body: el(
+        'div',
+        { class: 'stack' },
+        el(
+          'p',
+          { class: 'small muted' },
+          'Chọn các bàn trả chung. Tổng tiền tính trên tất cả các bàn; lúc bấm thu, các bàn được gộp vào bàn này, in một bill và đóng tất cả.',
+        ),
+        boxes,
+      ),
+      actions: [
+        { label: 'Hủy', value: false },
+        { label: 'Thu chung', class: 'btn-primary', value: true },
+      ],
+    }).result;
+    if (ok !== true) return;
+    mergeIds = boxes
+      .map((b) => b.querySelector('input'))
+      .filter((i) => i.checked)
+      .map((i) => i.value);
+    reload();
+  }
+
+  /** F-058: tích các món để tách ra một hóa đơn (phần) riêng. */
+  async function separateItems() {
+    const partOf = new Map((splitData?.splits ?? []).flatMap((sp) => sp.lines.map((l) => [l.orderItemId, sp])));
+    const items = session.orders
+      .filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED')
+      .flatMap((o) => o.items.filter((i) => !i.paidAt).map((i) => ({ o, i, part: partOf.get(i.orderItemId) })))
+      .filter((x) => !x.part || x.part.isCommon || x.part.status === 'OPEN');
+    if (!items.length) return toast('Không còn món chưa thu để tách', 'info');
+    const name = el('input', {
+      class: 'input',
+      maxlength: 50,
+      'aria-label': 'Tên hóa đơn tách ra',
+      value: `Phần ${(splitData?.splits ?? []).filter((x) => !x.isCommon).length + 1}`,
+    });
+    const boxes = items.map(({ o, i, part }) =>
+      el(
+        'label',
+        { class: 'check sep-pick' },
+        el('input', { type: 'checkbox', value: i.orderItemId }),
+        `${i.quantity} × ${i.name} — ${money(i.lineTotal)}`,
+        el('span', { class: 'small muted' }, ` · #${o.orderCode}${part && !part.isCommon ? ` · đang ở ${part.label}` : ''}`),
+      ),
+    );
+    const msg = el('div');
+    await modal({
+      title: `Tách hóa đơn — ${session.table.name}`,
+      body: el(
+        'div',
+        { class: 'stack' },
+        el('p', { class: 'small muted' }, 'Tích các món muốn tính riêng. Các món còn lại thành "Phần còn lại"; thu từng phần bằng tiền mặt hoặc chuyển khoản.'),
+        el('label', {}, 'Tên hóa đơn tách ra'),
+        name,
+        boxes,
+        msg,
+      ),
+      actions: [
+        { label: 'Hủy', value: false },
+        {
+          label: 'Tách ra hóa đơn riêng',
+          class: 'btn-primary',
+          onClick: async (close, e) => {
+            const btn = e.currentTarget; // currentTarget về null sau await
+            const orderItemIds = boxes
+              .map((b) => b.querySelector('input'))
+              .filter((x) => x.checked)
+              .map((x) => Number(x.value));
+            if (!orderItemIds.length) return clear(msg, el('div', { class: 'field-error' }, 'Tích ít nhất một món')) && false;
+            if (!name.value.trim()) return clear(msg, el('div', { class: 'field-error' }, 'Nhập tên hóa đơn tách ra')) && false;
+            if (btn.disabled) return false; // chống bấm đúp (review G3)
+            setBusy(btn, true);
+            try {
+              await staffApi(`/api/sessions/${sessionId}/splits/separate`, { method: 'POST', body: { label: name.value.trim(), orderItemIds } });
+              toast(`Đã tách ${orderItemIds.length} món ra "${name.value.trim()}"`, 'success');
+              close(true);
+              partId = null;
+              reload();
+            } catch (err) {
+              clear(msg, el('div', { class: 'field-error' }, errorMessage(err)));
+            } finally {
+              setBusy(btn, false);
+            }
+            return false;
+          },
+        },
+      ],
+    }).result;
+  }
+
   function renderQuick() {
     const box = $('#quick-cash', m.root);
     if (!box) return;
@@ -1259,26 +1461,31 @@ function openSettle(sessionId) {
     );
   }
 
-  provisionalBtn.addEventListener('click', () => printUrl(`/pos/sessions/${sessionId}/receipt?mode=provisional`));
+  provisionalBtn.addEventListener('click', () =>
+    printUrl(`/pos/sessions/${sessionId}/receipt?mode=provisional${mergeIds.length ? `&merge=${mergeIds.join(',')}` : ''}`),
+  );
   closeBtn.addEventListener('click', async () => {
     await closeEmpty({ sessionId, table: session.table });
     m.close();
   });
+  // F-056: chuyển khoản không gửi tiền khách đưa (server ghi bằng số phải thu)
+  const payBody = () => ({ method, ...(method === 'CASH' ? { amountReceived: moneyValue(amount) } : {}), expectedAmountDue: due(), ...billing.body() });
+  const paidToast = (label, p) =>
+    p.method === 'TRANSFER'
+      ? `${label}: đã nhận chuyển khoản ${money(p.amountDue)}`
+      : `${label}: ${money(p.amountReceived)} · tiền thừa ${money(p.changeGiven)}`;
   settleBtn.addEventListener('click', async () => {
-    const got = moneyValue(amount);
     busy = true;
     setBusy(settleBtn, true);
     try {
       if (splitData?.hasSplits) {
-        const r = await staffApi(`/api/splits/${partId}/settle`, {
-          method: 'POST',
-          body: { amountReceived: got, expectedAmountDue: due(), ...billing.body() },
-        });
+        const r = await staffApi(`/api/splits/${partId}/settle`, { method: 'POST', body: payBody() });
         printUrl(`/pos/payments/${r.payment.paymentId}/receipt`);
-        toast(`Đã thu phần ${r.split.label}: ${money(r.payment.amountReceived)} · tiền thừa ${money(r.payment.changeGiven)}`, 'success', 6000);
+        toast(paidToast(`Đã thu phần ${r.split.label}`, r.payment), 'success', 6000);
         partId = null;
         setMoney(amount, null);
         partBilling.reset();
+        setMethod('CASH'); // phần sau mặc định tiền mặt — tránh ghi nhầm chuyển khoản (review G3)
         if (r.sessionClosed) {
           m.close();
           await loadAll();
@@ -1287,10 +1494,10 @@ function openSettle(sessionId) {
       }
       const r = await staffApi(`/api/sessions/${sessionId}/settle`, {
         method: 'POST',
-        body: { amountReceived: got, expectedAmountDue: due(), ...billing.body() },
+        body: { ...payBody(), ...(mergeIds.length ? { mergeSessionIds: mergeIds } : {}) },
       });
       printUrl(`/pos/sessions/${sessionId}/receipt?mode=final`);
-      toast(`Đã thu ${money(r.payment.amountReceived)} · tiền thừa ${money(r.payment.changeGiven)}`, 'success', 6000);
+      toast(paidToast(mergeIds.length ? `Đã thu chung ${mergeIds.length + 1} bàn` : 'Đã thu', r.payment), 'success', 6000);
       m.close();
       await loadAll();
     } catch (err) {
@@ -1390,6 +1597,12 @@ async function moveTable(session) {
 
 function onSessionEvent(payload) {
   refreshSessionsSoon();
+  // F-057: máy quầy khác vừa thu chung bàn đang mở ngăn ở máy này → bàn đó đã đóng
+  if (state.drawer && payload.mergedSessionIds?.includes(state.drawer.sessionId)) {
+    state.drawer.close();
+    toast(`Bàn này vừa được thu chung với ${payload.table?.name ?? 'bàn khác'} ở máy khác`, 'info', 6000);
+    return;
+  }
   if (state.drawer && payload.sessionId === state.drawer.sessionId) state.drawer.reload();
 }
 

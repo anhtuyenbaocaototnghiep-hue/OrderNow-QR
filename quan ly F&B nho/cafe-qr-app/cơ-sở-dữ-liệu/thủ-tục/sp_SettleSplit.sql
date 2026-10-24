@@ -7,6 +7,7 @@
 -- Lỗi: 50005 SESSION_NOT_FOUND, 50012 INVALID_ORDER, 50020 INSUFFICIENT_AMOUNT, 50032 ALREADY_SETTLED, 50033 HAS_PENDING_ORDERS,
 --      50034 AMOUNT_CHANGED, 50070 NO_OPEN_SHIFT, 50110 SPLIT_PAID, 50111 COMMON_REQUIRED, 50112 SPLIT_EMPTY.
 -- ADR-006 F-038/F-039: @VoucherDiscount, @RewardDiscount (pricing tính) + @LoyaltyJson → sp_ApplyLoyalty trong cùng transaction.
+-- ADR-019 F-056: @Method 'CASH' | 'TRANSFER'; chuyển khoản → AmountReceived = AmountDue (tiền thừa 0).
 CREATE OR ALTER PROCEDURE dbo.sp_SettleSplit
   @SplitId         INT,
   @IncludeCommon   BIT = 0,
@@ -26,6 +27,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_SettleSplit
   @VoucherDiscount DECIMAL(12,0) = 0,
   @RewardDiscount  DECIMAL(12,0) = 0,
   @LoyaltyJson     NVARCHAR(MAX) = NULL,
+  @Method          VARCHAR(10) = 'CASH',
   @PaymentId       INT OUTPUT,
   @AmountDue       DECIMAL(12,0) OUTPUT,
   @SessionClosed   BIT OUTPUT
@@ -37,6 +39,7 @@ BEGIN
      OR ISNULL(@VoucherDiscount, -1) < 0 OR ISNULL(@RewardDiscount, -1) < 0 OR (@RewardDiscount > 0 AND @MemberId IS NULL)
      OR (@MemberDiscount > 0 AND @MemberId IS NULL)
      OR (@ManualDiscount > 0 AND NULLIF(LTRIM(RTRIM(@ManualReason)), '') IS NULL)
+     OR ISNULL(@Method, '') NOT IN ('CASH', 'TRANSFER')
     THROW 50012, 'INVALID_ORDER', 1;
 
   DECLARE @SessionId UNIQUEIDENTIFIER = (SELECT SessionId FROM dbo.SessionSplits WHERE SplitId = @SplitId);
@@ -87,6 +90,7 @@ BEGIN
   SET @AmountDue = @Sum - @OrderPromoAlloc - @MemberDiscount - @VoucherDiscount - @RewardDiscount - @ManualDiscount - @RoundingAdj;
   IF @AmountDue < 0 BEGIN ROLLBACK; THROW 50012, 'INVALID_ORDER', 1; END
   IF @ExpectedDue IS NOT NULL AND @ExpectedDue <> @AmountDue BEGIN ROLLBACK; THROW 50034, 'AMOUNT_CHANGED', 1; END
+  IF @Method = 'TRANSFER' SET @AmountReceived = @AmountDue;
   IF @AmountReceived IS NULL OR @AmountReceived < @AmountDue BEGIN ROLLBACK; THROW 50020, 'INSUFFICIENT_AMOUNT', 1; END
 
   IF @ShiftId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.Shifts WITH (HOLDLOCK) WHERE ShiftId = @ShiftId AND ClosedAt IS NULL)
@@ -96,7 +100,7 @@ BEGIN
   DECLARE @Now DATETIME2(0) = SYSUTCDATETIME();
   INSERT dbo.Payments (SessionId, SplitId, Method, AmountDue, AmountReceived, ReceivedBy, PaidAt, MemberId, MemberPercent, SubtotalAmount, PromoDiscount,
                        MemberDiscount, ManualDiscount, ManualReason, ApprovedBy, RoundingAdj, ShiftId, VoucherDiscount, RewardDiscount, VoucherId)
-  VALUES (@SessionId, @SplitId, 'CASH', @AmountDue, @AmountReceived, @UserId, @Now, @MemberId, @MemberPercent, @Subtotal,
+  VALUES (@SessionId, @SplitId, @Method, @AmountDue, @AmountReceived, @UserId, @Now, @MemberId, @MemberPercent, @Subtotal,
           (@Subtotal - @Sum) + @OrderPromoAlloc, @MemberDiscount, @ManualDiscount, NULLIF(LTRIM(RTRIM(@ManualReason)), ''), @ApprovedBy, @RoundingAdj, @ShiftId,
           @VoucherDiscount, @RewardDiscount,
           TRY_CAST(JSON_VALUE(@LoyaltyJson, '$.voucherId') AS INT));
@@ -110,7 +114,7 @@ BEGIN
   WHERE SplitId = @SplitId AND IsCommon = 0;
 
   -- Đơn đã thu đủ mọi dòng → PAID
-  UPDATE o SET PaymentStatus = 'PAID', PaymentMethod = 'CASH', PaidAt = @Now
+  UPDATE o SET PaymentStatus = 'PAID', PaymentMethod = @Method, PaidAt = @Now
   FROM dbo.Orders o
   WHERE o.SessionId = @SessionId AND o.Status NOT IN ('CANCELLED', 'VOIDED') AND o.PaymentStatus = 'UNPAID'
     AND NOT EXISTS (SELECT 1 FROM dbo.OrderItems x WHERE x.OrderId = o.OrderId AND x.ParentOrderItemId IS NULL AND x.PaidAt IS NULL);

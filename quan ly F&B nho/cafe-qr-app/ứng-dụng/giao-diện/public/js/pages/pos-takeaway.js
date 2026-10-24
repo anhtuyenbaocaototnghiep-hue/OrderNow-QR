@@ -19,6 +19,19 @@ const state = { menu: null, itemsById: new Map(), activeCat: null, cart: loadCar
 
 const received = moneyInput({ id: 'received', name: 'amountReceived' });
 $('#received-slot').append(received);
+// F-056 (ADR-019 D-71): tiền mặt / chuyển khoản
+let method = 'CASH';
+function setMethod(next) {
+  method = next;
+  $('#method-cash').setAttribute('aria-pressed', String(next === 'CASH'));
+  $('#method-transfer').setAttribute('aria-pressed', String(next === 'TRANSFER'));
+  $('#cash-fields').hidden = next !== 'CASH';
+  $('#transfer-note').hidden = next !== 'TRANSFER';
+  $('#pay').textContent = next === 'TRANSFER' ? 'Đã nhận chuyển khoản & In bill' : 'Thu tiền & In bill';
+  clear($('#pay-error'));
+}
+$('#method-cash').addEventListener('click', () => setMethod('CASH'));
+$('#method-transfer').addEventListener('click', () => setMethod('TRANSFER'));
 const billing = billingControls({ onChange: () => requestQuote(), onMember: (m) => showRecall(m) });
 $('#billing-slot').append(billing.node);
 const recallBox = el('div', { id: 'recall' });
@@ -321,7 +334,7 @@ $('#pay-form').addEventListener('submit', async (e) => {
   if (state.cart.length === 0 || !(await ensureQuote())) return;
   const total = due();
   const got = moneyValue(received);
-  if (got === null || got < total) {
+  if (method === 'CASH' && (got === null || got < total)) {
     // AC-008-02: chặn, bôi đỏ, báo lỗi
     received.classList.add('invalid');
     clear($('#pay-error'), el('div', { class: 'field-error' }, `Vui lòng nhập tiền khách đưa (tối thiểu ${money(total)})`));
@@ -333,13 +346,26 @@ $('#pay-form').addEventListener('submit', async (e) => {
   try {
     const { order, payment } = await staffApi('/api/orders/takeaway', {
       method: 'POST',
-      body: { items: toOrderItems(state.cart), amountReceived: got, expectedAmountDue: total, ...billing.body() },
+      body: {
+        items: toOrderItems(state.cart),
+        method,
+        ...(method === 'CASH' ? { amountReceived: got } : {}),
+        expectedAmountDue: total,
+        ...billing.body(),
+      },
     });
     printUrl(`/pos/orders/${order.orderId}/receipt`);
-    toast(`Đơn #${order.orderCode}: thu ${money(payment.amountReceived)}, tiền thừa ${money(payment.changeGiven)}`, 'success', 6000);
+    toast(
+      payment.method === 'TRANSFER'
+        ? `Đơn #${order.orderCode}: đã nhận chuyển khoản ${money(payment.amountDue)}`
+        : `Đơn #${order.orderCode}: thu ${money(payment.amountReceived)}, tiền thừa ${money(payment.changeGiven)}`,
+      'success',
+      6000,
+    );
     state.cart = [];
     clearCart(SCOPE);
     setMoney(received, null);
+    setMethod('CASH'); // đơn sau mặc định tiền mặt (review G3)
     billing.reset();
     persist();
     loadToday();
@@ -364,6 +390,7 @@ $('#clear').addEventListener('click', () => {
   state.cart = [];
   clearCart(SCOPE);
   setMoney(received, null);
+  setMethod('CASH');
   billing.reset();
   persist();
 });

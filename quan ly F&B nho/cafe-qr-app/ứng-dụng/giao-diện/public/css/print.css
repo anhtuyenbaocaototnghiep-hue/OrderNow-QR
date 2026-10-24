@@ -73,6 +73,11 @@ body.receipt-page {
   white-space: nowrap;
   padding-left: 1.5mm;
 }
+/* F-057: bill thu chung — tiêu đề từng bàn */
+.receipt tr.group td {
+  padding-top: 1.2mm;
+  border-bottom: 1px dashed #000;
+}
 .receipt .note {
   font-size: 0.9em;
   font-style: italic;

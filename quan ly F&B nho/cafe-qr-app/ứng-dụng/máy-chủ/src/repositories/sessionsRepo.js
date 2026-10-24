@@ -1,6 +1,7 @@
 // Phiên (Session) trên bàn: tạo/gộp, tổng tạm tính, gọi thanh toán, thu tiền, đóng bàn trống, hội viên gắn với phiên (F-014).
 // F-024: nhân viên mở bàn (OpenedBy) + ghi chú bàn (Note — chỉ nhân viên thấy; service bỏ đi trước khi trả cho khách).
 // F-049: chuyển bàn (sp_MoveSession) + lần chuyển gần nhất của phiên.
+// F-057: thu chung nhiều bàn — sp_MergeSessions + sp_SettleSession trong cùng transaction; phiên đã gộp trỏ tới phiên đích.
 import { inTransaction, query, request, sql, txQuery } from '../db.js';
 import { mapPayment, PAYMENT_SELECT } from './ordersRepo.js';
 
@@ -14,9 +15,12 @@ const SESSION_SELECT = `
          s.OpenedBy, ob.FullName AS OpenedByName, s.Note, s.NoteUpdatedAt, nu.FullName AS NoteUpdatedByName,
          (SELECT COUNT(*) FROM dbo.SessionSplits sp WHERE sp.SessionId = s.SessionId AND sp.IsCommon = 0) AS SplitCount,
          ISNULL((SELECT SUM(pp.AmountDue) FROM dbo.Payments pp WHERE pp.SessionId = s.SessionId), 0) AS PaidAmount,
-         mv.MovedFromName, mv.MovedAt
+         mv.MovedFromName, mv.MovedAt,
+         s.MergedIntoSessionId, mts.TableId AS MergedTableId, mtt.Name AS MergedTableName, mtt.Code AS MergedTableCode
   FROM dbo.Sessions s
   JOIN dbo.Tables t ON t.TableId = s.TableId
+  LEFT JOIN dbo.Sessions mts ON mts.SessionId = s.MergedIntoSessionId
+  LEFT JOIN dbo.Tables mtt ON mtt.TableId = mts.TableId
   LEFT JOIN dbo.Users ob ON ob.UserId = s.OpenedBy
   LEFT JOIN dbo.Users nu ON nu.UserId = s.NoteUpdatedBy
   LEFT JOIN dbo.Members mem ON mem.MemberId = s.MemberId
@@ -53,6 +57,10 @@ export const mapSession = (r) =>
     splitCount: r.SplitCount ?? 0, // F-026
     paidAmount: r.PaidAmount ?? 0,
     lastMove: r.MovedFromName ? { fromTable: r.MovedFromName, movedAt: r.MovedAt } : null, // F-049
+    // F-057: phiên đã được thu chung vào phiên khác
+    mergedInto: r.MergedIntoSessionId
+      ? { sessionId: r.MergedIntoSessionId.toLowerCase(), table: { tableId: r.MergedTableId, code: r.MergedTableCode, name: r.MergedTableName } }
+      : null,
     // Hội viên đang gắn (tên đầy đủ — service che tên trước khi trả cho khách)
     member: r.MemberId
       ? {
@@ -197,11 +205,11 @@ export async function settle(
     manualReason = null,
     approvedBy = null,
     loyaltyJson = null,
+    method = 'CASH',
   },
+  tx = null,
 ) {
-  const r = await (
-    await request()
-  )
+  const r = await (tx ? new sql.Request(tx) : await request())
     .input('SessionId', sql.UniqueIdentifier, sessionId)
     .input('AmountReceived', sql.Decimal(12, 0), amountReceived)
     .input('UserId', sql.Int, userId)
@@ -218,10 +226,23 @@ export async function settle(
     .input('VoucherDiscount', sql.Decimal(12, 0), totals?.voucherDiscount ?? 0)
     .input('RewardDiscount', sql.Decimal(12, 0), totals?.rewardDiscount ?? 0)
     .input('LoyaltyJson', sql.NVarChar(sql.MAX), loyaltyJson)
+    .input('Method', sql.VarChar(10), method)
     .output('PaymentId', sql.Int)
     .output('AmountDue', sql.Decimal(12, 0))
     .execute('dbo.sp_SettleSession');
   return { paymentId: r.output.PaymentId, amountDue: r.output.AmountDue };
+}
+
+/** F-057: thu chung — gộp các phiên nguồn vào phiên đích rồi thu phiên đích trong MỘT transaction (lỗi → không gộp gì). */
+export async function mergeAndSettle(targetId, sourceIds, userId, settleArgs) {
+  return inTransaction(async (tx) => {
+    await new sql.Request(tx)
+      .input('TargetSessionId', sql.UniqueIdentifier, targetId)
+      .input('SourceIds', sql.NVarChar(1000), sourceIds.join(','))
+      .input('UserId', sql.Int, userId)
+      .execute('dbo.sp_MergeSessions');
+    return settle(targetId, settleArgs, tx);
+  });
 }
 
 /** Chuyển cả nhóm sang bàn khác — sp_MoveSession (F-049). → TableId bàn cũ. */

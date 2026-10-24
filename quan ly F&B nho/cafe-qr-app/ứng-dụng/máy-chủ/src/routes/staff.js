@@ -2,10 +2,11 @@
 // bàn đang phục vụ, thu tiền mặt, đóng bàn, hóa đơn (FEATURE-006).
 // ADR-005: ca (F-018), gọi nhân viên (F-021), công tắc nhận đơn QR (F-020), hội viên + giảm tay khi thu (F-014, F-022), hoàn tiền (F-019).
 // F-024: sơ đồ bàn, mở bàn, nhân viên gọi món giúp khách tại bàn, ghi chú bàn.
+// ADR-019: thu bằng chuyển khoản (F-056), thu chung nhiều bàn (F-057), tách hóa đơn theo món (F-058).
 import express from 'express';
 import { z } from 'zod';
 import { requireStaff } from '../middleware/auth.js';
-import { paramGuid, paramId, parse, zId, zManualDiscount, zMoney, zOrderItems, zText } from '../middleware/validate.js';
+import { paramGuid, paramId, parse, zGuid, zId, zManualDiscount, zMoney, zOrderItems, zText } from '../middleware/validate.js';
 import * as orderService from '../services/orderService.js';
 import * as refundService from '../services/refundService.js';
 import * as reviewService from '../services/reviewService.js';
@@ -47,6 +48,17 @@ const billingFields = {
     .nullable(),
 };
 
+// F-056 (ADR-019 D-71): cách trả của một lượt thu; chuyển khoản không cần tiền khách đưa (lưu bằng số phải thu)
+const payFields = {
+  method: z.enum(['CASH', 'TRANSFER']).default('CASH'),
+  amountReceived: zMoney().optional(),
+  expectedAmountDue: zMoney().optional(),
+};
+const needCash = (b) => b.method === 'TRANSFER' || b.amountReceived !== undefined;
+const payBody = (fields) => z.object({ ...payFields, ...fields }).refine(needCash, { message: 'Nhập tiền khách đưa', path: ['amountReceived'] });
+// F-057: thu chung với các bàn khác (1–10 phiên đang mở)
+const mergeField = { mergeSessionIds: z.array(zGuid()).max(10, 'Thu chung tối đa 10 bàn').optional() };
+
 staffRouter.get('/orders', async (req, res) => {
   const q = parse(
     z.object({
@@ -66,10 +78,8 @@ staffRouter.post('/orders/takeaway/quote', async (req, res) => {
 
 staffRouter.post('/orders/takeaway', async (req, res) => {
   const body = parse(
-    z.object({
+    payBody({
       items: zOrderItems(),
-      amountReceived: zMoney(),
-      expectedAmountDue: zMoney().optional(),
       note: zText(200).optional().nullable(),
       ...billingFields,
     }),
@@ -101,12 +111,12 @@ staffRouter.get('/sessions', async (req, res) => {
 });
 
 staffRouter.post('/sessions/:id/settle/preview', async (req, res) => {
-  const body = parse(z.object(billingFields), req.body ?? {});
+  const body = parse(z.object({ ...billingFields, ...mergeField }), req.body ?? {});
   res.json(await sessionService.settlePreview(paramGuid(req), body, req.user));
 });
 
 staffRouter.post('/sessions/:id/settle', async (req, res) => {
-  const body = parse(z.object({ amountReceived: zMoney(), expectedAmountDue: zMoney().optional(), ...billingFields }), req.body);
+  const body = parse(payBody({ ...billingFields, ...mergeField }), req.body);
   res.json(await sessionService.settle(paramGuid(req), body, req.user));
 });
 
@@ -142,8 +152,23 @@ staffRouter.post('/splits/:id/settle/preview', async (req, res) => {
   res.json(await splitService.preview(paramId(req), body, req.user));
 });
 staffRouter.post('/splits/:id/settle', async (req, res) => {
-  const body = parse(z.object({ amountReceived: zMoney(), expectedAmountDue: zMoney().optional(), ...billingFields }), req.body);
+  const body = parse(payBody(billingFields), req.body);
   res.json(await splitService.settle(paramId(req), body, req.user));
+});
+// F-058 (ADR-019 D-74): tách các món đã chọn ra một phần (hóa đơn) mới — một transaction
+staffRouter.post('/sessions/:id/splits/separate', async (req, res) => {
+  const body = parse(
+    z.object({
+      label: zText(50).min(1, 'Nhập tên phần (ví dụ: Anh A)'),
+      orderItemIds: z
+        .array(zId())
+        .min(1, 'Chọn ít nhất một món')
+        .max(100)
+        .refine((ids) => new Set(ids).size === ids.length, 'Món bị chọn trùng'),
+    }),
+    req.body,
+  );
+  res.status(201).json(await splitService.separate(paramGuid(req), body, req.user));
 });
 staffRouter.post('/sessions/:id/splits/merge', async (req, res) => res.json(await splitService.merge(paramGuid(req), req.user)));
 staffRouter.get('/payments/:id/receipt', async (req, res) => res.json(await sessionService.paymentReceipt(paramId(req))));
@@ -168,8 +193,19 @@ staffRouter.put('/sessions/:id/note', async (req, res) => {
 });
 
 staffRouter.get('/sessions/:id/receipt', async (req, res) => {
-  const { mode } = parse(z.object({ mode: z.enum(['final', 'provisional']).default('final') }), req.query);
-  res.json(await sessionService.receipt(paramGuid(req), mode));
+  const { mode, merge } = parse(
+    z.object({
+      mode: z.enum(['final', 'provisional']).default('final'),
+      // F-057: phiếu tạm tính thu chung — sessionId các bàn cách nhau bằng dấu phẩy
+      merge: z
+        .string()
+        .transform((v) => v.split(',').filter(Boolean))
+        .pipe(z.array(zGuid()).max(10))
+        .optional(),
+    }),
+    req.query,
+  );
+  res.json(await sessionService.receipt(paramGuid(req), mode, merge ?? []));
 });
 
 // ---- Ca tiền mặt (FEATURE-018) ----

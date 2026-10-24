@@ -1,6 +1,7 @@
 // Báo cáo doanh thu (FEATURE-012) theo ngày thanh toán quy đổi UTC+7 (ADR-003).
 // ADR-005: doanh thu = số tiền thực thu (Payments.AmountDue, đã trừ khuyến mãi/hội viên/giảm tay) − hoàn tiền (theo ngày hoàn).
 // Không có giảm giá thì bằng Σ TotalAmount của đơn đã thu như trước.
+// F-056 (ADR-019 D-72): thêm phần chia theo cách trả (tiền mặt / chuyển khoản); hoàn tiền tính theo cách của lượt thu gốc.
 import { query, sql } from '../db.js';
 
 const ORDER_FILTER = `o.PaymentStatus = 'PAID' AND o.Status NOT IN ('CANCELLED', 'VOIDED') AND o.PaidAt >= @f AND o.PaidAt < @t`;
@@ -8,7 +9,7 @@ const VN_DAY = (col) => `CONVERT(CHAR(10), DATEADD(HOUR, 7, ${col}), 23)`;
 
 export async function revenue(fromUtc, toUtc, { byHour = false } = {}) {
   const p = { f: [sql.DateTime2(0), fromUtc], t: [sql.DateTime2(0), toUtc] };
-  const [totals, payDays, refundDays, orderDays, top, staff, hours] = await Promise.all([
+  const [totals, payDays, refundDays, orderDays, top, staff, hours, methods] = await Promise.all([
     query(
       `SELECT (SELECT COUNT(*) FROM dbo.Orders o WHERE ${ORDER_FILTER}) AS OrderCount,
               (SELECT ISNULL(SUM(AmountDue), 0) FROM dbo.Payments WHERE PaidAt >= @f AND PaidAt < @t) AS Collected,
@@ -48,6 +49,14 @@ export async function revenue(fromUtc, toUtc, { byHour = false } = {}) {
           p,
         )
       : null,
+    query(
+      `SELECT m.Method, ISNULL(pa.Collected, 0) AS Collected, ISNULL(pa.N, 0) AS N, ISNULL(rf.Refunded, 0) AS Refunded
+       FROM (VALUES ('CASH'), ('TRANSFER')) m(Method)
+       OUTER APPLY (SELECT SUM(AmountDue) AS Collected, COUNT(*) AS N FROM dbo.Payments WHERE Method = m.Method AND PaidAt >= @f AND PaidAt < @t) pa
+       OUTER APPLY (SELECT SUM(r.Amount) AS Refunded FROM dbo.Refunds r JOIN dbo.Payments rp ON rp.PaymentId = r.PaymentId
+                    WHERE rp.Method = m.Method AND r.CreatedAt >= @f AND r.CreatedAt < @t) rf`,
+      p,
+    ),
   ]);
   const days = new Map();
   const day = (d) => days.get(d) ?? days.set(d, { date: d, revenue: 0, orders: 0 }).get(d);
@@ -63,12 +72,18 @@ export async function revenue(fromUtc, toUtc, { byHour = false } = {}) {
     byHour: hours ? hours.recordset.map((x) => ({ hour: x.H, revenue: Number(x.Revenue), orders: x.Orders })) : null,
     topItems: top.recordset.map((x) => ({ menuItemId: x.MenuItemId, name: x.Name, qty: x.Qty, revenue: x.Revenue })),
     byStaff: staff.recordset.map((x) => ({ userId: x.ReceivedBy, fullName: x.FullName, payments: x.Payments, amount: x.Amount })),
+    byMethod: Object.fromEntries(
+      methods.recordset.map((x) => [
+        x.Method,
+        { collected: Number(x.Collected), refunded: Number(x.Refunded), revenue: Number(x.Collected) - Number(x.Refunded), payments: x.N },
+      ]),
+    ),
   };
 }
 
 export async function payments(fromUtc, toUtc) {
   const r = await query(
-    `SELECT p.PaymentId, p.SessionId, p.OrderId, p.AmountDue, p.AmountReceived, p.ChangeGiven, p.PaidAt, u.FullName,
+    `SELECT p.PaymentId, p.SessionId, p.OrderId, p.Method, p.AmountDue, p.AmountReceived, p.ChangeGiven, p.PaidAt, u.FullName,
             COALESCE(ts.Name, N'Mang đi') AS Target, o.OrderCode, p.SubtotalAmount, p.PromoDiscount, p.MemberDiscount, p.ManualDiscount,
             p.ManualReason, p.RoundingAdj, mem.FullName AS MemberName,
             ISNULL((SELECT SUM(rf.Amount) FROM dbo.Refunds rf WHERE rf.PaymentId = p.PaymentId), 0) AS Refunded
@@ -87,6 +102,7 @@ export async function payments(fromUtc, toUtc) {
     orderId: x.OrderId,
     orderCode: x.OrderCode,
     target: x.Target,
+    method: x.Method,
     amountDue: x.AmountDue,
     amountReceived: x.AmountReceived,
     changeGiven: x.ChangeGiven,
