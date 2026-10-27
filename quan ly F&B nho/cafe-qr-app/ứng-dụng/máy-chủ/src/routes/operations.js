@@ -82,6 +82,23 @@ operationsRouter.put('/settings', async (req, res) => {
       // F-053 thông tin quán (BR-085)
       shopName: z.string().trim().max(100, 'Tên quán tối đa 100 ký tự').min(1, 'Nhập tên quán').optional(),
       shopAddress: z.string().trim().max(200, 'Địa chỉ tối đa 200 ký tự').optional(),
+      // F-059 Wi-Fi cho khách (BR-092): tên ≤ 32 byte (chuẩn Wi-Fi); mật khẩu rỗng (mạng mở) hoặc 8–63 ký tự ASCII in được (chuẩn WPA —
+      // chữ có dấu do bộ gõ tiếng Việt sẽ cho QR không bao giờ vào được mạng), giữ nguyên khoảng trắng.
+      // Không cho kết thúc bằng "\": Android đọc sai chuỗi QR khi giá trị kết thúc bằng dấu này (review G3).
+      wifiSsid: z
+        .string()
+        .trim()
+        .refine((v) => Buffer.byteLength(v, 'utf8') <= 32, 'Tên Wi-Fi tối đa 32 byte (khoảng 32 ký tự không dấu)')
+        .refine((v) => !v.endsWith('\\'), 'Tên Wi-Fi không được kết thúc bằng dấu \\')
+        .optional(),
+      wifiPassword: z
+        .string()
+        .refine(
+          (v) => v === '' || /^[\x20-\x7E]{8,63}$/.test(v),
+          'Mật khẩu Wi-Fi 8–63 ký tự không dấu (chữ, số, ký hiệu), hoặc để trống nếu mạng không có mật khẩu',
+        )
+        .refine((v) => !v.endsWith('\\'), 'Mật khẩu Wi-Fi không được kết thúc bằng dấu \\')
+        .optional(),
     }),
     req.body,
   );

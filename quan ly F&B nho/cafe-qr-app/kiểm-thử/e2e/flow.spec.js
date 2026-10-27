@@ -1568,3 +1568,30 @@ test('tách hóa đơn theo món: "Tách hóa đơn" → tích món → "Anh A" 
   await expect(P.locator('.drawer')).toHaveCount(0);
   await expect(P.locator('#tables .table-row', { hasText: 'Bàn TH1' })).toHaveCount(0);
 });
+
+test('QR Wi-Fi cho khách: quản lý nhập Wi-Fi ở Cài đặt → trang In QR mỗi thẻ bàn có "① Quét để vào Wi-Fi" (ảnh, tên, mật khẩu) và "② Quét để gọi món" (F-059, AC-059-04)', async () => {
+  // Chưa nhập Wi-Fi → thẻ bàn như cũ (không có khối Wi-Fi)
+  await P.goto('/admin/tables/print');
+  await expect(P.locator('.qr-card').first()).toBeVisible();
+  await expect(P.locator('.qr-card .qr-wifi')).toHaveCount(0);
+  await expect(P.locator('.qr-card').first()).not.toContainText('Quét để vào Wi-Fi');
+
+  await P.goto('/admin/settings');
+  await P.getByLabel('Tên Wi-Fi').fill('QuanMoc-Khach');
+  await P.getByLabel('Mật khẩu Wi-Fi').fill('matkhau123');
+  await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
+
+  await P.goto('/admin/tables/print');
+  const cards = P.locator('.qr-card');
+  await expect(cards.first()).toBeVisible();
+  // Mọi thẻ bàn đều có khối Wi-Fi, dùng chung một ảnh QR Wi-Fi
+  await expect(P.locator('.qr-card .qr-wifi')).toHaveCount(await cards.count());
+  const wifi = cards.first().locator('.qr-wifi');
+  await expect(wifi).toContainText('① Quét để vào Wi-Fi');
+  await expect(wifi).toContainText('Wi-Fi: QuanMoc-Khach · Mật khẩu: matkhau123');
+  await expect.poll(() => wifi.locator('img').evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
+  await expect(cards.first()).toContainText('② Quét để gọi món');
+  await expect(cards.first()).toContainText('Thanh toán tiền mặt hoặc chuyển khoản');
+  // Giữ Wi-Fi đã nhập: dự án a11y chạy sau flow quét luôn khối Wi-Fi ở trang In QR
+});

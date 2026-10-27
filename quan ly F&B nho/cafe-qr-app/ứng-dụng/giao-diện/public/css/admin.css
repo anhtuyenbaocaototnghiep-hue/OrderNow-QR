@@ -385,6 +385,24 @@ body.admin .chip {
   font-size: 1.6rem;
   font-weight: 700;
 }
+/* F-059: QR Wi-Fi (bước ①) nhỏ hơn QR gọi món (bước ②) */
+.qr-card .qr-step {
+  margin-top: 0.5rem;
+  font-weight: 700;
+}
+.qr-card .qr-wifi {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #b9a796;
+  overflow-wrap: anywhere;
+}
+.qr-card .qr-wifi img {
+  width: 120px;
+  height: 120px;
+}
+/* Giữ nguyên khoảng trắng trong tên / mật khẩu Wi-Fi để khách gõ tay đúng (review G3) */
+.qr-card .qr-wifi strong {
+  white-space: pre-wrap;
+}
 .bom-row {
   display: grid;
   grid-template-columns: 1fr 160px 70px auto;

@@ -48,6 +48,9 @@ function toSettings(map) {
     // F-053 thông tin quán (BR-085): chưa lưu lần nào → SHOP_NAME / SHOP_ADDRESS của .env; địa chỉ lưu rỗng = không in
     shopName: map.get('shop.name') || config.shop.name,
     shopAddress: map.has('shop.address') ? map.get('shop.address') : config.shop.address,
+    // F-059 Wi-Fi cho khách (BR-092): tên rỗng = không in QR Wi-Fi
+    wifiSsid: map.get('wifi.ssid') ?? '',
+    wifiPassword: map.get('wifi.password') ?? '',
   };
 }
 
@@ -89,6 +92,8 @@ const KEYS = {
   reviewMenuDays: 'review.menu_days',
   shopName: 'shop.name',
   shopAddress: 'shop.address',
+  wifiSsid: 'wifi.ssid',
+  wifiPassword: 'wifi.password',
 };
 
 /** Sửa một phần cài đặt (đã validate ở route). Đổi trạng thái nhận đơn → báo khách + quầy ngay. */

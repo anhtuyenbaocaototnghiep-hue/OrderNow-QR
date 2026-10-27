@@ -104,6 +104,14 @@ adminRouter.get('/tables/:id/qr.png', async (req, res) => {
   res.set('Cache-Control', 'no-store');
   res.send(png);
 });
+// F-059: QR Wi-Fi cho khách (in cạnh QR bàn)
+adminRouter.get('/wifi-qr.png', async (_req, res) => {
+  const png = await adminService.wifiQrPng();
+  res.set('Content-Type', 'image/png');
+  res.set('Content-Disposition', 'inline; filename="qr-wifi.png"');
+  res.set('Cache-Control', 'no-store');
+  res.send(png);
+});
 
 // ---- Nguyên liệu / kho (FEATURE-011) ----
 const ingredientBase = {

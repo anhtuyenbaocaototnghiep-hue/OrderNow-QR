@@ -10,6 +10,8 @@ import * as ordersRepo from '../repositories/ordersRepo.js';
 import * as reportsRepo from '../repositories/reportsRepo.js';
 import * as tablesRepo from '../repositories/tablesRepo.js';
 import { newQrToken } from '../utils/tokens.js';
+import { wifiQrText } from '../utils/wifiQr.js';
+import { getSettings } from './settingsService.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { menuChanged, refreshAvailability } from './menuService.js';
 import { invalidateCatalog } from './pricingService.js';
@@ -195,6 +197,13 @@ export async function qrPng(id) {
   const t = await tablesRepo.findById(id);
   if (!t) throw notFound('Không tìm thấy bàn');
   return { table: t, png: await QRCode.toBuffer(qrUrl(t.qrToken), { type: 'png', width: 480, margin: 2, errorCorrectionLevel: 'M' }) };
+}
+
+/** F-059 (BR-092): QR Wi-Fi cho khách in cạnh QR bàn — chưa nhập tên Wi-Fi trong Cài đặt → 404. */
+export async function wifiQrPng() {
+  const { wifiSsid: ssid, wifiPassword: password } = await getSettings();
+  if (!ssid) throw notFound('Chưa nhập Wi-Fi cho khách trong Cài đặt');
+  return QRCode.toBuffer(wifiQrText({ ssid, password }), { type: 'png', width: 480, margin: 2, errorCorrectionLevel: 'M' });
 }
 
 // ---------- Nguyên liệu / kho ----------

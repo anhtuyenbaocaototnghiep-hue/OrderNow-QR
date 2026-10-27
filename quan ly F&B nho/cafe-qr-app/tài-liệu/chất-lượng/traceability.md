@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 328 test, sửa lúc 2026-10-24 07:51 UTC
-- `npm run test:e2e` (JSON): 48 test, sửa lúc 2026-10-24 07:49 UTC
+- `npm test` (JUnit): 333 test, sửa lúc 2026-10-26 12:52 UTC
+- `npm run test:e2e` (JSON): 49 test, sửa lúc 2026-10-27 03:26 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 137 |
-| Acceptance Criteria | 349 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 349 |
+| User Story | 138 |
+| Acceptance Criteria | 353 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 353 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -444,4 +444,8 @@
 | AC-058-01 | TC-058-01 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | Integration: `merge-bills.test.js` › AC-058-01: tách 2 trong 3 món ra "Anh A" → "Anh A" + "Phần còn lại" (Chung trống); thu "Anh A" đúng tổng 2 món, bàn còn mở — **PASS** | **PASS** |
 | AC-058-02 | TC-058-02 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | Integration: `merge-bills.test.js` › AC-058-02: dòng đã thu / dòng bàn khác / dòng thành phần combo → 409 LINE_LOCKED, không tạo phần; chưa mở ca → 409 NO_OPEN_SHIFT; khách → 401 — **PASS** | **PASS** |
 | AC-058-03 | TC-058-03 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | E2E: `flow.spec.js` › tách hóa đơn theo món: "Tách hóa đơn" → tích món → "Anh A" + "Phần còn lại"; thu "Anh A" bằng chuyển khoản, phần còn lại bằng tiền mặt (F-058, AC-058-03) — **PASS** | **PASS** |
+| AC-059-01 | TC-059-01 | F-059 | US-059-1 | ACT-ADMIN, ACT-GUEST | UC-17 | MOD-ADMIN | SCR-33, SCR-22 | BR-092 | Integration: `wifi-qr.test.js` › AC-059-01: chuỗi QR Wi-Fi đúng định dạng, thoát ký tự \ ; , : " — mạng không mật khẩu ra T:nopass — **PASS**<br>Integration: `wifi-qr.test.js` › AC-059-01: quản lý lưu tên Wi-Fi + mật khẩu → cài đặt trả đúng (mật khẩu giữ khoảng trắng); ảnh QR Wi-Fi 200 image/png — **PASS** | **PASS** |
+| AC-059-02 | TC-059-02 | F-059 | US-059-1 | ACT-ADMIN, ACT-GUEST | UC-17 | MOD-ADMIN | SCR-33, SCR-22 | BR-092 | Integration: `wifi-qr.test.js` › AC-059-02: chưa nhập tên Wi-Fi → cài đặt trả tên / mật khẩu rỗng, GET /api/admin/wifi-qr.png → 404 — **PASS**<br>Integration: `wifi-qr.test.js` › AC-059-02: xóa trống tên Wi-Fi → ảnh QR Wi-Fi lại 404 — **PASS** | **PASS** |
+| AC-059-03 | TC-059-03 | F-059 | US-059-1 | ACT-ADMIN, ACT-GUEST | UC-17 | MOD-ADMIN | SCR-33, SCR-22 | BR-092 | Integration: `wifi-qr.test.js` › AC-059-03: tên > 32 byte, mật khẩu 1–7 / > 63 ký tự / có dấu, kết thúc bằng dấu gạch chéo ngược → 400, cài đặt không đổi; nhân viên / trưởng ca → 403, chưa đăng nhập → 401; nhật ký không chứa mật khẩu Wi-Fi — **PASS** | **PASS** |
+| AC-059-04 | TC-059-04 | F-059 | US-059-1 | ACT-ADMIN, ACT-GUEST | UC-17 | MOD-ADMIN | SCR-33, SCR-22 | BR-092 | E2E: `flow.spec.js` › QR Wi-Fi cho khách: quản lý nhập Wi-Fi ở Cài đặt → trang In QR mỗi thẻ bàn có "① Quét để vào Wi-Fi" (ảnh, tên, mật khẩu) và "② Quét để gọi món" (F-059, AC-059-04) — **PASS** | **PASS** |
 

@@ -294,3 +294,8 @@ Mọi trang `/admin/*` có chung khung (`mountAdminShell`): HTML có sẵn "Đan
 - **S-12 Bill:** dòng "Thanh toán: Chuyển khoản" (không in tiền khách đưa / tiền thừa); bill thu chung ghi các bàn, món nhóm theo bàn.
 - **S-21 Báo cáo:** KPI "Tiền mặt" / "Chuyển khoản" (doanh thu sau hoàn, số lượt); danh sách lượt thu có cột "Cách trả".
 - **S-05 Theo dõi đơn (khách):** bàn được thu chung → tự chuyển sang trang theo dõi của bàn đã thu (màn "Đã thanh toán", đánh giá món).
+
+## F-059 — QR Wi-Fi cho khách (TASK-074, 26/10/2026)
+
+- **S-33 Cài đặt:** thẻ **"Wi-Fi cho khách"** — ô **Tên Wi-Fi**, ô **Mật khẩu Wi-Fi** (hiện chữ, vì in trên thẻ bàn); lưu cùng nút **Lưu cài đặt**; lỗi hiện ngay dưới ô.
+- **S-22 In mã QR các bàn:** có tên Wi-Fi → mỗi thẻ bàn: **"① Quét để vào Wi-Fi"** (QR Wi-Fi nhỏ + dòng "Wi-Fi: … · Mật khẩu: …") rồi **"② Quét để gọi món"** (QR bàn). Chưa có tên Wi-Fi → thẻ như cũ. Dòng cuối thẻ: "Thanh toán tiền mặt hoặc chuyển khoản — bấm "Gọi thanh toán" khi xong" (F-056).

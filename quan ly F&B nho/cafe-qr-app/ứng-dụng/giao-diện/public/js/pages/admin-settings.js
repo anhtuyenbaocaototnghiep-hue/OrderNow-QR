@@ -1,5 +1,6 @@
 // S-33 Cài đặt quán (ADR-005): nhận đơn QR (F-020), ngưỡng giảm giá tay của nhân viên (D-14), làm tròn (D-7), ưu đãi đơn đầu (D-5).
 // ADR-006: quyền trưởng ca (D-24) + ngưỡng duyệt chi quỹ (D-23). F-053: tên quán + địa chỉ in trên hóa đơn (BR-085).
+// F-059: Wi-Fi cho khách in thành QR cạnh QR bàn (BR-092).
 import { staffApi } from '../api.js';
 import { mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, el, errorMessage, money, showFieldErrors, toast } from '../ui.js';
@@ -25,6 +26,20 @@ function render(s) {
     autocomplete: 'off',
     placeholder: 'Ví dụ: 12 Lê Lợi, phường Bến Nghé — để trống nếu không in',
     value: s.shopAddress,
+  });
+  // F-059: Wi-Fi cho khách — in QR Wi-Fi cạnh QR bàn (BR-092). Mật khẩu hiện chữ: chủ quán cần đọc lại, và nó in trên thẻ bàn
+  const wifiSsid = el('input', { class: 'input', name: 'wifiSsid', maxlength: 32, autocomplete: 'off', value: s.wifiSsid });
+  // Mật khẩu WPA chỉ gồm ký tự không dấu — tắt bộ gõ tiếng Việt khi nhập (review G3)
+  const wifiPassword = el('input', {
+    class: 'input',
+    name: 'wifiPassword',
+    maxlength: 63,
+    autocomplete: 'off',
+    spellcheck: 'false',
+    autocapitalize: 'off',
+    pattern: '[\\x20-\\x7E]{8,63}',
+    title: '8–63 ký tự không dấu (chữ, số, ký hiệu)',
+    value: s.wifiPassword,
   });
   const closedMessage = el('input', { class: 'input', maxlength: 200, value: s.closedMessage });
   const maxPct = el('input', { class: 'input', type: 'number', min: 0, max: 100, value: s.staffMaxPercent });
@@ -65,6 +80,20 @@ function render(s) {
         'p',
         { class: 'small muted' },
         'Hiện ở thanh quầy, thanh bên quản lý, đầu trang menu khách, hóa đơn, phiếu đặt hàng và thẻ QR in. Màn đang mở ở máy khác đổi theo khi tải lại.',
+      ),
+    ),
+    card(
+      'Wi-Fi cho khách',
+      el(
+        'div',
+        { class: 'form-grid' },
+        el('div', { class: 'field' }, el('label', {}, 'Tên Wi-Fi'), wifiSsid),
+        el('div', { class: 'field' }, el('label', {}, 'Mật khẩu Wi-Fi'), wifiPassword),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Có tên Wi-Fi thì trang In mã QR in thêm QR Wi-Fi cạnh QR gọi món: khách quét là vào mạng, không phải gõ mật khẩu. Mật khẩu 8–63 ký tự không dấu — tắt bộ gõ tiếng Việt khi nhập. Mật khẩu in trên thẻ bàn — nên dùng mạng riêng cho khách. Để trống tên = không in. Mạng không mật khẩu: để trống mật khẩu.',
       ),
     ),
     card(
@@ -164,6 +193,8 @@ function render(s) {
                 // Chỉ gửi khi đổi: lưu cài đặt khác không chép tên / địa chỉ mặc định (.env) vào DB (review G3)
                 shopName: shopName.value.trim() !== s.shopName ? shopName.value.trim() : undefined,
                 shopAddress: shopAddress.value.trim() !== s.shopAddress ? shopAddress.value.trim() : undefined,
+                wifiSsid: wifiSsid.value.trim() !== s.wifiSsid ? wifiSsid.value.trim() : undefined,
+                wifiPassword: wifiPassword.value !== s.wifiPassword ? wifiPassword.value : undefined,
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,
                 staffMaxPercent: Number(maxPct.value),
