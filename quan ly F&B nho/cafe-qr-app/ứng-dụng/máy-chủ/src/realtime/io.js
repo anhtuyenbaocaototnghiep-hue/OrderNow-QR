@@ -1,5 +1,5 @@
 // Socket.io hub gắn vào cùng HTTP server. Xác thực lúc handshake:
-//  - auth.token (JWT nhân viên) → room `staff`
+//  - auth.token (JWT nhân viên) → room `staff`; quản lý (ADMIN) thêm room `admin` (F-060)
 //  - auth.sessionId + cookie cf_client thuộc phiên → room `session:{id}`
 //  - mọi kết nối → room `public` (menu.availability_changed)
 import { Server } from 'socket.io';
@@ -21,6 +21,7 @@ export function attachRealtime(httpServer) {
         const user = await userFromToken(token);
         socket.data.user = user;
         rooms.push(ROOMS.staff);
+        if (user.role === 'ADMIN') rooms.push(ROOMS.admin); // F-060 cảnh báo bất thường
       }
       if (sessionId) {
         if (!GUID.test(sessionId)) return next(new Error('FORBIDDEN'));

@@ -501,3 +501,24 @@ Chi tiết: [FEATURE-059](../chức-năng/FEATURE-059.md), BR-092.
 **Thay đổi trên endpoint đã có:**
 - `GET /api/admin/settings`: thêm `wifiSsid`, `wifiPassword` (chưa lưu → chuỗi rỗng).
 - `PUT /api/admin/settings` (ADMIN): nhận thêm `wifiSsid` (bỏ khoảng trắng hai đầu, ≤ 32 byte UTF-8; rỗng = không in QR Wi-Fi), `wifiPassword` (rỗng hoặc 8–63 ký tự ASCII in được — không dấu; giữ nguyên khoảng trắng); cả hai không được kết thúc bằng `\`. Sai → `400 VALIDATION_ERROR` (`details.fields[].path` = `wifiSsid` / `wifiPassword`). Nhật ký thao tác `settings.update` không chứa mật khẩu Wi-Fi.
+
+## Bổ sung F-060 — phát hiện bất thường, cảnh báo qua email (ADR-020, 27/10/2026)
+
+Chi tiết: [FEATURE-060](../chức-năng/FEATURE-060.md), BR-093…BR-095. Mọi endpoint dưới đây chỉ ADMIN (`requireAdmin` của `/api/admin`).
+
+**Endpoint mới:**
+
+| Method & path | Quyền | Body | Kết quả | Lỗi |
+| --- | --- | --- | --- | --- |
+| `GET /api/admin/alerts` | ADMIN | query `status` = `NEW` (mặc định) \| `ALL`, `limit` 1–500 (mặc định 100) | `200 { alerts: [{ alertId, kind, severity, shiftId, user, title, detail, status, note, handledBy, handledAt, createdAt }], newCount }` — mới nhất trước; `detail` có giá trị, ngưỡng (`fixed`), mức bình thường (`normal`), người liên quan (`people`) | 400 VALIDATION_ERROR; 401; 403 |
+| `PATCH /api/admin/alerts/{id}` | ADMIN | `{ status: 'SEEN' \| 'RESOLVED', note? (≤ 300) }` | `200 { alert }` — ghi người + giờ xử lý | 400 VALIDATION_ERROR; 401; 403; 404 NOT_FOUND |
+| `GET /api/admin/alerts/mail-status` | ADMIN | — | `200 { configured, transport, from, pending, failed, lastSent: { subject, at } \| null, lastError: { subject, error, status, retryAt } \| null }` — **không** có mật khẩu hộp thư | 401; 403 |
+| `POST /api/admin/alerts/test-email` | ADMIN | `{ emails: string[] }` (1–5, đúng dạng, không trùng) | `200 { ok: true }` hoặc `200 { ok: false, error }` (vd "Chưa cấu hình hộp thư gửi …", đã chạm giới hạn email / giờ, lỗi SMTP) — gửi thẳng, không qua hàng đợi, nhưng ghi một dòng `SENT` để tính vào giới hạn mỗi giờ | 400 VALIDATION_ERROR; 401; 403 |
+| `POST /api/admin/alerts/mail-retry` | ADMIN | `{}` | `200 { requeued }` — mọi email `FAILED` về `PENDING`, đếm lượt lại từ đầu, gửi ngay | 401; 403 |
+
+**Thay đổi trên endpoint đã có:**
+- `GET /api/admin/settings`: thêm `alertEmails` (mảng, mặc định `[]`), `alertImmediate`, `alertShiftReport`, `alertDailyDigest`, `alertUseStats` (mặc định `true`), `alertDigestTime` (`'22:00'`), `alertQuietStart`, `alertQuietEnd` (`''` = tắt giờ yên lặng), `alertCashDiffMax` (20000), `alertTransferShareMax` (60), `alertVoidsMax` (3), `alertRefundsMax` (2), `alertRefundBig` (200000), `alertManualDiscountMax` (5).
+- `PUT /api/admin/settings` (ADMIN): nhận các khóa trên. `alertEmails` 0–5 email (bỏ khoảng trắng, chữ thường, ≤ 100 ký tự / email, không trùng, cả danh sách ≤ 200 ký tự; mảng rỗng = không gửi email); giờ `HH:MM`; `alertCashDiffMax` 0–10.000.000; `alertTransferShareMax` 1–100; `alertVoidsMax`, `alertRefundsMax`, `alertManualDiscountMax` 0–100; `alertRefundBig` 1.000–100.000.000. Sai → `400 VALIDATION_ERROR` (`details.fields[].path` = tên khóa, `alertEmails.N` cho từng email), cài đặt không đổi. Đổi bất kỳ khóa cảnh báo nào (so giá trị cũ / mới; danh sách email so không kể thứ tự) → thư báo tới cả địa chỉ cũ lẫn mới, ghi Trước → Sau (lỗi gửi không làm lỗi việc lưu).
+- `POST /api/shifts/{id}/close`, `POST /api/payments/{id}/refunds`, `POST /api/cash-transactions/{id}/void` (hủy / sửa khoản sổ quỹ đã duyệt): **request / response không đổi**; sau khi lưu xong app chạy phát hiện bất thường (lỗi phát hiện / gửi chỉ ghi log, không làm lỗi thao tác).
+
+**Sự kiện realtime mới:** `alert.created` `{ alert }` — chỉ tới phòng `admin` (socket của tài khoản ADMIN tự vào phòng này khi kết nối); nhân viên / trưởng ca không nhận.

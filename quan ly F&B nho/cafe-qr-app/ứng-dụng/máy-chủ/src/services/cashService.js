@@ -14,6 +14,7 @@ import * as cashRepo from '../repositories/cashRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { getSettings } from './settingsService.js';
 import { requireOpenShift } from './shiftService.js';
+import * as alertService from './alertService.js';
 import { resolveApproval } from './userService.js';
 
 export const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
@@ -111,6 +112,8 @@ export async function voidTxn(id, body, user) {
   publish([ROOMS.staff], 'cash.reviewed', { txn: voided });
   const replacement = r.newTxnId ? await cashRepo.getById(r.newTxnId) : null;
   if (replacement) publish([ROOMS.staff], 'cash.created', { txn: replacement });
+  // F-060 (ADR-020 D-75): hủy / sửa khoản đã duyệt → cảnh báo tức thì (lỗi không làm hỏng việc hủy / sửa)
+  await alertService.onCashVoided(voided, replacement, user).catch((err) => console.error('alert cash:', err?.message ?? err));
   return { voided, replacement };
 }
 

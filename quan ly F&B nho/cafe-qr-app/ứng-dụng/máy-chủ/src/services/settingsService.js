@@ -8,6 +8,13 @@ const TTL_MS = 10_000;
 let cache = null;
 
 const num = (v, fallback) => (v === undefined || v === null || v === '' || Number.isNaN(Number(v)) ? fallback : Number(v));
+const csv = (v) =>
+  v
+    ? String(v)
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean)
+    : [];
 
 function toSettings(map) {
   const mode = String(map.get('suggestion.mode') || 'BOTH').toUpperCase();
@@ -51,6 +58,21 @@ function toSettings(map) {
     // F-059 Wi-Fi cho khách (BR-092): tên rỗng = không in QR Wi-Fi
     wifiSsid: map.get('wifi.ssid') ?? '',
     wifiPassword: map.get('wifi.password') ?? '',
+    // F-060 cảnh báo bất thường qua email (ADR-020, BR-093…BR-095): người nhận lưu CSV; hộp thư gửi ở .env
+    alertEmails: csv(map.get('alert.emails')),
+    alertImmediate: map.get('alert.immediate') !== 'false',
+    alertShiftReport: map.get('alert.shift_report') !== 'false',
+    alertDailyDigest: map.get('alert.daily_digest') !== 'false',
+    alertDigestTime: map.get('alert.digest_time') || '22:00',
+    alertQuietStart: map.get('alert.quiet_start') ?? '',
+    alertQuietEnd: map.get('alert.quiet_end') ?? '',
+    alertCashDiffMax: num(map.get('alert.cash_diff_max'), 20000),
+    alertTransferShareMax: num(map.get('alert.transfer_share_max'), 60),
+    alertVoidsMax: num(map.get('alert.voids_max'), 3),
+    alertRefundsMax: num(map.get('alert.refunds_max'), 2),
+    alertRefundBig: num(map.get('alert.refund_big'), 200000),
+    alertManualDiscountMax: num(map.get('alert.manual_discount_max'), 5),
+    alertUseStats: map.get('alert.use_stats') !== 'false',
   };
 }
 
@@ -94,6 +116,20 @@ const KEYS = {
   shopAddress: 'shop.address',
   wifiSsid: 'wifi.ssid',
   wifiPassword: 'wifi.password',
+  alertEmails: 'alert.emails',
+  alertImmediate: 'alert.immediate',
+  alertShiftReport: 'alert.shift_report',
+  alertDailyDigest: 'alert.daily_digest',
+  alertDigestTime: 'alert.digest_time',
+  alertQuietStart: 'alert.quiet_start',
+  alertQuietEnd: 'alert.quiet_end',
+  alertCashDiffMax: 'alert.cash_diff_max',
+  alertTransferShareMax: 'alert.transfer_share_max',
+  alertVoidsMax: 'alert.voids_max',
+  alertRefundsMax: 'alert.refunds_max',
+  alertRefundBig: 'alert.refund_big',
+  alertManualDiscountMax: 'alert.manual_discount_max',
+  alertUseStats: 'alert.use_stats',
 };
 
 /** Sửa một phần cài đặt (đã validate ở route). Đổi trạng thái nhận đơn → báo khách + quầy ngay. */
@@ -101,7 +137,7 @@ export async function updateSettings(patch) {
   const before = await getSettings();
   const entries = Object.entries(patch)
     .filter(([k, v]) => KEYS[k] && v !== undefined)
-    .map(([k, v]) => [KEYS[k], typeof v === 'boolean' ? String(v) : v]);
+    .map(([k, v]) => [KEYS[k], typeof v === 'boolean' ? String(v) : Array.isArray(v) ? v.join(',') : v]);
   await settingsRepo.setMany(entries);
   cache = null;
   const after = await getSettings();

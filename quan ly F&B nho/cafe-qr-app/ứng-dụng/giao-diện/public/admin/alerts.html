@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản lý — Cảnh báo bất thường</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+  </head>
+  <body class="admin">
+    <!-- SCR-47 Cảnh báo bất thường: lệch két, chuyển khoản lạ, hủy món đã pha, hoàn tiền, giảm giá tay, sửa sổ quỹ (FEATURE-060) -->
+    <div class="admin-layout">
+      <aside class="admin-side" id="side" aria-label="Điều hướng quản lý"></aside>
+      <main class="admin-main">
+        <header class="admin-head">
+          <h1 id="page-title">Cảnh báo bất thường</h1>
+        </header>
+        <div id="content"><p class="muted">Đang tải…</p></div>
+      </main>
+    </div>
+    <script src="/socket.io/socket.io.min.js"></script>
+    <script type="module" src="/js/pages/admin-alerts.js"></script>
+  </body>
+</html>

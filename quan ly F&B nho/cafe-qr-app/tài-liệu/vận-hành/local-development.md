@@ -68,8 +68,8 @@ sqlcmd -S . -E -C -Q "SELECT SERVERPROPERTY('ProductVersion'), SERVERPROPERTY('E
 | --- | --- | --- |
 | `npm run dev` | Chạy API + Socket.io + FE tĩnh tại `http://localhost:3000`, tự khởi động lại khi sửa `ứng-dụng/máy-chủ/src` (FE không cần build: sửa file trong `ứng-dụng/giao-diện/public` rồi F5) | Chạy được; in ra các địa chỉ LAN |
 | `npm start` | Như trên, không watch (dùng khi chạy thật ở quán) | Chạy được |
-| `npm test` | 333 test (31 file): unit (bộ tính giá, lịch thực đơn, ETA, đơn vị / dự báo / hao hụt, nhật ký / lãi lỗ / quyền, phân tích) + integration (SP, API, quyền, realtime, xóa, hội viên, combo, khuyến mãi, tùy chọn, ca, giảm tay, hoàn tiền, kho, gọi món tại bàn, giai đoạn 4–8, F-046 / F-047 và `acceptance.test.js` — AC bổ sung ở TASK-057) trên DB `CafeQrTest` thật — **xóa sạch DB test mỗi lần**; chi tiết ở `chất-lượng/test-strategy.md` | 304/304 PASS (23/10/2026, thêm `shift-required.test.js` — TASK-071); ghi thêm báo cáo JUnit `kiểm-thử/kết-quả/node-junit.xml` cho ma trận truy vết |
-| `npm run test:e2e` | 49 test Playwright Chromium: project `flow` (46 — điện thoại 390px + máy quầy + quản lý) rồi `a11y` (3 — kiểm khả năng tiếp cận WCAG 2.2 AA máy kiểm được + chụp ảnh chuẩn vào `kiểm-thử/kết-quả/ảnh/`), server riêng cổng 3100, DB test sạch, `JOBS_ENABLED=false`; ghi `kiểm-thử/kết-quả/e2e.json` | 43/43 PASS (23/10/2026, TASK-071) |
+| `npm test` | 346 test (32 file): unit (bộ tính giá, lịch thực đơn, ETA, đơn vị / dự báo / hao hụt, nhật ký / lãi lỗ / quyền, phân tích) + integration (SP, API, quyền, realtime, xóa, hội viên, combo, khuyến mãi, tùy chọn, ca, giảm tay, hoàn tiền, kho, gọi món tại bàn, giai đoạn 4–8, F-046 / F-047 và `acceptance.test.js` — AC bổ sung ở TASK-057) trên DB `CafeQrTest` thật — **xóa sạch DB test mỗi lần**; chi tiết ở `chất-lượng/test-strategy.md` | 304/304 PASS (23/10/2026, thêm `shift-required.test.js` — TASK-071); ghi thêm báo cáo JUnit `kiểm-thử/kết-quả/node-junit.xml` cho ma trận truy vết |
+| `npm run test:e2e` | 50 test Playwright Chromium: project `flow` (47 — điện thoại 390px + máy quầy + quản lý) rồi `a11y` (3 — kiểm khả năng tiếp cận WCAG 2.2 AA máy kiểm được + chụp ảnh chuẩn vào `kiểm-thử/kết-quả/ảnh/`), server riêng cổng 3100, DB test sạch, `JOBS_ENABLED=false`; ghi `kiểm-thử/kết-quả/e2e.json` | 43/43 PASS (23/10/2026, TASK-071) |
 | `npm run load` | Kịch bản §13.2 qua HTTP thật, 10 vòng × 30 khách (NFR-002) + đo độ trễ realtime (NFR-001). `npm run load:report` ghi kết quả vào `kiểm-thử/kết-quả/load.txt` | 10/10 vòng PASS; NFR-001 p50 79 ms, p95 239 ms (20/10/2026, ngưỡng < 2.000 ms) |
 | `npm run db:seed:mau2` | Thêm dữ liệu mẫu giai đoạn 2 (chỉ khi chưa có tùy chọn/combo/khuyến mãi) | Đã chạy trên DB test, chạy lại tự bỏ qua |
 | `npm run lint` / `npm run format:check` | ESLint 9 / Prettier 3 | 0 lỗi (20/10/2026) |
@@ -124,6 +124,9 @@ Kiểm thử luôn chạy trên `CafeQrTest` (bị xóa sạch mỗi lần), kh�
 | `BACKUP_DIR`, `BACKUP_COPY_DIR` | trống | Bước 15: thư mục bản sao lưu (đường dẫn đầy đủ; SQL Server phải có quyền ghi) và bản chép ngoài máy — [backup-restore.md](backup-restore.md). Trống `BACKUP_DIR` → `db:backup` báo lỗi, `ops:health` báo cần để ý |
 | `BACKUP_KEEP_DAYS`, `BACKUP_KEEP_MONTHS` | `14`, `12` | Giữ bản hằng ngày / bản đầu tháng (và bản có nhãn) |
 | `LOG_DIR` | `<repo>/nhật-ký` | Nơi `ops:health` ghi `health-latest.json`, `health-YYYYMM.log`; file `11-chạy-máy-chủ-quán.cmd` ghi `server-YYYYMMDD.log` vào `nhật-ký\` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | trống; cổng `587`; `SMTP_SECURE` tự bật khi cổng `465` | F-060: hộp thư **gửi** email cảnh báo bất thường (người nhận đặt ở Cài đặt). Gmail: `smtp.gmail.com`, cổng 587, `SMTP_PASS` = **mật khẩu ứng dụng** (sổ bí mật S-11). Thiếu host / user / pass → email nằm chờ trong `AlertOutbox`, Cài đặt báo "Chưa cấu hình hộp thư gửi"; sửa xong khởi động lại app → tự gửi. Kiểm bằng nút "Gửi email thử" |
+| `MAIL_HOURLY_MAX` | `20` | Tối đa email gửi trong một giờ (chống dội bom); test cảnh báo đặt cao hơn |
+| `MAIL_TRANSPORT` | trống (= SMTP) | `json` = dựng email nhưng **không gửi ra ngoài** — E2E (`kịch-bản/e2e-server.js`) luôn đặt. Bộ gửi nền `src/jobs/alertMailer.js` chạy mỗi 60 giây khi `JOBS_ENABLED` khác `false` |
 | `RESTORE_SQL_SERVER`, `RESTORE_SQL_USER`, `RESTORE_SQL_PASSWORD` | `.` + đăng nhập Windows | `db:restore` trên VPS / Docker (không có đăng nhập Windows) hoặc bản Express (`.\SQLEXPRESS`) |
 
 **Job nền** (`src/jobs/index.js` đăng ký, `src/jobs/scheduler.js` chạy; giờ quán UTC+7):
@@ -164,6 +167,7 @@ Chạy thủ công một job:
 - `docker-compose.yml` và `.github/workflows/ci.yml` (máy thiết lập không có Docker và repo chưa đẩy lên GitHub).
 - Deploy online (Q-008 còn mở), k6 (không cài; `npm run load` thay thế), in trên máy in nhiệt thật, đo NFR-001 trên Wi-Fi quán.
 - Gửi tin Zalo OA thật (F-037): test chỉ dùng kênh giả; cổng gửi phụ thuộc cấu hình tài khoản OA / ZNS của quán.
+- Gửi email cảnh báo qua Gmail thật (F-060): test dùng bộ gửi giả, E2E dùng `MAIL_TRANSPORT=json`; cần chủ quán điền `SMTP_*` vào `.env` rồi bấm "Gửi email thử".
 
 ## Skills
 
@@ -185,6 +189,7 @@ Nguồn chính của skills là `.agent/skills/<name>/SKILL.md`. Công cụ AI k
 | `change-database` | Có. Thêm tham chiếu tới bảng mã lỗi và "ghi chú đối chiếu" trong data-model |
 | `verify-change` | Có. Đổi tham chiếu mẫu bàn giao thành đường dẫn thật |
 | `them-gop-tach-chuyen-khoan` | Có (24/10/2026, TASK-073). Ghi lại F-056 thu bằng chuyển khoản, F-057 gộp hóa đơn (thu chung nhiều bàn), F-058 tách hóa đơn theo món: quyết định ADR-019, dữ liệu / SP / API / giao diện, bẫy đã gặp, test, cách làm lại |
+| `canh-bao-bat-thuong-email` | Có (27/10/2026, TASK-075). Ghi lại F-060 phát hiện bất thường (5 dấu hiệu lúc đóng ca + 2 tức thì, ngưỡng cố định / mức bình thường), cảnh báo trong app + email SMTP qua hàng đợi `AlertOutbox`: quyết định ADR-020, dữ liệu / API / giao diện, bẫy đã gặp, cách mở rộng, xử lý "không nhận được email", cách làm lại |
 | `do-an-cafe-reviewer` | **CHƯA CÓ trong repo.** Đã tìm trên máy thiết lập (`~/.claude/skills`, Downloads, Documents, Desktop) nhưng không thấy. Việc cần làm: thành viên đang giữ skill copy `SKILL.md` vào `.agent/skills/do-an-cafe-reviewer/`, chạy `kịch-bản/sync-skills.sh`, rồi đối chiếu với `rules.md` và `verify-change`: rule nghiệp vụ/quyền viết tay trong skill thì thay bằng link `tài-liệu/nghiệp-vụ/*`; phần trùng `verify-change` thì gộp. Ghi kết quả đối chiếu vào bảng này |
 
 ## Kiểm tra thiết lập agent

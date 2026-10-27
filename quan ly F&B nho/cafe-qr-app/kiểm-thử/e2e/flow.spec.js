@@ -1596,3 +1596,38 @@ test('QR Wi-Fi cho khách: quản lý nhập Wi-Fi ở Cài đặt → trang In 
   await expect(cards.first()).toContainText('Thanh toán tiền mặt hoặc chuyển khoản');
   // Giữ Wi-Fi đã nhập: dự án a11y chạy sau flow quét luôn khối Wi-Fi ở trang In QR
 });
+
+test('cảnh báo bất thường qua email: quản lý nhập email nhận ở Cài đặt, "Gửi email thử" báo đã gửi; đóng ca thừa 50.000đ → trang Cảnh báo tự hiện cảnh báo Lệch két, bấm Đã xem (F-060, AC-060-09)', async ({
+  request,
+}) => {
+  await P.goto('/admin/settings');
+  await expect(P.getByText(/Hộp thư gửi: .*chế độ thử/)).toBeVisible();
+  await P.getByLabel('Email nhận cảnh báo (tối đa 5, cách nhau dấu phẩy)').fill('chuquan@example.com, quanly@example.com');
+  await P.getByRole('button', { name: 'Gửi email thử' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã gửi email thử tới chuquan@example.com, quanly@example.com' })).toBeVisible();
+  await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
+  expect((await apiAs(request, 'get', '/api/admin/settings')).alertEmails).toEqual(['chuquan@example.com', 'quanly@example.com']);
+
+  // Trang Cảnh báo đang mở; ca đóng thừa 50.000đ (cho phép 20.000đ) → cảnh báo tới qua realtime, không cần tải lại
+  await P.goto('/admin/alerts');
+  await expect(P.getByRole('button', { name: /^Mới \(\d+\)$/ })).toBeVisible();
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  const shift = (await apiAs(request, 'get', '/api/shifts/current')).shift;
+  await apiAs(request, 'post', `/api/shifts/${shift.shiftId}/close`, { countedCash: shift.expectedCash + 50000 });
+  const title = `Ca #${shift.shiftId} đóng thừa 50.000đ (cho phép 20.000đ)`;
+  await expect(P.locator('.toast', { hasText: title })).toBeVisible();
+  const card = P.locator('.alert-card', { hasText: title });
+  await expect(card).toBeVisible();
+  await expect(card.locator('.badge').first()).toHaveText('Lệch két');
+  await expect(card.getByRole('link', { name: 'Nhật ký thao tác' })).toHaveAttribute('href', /^\/admin\/audit\?from=\d{4}-\d{2}-\d{2}&to=/);
+  await card.getByRole('button', { name: 'Đã xem' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã đánh dấu đã xem' })).toBeVisible();
+  await expect(card).toHaveCount(0); // lọc "Mới" không còn cảnh báo này
+  await P.getByRole('button', { name: 'Tất cả' }).click();
+  await expect(P.locator('.alert-card', { hasText: title }).locator('.badge').nth(1)).toHaveText('Đã xem');
+  // Email báo cáo ca đã vào hàng đợi (E2E không chạy bộ gửi nền) — trang Cài đặt hiện số đang chờ
+  await P.goto('/admin/settings');
+  await expect(P.getByText(/Đang chờ gửi: \d+/)).toBeVisible();
+  // a11y tự mở ca nếu chưa có (beforeAll của a11y.spec.js)
+});

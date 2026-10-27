@@ -58,6 +58,7 @@ const NAV = [
     items: [
       ['shifts', '/admin/shifts', 'Ca & hoàn tiền'],
       ['cash', '/admin/cash', 'Sổ quỹ'],
+      ['alerts', '/admin/alerts', 'Cảnh báo', 'Cảnh báo bất thường'], // F-060
       ['staff', '/admin/staff', 'Nhân sự & chấm công'],
     ],
   },

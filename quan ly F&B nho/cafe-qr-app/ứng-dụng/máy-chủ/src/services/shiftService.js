@@ -5,6 +5,7 @@ import * as cashRepo from '../repositories/cashRepo.js';
 import * as shiftsRepo from '../repositories/shiftsRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { storeStatus } from './settingsService.js';
+import * as alertService from './alertService.js';
 
 export const current = () => shiftsRepo.current();
 
@@ -63,6 +64,8 @@ export async function close(id, { countedCash, note }, user) {
   if (!shift) throw notFound('Không tìm thấy ca');
   publish([ROOMS.staff], 'shift.closed', { shift });
   await publishStoreStatus();
+  // F-060 (ADR-020 D-75): kiểm dấu hiệu bất thường của ca vừa đóng — lỗi không làm hỏng việc đóng ca
+  await alertService.onShiftClosed(shift.shiftId).catch((err) => console.error('alert shift:', err?.message ?? err));
   return { shift, report: await fullReport(id) };
 }
 

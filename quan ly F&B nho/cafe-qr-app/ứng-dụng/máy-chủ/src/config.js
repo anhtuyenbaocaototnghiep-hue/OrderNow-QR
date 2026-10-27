@@ -46,6 +46,18 @@ export const config = {
   // Ảnh hóa đơn sổ quỹ (F-033): <uploadsDir>/receipts/. Test dùng thư mục tạm, không đụng dữ liệu thật.
   // Kênh Zalo OA cho chiến dịch (F-037, D-29) — không có token → chỉ dùng Xuất danh sách (CSV)
   zaloOa: { token: env.ZALO_OA_TOKEN || '', url: env.ZALO_OA_URL || 'https://openapi.zalo.me/v3.0/oa/message/cs' },
+  // F-060 (ADR-020 D-76): hộp thư GỬI email cảnh báo — chỉ đặt ở .env (mật khẩu không vào CSDL / giao diện / nhật ký).
+  // Người NHẬN đặt trong Cài đặt. MAIL_TRANSPORT=json: test / E2E — dựng email nhưng không gửi ra ngoài.
+  mail: {
+    transport: env.MAIL_TRANSPORT === 'json' ? 'json' : 'smtp',
+    host: env.SMTP_HOST || '',
+    port: Number(env.SMTP_PORT || 587),
+    secure: bool(env.SMTP_SECURE, Number(env.SMTP_PORT || 587) === 465),
+    user: env.SMTP_USER || '',
+    pass: env.SMTP_PASS || '',
+    from: env.MAIL_FROM || env.SMTP_USER || '',
+    hourlyMax: Number(env.MAIL_HOURLY_MAX || 20), // chống "dội bom" hộp thư; test đặt cao hơn
+  },
   uploadsDir: env.UPLOADS_DIR || (env.NODE_ENV === 'test' ? path.join(os.tmpdir(), 'cafe-qr-test-uploads') : path.join(repoRoot, 'uploads')),
   repoRoot,
   // Trang Tra cứu API (F-052) ghép request / response / mã lỗi từ file này

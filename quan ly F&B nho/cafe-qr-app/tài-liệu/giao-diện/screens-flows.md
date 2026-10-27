@@ -264,6 +264,7 @@ Mọi trang `/admin/*` có chung khung (`mountAdminShell`): HTML có sẵn "Đan
 | SCR-39 `/admin/pnl` | "Không có khoản chi quỹ thuộc danh mục chi phí." | Nhãn "Ước tính" cố định |
 | SCR-37 `/admin/staff` | "Chưa có dữ liệu."; "Chưa có dữ liệu trong kỳ." | Lỗi sửa chấm công hiện trong hộp thoại (thiếu lý do 400, chồng giờ 409) |
 | SCR-38 `/admin/audit` | "Không có thao tác nào khớp bộ lọc." | Chỉ đọc |
+| SCR-47 `/admin/alerts` | "Không có cảnh báo mới." (lọc Mới); "Chưa có cảnh báo nào." (Tất cả) | Lỗi tải hiện khung đỏ; Đã xem → toast "Đã đánh dấu đã xem"; Đã xử lý → toast "Đã ghi nhận xử lý"; cảnh báo mới qua realtime → toast ⚠️ + tải lại |
 | SCR-33 `/admin/settings` | — | Lưu → toast "Đã lưu cài đặt" |
 
 ### Trang chung
@@ -299,3 +300,18 @@ Mọi trang `/admin/*` có chung khung (`mountAdminShell`): HTML có sẵn "Đan
 
 - **S-33 Cài đặt:** thẻ **"Wi-Fi cho khách"** — ô **Tên Wi-Fi**, ô **Mật khẩu Wi-Fi** (hiện chữ, vì in trên thẻ bàn); lưu cùng nút **Lưu cài đặt**; lỗi hiện ngay dưới ô.
 - **S-22 In mã QR các bàn:** có tên Wi-Fi → mỗi thẻ bàn: **"① Quét để vào Wi-Fi"** (QR Wi-Fi nhỏ + dòng "Wi-Fi: … · Mật khẩu: …") rồi **"② Quét để gọi món"** (QR bàn). Chưa có tên Wi-Fi → thẻ như cũ. Dòng cuối thẻ: "Thanh toán tiền mặt hoặc chuyển khoản — bấm "Gọi thanh toán" khi xong" (F-056).
+
+## F-060 — Phát hiện bất thường, cảnh báo qua email (TASK-075, ADR-020, 27/10/2026)
+
+- **S-33 Cài đặt:** thẻ **"Cảnh báo bất thường qua email"** — ô **Email nhận cảnh báo** (tối đa 5, cách nhau dấu phẩy; lỗi từng email hiện dưới ô), 3 ô tích (Cảnh báo tức thì, Báo cáo khi đóng ca, Tổng kết cuối ngày), giờ gửi tổng kết, giờ yên lặng từ / đến (trống = tắt), 6 ngưỡng, ô tích "So thêm với mức bình thường của quán", dòng **trạng thái hộp thư gửi** (đã cấu hình ✔ / chưa cấu hình → nhắc điền `.env`; lần gửi gần nhất, đang chờ, gửi lỗi, lỗi gần nhất; có email lỗi → nút **"Gửi lại n email lỗi"**), nút **"Gửi email thử"** (gửi tới danh sách đang gõ, chưa cần lưu). Lưu cùng nút **Lưu cài đặt**; danh sách email chỉ gửi lên khi đổi; ô ngưỡng để trống → giữ giá trị cũ.
+- **S-47 Cảnh báo bất thường** (mới, `/admin/alerts`, nhóm **Thu chi & nhân sự**): nút lọc **Mới (n)** / **Tất cả** (`aria-pressed`); mỗi cảnh báo một thẻ — nhãn loại (đỏ: mức cao, vàng: mức vừa) kèm chữ **"Mức cao" / "Mức vừa"** (không chỉ dựa vào màu), nhãn trạng thái, giờ + ca, tiêu đề, các dòng số liệu (giá trị / ngưỡng, mức bình thường, chuyển khoản x/y lượt, người liên quan, lý do ghi), nút **Đã xem**, **Đã xử lý…** (hộp thoại ghi chú), **Nhật ký thao tác** (mở SCR-38 lọc sẵn ngày + người). Cảnh báo mới tới qua realtime → toast ⚠️ và danh sách tự tải lại.
+- **S-38 Nhật ký thao tác:** đọc bộ lọc `?from=&to=&userId=` từ đường dẫn (link từ S-47).
+
+```mermaid
+flowchart LR
+  CLOSE["S-15 Đóng ca / hoàn tiền / sửa sổ quỹ"] -->|phát hiện| ALERT[("Alerts")]
+  ALERT -->|alert.created — phòng admin| S47["S-47 Cảnh báo bất thường"]
+  ALERT --> OUTBOX[("AlertOutbox")] -->|bộ gửi nền 60 giây| MAIL["Email chủ quán"]
+  S33["S-33 Cài đặt: email nhận, ngưỡng, Gửi email thử"] --> OUTBOX
+  S47 -->|Nhật ký thao tác| S38["S-38 Nhật ký (lọc sẵn)"]
+```

@@ -7,6 +7,7 @@ import { closePool, getPool } from './db.js';
 import { attachRealtime } from './realtime/io.js';
 import { initAvailability } from './services/menuService.js';
 import { startScheduler } from './jobs/scheduler.js';
+import { startAlertMailer } from './jobs/alertMailer.js';
 
 void config.jwtSecret; // kiểm tra sớm biến bắt buộc
 
@@ -32,6 +33,11 @@ server.listen(config.port, () => {
   if (lan.length) console.log(`Trong mạng LAN: ${lan.join(', ')}  (đặt PUBLIC_BASE_URL theo địa chỉ này để điện thoại quét QR được)`);
   console.log(`QR bàn trỏ tới: ${config.publicBaseUrl}/t/<qrToken>`);
   if (startScheduler()) console.log('Job nền: đã bật (JOBS_ENABLED=false để tắt)');
+  // F-060: gửi email cảnh báo + tổng kết ngày (cùng công tắc JOBS_ENABLED)
+  if (startAlertMailer())
+    console.log(
+      `Email cảnh báo: ${config.mail.transport === 'json' ? 'chế độ thử (không gửi thật)' : config.mail.host ? `qua ${config.mail.host}` : 'chưa cấu hình SMTP trong .env'}`,
+    );
 });
 
 async function shutdown(signal) {

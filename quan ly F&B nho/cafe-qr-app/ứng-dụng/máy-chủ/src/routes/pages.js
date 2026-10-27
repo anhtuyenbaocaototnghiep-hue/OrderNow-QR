@@ -45,6 +45,7 @@ const PAGES = {
   // Giai đoạn 6 — tài chính & nhân sự (chỉ ADMIN)
   '/admin/cash': 'admin/cash.html',
   '/admin/reviews': 'admin/reviews.html', // F-051
+  '/admin/alerts': 'admin/alerts.html', // F-060
   '/admin/staff': 'admin/staff.html',
   '/admin/audit': 'admin/audit.html',
   '/admin/pnl': 'admin/pnl.html',

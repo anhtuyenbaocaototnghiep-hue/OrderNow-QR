@@ -10,6 +10,7 @@ import { refreshAvailability } from './menuService.js';
 import { requireOpenShift } from './shiftService.js';
 import { resolveApproval } from './userService.js';
 import { getSettings } from './settingsService.js';
+import * as alertService from './alertService.js';
 
 /** Chi tiết lượt thu để chọn hoàn: thanh toán + các đơn + các lần đã hoàn. */
 export async function paymentDetail(paymentId) {
@@ -45,6 +46,8 @@ export async function refund(paymentId, body, user) {
     publish([ROOMS.staff], 'order.status_changed', { orderId: o.orderId, sessionId: o.sessionId, status: o.status, order: o });
   }
   refreshAvailability();
+  // F-060 (ADR-020 D-75): hoàn tiền lớn → cảnh báo tức thì (lỗi không làm hỏng việc hoàn tiền)
+  await alertService.onRefund(created, { user, shiftId: shift.shiftId }).catch((err) => console.error('alert refund:', err?.message ?? err));
   return { refund: created, ...detail };
 }
 

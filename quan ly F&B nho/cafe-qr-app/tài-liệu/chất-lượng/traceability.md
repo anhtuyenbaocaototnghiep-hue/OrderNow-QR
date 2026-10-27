@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 333 test, sửa lúc 2026-10-27 04:26 UTC
-- `npm run test:e2e` (JSON): 49 test, sửa lúc 2026-10-27 04:29 UTC
+- `npm test` (JUnit): 346 test, sửa lúc 2026-10-27 07:43 UTC
+- `npm run test:e2e` (JSON): 50 test, sửa lúc 2026-10-27 07:45 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 138 |
-| Acceptance Criteria | 353 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 353 |
+| User Story | 140 |
+| Acceptance Criteria | 363 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 363 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -448,4 +448,14 @@
 | AC-059-02 | TC-059-02 | F-059 | US-059-1 | ACT-ADMIN, ACT-GUEST | UC-17 | MOD-ADMIN | SCR-33, SCR-22 | BR-092 | Integration: `wifi-qr.test.js` › AC-059-02: chưa nhập tên Wi-Fi → cài đặt trả tên / mật khẩu rỗng, GET /api/admin/wifi-qr.png → 404 — **PASS**<br>Integration: `wifi-qr.test.js` › AC-059-02: xóa trống tên Wi-Fi → ảnh QR Wi-Fi lại 404 — **PASS** | **PASS** |
 | AC-059-03 | TC-059-03 | F-059 | US-059-1 | ACT-ADMIN, ACT-GUEST | UC-17 | MOD-ADMIN | SCR-33, SCR-22 | BR-092 | Integration: `wifi-qr.test.js` › AC-059-03: tên > 32 byte, mật khẩu 1–7 / > 63 ký tự / có dấu, kết thúc bằng dấu gạch chéo ngược → 400, cài đặt không đổi; nhân viên / trưởng ca → 403, chưa đăng nhập → 401; nhật ký không chứa mật khẩu Wi-Fi — **PASS** | **PASS** |
 | AC-059-04 | TC-059-04 | F-059 | US-059-1 | ACT-ADMIN, ACT-GUEST | UC-17 | MOD-ADMIN | SCR-33, SCR-22 | BR-092 | E2E: `flow.spec.js` › QR Wi-Fi cho khách: quản lý nhập Wi-Fi ở Cài đặt → trang In QR mỗi thẻ bàn có "① Quét để vào Wi-Fi" (ảnh, tên, mật khẩu) và "② Quét để gọi món" (F-059, AC-059-04) — **PASS** | **PASS** |
+| AC-060-01 | TC-060-01 | F-060 | US-060-2 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-01: lưu email nhận / loại email / giờ / ngưỡng → đọc lại đúng; sai dạng / > 5 / trùng / giờ sai / ngưỡng ngoài khoảng → 400, không đổi; nhân viên / trưởng ca → 403 — **PASS**<br>E2E: `flow.spec.js` › cảnh báo bất thường qua email: quản lý nhập email nhận ở Cài đặt, "Gửi email thử" báo đã gửi; đóng ca thừa 50.000đ → trang Cảnh báo tự hiện cảnh báo Lệch két, bấm Đã xem (F-060, AC-060-09) — **PASS** | **PASS** |
+| AC-060-02 | TC-060-02 | F-060 | US-060-1 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-47, SCR-15 | BR-093, BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-02: ca vượt 5 ngưỡng → 5 cảnh báo (giá trị, ngưỡng, người liên quan) + MỘT email báo cáo ca có ⚠️ — **PASS**<br>Integration: `alerts.test.js` › AC-060-02: ca không bất thường → không cảnh báo, email "không có dấu hiệu bất thường ✔"; tắt báo cáo ca → không email nhưng cảnh báo vẫn có — **PASS** | **PASS** |
+| AC-060-03 | TC-060-03 | F-060 | US-060-1 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-47, SCR-15 | BR-093, BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-03: hoàn tiền ≥ mức lớn → BIG_REFUND + email ngay, SĐT trong lý do bị che; hủy khoản sổ quỹ đã duyệt → CASH_VOID; tắt "tức thì" → chỉ cảnh báo trong app — **PASS** | **PASS** |
+| AC-060-04 | TC-060-04 | F-060 | US-060-1 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-47, SCR-15 | BR-093, BR-094, BR-095 | Unit: `alerts.test.js` › AC-060-04 (unit): trung bình + 2 độ lệch chuẩn; cần ≥ 10 ca; dưới mức tối thiểu không báo; giờ yên lặng qua nửa đêm — **PASS**<br>Integration: `alerts.test.js` › AC-060-04: sau 10 ca bình thường (0 lượt hoàn), ca có 2 lượt hoàn → bất thường theo mức bình thường dù chưa vượt ngưỡng cố định 5; ghi "bình thường" — **PASS** | **PASS** |
+| AC-060-05 | TC-060-05 | F-060 | US-060-2 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-05: đổi danh sách email nhận → thư báo tới CẢ địa chỉ cũ lẫn mới; đổi ngưỡng / tắt loại email cũng báo; chỉ đổi thứ tự → không báo; Nhật ký thao tác ghi lần đổi — **PASS** | **PASS** |
+| AC-060-06 | TC-060-06 | F-060 | US-060-1 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-47, SCR-15 | BR-093, BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-06: gửi lỗi → thử lại 5 lần sau 1 / 5 / 15 / 60 / 240 phút, vẫn lỗi → FAILED (hiện ở mail-status); "Gửi lại email lỗi" xếp lại và gửi được; không gửi trùng — **PASS**<br>Integration: `alerts.test.js` › AC-060-06: ghi cảnh báo lỗi (CSDL từ chối) → đóng ca, hoàn tiền lớn, hủy khoản sổ quỹ đã duyệt vẫn thành công — **PASS**<br>Integration: `alerts.test.js` › AC-060-06: email tạo trong giờ yên lặng → hoãn tới hết giờ yên lặng; thư báo đổi người nhận không bị hoãn — **PASS** | **PASS** |
+| AC-060-07 | TC-060-07 | F-060 | US-060-1 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-47, SCR-15 | BR-093, BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-07: tổng kết 24 giờ tính tới giờ gửi — doanh thu tiền mặt / chuyển khoản, các ca, cảnh báo; không gửi hai lần; gửi bù hôm qua khi email đã cài từ trước; mốc 00:00 là trọn ngày hôm trước — **PASS** | **PASS** |
+| AC-060-08 | TC-060-08 | F-060 | US-060-1 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-47, SCR-15 | BR-093, BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-08: danh sách Mới / Tất cả; Đã xem / Đã xử lý có ghi chú; alert.created chỉ tới phòng admin; xóa quản lý từng xử lý cảnh báo → xóa mềm — **PASS**<br>E2E: `flow.spec.js` › cảnh báo bất thường qua email: quản lý nhập email nhận ở Cài đặt, "Gửi email thử" báo đã gửi; đóng ca thừa 50.000đ → trang Cảnh báo tự hiện cảnh báo Lệch két, bấm Đã xem (F-060, AC-060-09) — **PASS** | **PASS** |
+| AC-060-09 | TC-060-09 | F-060 | US-060-1, US-060-2 | ACT-ADMIN | UC-11, UC-16, UC-17 | MOD-SHIFT, MOD-REPORT, MOD-ADMIN | SCR-47, SCR-15, SCR-33 | BR-093, BR-094, BR-095 | E2E: `flow.spec.js` › cảnh báo bất thường qua email: quản lý nhập email nhận ở Cài đặt, "Gửi email thử" báo đã gửi; đóng ca thừa 50.000đ → trang Cảnh báo tự hiện cảnh báo Lệch két, bấm Đã xem (F-060, AC-060-09) — **PASS** | **PASS** |
+| AC-060-10 | TC-060-10 | F-060 | US-060-2 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-10: mail-status không có mật khẩu; "Gửi email thử" khi chưa cấu hình hộp thư → báo lỗi rõ; đã cấu hình → gửi tới đúng địa chỉ, tính vào giới hạn mỗi giờ; che SĐT mọi dạng viết — **PASS**<br>Integration: `alerts.test.js` › AC-060-03: hoàn tiền ≥ mức lớn → BIG_REFUND + email ngay, SĐT trong lý do bị che; hủy khoản sổ quỹ đã duyệt → CASH_VOID; tắt "tức thì" → chỉ cảnh báo trong app — **PASS** | **PASS** |
 

@@ -1,6 +1,6 @@
 # Kế hoạch & biên bản nghiệm thu người dùng (UAT)
 
-> Sổ tay 15 bước — bước 14, lớp **UAT**: "người đại diện Actor xác nhận nhu cầu". Kiểm thử tự động (333 test tích hợp, 49 E2E, ép tải) đã chứng minh từng AC — xem [traceability.md](traceability.md). UAT là bước **người thật** dùng thử trên **thiết bị thật** để xác nhận sản phẩm đúng nhu cầu, và kiểm các điểm máy không kiểm được.
+> Sổ tay 15 bước — bước 14, lớp **UAT**: "người đại diện Actor xác nhận nhu cầu". Kiểm thử tự động (346 test tích hợp, 50 E2E, ép tải) đã chứng minh từng AC — xem [traceability.md](traceability.md). UAT là bước **người thật** dùng thử trên **thiết bị thật** để xác nhận sản phẩm đúng nhu cầu, và kiểm các điểm máy không kiểm được.
 >
 > **Trạng thái:** CHỜ THỰC HIỆN — agent không được tự điền kết quả UAT (TASK-057, `.agent/rules.md`). Người đại diện điền cột Kết quả / Người / Ngày rồi chủ dự án ký ở cuối. Kết quả UAT là điều kiện của Gate G4 ([quality-gates.md](quality-gates.md)).
 

@@ -430,6 +430,7 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     'users',
     'audit',
     'settings',
+    'alerts',
     'api-docs',
   ];
   for (const r of routes) {

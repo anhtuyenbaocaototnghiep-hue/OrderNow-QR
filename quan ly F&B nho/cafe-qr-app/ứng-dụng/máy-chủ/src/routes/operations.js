@@ -2,8 +2,10 @@
 // lịch sử ca (F-018), hoàn tiền (F-019), nhập kho & kiểm kê + giá vốn/hao hụt (F-023), sửa / hủy phiếu nhập & kiểm kê (F-048).
 import express from 'express';
 import { z } from 'zod';
-import { badRequest } from '../errors.js';
+import { badRequest, notFound } from '../errors.js';
 import { paramId, parse, parseRange, zId, zMoney, zText } from '../middleware/validate.js';
+import * as alertService from '../services/alertService.js';
+import * as mailService from '../services/mailService.js';
 import * as modifierService from '../services/modifierService.js';
 import * as refundService from '../services/refundService.js';
 import * as reviewService from '../services/reviewService.js';
@@ -13,6 +15,15 @@ import * as stockService from '../services/stockService.js';
 import { addDays, todayVn, vnDayStartUtc } from '../utils/time.js';
 
 export const operationsRouter = express.Router();
+
+// F-060: 1–5 email nhận cảnh báo, đúng dạng, không trùng; lưu CSV trong Settings (≤ 200 ký tự)
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+const zAlertEmails = () =>
+  z
+    .array(z.string().trim().toLowerCase().email('Email không hợp lệ').max(100))
+    .max(5, 'Tối đa 5 email')
+    .refine((a) => new Set(a).size === a.length, 'Email bị trùng')
+    .refine((a) => a.join(',').length <= 200, 'Danh sách email quá dài (tối đa 200 ký tự)');
 
 const utcRange = (query) => {
   const { from, to } = parseRange(query);
@@ -99,10 +110,54 @@ operationsRouter.put('/settings', async (req, res) => {
         )
         .refine((v) => !v.endsWith('\\'), 'Mật khẩu Wi-Fi không được kết thúc bằng dấu \\')
         .optional(),
+      // F-060 cảnh báo bất thường qua email (BR-093…BR-095)
+      alertEmails: zAlertEmails().optional(),
+      alertImmediate: z.boolean().optional(),
+      alertShiftReport: z.boolean().optional(),
+      alertDailyDigest: z.boolean().optional(),
+      alertDigestTime: z.string().regex(HHMM, 'Giờ phải có dạng HH:MM').optional(),
+      alertQuietStart: z.union([z.literal(''), z.string().regex(HHMM, 'Giờ phải có dạng HH:MM')]).optional(),
+      alertQuietEnd: z.union([z.literal(''), z.string().regex(HHMM, 'Giờ phải có dạng HH:MM')]).optional(),
+      alertCashDiffMax: zMoney()
+        .refine((v) => v <= 10_000_000, 'Tối đa 10.000.000đ')
+        .optional(),
+      alertTransferShareMax: z.coerce.number().int().min(1).max(100).optional(),
+      alertVoidsMax: z.coerce.number().int().min(0).max(100).optional(),
+      alertRefundsMax: z.coerce.number().int().min(0).max(100).optional(),
+      alertRefundBig: zMoney()
+        .refine((v) => v >= 1000 && v <= 100_000_000, 'Từ 1.000đ tới 100.000.000đ')
+        .optional(),
+      alertManualDiscountMax: z.coerce.number().int().min(0).max(100).optional(),
+      alertUseStats: z.boolean().optional(),
     }),
     req.body,
   );
-  res.json(await settingsService.updateSettings(body));
+  const before = Object.keys(body).some((k) => k.startsWith('alert')) ? await settingsService.getSettings() : null;
+  const after = await settingsService.updateSettings(body);
+  // F-060 (ADR-020 D-78): đổi cài đặt cảnh báo → thư báo tới cả địa chỉ cũ lẫn mới (lỗi gửi không làm hỏng việc lưu)
+  if (before) await alertService.onAlertSettingsChanged(before, after, req.user).catch((err) => console.error('alert settings:', err?.message ?? err));
+  res.json(after);
+});
+
+// ---- Cảnh báo bất thường (FEATURE-060, ADR-020) — chỉ ADMIN (requireAdmin ở adminRouter) ----
+operationsRouter.get('/alerts', async (req, res) => {
+  const q = parse(z.object({ status: z.enum(['NEW', 'ALL']).default('NEW'), limit: z.coerce.number().int().min(1).max(500).default(100) }), req.query);
+  res.json({ alerts: await alertService.list(q), newCount: await alertService.countNew() });
+});
+operationsRouter.patch('/alerts/:id', async (req, res) => {
+  const body = parse(z.object({ status: z.enum(['SEEN', 'RESOLVED']), note: zText(300).optional().nullable() }), req.body);
+  const alert = await alertService.setStatus(paramId(req), body, req.user);
+  if (!alert) throw notFound('Không tìm thấy cảnh báo');
+  res.json({ alert });
+});
+operationsRouter.get('/alerts/mail-status', async (_req, res) => res.json(await mailService.status()));
+operationsRouter.post('/alerts/mail-retry', async (_req, res) => {
+  const requeued = await mailService.retryFailed();
+  res.json({ requeued });
+});
+operationsRouter.post('/alerts/test-email', async (req, res) => {
+  const { emails } = parse(z.object({ emails: zAlertEmails().refine((a) => a.length > 0, 'Nhập ít nhất một email') }), req.body);
+  res.json(await mailService.sendTest(emails, (await settingsService.shopInfo()).name));
 });
 
 // ---- Ca + hoàn tiền ----

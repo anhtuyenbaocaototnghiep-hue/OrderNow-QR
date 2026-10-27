@@ -15,6 +15,7 @@ Object.assign(process.env, {
   PORT: port,
   RATE_LIMIT: 'off',
   JOBS_ENABLED: 'false',
+  MAIL_TRANSPORT: 'json', // F-060: dựng email cảnh báo nhưng không gửi ra ngoài (kể cả khi .env có SMTP thật)
   PUBLIC_BASE_URL: `http://localhost:${port}`,
   ADMIN_SEED_USERNAME: 'admin',
   ADMIN_SEED_PASSWORD: 'Admin@123',

@@ -8,6 +8,7 @@ export function setIo(server) {
 
 export const ROOMS = {
   staff: 'staff',
+  admin: 'admin', // F-060: chỉ quản lý (ADMIN) — cảnh báo bất thường về nhân viên không gửi vào phòng staff
   public: 'public',
   session: (sessionId) => `session:${String(sessionId).toLowerCase()}`,
 };

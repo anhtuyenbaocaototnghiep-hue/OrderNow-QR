@@ -1189,4 +1189,17 @@ Không có SP mới. Migration kế tiếp: `0039`.
 | Tách hóa đơn | `splitsRepo.separate`: một transaction — (bàn chưa chia: phần "Chung") + phần mới + chuyển dòng; còn món chưa chọn → phần "Phần còn lại" |
 | Bất biến (test) | `ORDER_TABLE_MISMATCH` cho phép đơn giữ bàn của phiên đã gộp vào; mới `MERGED_SESSION_STATE`, `TRANSFER_WITH_CHANGE`; `SHIFT_EXPECTED_CASH` theo công thức tiền mặt |
 
-Migration kế tiếp: `0040`.
+Migration kế tiếp: `0040` (đã dùng cho F-060 — xem mục dưới).
+
+## Phát hiện bất thường, cảnh báo qua email (FEATURE-060, ADR-020, 27/10/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0040_canh_bao_bat_thuong.sql` | `Alerts (AlertId PK, Kind CHECK ('CASH_DIFF','TRANSFER_SHARE','VOIDS','REFUNDS','MANUAL_DISCOUNT','BIG_REFUND','CASH_VOID'), Severity 'MEDIUM' / 'HIGH', ShiftId FK Shifts NULL, UserId FK Users NULL (người liên quan chính), Title NVARCHAR(200), Detail NVARCHAR(MAX) JSON, DedupeKey VARCHAR(100) UNIQUE, Status 'NEW' / 'SEEN' / 'RESOLVED', Note NVARCHAR(300), HandledBy FK Users, HandledAt, CreatedAt)`, chỉ mục `IX_Alerts_Status_At`, `IX_Alerts_At`. `AlertOutbox (OutboxId PK, Kind 'ALERT' / 'SHIFT' / 'DIGEST' / 'NOTICE' / 'TEST', AlertId FK NULL, DedupeKey VARCHAR(120) NULL — duy nhất khi khác NULL (`UX_Outbox_Dedupe`), Recipients NVARCHAR(600) (ảnh chụp người nhận lúc tạo), Subject, BodyText, BodyHtml, Status 'PENDING' / 'SENDING' / 'SENT' / 'FAILED', Attempts, NextAttemptAt DATETIME2(0), LastError NVARCHAR(400), CreatedAt, SentAt)`, chỉ mục `IX_Outbox_Due (Status, NextAttemptAt)`. Chỉ thêm bảng, không đổi bảng cũ |
+| Khóa chống trùng | Cảnh báo: `SHIFT:{shiftId}:{KIND}`, `REFUND:{refundId}`, `CASHVOID:{cashTxnId}`. Email: `SHIFT:{shiftId}`, `ALERT:{alertId}`, `DIGEST:{yyyy-mm-dd}` (ngày của mốc gửi); thư báo đổi cài đặt / email thử không có khóa. Email thử gửi thẳng rồi ghi một dòng `Kind = 'TEST'`, `Status = 'SENT'` để tính vào giới hạn mỗi giờ; "Gửi lại email lỗi" đưa `FAILED` về `PENDING`, `Attempts = 0`. Trùng (lỗi 2601 / 2627) → bỏ qua, không lỗi |
+| Nhận việc gửi | `alertsRepo.claimDue`: `UPDATE TOP (n) … WITH (ROWLOCK, READPAST, UPDLOCK) OUTPUT inserted.*` → `SENDING` (hai tiến trình không nhận trùng); dòng `SENDING` quá 10 phút được nhận lại. `NextAttemptAt` là `DATETIME2(0)` — SQL Server làm tròn **lên** tới giây, nên so `<= DATEADD(SECOND, 1, SYSUTCDATETIME())` |
+| Số liệu ca | Một truy vấn cho ca + 30 ca đã đóng trước: số lượt thu / lượt chuyển khoản (`Payments.Method`), món đã pha bị hủy (`OrderItemVoids.StockMode = 'WASTE'`, gán ca theo giờ mở–đóng vì bảng không có `ShiftId`), lượt hoàn (`Refunds.ShiftId`), lượt giảm tay (`Payments.ManualDiscount > 0`) |
+| `sp_DeleteUser` (sửa) | `Alerts.UserId` / `Alerts.HandledBy` là lịch sử → tài khoản chỉ xóa mềm (`ARCHIVED`) |
+| Cài đặt | Khóa `alert.emails` (CSV), `alert.immediate`, `alert.shift_report`, `alert.daily_digest`, `alert.digest_time`, `alert.quiet_start`, `alert.quiet_end`, `alert.cash_diff_max`, `alert.transfer_share_max`, `alert.voids_max`, `alert.refunds_max`, `alert.refund_big`, `alert.manual_discount_max`, `alert.use_stats` trong `Settings` — mặc định trong code (`settingsService`), không cần dữ liệu khởi tạo. `Settings.UpdatedAt` của `alert.emails` là mốc để quyết định gửi bù tổng kết hôm qua |
+
+Không có SP mới. Migration kế tiếp: `0041`.

@@ -23,6 +23,7 @@
 | S-08 | Mật khẩu quản trị router, Wi-Fi nội bộ | Cấu hình mạng, IP cố định | Router | Chủ quán | Khi nhân viên nghỉ | Trang quản trị router | Thiết bị phải kết nối lại Wi-Fi |
 | S-09 | Tài khoản nơi giữ bản sao lưu ngoài máy (đám mây / USB mã hóa) | Lấy bản sao lưu khi máy chủ hỏng | Ngoài máy chủ | Chủ quán | Bật 2 lớp xác thực | Trang tài khoản của dịch vụ | — |
 | S-10 | (VPS) khóa SSH, tài khoản nhà cung cấp VPS / tên miền, `RESTORE_SQL_PASSWORD` | Quản trị VPS dự phòng | Máy của người kỹ thuật, trình quản lý mật khẩu | Chủ quán + người kỹ thuật | Khi người giữ nghỉ | Tạo khóa mới, xóa khóa cũ trên VPS | — |
+| S-11 | `SMTP_PASS` — **mật khẩu ứng dụng** của hộp thư gửi cảnh báo (Gmail: tạo ở *Tài khoản Google → Bảo mật → Mật khẩu ứng dụng*, cần bật xác minh 2 bước; không dùng mật khẩu đăng nhập Gmail). Nên dùng một Gmail riêng chỉ để gửi | Gửi email cảnh báo bất thường (F-060) | `.env` máy chủ | Chủ quán | Khi người kỹ thuật nghỉ / nghi lộ | Thu hồi mật khẩu ứng dụng cũ trên trang Google → tạo cái mới → sửa `SMTP_PASS` trong `.env` → khởi động lại app → Cài đặt → "Gửi email thử" | Email chờ trong hàng đợi tự gửi lại sau khi đổi (thử lại tới 5 lần); cảnh báo trong app không bị ảnh hưởng |
 
 Mật khẩu Wi-Fi **dành cho khách** không phải bí mật của hệ thống (dán ở quầy), nhưng nên tách khỏi Wi-Fi nội bộ nếu router cho phép (lưu ý cách ly thiết bị — [deployment-checklist.md](deployment-checklist.md) §A1).
 
@@ -40,6 +41,7 @@ Mật khẩu Wi-Fi **dành cho khách** không phải bí mật của hệ thố
 | S-08 | | | | |
 | S-09 | | | | |
 | S-10 | | | | |
+| S-11 | | | | |
 
 ## 4. Khi bí mật bị lộ
 

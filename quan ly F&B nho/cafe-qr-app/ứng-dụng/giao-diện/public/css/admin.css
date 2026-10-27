@@ -1059,3 +1059,17 @@ table.heatmap td.peak {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* SCR-47 Cảnh báo bất thường (F-060) */
+.alert-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.alert-card .alert-title {
+  font-size: 1.1rem;
+  margin: 0.5rem 0 0.25rem;
+}
+.alert-card ul {
+  margin: 0 0 0.75rem;
+}

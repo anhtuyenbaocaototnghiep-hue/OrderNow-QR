@@ -9,6 +9,12 @@ await mountAdminShell('audit');
 
 const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
 const state = { from: addDays(todayVn(), -6), to: todayVn(), userId: '', entity: '', action: '', entityId: '', page: 1, facets: { entities: [], users: [] } };
+// F-060: mở từ trang Cảnh báo bất thường với ?from=&to=&userId= (ngày của ca / người liên quan)
+const url = new URLSearchParams(location.search);
+const isDay = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v ?? '');
+if (isDay(url.get('from'))) state.from = url.get('from');
+if (isDay(url.get('to'))) state.to = url.get('to');
+if (/^\d+$/.test(url.get('userId') ?? '')) state.userId = url.get('userId');
 const body = el('div');
 clear($('#content'), body);
 

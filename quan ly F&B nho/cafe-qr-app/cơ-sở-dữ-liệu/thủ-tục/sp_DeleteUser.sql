@@ -44,6 +44,7 @@ BEGIN
      OR EXISTS (SELECT 1 FROM dbo.Segments WHERE CreatedBy = @UserId)                   -- F-037
      OR EXISTS (SELECT 1 FROM dbo.Campaigns WHERE CreatedBy = @UserId)
      OR EXISTS (SELECT 1 FROM dbo.Reviews WHERE HandledBy = @UserId)                     -- F-051: xử lý đánh giá thấp
+     OR EXISTS (SELECT 1 FROM dbo.Alerts WHERE UserId = @UserId OR HandledBy = @UserId)  -- F-060: cảnh báo bất thường (người liên quan / người xử lý)
   BEGIN
     UPDATE dbo.Users SET DeletedAt = SYSUTCDATETIME(), IsActive = 0 WHERE UserId = @UserId;
     SET @Result = 'ARCHIVED';
