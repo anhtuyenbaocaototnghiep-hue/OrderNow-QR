@@ -90,6 +90,7 @@
 | [TASK-072](TASK-072.md) | Bố cục màn quầy "Đơn hàng": đơn cần làm + lưới bàn (ADR-018) | — (giao diện SCR-10) | TASK-071 | Agent | — | chủ dự án yêu cầu 23/10 | READY_FOR_REVIEW |
 | [TASK-073](TASK-073.md) | Thu bằng chuyển khoản (két chỉ tính tiền mặt), thu chung nhiều bàn, tách hóa đơn theo món (F-056…F-058, ADR-019) | FEATURE-056, FEATURE-057, FEATURE-058 | TASK-072 (bản release/2026-10-23) | Agent | — | chủ dự án yêu cầu 24/10 | READY_FOR_REVIEW |
 | [TASK-074](TASK-074.md) | QR Wi-Fi cho khách in kèm QR bàn (F-059) | FEATURE-059 | TASK-073 | Agent | — | chủ dự án 26/10 (demo qua Wi-Fi / điểm phát) | READY_FOR_REVIEW |
+| [TASK-075](TASK-075.md) | Phát hiện bất thường, cảnh báo qua email (F-060, ADR-020) | FEATURE-060 | TASK-074 | Agent | — | chủ dự án 27/10 ("gửi về email ghi trong cài đặt") | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

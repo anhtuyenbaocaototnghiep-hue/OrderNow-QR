@@ -25,3 +25,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-035-054-plan.md](TASK-035-054-plan.md) — mở rộng giai đoạn 4–8 (skill `advanced-features`, ADR-006).
 - [TASK-073-plan.md](TASK-073-plan.md) — chuyển khoản, thu chung nhiều bàn, tách hóa đơn (ADR-019).
 - [TASK-074-plan.md](TASK-074-plan.md) — QR Wi-Fi cho khách in kèm QR bàn (F-059).
+- [TASK-075-plan.md](TASK-075-plan.md) — phát hiện bất thường, cảnh báo qua email (F-060, ADR-020).
