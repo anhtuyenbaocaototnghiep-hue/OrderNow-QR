@@ -49,7 +49,7 @@ Chấp nhận, ghi ở ADR-020 D-78: quản lý có thể tự "Đã xử lý" c
 | Cùng test mới chạy trên code cũ `c8c4f33` (worktree tạm, đã xóa) | Không bài nào qua — `ERR_MODULE_NOT_FOUND` (`alertService.js` chưa có), tiến trình thoát mã 1. Lần chạy đầu bị treo vì `after()` lỗi khi `before()` hỏng → sửa `after()` (`mailService?.`, `app?.close()`) |
 | `npm run trace -- --check` | 140 US, 363 AC — PASS 363, GAP 0 |
 | `npm run lint`, `npm run format:check` | PASS |
-| `npm run db:migrate` lên `CafeQrDev` | (sau commit — xem dưới) |
+| `npm run db:migrate` lên `CafeQrDev` | Đã áp `0040` (27/10, sau commit `d4da99c`) — có `Alerts`, `AlertOutbox`; dữ liệu thử còn nguyên; chạy lại: mọi migration `skip` |
 
 ## Bàn giao cho chủ dự án
 - Điền hộp thư gửi vào `.env` (không gửi mật khẩu qua chat): `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER=<gmail gửi>`, `SMTP_PASS=<mật khẩu ứng dụng 16 ký tự>`, `MAIL_FROM=<tên quán> <gmail gửi>` — sổ bí mật S-11.
