@@ -40,6 +40,12 @@ Nhánh: `task/TASK-074-qr-wifi` tách từ `task/TASK-073-chuyen-khoan-gop-tach`
 | `npm run trace -- --check` | 138 US, 353 AC — PASS 353, GAP 0 |
 | `npm run lint`, `npm run format:check` | PASS |
 
+## Lỗi phát hiện thêm (27/10/2026, lúc chụp màn hình làm hướng dẫn demo có hình)
+| ID | Sửa | Kiểm chứng |
+| --- | --- | --- |
+| [DEF-017](../chất-lượng/defect-log.md) | Giỏ hàng, trang theo dõi đơn, phiếu tạm tính còn ghi "chỉ tiền mặt" → "tiền mặt hoặc chuyển khoản" (`t-menu.js`, `t-track.js`, `pos-receipt.js`) | E2E gửi đơn đầu tiên kiểm chữ trong giỏ hàng |
+| [DEF-018](../chất-lượng/defect-log.md) | `GET /api/tables` thỉnh thoảng 500 do deadlock `1205` khi khách đang gửi đơn → `tablesOverview()` bọc `withDeadlockRetry` | Chạy lại: `npm test` **333/333**, `npm run test:e2e` **49/49**, nhật ký máy chủ E2E không còn deadlock |
+
 ## Cần hỏi duyệt nếu
 - Muốn in QR Wi-Fi riêng một tờ (dán quầy / cửa) thay vì trên từng thẻ bàn.
 - Muốn ẩn mật khẩu chữ trên thẻ (chỉ in QR).

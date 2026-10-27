@@ -87,6 +87,7 @@ test('gọi món trong 3 chạm, quầy nhận đơn realtime < 2s (NFR-003, AC-
   const item = A.locator('.c-section.cat .c-item', { hasText: 'Cà phê sữa' });
   await item.locator('.add-btn').click(); // chạm 1
   await A.click('#open-cart'); // chạm 2
+  await expect(A.locator('.sheet')).toContainText('tiền mặt hoặc chuyển khoản'); // DEF-017 (F-056)
   const t0 = Date.now();
   await A.locator('.sheet .modal-foot .btn-primary').click(); // chạm 3
   await expect(A).toHaveURL(/\/track$/);

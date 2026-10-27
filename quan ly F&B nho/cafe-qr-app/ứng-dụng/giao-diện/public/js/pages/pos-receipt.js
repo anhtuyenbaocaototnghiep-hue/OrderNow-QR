@@ -95,7 +95,7 @@ function render(data) {
             kv('Đã thu theo phần', `${data.splitPayments.length} lượt`),
             data.splitPayments.map((p, i) => kv(`  Phần ${i + 1} · ${dateTime(p.paidAt)}`, money(p.amountDue))),
           ]
-        : el('div', { class: 'center' }, 'Chưa thanh toán — thanh toán bằng tiền mặt'),
+        : el('div', { class: 'center' }, 'Chưa thanh toán — thanh toán bằng tiền mặt hoặc chuyển khoản'),
     // F-047 (ADR-008 D-38): quyền lợi hội viên lúc in — điểm hiện có, thẻ tem, voucher còn hạn
     data.memberCard
       ? [

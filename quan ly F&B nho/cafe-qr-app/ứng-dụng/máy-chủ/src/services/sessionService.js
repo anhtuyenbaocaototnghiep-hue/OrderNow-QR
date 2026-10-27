@@ -185,7 +185,9 @@ export const listByStatus = async (statuses) => (await sessionsRepo.listByStatus
 
 /** Sơ đồ bàn cho quầy: bàn đang dùng + các phiên chưa đóng (kèm ghi chú). Không trả mã QR. */
 export async function tablesOverview() {
-  const [tables, sessions] = await Promise.all([tablesRepo.list(), listByStatus(['OPEN', 'PAYMENT_REQUESTED'])]);
+  // DEF-018: màn quầy tải lại danh sách bàn liên tục; lệnh đọc này có thể bị SQL Server chọn làm nạn nhân deadlock (1205)
+  // khi khách đang gửi đơn / quầy đang thu tiền → chạy lại thay vì trả 500
+  const [tables, sessions] = await withDeadlockRetry(() => Promise.all([tablesRepo.list(), listByStatus(['OPEN', 'PAYMENT_REQUESTED'])]));
   return tables.filter((t) => t.isActive).map((t) => ({ ...publicTable(t), sessions: sessions.filter((s) => s.table.tableId === t.tableId) }));
 }
 

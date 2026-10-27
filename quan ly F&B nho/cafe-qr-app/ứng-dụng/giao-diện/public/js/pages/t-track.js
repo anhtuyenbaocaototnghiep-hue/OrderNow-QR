@@ -298,7 +298,7 @@ function render() {
           el('button', { class: 'btn', type: 'button', id: 'split-bill', onclick: openSplit }, icon('receipt'), 'Chia bill theo người'),
         )
       : null,
-    active.length ? el('p', { class: 'muted small center' }, 'Thanh toán bằng tiền mặt. Bấm "Gọi thanh toán" khi bạn muốn tính tiền.') : null,
+    active.length ? el('p', { class: 'muted small center' }, 'Thanh toán bằng tiền mặt hoặc chuyển khoản. Bấm "Gọi thanh toán" khi bạn muốn tính tiền.') : null,
     el(
       'div',
       { class: 'center' },

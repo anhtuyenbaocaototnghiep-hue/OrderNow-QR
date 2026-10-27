@@ -651,7 +651,7 @@ function renderTotals() {
       ? el('p', { class: 'small eta', id: 'cart-eta' }, icon('timer'), `Dự kiến có món sau khoảng ${state.eta.minMinutes}–${state.eta.maxMinutes} phút`)
       : null,
     m ? el('p', { class: 'small save' }, `Ưu đãi hội viên (${m.maskedName}) được trừ khi thanh toán.`) : null,
-    el('p', { class: 'muted small' }, 'Thanh toán bằng tiền mặt sau khi dùng xong — bấm "Gọi thanh toán" ở màn hình theo dõi đơn.'),
+    el('p', { class: 'muted small' }, 'Thanh toán bằng tiền mặt hoặc chuyển khoản sau khi dùng xong — bấm "Gọi thanh toán" ở màn hình theo dõi đơn.'),
     acceptingOrders() ? null : el('div', { class: 'alert warning' }, closedReason()),
   );
   sendBtn.disabled = !acceptingOrders();

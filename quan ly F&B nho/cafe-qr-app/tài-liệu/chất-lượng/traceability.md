@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 333 test, sửa lúc 2026-10-26 12:52 UTC
-- `npm run test:e2e` (JSON): 49 test, sửa lúc 2026-10-27 03:26 UTC
+- `npm test` (JUnit): 333 test, sửa lúc 2026-10-27 04:26 UTC
+- `npm run test:e2e` (JSON): 49 test, sửa lúc 2026-10-27 04:29 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
