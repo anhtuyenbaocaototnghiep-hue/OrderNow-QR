@@ -1,6 +1,8 @@
 # OrderNow-QR
 Quản lý F&amp;B đặt bàn bằng QR
 
+**Phiên bản hiện tại:** `v1.0.0-rc.3` (ứng viên phát hành, 29/10/2026) — chức năng F-001…F-063; nhật ký phát hành ở `quan ly F&B nho/cafe-qr-app/tài-liệu/vận-hành/release-plan.md` §7.
+
 ## Nội dung
 
 - [Mã nguồn web-app `cafe-qr-app`](quan%20ly%20F%26B%20nho/cafe-qr-app/): HTML/CSS/JS thuần, Node.js + Express, SQL Server, Socket.io. Cách cài và chạy xem README trong thư mục này.
