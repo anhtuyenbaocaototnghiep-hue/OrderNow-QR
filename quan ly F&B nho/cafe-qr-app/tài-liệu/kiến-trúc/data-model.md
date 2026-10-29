@@ -1202,4 +1202,14 @@ Migration kế tiếp: `0040` (đã dùng cho F-060 — xem mục dưới).
 | `sp_DeleteUser` (sửa) | `Alerts.UserId` / `Alerts.HandledBy` là lịch sử → tài khoản chỉ xóa mềm (`ARCHIVED`) |
 | Cài đặt | Khóa `alert.emails` (CSV), `alert.immediate`, `alert.shift_report`, `alert.daily_digest`, `alert.digest_time`, `alert.quiet_start`, `alert.quiet_end`, `alert.cash_diff_max`, `alert.transfer_share_max`, `alert.voids_max`, `alert.refunds_max`, `alert.refund_big`, `alert.manual_discount_max`, `alert.use_stats` trong `Settings` — mặc định trong code (`settingsService`), không cần dữ liệu khởi tạo. `Settings.UpdatedAt` của `alert.emails` là mốc để quyết định gửi bù tổng kết hôm qua |
 
-Không có SP mới. Migration kế tiếp: `0041`.
+Không có SP mới. Migration kế tiếp: `0041` (đã dùng cho F-061 — xem mục dưới).
+
+## Chế độ cơ bản, hướng dẫn quầy, cảnh báo QR (FEATURE-061, FEATURE-063, ADR-021, 29/10/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0041_che_do_co_ban_huong_dan.sql` | `Users.TourSeenAt DATETIME2(0) NULL` — lúc xem xong / bỏ qua hướng dẫn 5 bước (`COALESCE` giữ lần đầu). Cùng lúc thêm cột: mọi tài khoản có sẵn đặt `TourSeenAt` = giờ chạy migration; CSDL đã có đơn và chưa có `ui.modules` → ghi `ui.modules` = cả 5 nhóm. Chỉ thêm |
+| Cài đặt | `ui.modules` (CSV nhóm menu nâng cao đang bật; chưa có = chế độ cơ bản), `qr.printed_base_url`, `qr.printed_at` (địa chỉ máy chủ + giờ lúc quản lý in QR bàn gần nhất) trong `Settings` |
+| Seed | `seedBase` tạo tài khoản với `TourSeenAt` = lúc tạo (chủ quán / nhân viên mẫu không thấy hướng dẫn); `seedDemo` ghi `ui.modules` đủ 5 nhóm |
+
+Không có SP mới, không đổi bảng `Members` (đồng ý `ConsentAt` + ẩn danh đã có từ F-014). Migration kế tiếp: `0042`.

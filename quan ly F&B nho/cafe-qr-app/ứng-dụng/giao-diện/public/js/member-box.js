@@ -287,6 +287,7 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
           consent,
           'Tôi đồng ý cho quán lưu số điện thoại và tên để tích lũy ưu đãi (không dùng cho mục đích khác; có thể yêu cầu xóa bất cứ lúc nào).',
         ),
+        el('a', { class: 'policy-link small', href: '/chinh-sach-du-lieu', target: '_blank', rel: 'noopener' }, 'Xem chính sách dữ liệu'), // F-062: quán lưu gì, xin xóa thế nào (tab mới — không mất chữ đang nhập)
         ok,
       );
       name.focus();

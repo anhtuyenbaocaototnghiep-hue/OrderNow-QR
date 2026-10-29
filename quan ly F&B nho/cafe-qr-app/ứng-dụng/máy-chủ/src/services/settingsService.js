@@ -3,6 +3,7 @@ import { config } from '../config.js';
 import * as settingsRepo from '../repositories/settingsRepo.js';
 import * as shiftsRepo from '../repositories/shiftsRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
+import { MODULES } from '../utils/modules.js';
 
 const TTL_MS = 10_000;
 let cache = null;
@@ -73,6 +74,11 @@ function toSettings(map) {
     alertRefundBig: num(map.get('alert.refund_big'), 200000),
     alertManualDiscountMax: num(map.get('alert.manual_discount_max'), 5),
     alertUseStats: map.get('alert.use_stats') !== 'false',
+    // F-061 (ADR-021 D-79): nhóm menu nâng cao đang bật — chưa lưu = chế độ cơ bản (rỗng)
+    uiModules: csv(map.get('ui.modules')).filter((m) => MODULES.includes(m)),
+    // F-063 (D-82): địa chỉ máy chủ lúc quản lý in QR bàn gần nhất (không sửa qua PUT — chỉ POST /api/admin/qr-printed)
+    qrPrintedBaseUrl: map.get('qr.printed_base_url') ?? '',
+    qrPrintedAt: map.get('qr.printed_at') ?? '',
   };
 }
 
@@ -130,6 +136,9 @@ const KEYS = {
   alertRefundBig: 'alert.refund_big',
   alertManualDiscountMax: 'alert.manual_discount_max',
   alertUseStats: 'alert.use_stats',
+  uiModules: 'ui.modules',
+  qrPrintedBaseUrl: 'qr.printed_base_url',
+  qrPrintedAt: 'qr.printed_at',
 };
 
 /** Sửa một phần cài đặt (đã validate ở route). Đổi trạng thái nhận đơn → báo khách + quầy ngay. */

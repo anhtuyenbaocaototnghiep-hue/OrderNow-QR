@@ -8,9 +8,10 @@ const map = (r) =>
     role: r.Role,
     isActive: Boolean(r.IsActive),
     createdAt: r.CreatedAt,
+    tourSeenAt: r.TourSeenAt ?? null, // F-061: đã xem hướng dẫn 5 bước ở màn quầy
   };
 
-const COLS = 'UserId, Username, FullName, Role, IsActive, CreatedAt';
+const COLS = 'UserId, Username, FullName, Role, IsActive, CreatedAt, TourSeenAt';
 
 export async function findById(id) {
   const r = await query(`SELECT ${COLS} FROM dbo.Users WHERE UserId = @id AND DeletedAt IS NULL`, { id: [sql.Int, id] });
@@ -22,6 +23,14 @@ export async function findByUsernameWithHash(username) {
   const r = await query(`SELECT ${COLS}, PasswordHash FROM dbo.Users WHERE Username = @u AND DeletedAt IS NULL`, { u: [sql.NVarChar(50), username] });
   const row = r.recordset[0];
   return row ? { ...map(row), passwordHash: row.PasswordHash } : null;
+}
+
+/** F-061 (ADR-021 D-80): xem xong / bỏ qua hướng dẫn — giữ lần đầu (gọi lại không đổi giờ). */
+export async function markTourSeen(id) {
+  const r = await query('UPDATE dbo.Users SET TourSeenAt = COALESCE(TourSeenAt, SYSUTCDATETIME()) OUTPUT inserted.TourSeenAt WHERE UserId = @id', {
+    id: [sql.Int, id],
+  });
+  return r.recordset[0]?.TourSeenAt ?? null;
 }
 
 export async function list() {

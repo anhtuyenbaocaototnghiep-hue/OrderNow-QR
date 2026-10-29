@@ -45,7 +45,8 @@ export async function mountPosShell(active) {
     ['orders', '/pos', 'Đơn hàng', 'ticket'],
     ['tables', '/pos/table-order', 'Gọi món tại bàn', 'utensils'],
     ['takeaway', '/pos/takeaway', 'Bán mang đi', 'shopping-bag'],
-    ['stock', '/pos/stock', 'Kho & sơ chế', 'package'],
+    // F-061 (ADR-021 D-79): "Kho & sơ chế" theo nhóm Kho hàng (ẩn mục, trang vẫn mở được bằng đường dẫn)
+    ...(current.modules.includes('inventory') ? [['stock', '/pos/stock', 'Kho & sơ chế', 'package']] : []),
     ['shift', '/pos/shift', 'Ca & hoàn tiền', 'wallet'],
   ];
   if (user.role === 'MANAGER') nav.push(['today', '/admin/today', 'Hôm nay', 'chart-column']); // F-043 bản rút gọn
@@ -71,6 +72,19 @@ export async function mountPosShell(active) {
         'div',
         { class: 'pos-user' },
         el('span', { class: 'user-name' }, user.fullName, user.role === 'MANAGER' ? el('span', { class: 'badge ok' }, 'Trưởng ca') : null),
+        // F-061 (ADR-021 D-80): xem lại hướng dẫn 5 bước — ở trang Đơn hàng mở ngay, trang khác chuyển về Đơn hàng
+        el(
+          'button',
+          {
+            class: 'btn btn-sm',
+            type: 'button',
+            id: 'tour-btn',
+            title: 'Hướng dẫn 5 bước dùng màn quầy',
+            onclick: () => (shell.tourHandler ? shell.tourHandler() : (location.href = '/pos?tour=1')),
+          },
+          icon('circle-help'),
+          'Hướng dẫn',
+        ),
         el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, icon('log-out'), 'Đăng xuất'),
       ),
     ),
@@ -101,6 +115,22 @@ export async function mountPosShell(active) {
   }).observe(header);
   document.fonts?.ready.then(fitHeader); // phông web nạp xong làm chữ rộng ra
   if (new URLSearchParams(location.search).get('denied') === 'admin') toast('Chức năng quản lý chỉ dành cho tài khoản Quản lý', 'warning');
+  // F-063 (ADR-021 D-82): QR trên bàn in ở địa chỉ cũ → nhân viên biết vì sao khách quét lỗi, báo quản lý in lại
+  staffApi('/api/qr-check')
+    .then((q) => {
+      if (!q.mismatch && !q.unreachable) return;
+      const b = el(
+        'div',
+        { class: 'banner qr-wrong', id: 'qr-wrong', role: 'alert' },
+        icon('triangle-alert'),
+        q.unreachable
+          ? ` Máy chủ đã đổi IP — QR trên bàn (${q.baseUrl}) không vào được. Báo quản lý sửa địa chỉ và in lại QR.`
+          : ` QR trên bàn đang trỏ địa chỉ cũ (${q.printedBaseUrl}) — khách quét sẽ lỗi. Báo quản lý in lại QR.`,
+      );
+      if (alerts) alerts.prepend(b);
+      else header.after(b);
+    })
+    .catch(() => {});
 
   const listeners = new Set();
   const shell = {
@@ -139,6 +169,8 @@ export async function mountPosShell(active) {
     },
     reloadShift: loadShift,
     openShiftDialog,
+    /** F-061: trang Đơn hàng gắn hàm mở hướng dẫn (nút "Hướng dẫn"). */
+    tourHandler: null,
   };
 
   function renderShift() {

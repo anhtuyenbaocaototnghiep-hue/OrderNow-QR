@@ -754,3 +754,25 @@ body.customer .c-tabs {
     transform: none;
   }
 }
+
+/* SCR-48 Chính sách dữ liệu (F-062) */
+.policy {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+}
+.policy h1 {
+  font-size: 1.35rem;
+  margin: 0.5rem 0;
+}
+.policy h2 {
+  font-size: 1.05rem;
+  margin: 1.4rem 0 0.4rem;
+}
+.policy ul {
+  padding-left: 1.2rem;
+  margin: 0.25rem 0;
+}
+.policy li {
+  margin: 0.2rem 0;
+}

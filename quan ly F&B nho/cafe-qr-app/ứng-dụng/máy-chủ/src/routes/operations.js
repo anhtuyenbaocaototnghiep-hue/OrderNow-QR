@@ -6,6 +6,7 @@ import { badRequest, notFound } from '../errors.js';
 import { paramId, parse, parseRange, zId, zMoney, zText } from '../middleware/validate.js';
 import * as alertService from '../services/alertService.js';
 import * as mailService from '../services/mailService.js';
+import { MODULES } from '../utils/modules.js';
 import * as modifierService from '../services/modifierService.js';
 import * as refundService from '../services/refundService.js';
 import * as reviewService from '../services/reviewService.js';
@@ -129,6 +130,11 @@ operationsRouter.put('/settings', async (req, res) => {
         .optional(),
       alertManualDiscountMax: z.coerce.number().int().min(0).max(100).optional(),
       alertUseStats: z.boolean().optional(),
+      // F-061 (ADR-021 D-79): nhóm menu nâng cao đang bật (rỗng = chế độ cơ bản)
+      uiModules: z
+        .array(z.enum(MODULES, { message: 'Nhóm mục không hợp lệ' }))
+        .refine((a) => new Set(a).size === a.length, 'Nhóm mục bị trùng')
+        .optional(),
     }),
     req.body,
   );

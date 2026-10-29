@@ -419,7 +419,9 @@ body.admin .chip {
 }
 @media print {
   .admin-side,
-  .no-print {
+  .no-print,
+  .qr-wrong,
+  .module-hidden-note {
     display: none !important;
   }
   .admin-layout {

@@ -1,16 +1,43 @@
 // Trang in lưới QR để dán lên bàn (FEATURE-010). F-059: có Wi-Fi cho khách trong Cài đặt → mỗi thẻ in thêm QR Wi-Fi (bước ①).
 import { staffApi, staffBlobUrl } from '../api.js';
-import { mountAdminShell } from '../admin-shell.js';
+import { mountAdminShell, refreshQrBanner } from '../admin-shell.js';
 import { current } from '../auth.js';
 import { $, clear, el, errorMessage } from '../ui.js';
 import { icon } from '../icons.js';
 
 await mountAdminShell('tables');
 
+// F-063 (ADR-021 D-82): in QR → lưu địa chỉ máy chủ lúc in; sau này app chạy ở địa chỉ khác thì mọi trang báo "in lại QR".
+// Bấm nút In và Ctrl+P (beforeprint) đều ghi — chặn ghi hai lần liền nhau.
+let lastMark = 0;
+async function markPrinted() {
+  if (Date.now() - lastMark < 3000) return;
+  lastMark = Date.now();
+  try {
+    await staffApi('/api/admin/qr-printed', { method: 'POST', body: {} });
+    refreshQrBanner('tables');
+  } catch {
+    /* không ghi được thì chỉ mất cảnh báo — vẫn in */
+  }
+}
+addEventListener('beforeprint', markPrinted);
+
 clear(
   $('#head-actions'),
   el('a', { class: 'btn', href: '/admin/tables' }, '← Về danh sách bàn'),
-  el('button', { class: 'btn btn-primary', type: 'button', onclick: () => window.print() }, icon('printer'), 'In'),
+  el(
+    'button',
+    {
+      class: 'btn btn-primary',
+      type: 'button',
+      onclick: () => {
+        markPrinted();
+        window.print();
+      },
+    },
+    icon('printer'),
+    'In',
+  ),
 );
 
 /** Khối "① Quét để vào Wi-Fi" — kèm tên / mật khẩu cho máy không quét được (BR-092). */

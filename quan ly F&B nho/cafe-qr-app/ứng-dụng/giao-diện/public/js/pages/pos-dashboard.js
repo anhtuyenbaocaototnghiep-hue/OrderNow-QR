@@ -7,6 +7,7 @@
 import { staffApi } from '../api.js';
 import { billingControls } from '../billing-controls.js';
 import { mountPosShell } from '../pos-shell.js';
+import { startTour } from '../pos-tour.js';
 import { printUrl } from '../print.js';
 import { connectRealtime } from '../socket.js';
 import { getToken } from '../auth.js';
@@ -1614,6 +1615,7 @@ const drawerMode = matchMedia('(max-width: 1199px)');
 // Ngăn mở: phần phía sau không bấm / Tab tới được (inert); đóng bằng cách nào cũng trả focus về nút "Bàn" (review G3)
 const behindDrawer = [$('.pos-top'), $('#pos-alerts'), $('.orders-area')];
 function setTablesOpen(open) {
+  if (document.querySelector('.tour-layer')) return; // F-061: hướng dẫn đang mở tự giữ inert — xoay / đổi cỡ màn hình không gỡ (review G3)
   const wasOpen = tablesPanel.classList.contains('open');
   const show = open && drawerMode.matches;
   tablesPanel.classList.toggle('open', show);
@@ -1639,6 +1641,54 @@ if (settleParam) {
   history.replaceState(null, '', location.pathname);
   openSettle(settleParam);
 }
+
+// ---------- F-061 (ADR-021 D-80): hướng dẫn 5 bước — tự mở cho tài khoản chưa xem; nút "Hướng dẫn" / ?tour=1 mở lại ----------
+const tourSteps = () => [
+  {
+    target: '#shift-btn',
+    title: 'Mở ca',
+    text: 'Đầu ca bấm nút này → nhập tiền lẻ đang có trong két → Mở ca. Chưa mở ca thì chưa nhận đơn, chưa thu tiền được.',
+  },
+  {
+    target: '.col-pending',
+    title: 'Đơn mới → Tiếp nhận',
+    text: 'Khách quét QR gọi món → đơn hiện ở cột Mới kèm tiếng chuông. Kiểm món rồi bấm Tiếp nhận để bắt đầu pha.',
+  },
+  {
+    target: '.col-preparing',
+    title: 'Đang pha → Hoàn tất',
+    text: 'Pha xong bấm Hoàn tất: điện thoại khách báo "Đã xong", đơn chuyển xuống dải Đã xong hôm nay.',
+  },
+  {
+    target: () => (drawerMode.matches ? tablesToggle : tablesPanel),
+    title: 'Bàn & thu tiền',
+    // Đọc lúc hiện bước (không phải lúc mở hướng dẫn): xoay máy tính bảng qua 1200 px thì chữ vẫn đúng bố cục
+    text: () =>
+      drawerMode.matches
+        ? 'Bấm nút Bàn để mở lưới bàn → bấm bàn đang có khách → chọn Tiền mặt hoặc Chuyển khoản → thu tiền & in bill.'
+        : 'Bấm bàn đang có khách → chọn Tiền mặt hoặc Chuyển khoản → thu tiền & in bill. Bàn khách bấm "Gọi thanh toán" hiện ở dải trên cùng.',
+  },
+  {
+    target: '.pos-nav a[href="/pos/shift"]',
+    title: 'Cuối ca: Đóng ca',
+    text: 'Hết ca vào Ca & hoàn tiền → đếm tiền trong két → Đóng ca. App so với tiền dự kiến và báo lệch. Xem lại hướng dẫn: nút "Hướng dẫn" trên thanh trên.',
+  },
+];
+function runTour() {
+  setTablesOpen(false);
+  startTour(tourSteps(), {
+    onEnd: () => {
+      if (shell.user.tourSeenAt) return;
+      staffApi('/api/auth/tour-seen', { method: 'POST' })
+        .then((r) => (shell.user.tourSeenAt = r.tourSeenAt))
+        .catch(() => {});
+    },
+  });
+}
+shell.tourHandler = runTour;
+const tourParam = new URLSearchParams(location.search).get('tour');
+if (tourParam) history.replaceState(null, '', location.pathname);
+if (tourParam || (!shell.user.tourSeenAt && !settleParam)) runTour();
 const socket = connectRealtime({
   token: getToken(),
   onOnline: (reconnected) => {

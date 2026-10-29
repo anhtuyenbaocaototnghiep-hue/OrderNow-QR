@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 346 test, sửa lúc 2026-10-27 07:43 UTC
-- `npm run test:e2e` (JSON): 50 test, sửa lúc 2026-10-27 07:45 UTC
+- `npm test` (JUnit): 355 test, sửa lúc 2026-10-29 07:12 UTC
+- `npm run test:e2e` (JSON): 54 test, sửa lúc 2026-10-29 07:14 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 140 |
-| Acceptance Criteria | 363 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 363 |
+| User Story | 144 |
+| Acceptance Criteria | 375 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 375 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -458,4 +458,16 @@
 | AC-060-08 | TC-060-08 | F-060 | US-060-1 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-47, SCR-15 | BR-093, BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-08: danh sách Mới / Tất cả; Đã xem / Đã xử lý có ghi chú; alert.created chỉ tới phòng admin; xóa quản lý từng xử lý cảnh báo → xóa mềm — **PASS**<br>E2E: `flow.spec.js` › cảnh báo bất thường qua email: quản lý nhập email nhận ở Cài đặt, "Gửi email thử" báo đã gửi; đóng ca thừa 50.000đ → trang Cảnh báo tự hiện cảnh báo Lệch két, bấm Đã xem (F-060, AC-060-09) — **PASS** | **PASS** |
 | AC-060-09 | TC-060-09 | F-060 | US-060-1, US-060-2 | ACT-ADMIN | UC-11, UC-16, UC-17 | MOD-SHIFT, MOD-REPORT, MOD-ADMIN | SCR-47, SCR-15, SCR-33 | BR-093, BR-094, BR-095 | E2E: `flow.spec.js` › cảnh báo bất thường qua email: quản lý nhập email nhận ở Cài đặt, "Gửi email thử" báo đã gửi; đóng ca thừa 50.000đ → trang Cảnh báo tự hiện cảnh báo Lệch két, bấm Đã xem (F-060, AC-060-09) — **PASS** | **PASS** |
 | AC-060-10 | TC-060-10 | F-060 | US-060-2 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-094, BR-095 | Integration: `alerts.test.js` › AC-060-10: mail-status không có mật khẩu; "Gửi email thử" khi chưa cấu hình hộp thư → báo lỗi rõ; đã cấu hình → gửi tới đúng địa chỉ, tính vào giới hạn mỗi giờ; che SĐT mọi dạng viết — **PASS**<br>Integration: `alerts.test.js` › AC-060-03: hoàn tiền ≥ mức lớn → BIG_REFUND + email ngay, SĐT trong lý do bị che; hủy khoản sổ quỹ đã duyệt → CASH_VOID; tắt "tức thì" → chỉ cảnh báo trong app — **PASS** | **PASS** |
+| AC-061-01 | TC-061-01 | F-061 | US-061-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33, SCR-10 | BR-096 | Integration: `basic-mode.test.js` › AC-061-01: quán mới (chưa lưu ui.modules) → auth/me trả modules rỗng, cài đặt uiModules rỗng; tài khoản do lệnh cài đặt tạo đã "xem" hướng dẫn — **PASS**<br>E2E: `flow.spec.js` › chế độ cơ bản: tắt hết nhóm nâng cao → menu quản lý không có Kho hàng, Khách hàng, Phân tích; trang ẩn mở thẳng vẫn chạy, có dải nhắc; tích "Kho hàng" ở Cài đặt → menu + mục quầy hiện ngay (F-061, AC-061-05) — **PASS** | **PASS** |
+| AC-061-02 | TC-061-02 | F-061 | US-061-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33, SCR-10 | BR-096 | Integration: `basic-mode.test.js` › AC-061-02: lưu uiModules → đọc lại đúng, auth/me đổi theo; nhóm lạ / trùng → 400, không đổi; nhân viên / trưởng ca → 403 — **PASS** | **PASS** |
+| AC-061-03 | TC-061-03 | F-061 | US-061-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33, SCR-10 | BR-096 | Integration: `basic-mode.test.js` › AC-061-03: nhóm đang ẩn chỉ ẩn menu — API vẫn 200; migration 0041 trên CSDL đã có đơn bật đủ 5 nhóm, tài khoản có sẵn = đã xem hướng dẫn — **PASS**<br>E2E: `flow.spec.js` › chế độ cơ bản: tắt hết nhóm nâng cao → menu quản lý không có Kho hàng, Khách hàng, Phân tích; trang ẩn mở thẳng vẫn chạy, có dải nhắc; tích "Kho hàng" ở Cài đặt → menu + mục quầy hiện ngay (F-061, AC-061-05) — **PASS** | **PASS** |
+| AC-061-04 | TC-061-04 | F-061 | US-061-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03, UC-11 | MOD-AUTH, MOD-ORDER | SCR-10 | BR-097 | Integration: `basic-mode.test.js` › AC-061-04: tài khoản mới chưa xem hướng dẫn → tour-seen ghi giờ, gọi lại không đổi; chưa đăng nhập → 401 — **PASS** | **PASS** |
+| AC-061-05 | TC-061-05 | F-061 | US-061-1, US-061-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-17, UC-03, UC-11 | MOD-ADMIN, MOD-AUTH, MOD-ORDER | SCR-33, SCR-10 | BR-096, BR-097 | E2E: `flow.spec.js` › chế độ cơ bản: tắt hết nhóm nâng cao → menu quản lý không có Kho hàng, Khách hàng, Phân tích; trang ẩn mở thẳng vẫn chạy, có dải nhắc; tích "Kho hàng" ở Cài đặt → menu + mục quầy hiện ngay (F-061, AC-061-05) — **PASS**<br>E2E: `flow.spec.js` › hướng dẫn 5 bước: nhân viên mới đăng nhập quầy lần đầu → Bước 1/5 khoanh nút ca … Xong; tải lại không hiện; nút "Hướng dẫn" mở lại, Esc đóng (F-061, AC-061-05) — **PASS** | **PASS** |
+| AC-062-01 | TC-062-01 | F-062 | US-062-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | BR-098 | Integration: `basic-mode.test.js` › AC-062-01: /chinh-sach-du-lieu mở không cần đăng nhập; /api/shop chỉ trả tên + địa chỉ quán theo Cài đặt — **PASS** | **PASS** |
+| AC-062-02 | TC-062-02 | F-062 | US-062-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | BR-098 | Integration: `basic-mode.test.js` › AC-062-02: câu đồng ý phía khách và 2 hộp đăng ký ở quầy có link /chinh-sach-du-lieu; đăng ký thiếu đồng ý vẫn 400 CONSENT_REQUIRED — **PASS**<br>E2E: `flow.spec.js` › hội viên: khách nhập SĐT ở giỏ → đăng ký → quầy thu tiền thấy ưu đãi đơn đầu −10% (F-014) — **PASS** | **PASS** |
+| AC-062-03 | TC-062-03 | F-062 | US-062-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | BR-098 | E2E: `flow.spec.js` › chính sách dữ liệu: khách đăng ký hội viên ở giỏ bấm "Xem chính sách dữ liệu" → tab mới có tên quán, "Quyền của bạn", cách yêu cầu xóa; điện thoại không cuộn ngang (F-062, AC-062-03) — **PASS** | **PASS** |
+| AC-063-01 | TC-063-01 | F-063 | US-063-1 | ACT-ADMIN, ACT-STAFF | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | BR-099 | Integration: `basic-mode.test.js` › AC-063-01: chưa in → không lệch; quản lý báo đã in → lưu đúng địa chỉ đang chạy + giờ — **PASS** | **PASS** |
+| AC-063-02 | TC-063-02 | F-063 | US-063-1 | ACT-ADMIN, ACT-STAFF | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | BR-099 | Integration: `basic-mode.test.js` › AC-063-02: địa chỉ đang chạy khác lúc in → mismatch kèm cả hai địa chỉ; in lại → hết; IP trong PUBLIC_BASE_URL không còn trên máy → unreachable; localhost / 127.0.0.1 → localhost — **PASS** | **PASS** |
+| AC-063-03 | TC-063-03 | F-063 | US-063-1 | ACT-ADMIN, ACT-STAFF | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | BR-099 | Integration: `basic-mode.test.js` › AC-063-03: quyền — qr-check: khách 401, nhân viên 200; qr-printed: nhân viên / trưởng ca 403 — **PASS** | **PASS** |
+| AC-063-04 | TC-063-04 | F-063 | US-063-1 | ACT-ADMIN, ACT-STAFF | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | BR-099 | E2E: `flow.spec.js` › cảnh báo QR sai địa chỉ: trang In QR báo địa chỉ localhost; bấm In → lưu địa chỉ đang chạy; QR in ở địa chỉ cũ hoặc máy chủ đã đổi IP → dải đỏ ở trang quản lý và màn quầy (F-063, AC-063-04) — **PASS** | **PASS** |
 

@@ -485,6 +485,7 @@ async function lookupMember() {
         name,
         referrer,
         el('label', { class: 'check' }, consent, 'Khách đồng ý cho quán lưu SĐT + tên để tích lũy ưu đãi'),
+        el('a', { class: 'policy-link small', href: '/chinh-sach-du-lieu', target: '_blank', rel: 'noopener' }, 'Chính sách dữ liệu (mở cho khách xem)'), // F-062
         el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: register }, `Đăng ký & ${verb.toLowerCase()}`),
       ),
     );

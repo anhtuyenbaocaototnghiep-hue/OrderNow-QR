@@ -932,3 +932,89 @@ td > .ic-check {
     animation: none;
   }
 }
+
+/* F-062: link "Chính sách dữ liệu" cạnh ô đồng ý — vùng chạm ≥ 24 px (WCAG 2.5.8) */
+.policy-link {
+  display: inline-block;
+  min-height: 24px;
+  padding: 2px 0;
+}
+
+/* F-061 (ADR-021 D-80): hướng dẫn từng bước — khoanh phần tử thật, nền mờ xung quanh */
+.tour-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+.tour-layer.dim {
+  background: rgba(20, 12, 6, 0.55);
+}
+.tour-ring {
+  position: fixed;
+  border-radius: 12px;
+  /* 100vmax đủ phủ màn hình từ mọi vị trí khung; bóng 9999px vượt cỡ lớp đồ họa khi khung đang trượt → trình duyệt bỏ không vẽ */
+  box-shadow: 0 0 0 100vmax rgba(20, 12, 6, 0.55);
+  outline: 3px solid var(--c-focus-dark);
+  pointer-events: none;
+  transition:
+    left 0.2s,
+    top 0.2s,
+    width 0.2s,
+    height 0.2s;
+}
+.tour-box {
+  position: fixed;
+  width: min(380px, calc(100vw - 16px));
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.tour-box.center {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.tour-count {
+  color: var(--c-muted);
+}
+.tour-title {
+  font-size: 1.1rem;
+  margin: 0.25rem 0 0.4rem;
+}
+.tour-text {
+  margin: 0 0 0.9rem;
+}
+.tour-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring {
+    transition: none;
+  }
+}
+
+/* Thông báo (toast) hiện trên lớp hướng dẫn */
+body:has(.tour-layer) .toasts {
+  z-index: 1001;
+}
+
+/* F-063 (ADR-021 D-82): QR bàn trỏ địa chỉ cũ / localhost */
+.banner.qr-wrong {
+  position: static;
+  background: var(--c-danger-50);
+  color: var(--c-danger);
+  border: 1px solid #f1c4bc;
+  border-radius: 10px;
+  text-align: left;
+  margin-bottom: 0.75rem;
+}
+.banner.qr-wrong a {
+  color: inherit;
+}
+.module-hidden-note {
+  margin-bottom: 0.75rem;
+}

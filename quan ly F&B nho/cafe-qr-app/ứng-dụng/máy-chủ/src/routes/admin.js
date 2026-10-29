@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireAdmin } from '../middleware/auth.js';
 import { paramId, parse, zDate, zId, zText, zTime } from '../middleware/validate.js';
 import * as adminService from '../services/adminService.js';
+import * as qrCheckService from '../services/qrCheckService.js';
 import * as userService from '../services/userService.js';
 import { badRequest } from '../errors.js';
 import { isValidDate } from '../utils/time.js';
@@ -96,6 +97,8 @@ adminRouter.put('/tables/:id', async (req, res) => {
   res.json(await adminService.updateTable(paramId(req), body));
 });
 adminRouter.post('/tables/:id/regenerate-qr', async (req, res) => res.json(await adminService.regenerateQr(paramId(req))));
+// F-063 (ADR-021 D-82): trang In mã QR báo vừa in → lưu địa chỉ máy chủ đang chạy
+adminRouter.post('/qr-printed', async (_req, res) => res.json(await qrCheckService.markPrinted()));
 adminRouter.delete('/tables/:id', async (req, res) => res.json({ result: await adminService.deleteTable(paramId(req)) }));
 adminRouter.get('/tables/:id/qr.png', async (req, res) => {
   const { table, png } = await adminService.qrPng(paramId(req));

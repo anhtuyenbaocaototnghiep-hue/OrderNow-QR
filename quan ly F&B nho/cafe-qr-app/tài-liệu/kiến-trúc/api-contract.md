@@ -522,3 +522,21 @@ Chi tiết: [FEATURE-060](../chức-năng/FEATURE-060.md), BR-093…BR-095. Mọ
 - `POST /api/shifts/{id}/close`, `POST /api/payments/{id}/refunds`, `POST /api/cash-transactions/{id}/void` (hủy / sửa khoản sổ quỹ đã duyệt): **request / response không đổi**; sau khi lưu xong app chạy phát hiện bất thường (lỗi phát hiện / gửi chỉ ghi log, không làm lỗi thao tác).
 
 **Sự kiện realtime mới:** `alert.created` `{ alert }` — chỉ tới phòng `admin` (socket của tài khoản ADMIN tự vào phòng này khi kết nối); nhân viên / trưởng ca không nhận.
+
+## Bổ sung F-061 / F-062 / F-063 — chế độ cơ bản, chính sách dữ liệu, cảnh báo QR (ADR-021, 29/10/2026)
+
+Chi tiết: [FEATURE-061](../chức-năng/FEATURE-061.md), [FEATURE-062](../chức-năng/FEATURE-062.md), [FEATURE-063](../chức-năng/FEATURE-063.md), BR-096…BR-099.
+
+**Endpoint mới:**
+
+| Method & path | Quyền | Body | Kết quả | Lỗi |
+| --- | --- | --- | --- | --- |
+| `POST /api/auth/tour-seen` | Nhân viên | — | `200 { tourSeenAt }` — ghi lần đầu xem xong / bỏ qua hướng dẫn 5 bước; gọi lại giữ giờ cũ | 401 |
+| `GET /api/shop` | Công khai | — | `200 { name, address }` — tên + địa chỉ quán (Cài đặt, chưa lưu → `.env`) cho trang Chính sách dữ liệu | — |
+| `GET /api/qr-check` | Nhân viên | — | `200 { baseUrl, printedBaseUrl, printedAt, mismatch, localhost, unreachable, machineIps }` — `mismatch` = đã in và origin lúc in ≠ origin `PUBLIC_BASE_URL` đang chạy; `localhost` = host `localhost` / `127.x` / `::1`; `unreachable` = host là IPv4 không có trên card mạng nào của máy (`machineIps`) | 401; 403 tài khoản khóa |
+| `POST /api/admin/qr-printed` | ADMIN | `{}` | `200` như `qr-check` — lưu `PUBLIC_BASE_URL` đang chạy + giờ làm địa chỉ đã in (trang In mã QR gọi khi bấm In / Ctrl+P) | 401; 403 |
+
+**Thay đổi trên endpoint đã có:**
+- `GET /api/auth/me`: thêm `modules` (mảng nhóm menu nâng cao đang bật, rỗng = chế độ cơ bản) và `user.tourSeenAt` (null = chưa xem hướng dẫn). `POST /api/auth/login`, `GET /api/admin/users` cũng có `tourSeenAt` trong đối tượng tài khoản.
+- `GET /api/admin/settings`: thêm `uiModules` (mảng con của `inventory`, `customers`, `finance`, `analytics`, `advanced`), `qrPrintedBaseUrl`, `qrPrintedAt` (chỉ đọc). `PUT /api/admin/settings` nhận `uiModules` (không trùng; nhóm lạ → `400 VALIDATION_ERROR`). Ẩn nhóm **không** chặn API của nhóm đó.
+- Trang mới (không phải API): `GET /chinh-sach-du-lieu` (SCR-48).

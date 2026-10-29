@@ -63,6 +63,8 @@ async function loadMailStatus(box) {
 async function load() {
   try {
     render(await staffApi('/api/admin/settings'));
+    // F-061: đến từ link "Hiện lại trong menu" → cuộn tới thẻ Giao diện quản lý (thẻ vẽ sau khi tải nên trình duyệt không tự cuộn)
+    if (location.hash === '#giao-dien') $('#giao-dien')?.scrollIntoView({ block: 'center' });
   } catch (err) {
     clear($('#content'), el('div', { class: 'alert danger' }, errorMessage(err)));
   }
@@ -174,6 +176,15 @@ function render(s) {
   const reviewMin = el('input', { class: 'input', type: 'number', min: 1, max: 100, value: s.reviewMenuMinCount });
   const reviewDays = el('input', { class: 'input', type: 'number', min: 7, max: 365, value: s.reviewMenuDays });
   const safety = el('input', { class: 'input', type: 'number', min: 0, max: 200, value: s.forecastSafetyPercent, 'aria-label': 'Tồn an toàn (%)' });
+  // F-061 (ADR-021 D-79): nhóm menu nâng cao — tắt hết = chế độ cơ bản (chỉ ẩn menu, không tắt chức năng)
+  const MODULE_GROUPS = [
+    ['inventory', 'Kho hàng', 'Nguyên liệu, Nhập kho & kiểm kê, Nhà cung cấp; mục "Kho & sơ chế" ở màn quầy'],
+    ['customers', 'Khách hàng & khuyến mãi', 'Hội viên, Tích điểm & voucher, Khuyến mãi, Gợi ý & ghim, Đánh giá món'],
+    ['finance', 'Sổ quỹ & nhân sự', 'Sổ quỹ, Nhân sự & chấm công'],
+    ['analytics', 'Phân tích & lãi lỗ', 'Phân tích & menu engineering, Lãi / lỗ'],
+    ['advanced', 'Công cụ nâng cao', 'Lịch thực đơn, Nhật ký thao tác, Tra cứu API'],
+  ];
+  const moduleChecks = MODULE_GROUPS.map(([key]) => el('input', { type: 'checkbox', name: `module-${key}`, value: key, checked: s.uiModules.includes(key) }));
   const card = (title, ...children) =>
     el('div', { class: 'card', style: { maxWidth: '720px', marginBottom: '1rem' } }, el('h2', { style: { fontSize: '1rem' } }, title), ...children);
   clear(
@@ -190,6 +201,20 @@ function render(s) {
         'p',
         { class: 'small muted' },
         'Hiện ở thanh quầy, thanh bên quản lý, đầu trang menu khách, hóa đơn, phiếu đặt hàng và thẻ QR in. Màn đang mở ở máy khác đổi theo khi tải lại.',
+      ),
+    ),
+    card(
+      'Giao diện quản lý',
+      el(
+        'p',
+        { class: 'small muted', id: 'giao-dien' },
+        'Chế độ cơ bản: menu chỉ hiện Hôm nay, Báo cáo, Thực đơn, Ca & hoàn tiền, Cảnh báo, Bàn & QR, Tài khoản, Cài đặt. Tích nhóm nào thì nhóm đó hiện thêm trong menu:',
+      ),
+      MODULE_GROUPS.map(([, label, items], i) => el('label', { class: 'check' }, moduleChecks[i], el('span', {}, el('strong', {}, label), ` — ${items}`))),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Chỉ ẩn khỏi menu — chức năng vẫn chạy (kho vẫn trừ, điểm vẫn tích…) và mở thẳng đường dẫn vẫn dùng được. Lưu xong menu bên trái đổi ngay.',
       ),
     ),
     card(
@@ -348,6 +373,7 @@ function render(s) {
                 alertRefundBig: numOrKeep(alertRefundBig),
                 alertManualDiscountMax: numOrKeep(alertManualDiscountMax),
                 alertUseStats: alertUseStats.checked,
+                uiModules: moduleChecks.filter((c) => c.checked).map((c) => c.value), // F-061
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,
                 staffMaxPercent: Number(maxPct.value),
@@ -368,7 +394,8 @@ function render(s) {
             toast('Đã lưu cài đặt', 'success');
             render(r);
             // Thanh bên hiện tên quán mới ngay (F-053); lỗi ở bước này không làm hỏng thông báo đã lưu
-            if (r.shopName !== s.shopName) mountAdminShell('settings').catch(() => {});
+            // F-061: bật / tắt nhóm menu → thanh bên đổi ngay
+            if (r.shopName !== s.shopName || r.uiModules.join() !== s.uiModules.join()) mountAdminShell('settings').catch(() => {});
           } catch (err) {
             showFieldErrors($('#content'), fixPaths(err));
             toast(errorMessage(err), 'error');

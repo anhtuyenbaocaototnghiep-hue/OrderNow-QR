@@ -76,6 +76,27 @@ const NAV = [
   },
 ];
 
+// F-061 (ADR-021 D-79): mục thuộc nhóm nâng cao — chỉ hiện trong menu khi nhóm đó bật ở Cài đặt (ui.modules).
+// Ẩn menu, không chặn trang / API: mở thẳng đường dẫn vẫn dùng được (có dải nhắc). Khóa nhóm: src/utils/modules.js.
+export const MODULE_OF = {
+  ingredients: 'inventory',
+  stock: 'inventory',
+  purchasing: 'inventory',
+  members: 'customers',
+  loyalty: 'customers',
+  promotions: 'customers',
+  suggestions: 'customers',
+  reviews: 'customers',
+  cash: 'finance',
+  staff: 'finance',
+  analytics: 'analytics',
+  pnl: 'analytics',
+  schedules: 'advanced',
+  audit: 'advanced',
+  'api-docs': 'advanced',
+};
+const shown = (key) => !MODULE_OF[key] || current.modules.includes(MODULE_OF[key]);
+
 // Nhóm người dùng tự mở được nhớ trên máy (tiện ích riêng mỗi trình duyệt; bị chặn lưu thì chỉ mất ghi nhớ)
 const OPEN_KEY = 'admin.nav.open';
 function savedOpen() {
@@ -97,7 +118,9 @@ const navLink = ([key, href, label, full], active, ...lead) =>
   el('a', { href, class: key === active ? 'active' : '', 'aria-current': key === active ? 'page' : null, title: full || null }, ...lead, label);
 
 function navGroup(g, active, open) {
-  const here = g.items.some(([key]) => key === active);
+  const items = g.items.filter(([key]) => shown(key));
+  if (!items.length) return null; // cả nhóm đang ẩn (chế độ cơ bản)
+  const here = items.some(([key]) => key === active);
   const summary = el('summary', {}, icon(g.icon), el('span', { class: 'grow' }, g.title), icon('chevron-down'));
   const group = el(
     'details',
@@ -106,7 +129,7 @@ function navGroup(g, active, open) {
     el(
       'div',
       { class: 'nav-items' },
-      g.items.map((i) => navLink(i, active)),
+      items.map((i) => navLink(i, active)),
     ),
   );
   // Chỉ nhớ thao tác của người dùng (click / Enter / Space trên tiêu đề nhóm), không nhớ việc tự mở nhóm của trang đang xem
@@ -132,7 +155,58 @@ export async function mountAdminShell(active) {
     el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small', title: 'Tên đăng nhập' }, `@${user.username}`)),
     el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, icon('log-out'), 'Đăng xuất'),
   );
+  noteHiddenPage(active);
+  refreshQrBanner(active);
   return user;
+}
+
+/** F-061: trang đang mở thuộc nhóm đang ẩn khỏi menu → nhắc cách hiện lại (trang vẫn dùng bình thường). */
+function noteHiddenPage(active) {
+  $('#module-hidden-note')?.remove();
+  if (shown(active)) return;
+  $('#content')?.before(
+    el(
+      'div',
+      { class: 'alert info module-hidden-note', id: 'module-hidden-note', role: 'status' },
+      'Mục này đang ẩn khỏi menu (chế độ cơ bản) — vẫn dùng bình thường. ',
+      el('a', { href: '/admin/settings#giao-dien' }, 'Hiện lại trong menu: Cài đặt → Giao diện quản lý'),
+    ),
+  );
+}
+
+/**
+ * F-063 (ADR-021 D-82): QR đang dán trên bàn được in ở địa chỉ khác địa chỉ app đang chạy → dải đỏ ở mọi trang quản lý.
+ * Địa chỉ localhost → chỉ báo ở trang Bàn & mã QR / In QR (chạy thử trên máy là bình thường). Lỗi mạng → bỏ qua.
+ */
+export async function refreshQrBanner(active) {
+  let q;
+  try {
+    q = await staffApi('/api/qr-check');
+  } catch {
+    return;
+  }
+  $('#qr-wrong')?.remove();
+  const local = q.localhost && active === 'tables';
+  if (!q.mismatch && !local && !q.unreachable) return;
+  const here = q.machineIps?.length ? q.machineIps.join(', ') : 'chưa có mạng';
+  const msg = q.unreachable
+    ? [
+        `QR bàn đang trỏ tới ${q.baseUrl} nhưng máy chủ không còn ở IP đó (IP hiện tại: ${here}) — điện thoại sẽ không vào được. `,
+        'Sửa PUBLIC_BASE_URL trong .env theo IP hiện tại (tốt nhất đặt IP cố định cho máy chủ trong router), khởi động lại app rồi ',
+        el('a', { href: '/admin/tables/print' }, 'in lại QR'),
+        '.',
+      ]
+    : q.mismatch
+      ? [
+          `QR đang dán trên bàn trỏ tới ${q.printedBaseUrl} nhưng app đang chạy ở ${q.baseUrl} — khách quét sẽ lỗi. `,
+          el('a', { href: '/admin/tables/print' }, 'In lại QR'),
+          ' (hoặc đặt IP cố định cho máy chủ trong router để QR không phải in lại).',
+        ]
+      : [
+          `App đang chạy ở ${q.baseUrl} — điện thoại không mở được địa chỉ localhost, QR in ra sẽ không quét được. `,
+          'Đặt PUBLIC_BASE_URL = địa chỉ IP của máy chủ trong mạng LAN rồi khởi động lại app.',
+        ];
+  $('#content')?.before(el('div', { class: 'banner qr-wrong', id: 'qr-wrong', role: 'alert' }, icon('triangle-alert'), ' ', ...msg));
 }
 
 /** Ô bật/tắt dạng switch. */

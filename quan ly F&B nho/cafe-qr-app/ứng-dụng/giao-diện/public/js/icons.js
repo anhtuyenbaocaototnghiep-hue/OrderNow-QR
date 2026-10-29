@@ -112,6 +112,11 @@ const ICONS = {
   check: [['path', { d: 'M20 6 9 17l-5-5' }]],
   'chevron-down': [['path', { d: 'm6 9 6 6 6-6' }]],
   'chevron-right': [['path', { d: 'm9 18 6-6-6-6' }]],
+  'circle-help': [
+    ['circle', { cx: '12', cy: '12', r: '10' }],
+    ['path', { d: 'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3' }],
+    ['path', { d: 'M12 17h.01' }],
+  ],
   'circle-check': [
     ['circle', { cx: '12', cy: '12', r: '10' }],
     ['path', { d: 'm16 9-5.5 5.5L8 12' }],

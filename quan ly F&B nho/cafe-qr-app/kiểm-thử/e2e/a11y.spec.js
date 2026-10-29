@@ -332,6 +332,10 @@ test('khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn 
   }
   await expect(D.getByRole('heading', { name: 'Bạn thấy món hôm nay thế nào?' })).toBeVisible();
   await check(D, 'khach-danh-gia', { narrow: true });
+  // F-062: trang Chính sách dữ liệu (SCR-48)
+  await D.goto('/chinh-sach-du-lieu');
+  await expect(D.getByRole('heading', { name: 'Quyền của bạn' })).toBeVisible();
+  await check(D, 'khach-chinh-sach-du-lieu', { narrow: true });
   await Promise.all([ctx.close(), ctx2.close()]);
 });
 
@@ -349,6 +353,12 @@ test('quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộ
   await expect(P.locator('[role="alert"]')).toContainText('Sai tên đăng nhập hoặc mật khẩu');
   await login(P, 'staff1', 'Staff@123');
   await check(P, 'quay-don-hang');
+  // F-061: hộp hướng dẫn 5 bước (nút "Hướng dẫn")
+  await P.getByRole('button', { name: 'Hướng dẫn' }).click();
+  await expect(P.getByRole('dialog')).toContainText('Bước 1 / 5');
+  await check(P, 'quay-huong-dan');
+  await P.keyboard.press('Escape');
+  await expect(P.getByRole('dialog')).toHaveCount(0);
   await focusVisible(P, 'quay-don-hang', 5); // thanh trên nền tối của quầy (review G3)
   // ADR-018 D-70: màn 1024 px — lưới bàn là ngăn trượt; quét cả lúc ngăn đang mở (TASK-072)
   await P.setViewportSize({ width: 1024, height: 768 });

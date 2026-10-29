@@ -94,7 +94,8 @@ async function upsertUser(pool, { username, password, fullName, role }) {
     .input('h', sql.NVarChar(255), hash)
     .input('n', sql.NVarChar(100), fullName)
     .input('r', sql.VarChar(10), role)
-    .query('INSERT dbo.Users (Username, PasswordHash, FullName, Role) OUTPUT inserted.UserId VALUES (@u, @h, @n, @r)');
+    // F-061 (ADR-021 D-80): tài khoản do lệnh cài đặt tạo (chủ quán, nhân viên mẫu) không hiện hướng dẫn 5 bước — chỉ tài khoản tạo sau
+    .query('INSERT dbo.Users (Username, PasswordHash, FullName, Role, TourSeenAt) OUTPUT inserted.UserId VALUES (@u, @h, @n, @r, SYSUTCDATETIME())');
   return { userId: r.recordset[0].UserId, created: true };
 }
 
@@ -180,6 +181,9 @@ export async function seedBase(pool, { adminUsername, adminPassword, staff = tru
  * thanh toán lúc 10:00 giờ VN. Tổng: 55 đơn, 3.190.000đ; ngày d = d × 58.000đ. Không chạm kho (dữ liệu lịch sử).
  */
 export async function seedDemo(pool, adminId) {
+  // F-061 (ADR-021 D-79): dữ liệu mẫu là một quán "đầy đủ" → bật đủ 5 nhóm menu nâng cao (quán mới thật = chế độ cơ bản)
+  await pool.request().query(`IF NOT EXISTS (SELECT 1 FROM dbo.Settings WHERE SettingKey = 'ui.modules')
+    INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('ui.modules', 'inventory,customers,finance,analytics,advanced')`);
   const exists = (await pool.request().query("SELECT COUNT(*) AS n FROM dbo.Orders WHERE Note = N'DEMO'")).recordset[0].n;
   if (exists > 0) return 'demo orders exist — skipped';
   const item = (await pool.request().query("SELECT MenuItemId, Price FROM dbo.MenuItems WHERE Name = N'Cà phê sữa'")).recordset[0];

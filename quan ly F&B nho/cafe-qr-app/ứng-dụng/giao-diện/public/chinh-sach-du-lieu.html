@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#24170f" />
+    <title>Chính sách dữ liệu</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/customer.css" />
+  </head>
+  <body class="customer">
+    <!-- SCR-48 Chính sách dữ liệu (FEATURE-062, ADR-021 D-81): khách đọc quán lưu gì, để làm gì, xin xóa thế nào — trước khi đồng ý lưu SĐT. -->
+    <header class="c-header">
+      <div>
+        <div class="c-shop" id="shop">&nbsp;</div>
+        <div class="c-table">Chính sách dữ liệu khách hàng</div>
+      </div>
+    </header>
+    <main class="policy">
+      <h1>Quán lưu gì về bạn?</h1>
+      <p id="addr" class="muted small" hidden></p>
+      <p>
+        Bạn <strong>không cần</strong> cung cấp gì để gọi món. Quán chỉ lưu thông tin khi bạn <strong>tự đăng ký hội viên</strong> (tích điểm, nhận ưu đãi) và
+        tích ô đồng ý.
+      </p>
+
+      <h2>Thông tin được lưu</h2>
+      <ul>
+        <li>Số điện thoại và họ tên bạn nhập khi đăng ký.</li>
+        <li>Lịch sử mua (món, số tiền, thời gian), điểm, tem, voucher, hạng hội viên.</li>
+        <li>Số điện thoại người giới thiệu (nếu bạn nhập).</li>
+      </ul>
+
+      <h2>Để làm gì</h2>
+      <ul>
+        <li>Tích điểm, tem, xét hạng và áp ưu đãi hội viên khi thanh toán.</li>
+        <li>Gửi thông báo khuyến mãi — trừ khi bạn báo quán <strong>không muốn nhận</strong>.</li>
+        <li>Không dùng cho mục đích khác, <strong>không bán hay chia sẻ</strong> cho bên ngoài.</li>
+      </ul>
+
+      <h2>Ai xem được</h2>
+      <ul>
+        <li>Chủ quán và nhân viên khi thu tiền / tra cứu hội viên.</li>
+        <li>Trên điện thoại khách, app <strong>không hiện số điện thoại</strong> và chỉ hiện tên viết tắt (ví dụ Nguyễn V. A.).</li>
+      </ul>
+
+      <h2>Lưu bao lâu</h2>
+      <p>
+        Tới khi bạn yêu cầu xóa. Lịch sử thanh toán được giữ cho sổ sách kế toán của quán nhưng không còn gắn với số điện thoại hay tên của bạn sau khi xóa.
+      </p>
+
+      <h2 id="quyen">Quyền của bạn</h2>
+      <ul>
+        <li><strong>Xem</strong> thông tin quán đang lưu về bạn.</li>
+        <li><strong>Sửa</strong> họ tên.</li>
+        <li><strong>Từ chối</strong> nhận thông báo khuyến mãi.</li>
+        <li><strong>Xóa</strong> dữ liệu hội viên của bạn.</li>
+      </ul>
+
+      <h2>Cách yêu cầu</h2>
+      <p>
+        Báo <strong>nhân viên hoặc quản lý tại quầy</strong> và đọc số điện thoại đã đăng ký. Quản lý xử lý ngay trên máy (chức năng "Ẩn danh theo yêu cầu"):
+        tên bị xóa, số điện thoại được thay bằng mã không đọc ngược được. Việc xóa không hoàn tác được — điểm và voucher còn lại cũng mất.
+      </p>
+      <p class="muted small">Vì không xác minh được ai là chủ số điện thoại qua mạng, quán không nhận yêu cầu xóa qua tin nhắn hay trên trang này.</p>
+
+      <h2>Căn cứ</h2>
+      <p class="small">Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân. Câu hỏi khác: hỏi trực tiếp nhân viên tại quầy.</p>
+    </main>
+    <script type="module" src="/js/pages/privacy.js"></script>
+  </body>
+</html>

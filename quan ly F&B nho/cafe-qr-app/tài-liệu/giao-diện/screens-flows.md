@@ -264,6 +264,7 @@ Mọi trang `/admin/*` có chung khung (`mountAdminShell`): HTML có sẵn "Đan
 | SCR-39 `/admin/pnl` | "Không có khoản chi quỹ thuộc danh mục chi phí." | Nhãn "Ước tính" cố định |
 | SCR-37 `/admin/staff` | "Chưa có dữ liệu."; "Chưa có dữ liệu trong kỳ." | Lỗi sửa chấm công hiện trong hộp thoại (thiếu lý do 400, chồng giờ 409) |
 | SCR-38 `/admin/audit` | "Không có thao tác nào khớp bộ lọc." | Chỉ đọc |
+| SCR-48 `/chinh-sach-du-lieu` (mới) | Trang tĩnh; tên quán đọc `GET /api/shop` — lỗi mạng → ghi "Quán" | Chỉ đọc |
 | SCR-47 `/admin/alerts` | "Không có cảnh báo mới." (lọc Mới); "Chưa có cảnh báo nào." (Tất cả) | Lỗi tải hiện khung đỏ; Đã xem → toast "Đã đánh dấu đã xem"; Đã xử lý → toast "Đã ghi nhận xử lý"; cảnh báo mới qua realtime → toast ⚠️ + tải lại |
 | SCR-33 `/admin/settings` | — | Lưu → toast "Đã lưu cài đặt" |
 
@@ -314,4 +315,19 @@ flowchart LR
   ALERT --> OUTBOX[("AlertOutbox")] -->|bộ gửi nền 60 giây| MAIL["Email chủ quán"]
   S33["S-33 Cài đặt: email nhận, ngưỡng, Gửi email thử"] --> OUTBOX
   S47 -->|Nhật ký thao tác| S38["S-38 Nhật ký (lọc sẵn)"]
+```
+
+## F-061 / F-062 / F-063 — Chế độ cơ bản, hướng dẫn quầy, chính sách dữ liệu, cảnh báo QR (TASK-077, ADR-021, 29/10/2026)
+
+- **S-33 Cài đặt:** thẻ **"Giao diện quản lý"** (thứ hai, sau Thông tin quán; neo `#giao-dien`) — 5 ô tích nhóm nâng cao kèm danh sách trang của nhóm; lưu cùng **Lưu cài đặt**, thanh bên đổi ngay.
+- **Menu quản lý (mọi trang `/admin/*`):** chỉ hiện nhóm đang bật; nhóm không còn mục nào thì bỏ cả tiêu đề nhóm. Trang thuộc nhóm đang ẩn mở bằng đường dẫn: dải xanh "Mục này đang ẩn khỏi menu (chế độ cơ bản) — vẫn dùng bình thường" + link tới thẻ Giao diện quản lý.
+- **Dải đỏ QR (F-063):** trên mọi trang quản lý khi máy chủ không còn giữ IP trong `PUBLIC_BASE_URL` ("…máy chủ không còn ở IP đó (IP hiện tại: …)") hoặc khi QR đã in ở địa chỉ khác ("QR đang dán trên bàn trỏ tới A nhưng app đang chạy ở B…" + link **In lại QR**); ở **Bàn & mã QR / In mã QR** thêm cảnh báo khi địa chỉ là `localhost`. Không in ra giấy (`@media print`). **Màn quầy:** dải đỏ trong vùng "Cần xử lý ngay" khi lệch: "QR trên bàn đang trỏ địa chỉ cũ (A) — khách quét sẽ lỗi. Báo quản lý in lại QR."
+- **S-10 màn quầy:** nút **"Hướng dẫn"** cạnh tên người dùng; mục "Kho & sơ chế" chỉ hiện khi bật nhóm Kho hàng. **Lớp hướng dẫn 5 bước** (trang Đơn hàng): nền mờ, khung sáng quanh phần tử đang nói tới, hộp `role="dialog"` "Bước n / 5" + tiêu đề + giải thích + **Bỏ qua / Quay lại / Tiếp (Xong)**; Esc = bỏ qua; đóng xong focus về chỗ cũ.
+- **S-48 Chính sách dữ liệu (mới):** đầu trang tên quán, các mục Thông tin được lưu / Để làm gì / Ai xem được / Lưu bao lâu / Quyền của bạn / Cách yêu cầu / Căn cứ. Link **"Xem chính sách dữ liệu"** dưới câu đồng ý ở ô hội viên phía khách (S-03), **"Chính sách dữ liệu (mở cho khách xem)"** ở hộp đăng ký của Thu tiền bàn (S-14) và Gọi món tại bàn (S-16) — mở tab mới; trang chủ có link cuối trang.
+
+```mermaid
+flowchart LR
+  NEW["Tài khoản mới đăng nhập"] --> S10["S-10 Đơn hàng"] -->|TourSeenAt rỗng| TOUR["Hướng dẫn 1/5 … 5/5"] -->|Xong / Bỏ qua| SEEN[("Users.TourSeenAt")]
+  S22["S-22 In mã QR → In"] --> QRP[("qr.printed_base_url")] -->|khác PUBLIC_BASE_URL| RED["Dải đỏ: in lại QR (quản lý + quầy)"]
+  S03["S-03 Ô hội viên: đồng ý"] -->|Xem chính sách dữ liệu| S48["S-48 Chính sách dữ liệu"]
 ```

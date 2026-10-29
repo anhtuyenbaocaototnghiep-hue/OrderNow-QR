@@ -299,6 +299,7 @@ test('hội viên: khách nhập SĐT ở giỏ → đăng ký → quầy thu ti
   await D.locator('input[type="tel"]').fill('0911222333');
   await D.getByRole('button', { name: 'Tiếp tục' }).click();
   await D.getByPlaceholder('Ví dụ: Nguyễn Văn An').fill('Trần Thu Hà');
+  await expect(D.locator('.sheet a.policy-link')).toHaveAttribute('href', '/chinh-sach-du-lieu'); // F-062
   await D.getByRole('button', { name: 'Đăng ký & nhận ưu đãi' }).click();
   await expect(D.locator('.field-error')).toContainText('tick đồng ý');
   await D.locator('.sheet label.check input[type="checkbox"]').check();
@@ -603,6 +604,7 @@ test('trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt kho�
   await L.fill('#password', 'Lead@123');
   await L.click('#submit');
   await expect(L).toHaveURL(/\/pos$/);
+  await L.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click(); // F-061: tài khoản mới → hướng dẫn 5 bước lần đầu
   await expect(L.locator('.pos-top')).toContainText('Trưởng ca');
 
   // Trưởng ca ghi chi 50.000đ mua đá → duyệt ngay
@@ -1630,4 +1632,184 @@ test('cảnh báo bất thường qua email: quản lý nhập email nhận ở 
   await P.goto('/admin/settings');
   await expect(P.getByText(/Đang chờ gửi: \d+/)).toBeVisible();
   // a11y tự mở ca nếu chưa có (beforeAll của a11y.spec.js)
+});
+
+test('chế độ cơ bản: tắt hết nhóm nâng cao → menu quản lý không có Kho hàng, Khách hàng, Phân tích; trang ẩn mở thẳng vẫn chạy, có dải nhắc; tích "Kho hàng" ở Cài đặt → menu + mục quầy hiện ngay (F-061, AC-061-05)', async ({
+  request,
+}) => {
+  const ALL = ['inventory', 'customers', 'finance', 'analytics', 'advanced'];
+  const side = P.locator('.admin-side');
+  try {
+    await apiAs(request, 'put', '/api/admin/settings', { uiModules: [] });
+    await P.goto('/admin/settings');
+    await expect(side.locator('a[href="/admin/reports"]')).toHaveCount(1);
+    await expect(side.locator('a[href="/admin/settings"]')).toHaveCount(1);
+    for (const g of ['Kho hàng', 'Khách hàng']) await expect(side.locator('summary', { hasText: g })).toHaveCount(0);
+    for (const href of ['/admin/analytics', '/admin/pnl', '/admin/cash', '/admin/staff', '/admin/audit', '/admin/api-docs', '/admin/menu-schedules'])
+      await expect(side.locator(`a[href="${href}"]`)).toHaveCount(0);
+    // Trang của nhóm đang ẩn: vẫn chạy, có dải nhắc + link tới thẻ Giao diện quản lý
+    await P.goto('/admin/ingredients');
+    await expect(P.locator('#module-hidden-note')).toContainText('đang ẩn khỏi menu');
+    await expect(P.locator('#content table')).toBeVisible();
+    await P.locator('#module-hidden-note a').click();
+    await expect(P).toHaveURL(/\/admin\/settings#giao-dien$/);
+    await P.getByRole('checkbox', { name: /^Kho hàng/ }).check();
+    await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+    await expect(P.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
+    await expect(side.locator('summary', { hasText: 'Kho hàng' })).toHaveCount(1);
+    await expect(side.locator('a[href="/admin/ingredients"]')).toHaveCount(1);
+    await expect(side.locator('a[href="/admin/members"]')).toHaveCount(0);
+    // Màn quầy: "Kho & sơ chế" theo nhóm Kho hàng
+    await P.goto('/pos');
+    await expect(P.locator('.pos-nav a[href="/pos/stock"]')).toHaveCount(1);
+    await apiAs(request, 'put', '/api/admin/settings', { uiModules: [] });
+    await P.reload();
+    await expect(P.locator('#conn')).toHaveText('Đã kết nối');
+    await expect(P.locator('.pos-nav a[href="/pos/stock"]')).toHaveCount(0);
+  } finally {
+    await apiAs(request, 'put', '/api/admin/settings', { uiModules: ALL }); // a11y chạy sau quét đủ trang
+  }
+});
+
+test('hướng dẫn 5 bước: nhân viên mới đăng nhập quầy lần đầu → Bước 1/5 khoanh nút ca … Xong; tải lại không hiện; nút "Hướng dẫn" mở lại, Esc đóng (F-061, AC-061-05)', async ({
+  request,
+}) => {
+  await apiAs(request, 'post', '/api/admin/users', { username: 'nv-moi', password: 'Moi@1234', fullName: 'Nhân viên mới', role: 'STAFF' });
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  try {
+    const N = await ctx.newPage();
+    watch(N, 'nv-moi');
+    await N.goto('/pos/login');
+    await N.fill('#username', 'nv-moi');
+    await N.fill('#password', 'Moi@1234');
+    await N.click('#submit');
+    await expect(N).toHaveURL(/\/pos$/);
+    const box = N.getByRole('dialog');
+    await expect(box).toContainText('Bước 1 / 5');
+    await expect(N.locator('.tour-ring')).toBeVisible();
+    // Bước 1 khoanh đúng nút ca
+    // Khung bám theo nút ca kể cả khi nút đổi chữ sau khi tải ca (bỏ qua lúc khung đang trượt tới)
+    await expect
+      .poll(async () => {
+        const ring = await N.locator('.tour-ring').boundingBox();
+        const btn = await N.locator('#shift-btn').boundingBox();
+        return Math.abs(ring.x + 6 - btn.x) < 2 && Math.abs(ring.width - 12 - btn.width) < 2;
+      })
+      .toBe(true);
+    const titles = ['Mở ca', 'Đơn mới → Tiếp nhận', 'Đang pha → Hoàn tất', 'Bàn & thu tiền', 'Cuối ca: Đóng ca'];
+    for (let i = 0; i < titles.length; i += 1) {
+      await expect(box.locator('.tour-title')).toHaveText(titles[i]);
+      await expect(box).toContainText(`Bước ${i + 1} / 5`);
+      await box.getByRole('button', { name: i === titles.length - 1 ? 'Xong' : 'Tiếp' }).click();
+    }
+    await expect(N.getByRole('dialog')).toHaveCount(0);
+    await expect.poll(async () => (await apiAs(request, 'get', '/api/admin/users')).find((u) => u.username === 'nv-moi').tourSeenAt).not.toBeNull();
+    await N.reload();
+    await expect(N.locator('#conn')).toHaveText('Đã kết nối');
+    await expect(N.getByRole('dialog')).toHaveCount(0);
+    await N.getByRole('button', { name: 'Hướng dẫn' }).click();
+    await expect(N.getByRole('dialog')).toContainText('Bước 1 / 5');
+    await N.keyboard.press('Escape');
+    await expect(N.getByRole('dialog')).toHaveCount(0);
+    await expect(N.getByRole('button', { name: 'Hướng dẫn' })).toBeFocused(); // trả focus về nút đã mở
+    // Màn < 1200 px: lưới bàn là ngăn trượt → bước 4 khoanh nút "Bàn" và nói "Bấm nút Bàn…" (BR-097)
+    await N.setViewportSize({ width: 1024, height: 800 });
+    await N.getByRole('button', { name: 'Hướng dẫn' }).click();
+    for (let i = 0; i < 3; i += 1) await N.getByRole('dialog').getByRole('button', { name: 'Tiếp' }).click();
+    await expect(N.locator('.tour-title')).toHaveText('Bàn & thu tiền');
+    await expect(N.getByRole('dialog')).toContainText('Bấm nút Bàn để mở lưới bàn');
+    await expect
+      .poll(async () => {
+        const ring = await N.locator('.tour-ring').boundingBox();
+        const btn = await N.locator('#tables-toggle').boundingBox();
+        return Math.abs(ring.x + 6 - btn.x) < 2 && Math.abs(ring.y + 6 - btn.y) < 2;
+      })
+      .toBe(true);
+    await N.keyboard.press('Escape');
+    await expect(N.getByRole('dialog')).toHaveCount(0);
+  } finally {
+    await ctx.close();
+  }
+});
+
+test('chính sách dữ liệu: khách đăng ký hội viên ở giỏ bấm "Xem chính sách dữ liệu" → tab mới có tên quán, "Quyền của bạn", cách yêu cầu xóa; điện thoại không cuộn ngang (F-062, AC-062-03)', async ({
+  request,
+}) => {
+  await apiAs(request, 'post', '/api/admin/tables', { code: 'CS', name: 'Bàn thử chính sách' });
+  const t = (await apiAs(request, 'get', '/api/admin/tables')).find((x) => x.code === 'CS');
+  const shop = await (await request.get('/api/shop')).json();
+  const phone = await browser.newContext(phoneOpts);
+  try {
+    const G = await phone.newPage();
+    watch(G, 'G');
+    await G.goto(`/t/${t.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .add-btn').first().click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .member-box').click();
+    await G.locator('input[type="tel"]').fill('0933444555');
+    await G.getByRole('button', { name: 'Tiếp tục' }).click();
+    const [policy] = await Promise.all([phone.waitForEvent('page'), G.getByRole('link', { name: 'Xem chính sách dữ liệu' }).click()]);
+    watch(policy, 'policy');
+    await expect(policy).toHaveURL(/\/chinh-sach-du-lieu$/);
+    await expect(policy.locator('#shop')).toHaveText(shop.name);
+    await expect(policy.getByRole('heading', { name: 'Quyền của bạn' })).toBeVisible();
+    await expect(policy.getByText('Ẩn danh theo yêu cầu')).toBeVisible();
+    expect(await policy.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+  } finally {
+    await phone.close();
+    const s = (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === 'CS')?.sessions?.[0];
+    // Hủy bàn cần ca đang mở (F-055) — bài trước có thể vừa đóng ca; a11y chạy sau tự dùng ca đang mở
+    if (s && !(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+    if (s) await apiAs(request, 'post', `/api/sessions/${s.sessionId}/cancel`, { reason: 'Dọn bàn thử chính sách dữ liệu' });
+    await apiAs(request, 'delete', `/api/admin/tables/${t.tableId}`);
+  }
+});
+
+test('cảnh báo QR sai địa chỉ: trang In QR báo địa chỉ localhost; bấm In → lưu địa chỉ đang chạy; QR in ở địa chỉ cũ hoặc máy chủ đã đổi IP → dải đỏ ở trang quản lý và màn quầy (F-063, AC-063-04)', async () => {
+  await P.goto('/admin/tables/print');
+  await expect(P.locator('#qr-wrong')).toContainText('điện thoại không mở được địa chỉ localhost');
+  await P.evaluate(() => {
+    globalThis.print = () => {}; // không mở hộp in thật trong E2E
+  });
+  const saved = P.waitForResponse((r) => r.url().endsWith('/api/admin/qr-printed') && r.request().method() === 'POST');
+  await P.getByRole('button', { name: 'In', exact: true }).click();
+  expect((await (await saved).json()).printedBaseUrl).toBe('http://localhost:3100');
+  // Trang quản lý khác không nhắc localhost (chạy thử trên máy là bình thường)
+  let checked = P.waitForResponse((r) => r.url().endsWith('/api/qr-check'));
+  await P.goto('/admin/reports');
+  await checked;
+  await expect(P.locator('#qr-wrong')).toHaveCount(0);
+  // Laptop đổi mạng sau khi in: giả lập kết quả kiểm (máy chủ E2E chỉ chạy ở một địa chỉ; logic lệch kiểm ở basic-mode.test.js)
+  const moved = {
+    baseUrl: 'http://172.168.238.72:3000',
+    printedBaseUrl: 'http://10.50.2.11:3000',
+    printedAt: new Date().toISOString(),
+    mismatch: true,
+    localhost: false,
+    unreachable: false,
+    machineIps: ['172.168.238.72'],
+  };
+  await P.route('**/api/qr-check', (r) => r.fulfill({ json: moved }));
+  try {
+    await P.goto('/admin/reports');
+    await expect(P.locator('#qr-wrong')).toContainText('QR đang dán trên bàn trỏ tới http://10.50.2.11:3000 nhưng app đang chạy ở http://172.168.238.72:3000');
+    await expect(P.locator('#qr-wrong').getByRole('link', { name: 'In lại QR' })).toHaveAttribute('href', '/admin/tables/print');
+    await P.goto('/pos');
+    await expect(P.locator('#qr-wrong')).toContainText('QR trên bàn đang trỏ địa chỉ cũ (http://10.50.2.11:3000)');
+    // .env ghi cứng IP cũ, máy đã đổi IP (địa chỉ lúc in = địa chỉ đang chạy): báo theo IP thật của máy
+    await P.unroute('**/api/qr-check');
+    const gone = { ...moved, baseUrl: 'http://10.50.2.11:3000', mismatch: false, unreachable: true };
+    await P.route('**/api/qr-check', (r) => r.fulfill({ json: gone }));
+    await P.goto('/admin/reports');
+    await expect(P.locator('#qr-wrong')).toContainText('máy chủ không còn ở IP đó (IP hiện tại: 172.168.238.72)');
+    await P.goto('/pos');
+    await expect(P.locator('#qr-wrong')).toContainText('Máy chủ đã đổi IP');
+  } finally {
+    await P.unroute('**/api/qr-check');
+  }
+  checked = P.waitForResponse((r) => r.url().endsWith('/api/qr-check'));
+  await P.goto('/pos');
+  await checked;
+  await expect(P.locator('#qr-wrong')).toHaveCount(0);
 });

@@ -73,7 +73,7 @@ flowchart TD
 
 Mọi trang dưới `/admin/*` gọi `mountAdminShell` (riêng trang in PO gọi `requireStaffPage({ admin: true })`) → chỉ `ACT-ADMIN`; `ACT-STAFF` / `ACT-LEAD` bị chuyển về `/pos?denied=admin`. Ngoại lệ duy nhất là SCR-42. `GET /admin` chuyển hướng tới `/admin/reports`.
 
-Thanh bên (ADR-013 D-58, từ 23/10/2026): **Hôm nay** (SCR-42) luôn ở trên, rồi 6 nhóm thu gọn — **Tổng quan** (SCR-25, SCR-41, SCR-39), **Thực đơn** (SCR-21, SCR-30, SCR-27, SCR-34), **Kho hàng** (SCR-23, SCR-31, SCR-35), **Khách hàng** (SCR-26, SCR-40, SCR-28, SCR-29, SCR-45), **Thu chi & nhân sự** (SCR-32, SCR-36, SCR-47, SCR-37), **Hệ thống** (SCR-22, SCR-20, SCR-38, SCR-33, SCR-46). Nhóm của trang đang mở tự mở.
+Thanh bên (ADR-013 D-58, từ 23/10/2026): **Hôm nay** (SCR-42) luôn ở trên, rồi 6 nhóm thu gọn — **Tổng quan** (SCR-25, SCR-41, SCR-39), **Thực đơn** (SCR-21, SCR-30, SCR-27, SCR-34), **Kho hàng** (SCR-23, SCR-31, SCR-35), **Khách hàng** (SCR-26, SCR-40, SCR-28, SCR-29, SCR-45), **Thu chi & nhân sự** (SCR-32, SCR-36, SCR-47, SCR-37), **Hệ thống** (SCR-22, SCR-20, SCR-38, SCR-33, SCR-46). Nhóm của trang đang mở tự mở. Từ F-061 (ADR-021 D-79) 5 nhóm mục nâng cao chỉ hiện khi bật ở Cài đặt → Giao diện quản lý — quán mới chỉ thấy Hôm nay, Báo cáo, Thực đơn (trừ Lịch thực đơn), Ca & hoàn tiền, Cảnh báo, Bàn & QR, Tài khoản, Cài đặt.
 
 | SCR | Route | File | Actor | FEATURE | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
@@ -120,6 +120,7 @@ Thanh bên (ADR-013 D-58, từ 23/10/2026): **Hôm nay** (SCR-42) luôn ở trê
 | SCR-45 (**mới**, F-051) | `/admin/reviews` | `admin/reviews.html`, `js/pages/admin-reviews.js` | ACT-ADMIN | [F-051](../chức-năng/FEATURE-051.md) | Đánh giá món: theo món (lượt, sao trung bình, phân bố), các lượt đánh giá + góp ý + đã xử lý |
 | SCR-46 (**mới**, F-052) | `/admin/api-docs` | `admin/api-docs.html`, `js/pages/admin-api-docs.js` | ACT-ADMIN | [F-052](../chức-năng/FEATURE-052.md) | Tra cứu API: mọi endpoint `/api` đang chạy (method, đường dẫn, quyền), tìm / lọc, mở dòng xem request / response / mã lỗi từ `api-contract.md`, sao chép lệnh curl |
 | SCR-47 (**mới**, F-060) | `/admin/alerts` | `admin/alerts.html`, `js/pages/admin-alerts.js` | ACT-ADMIN | [F-060](../chức-năng/FEATURE-060.md) | Cảnh báo bất thường: lọc Mới / Tất cả, Đã xem / Đã xử lý (ghi chú), link Nhật ký thao tác lọc sẵn; nhận `alert.created` qua phòng realtime `admin` |
+| SCR-48 (**mới**, F-062) | `/chinh-sach-du-lieu` | `chinh-sach-du-lieu.html`, `js/pages/privacy.js` | Mọi actor (công khai) | [F-062](../chức-năng/FEATURE-062.md) | Chính sách dữ liệu khách hàng; link từ câu đồng ý hội viên (khách + quầy) và trang chủ |
 
 Tổng: 39 file HTML; 40 route trang trong `PAGES` + 1 chuyển hướng (`/admin`) + trang 404; 41 mã SCR đang dùng (SCR-01…05, SCR-09…17, SCR-20…46).
 
@@ -169,6 +170,7 @@ Mọi route trong `PAGES` (`routes/pages.js`) đều có trong bảng trên, và
 | SCR-37 | [quan-ly-staff.jpg](ảnh/quan-ly-staff.jpg) | Quản lý — `/admin/staff` |
 | SCR-38 | [quan-ly-audit.jpg](ảnh/quan-ly-audit.jpg) | Quản lý — `/admin/audit` |
 | SCR-47 | [quan-ly-alerts.jpg](ảnh/quan-ly-alerts.jpg) | Quản lý — `/admin/alerts` |
+| SCR-48 | [khach-chinh-sach-du-lieu.jpg](ảnh/khach-chinh-sach-du-lieu.jpg) | Khách — `/chinh-sach-du-lieu` |
 | SCR-39 | [quan-ly-pnl.jpg](ảnh/quan-ly-pnl.jpg) | Quản lý — `/admin/pnl` |
 | SCR-40 | [quan-ly-loyalty.jpg](ảnh/quan-ly-loyalty.jpg) | Quản lý — `/admin/loyalty` |
 | SCR-41 | [quan-ly-analytics.jpg](ảnh/quan-ly-analytics.jpg) | Quản lý — `/admin/analytics` |

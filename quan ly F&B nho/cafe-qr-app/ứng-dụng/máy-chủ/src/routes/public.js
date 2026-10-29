@@ -2,13 +2,15 @@
 // Khách chỉ chạm phiên/đơn của mình (SessionClients); không có endpoint nào cho khách đổi PaymentStatus (BR-007).
 import express from 'express';
 import { z } from 'zod';
-import { request } from '../db.js';
+import { request, withDeadlockRetry } from '../db.js';
 import { optionalStaff, requireStaff } from '../middleware/auth.js';
 import { loginLimiter, memberLimiters, orderLimiter } from '../middleware/rateLimit.js';
 import { paramGuid, paramId, parse, zGuid, zId, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
 import * as memberService from '../services/memberService.js';
 import * as menuService from '../services/menuService.js';
 import * as orderService from '../services/orderService.js';
+import * as qrCheckService from '../services/qrCheckService.js';
+import * as usersRepo from '../repositories/usersRepo.js';
 import * as sessionService from '../services/sessionService.js';
 import * as settingsService from '../services/settingsService.js';
 import * as staffCallService from '../services/staffCallService.js';
@@ -31,8 +33,16 @@ publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
   res.json(await userService.login(body.username, body.password));
 });
 
-// F-053: tên / địa chỉ quán đọc từ Cài đặt (chưa lưu → .env)
-publicRouter.get('/auth/me', requireStaff, async (req, res) => res.json({ user: req.user, shop: await settingsService.shopInfo() }));
+// F-053: tên / địa chỉ quán đọc từ Cài đặt (chưa lưu → .env). F-061: nhóm menu nâng cao đang bật (`modules`), `user.tourSeenAt`
+publicRouter.get('/auth/me', requireStaff, async (req, res) =>
+  res.json({ user: req.user, shop: await settingsService.shopInfo(), modules: (await settingsService.getSettings()).uiModules }),
+);
+// F-061 (ADR-021 D-80): xem xong / bỏ qua hướng dẫn 5 bước ở màn quầy — lưu theo tài khoản
+publicRouter.post('/auth/tour-seen', requireStaff, async (req, res) => res.json({ tourSeenAt: await usersRepo.markTourSeen(req.user.userId) }));
+// F-062 (D-81): tên + địa chỉ quán cho trang Chính sách dữ liệu (công khai, chỉ 2 trường này)
+publicRouter.get('/shop', async (_req, res) => res.json(await settingsService.shopInfo()));
+// F-063 (D-82): QR đang dán trên bàn có còn đúng địa chỉ máy chủ không — quản lý + màn quầy hiện cảnh báo
+publicRouter.get('/qr-check', requireStaff, async (_req, res) => res.json(await qrCheckService.check()));
 
 // ---- Menu (FEATURE-002) ----
 // Quầy gọi kèm Bearer → thấy cả danh mục ngoài giờ bán (bán mang đi); khách chỉ thấy danh mục đang trong giờ (F-020)
@@ -92,7 +102,8 @@ publicRouter.post('/sessions/:id/join', async (req, res) => {
 });
 
 publicRouter.get('/sessions/:id', optionalStaff, async (req, res) => {
-  res.json(await sessionService.getDetail(paramGuid(req), { user: req.user, clientToken: req.clientToken }));
+  // DEF-019: điện thoại khách đọc phiên đúng lúc quầy thu tiền / hoàn tất → đôi khi deadlock 1205 → 500; chỉ đọc nên chạy lại an toàn
+  res.json(await withDeadlockRetry(() => sessionService.getDetail(paramGuid(req), { user: req.user, clientToken: req.clientToken })));
 });
 
 publicRouter.post('/sessions/:id/request-payment', async (req, res) => {
