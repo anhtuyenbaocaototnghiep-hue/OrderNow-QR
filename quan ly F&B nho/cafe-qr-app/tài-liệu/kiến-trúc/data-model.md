@@ -1213,3 +1213,7 @@ Không có SP mới. Migration kế tiếp: `0041` (đã dùng cho F-061 — xem
 | Seed | `seedBase` tạo tài khoản với `TourSeenAt` = lúc tạo (chủ quán / nhân viên mẫu không thấy hướng dẫn); `seedDemo` ghi `ui.modules` đủ 5 nhóm |
 
 Không có SP mới, không đổi bảng `Members` (đồng ý `ConsentAt` + ẩn danh đã có từ F-014). Migration kế tiếp: `0042`.
+
+## Mức cô lập đọc (ADR-022, 29/10/2026)
+
+Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-bản/db-migrate.js`, không phải file migration vì `ALTER DATABASE` không chạy trong transaction). Lệnh đọc ở READ COMMITTED đọc bản đã commit gần nhất (row versioning, tempdb) — không chờ / deadlock với lệnh ghi (DEF-018, DEF-019). Gợi ý khóa trong SP (`UPDLOCK`, `HOLDLOCK`, `READPAST`) vẫn khóa như cũ, nên các đoạn giữ kho / thu tiền / nhận hàng đợi không đổi hành vi; `withDeadlockRetry` vẫn giữ cho lệnh ghi. Kiểm: `SELECT is_read_committed_snapshot_on FROM sys.databases WHERE name = DB_NAME()`.

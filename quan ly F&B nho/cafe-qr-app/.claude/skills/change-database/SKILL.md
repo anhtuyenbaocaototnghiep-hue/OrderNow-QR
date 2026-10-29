@@ -37,6 +37,7 @@ Task, feature/rule liên quan, DDL/SP hiện có trong `cơ-sở-dữ-liệu/`, 
 
 ## Khi thất bại
 - Deadlock trong test: kiểm thứ tự khóa (join theo IngredientId tăng dần), giữ transaction ngắn; app retry 1205.
+- Database bật `READ_COMMITTED_SNAPSHOT` (ADR-022): lệnh đọc thường không chờ khóa / không thấy dữ liệu chưa commit — đoạn "đọc rồi ghi" cần đúng phải tự khóa (`UPDLOCK, HOLDLOCK`) như các SP hiện có. Lệnh `ALTER DATABASE` không đặt trong file migration (migration chạy trong transaction) — làm bước riêng trong `kịch-bản/db-migrate.js` như `ensureReadCommittedSnapshot`.
 - CHECK constraint ném lỗi trong test: logic SP sai → sửa SP, không nới constraint.
 
 ## Đầu ra

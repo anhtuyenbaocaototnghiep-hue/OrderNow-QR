@@ -447,6 +447,17 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     await A.goto(`/admin/${r}`);
     await check(A, `quan-ly-${r.replace(/\//g, '-').replace(/-\d+-/, '-id-')}`);
   }
+  // DEF-014: Phân tích, Lãi / lỗ không cuộn ngang ở 320 / 390 px (WCAG 1.4.10) — trước đây 441 / 638 px
+  for (const r of ['analytics', 'pnl']) {
+    await A.goto(`/admin/${r}`);
+    await A.waitForLoadState('networkidle');
+    for (const w of [320, 390]) {
+      await A.setViewportSize({ width: w, height: 800 });
+      const width = await A.evaluate(() => globalThis.document.documentElement.scrollWidth);
+      if (width > w) issues.push(`[quan-ly-${r}] cuộn ngang ở ${w}px: rộng ${width}px (1.4.10, DEF-014)`);
+    }
+    await A.setViewportSize(desk.viewport);
+  }
   // Biểu đồ dự báo + lãi / lỗ khi đang mở hộp số liệu (TASK-069): tương phản chữ trong hộp, chú thích
   await A.goto('/admin/analytics');
   await A.locator('.tabs button', { hasText: 'Dự báo doanh thu' }).click();

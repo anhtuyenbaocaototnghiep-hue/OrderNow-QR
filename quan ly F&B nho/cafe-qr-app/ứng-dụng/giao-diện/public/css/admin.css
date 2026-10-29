@@ -169,6 +169,10 @@ body.admin {
     grid-template-columns: 1fr;
   }
 }
+/* DEF-014: ô lưới được co nhỏ hơn bảng bên trong (bảng tự cuộn trong .table-wrap) — mặc định min-width: auto làm cả trang cuộn ngang */
+.grid-2 > * {
+  min-width: 0;
+}
 .kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -286,6 +290,7 @@ svg.fc-chart .grid {
 }
 .tabs {
   display: flex;
+  flex-wrap: wrap; /* DEF-014: màn hẹp xuống dòng thay vì làm cả trang cuộn ngang (WCAG 1.4.10) */
   gap: 0.25rem;
   border-bottom: 2px solid var(--c-border);
   margin-bottom: 1rem;

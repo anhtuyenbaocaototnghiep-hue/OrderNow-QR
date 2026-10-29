@@ -39,7 +39,7 @@ Người làm: người kỹ thuật của quán. Thời gian dự kiến: 20–
 2. Sao lưu có nhãn: `npm run db:backup -- --label truoc-v1.1` (hoặc bấm `hướng-dẫn/9-sao-lưu-ngay.cmd`). Ghi lại tên file.
 3. Dừng app: dừng tác vụ `cafe-qr-app` trong Task Scheduler (hoặc đóng cửa sổ máy chủ).
 4. Lấy code bản mới (`git pull` / chép thư mục), rồi `npm ci`.
-5. Áp migration: `npm run db:migrate` (chạy lại không sao — chỉ áp file chưa chạy).
+5. Áp migration: `npm run db:migrate` (chạy lại không sao — chỉ áp file chưa chạy). Lần đầu từ bản có ADR-022 còn bật `READ_COMMITTED_SNAPSHOT` — **app phải đang dừng** (bước 3), lệnh cắt mọi kết nối khác.
 6. Khởi động lại tác vụ `cafe-qr-app`; chờ `npm run ops:health` ra **ỔN**.
 7. Kiểm thử khói ([deployment-checklist.md](deployment-checklist.md) §A8): đăng nhập, khách gọi món, quầy nhận, hoàn tất, thu tiền, in bill.
 8. Trên từng máy quầy / quản lý: tải lại trang bằng **Ctrl + F5** (file JS / CSS được trình duyệt giữ tới 1 giờ khi `NODE_ENV=production`).

@@ -4,6 +4,7 @@
 //   npm run db:migrate -- --create                  → tạo database nếu chưa có (login cần quyền dbcreator/sa — dùng cho CI/Docker)
 // - cơ-sở-dữ-liệu/chuyển-đổi/NNNN_*.sql: chạy một lần, ghi vào dbo.SchemaMigrations; KHÔNG sửa file đã chạy.
 // - cơ-sở-dữ-liệu/thủ-tục/*.sql: CREATE OR ALTER, chạy lại mỗi lần (idempotent).
+// - ADR-022: bật READ_COMMITTED_SNAPSHOT cho database (bước riêng — ALTER DATABASE không chạy được trong transaction của migration).
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -49,6 +50,24 @@ async function createDatabaseIfMissing() {
     await master.request().batch(`IF DB_ID(N'${database}') IS NULL CREATE DATABASE [${database}] COLLATE Vietnamese_CI_AS`);
   } finally {
     await master.close();
+  }
+}
+
+/**
+ * ADR-022 (D-83): lệnh đọc dùng bản đã commit gần nhất thay vì chờ khóa → hết deadlock đọc–ghi (DEF-018, DEF-019).
+ * Chỉ bật khi chưa bật (chạy lại không làm gì). WITH ROLLBACK IMMEDIATE: cần dừng app trước khi migrate (release-plan.md §4).
+ * Không có quyền ALTER DATABASE → chỉ cảnh báo (app vẫn chạy được như cũ, chỉ mất lợi ích chống deadlock).
+ */
+async function ensureReadCommittedSnapshot(pool) {
+  const r = await pool.request().query('SELECT is_read_committed_snapshot_on AS rcsi FROM sys.databases WHERE database_id = DB_ID()');
+  if (r.recordset[0]?.rcsi) return log('rcsi   READ_COMMITTED_SNAPSHOT đã bật');
+  try {
+    await pool.request().batch('ALTER DATABASE CURRENT SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE');
+    log('rcsi   bật READ_COMMITTED_SNAPSHOT');
+  } catch (err) {
+    console.warn(
+      `CẢNH BÁO: chưa bật được READ_COMMITTED_SNAPSHOT cho ${database} (${err.message}). Chạy bằng tài khoản quản trị SQL: ALTER DATABASE [${database}] SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE`,
+    );
   }
 }
 
@@ -100,6 +119,7 @@ async function main() {
       }
       log(`proc   ${file}`);
     }
+    await ensureReadCommittedSnapshot(pool);
     log(`OK — ${database}`);
   } finally {
     await pool.close();

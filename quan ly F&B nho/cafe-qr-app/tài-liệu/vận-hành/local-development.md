@@ -107,6 +107,7 @@ Kiểm thử luôn chạy trên `CafeQrTest` (bị xóa sạch mỗi lần), kh�
 - **Thu tiền cần ca đang mở** (ADR-005, F-018): mỗi ngày bấm "⚠ Chưa mở ca" trên thanh quầy để mở ca; cuối ngày Quầy → Ca & hoàn tiền → Đóng ca.
 - Migration `0003`…`0014` đã áp lên DB dev có sẵn dữ liệu ngày 16/10/2026 (chỉ thêm bảng/cột; dữ liệu cũ giữ nguyên).
 - Migration giai đoạn 4–8 (ADR-006): `0015_goi_lai_don.sql` … `0032_tong_hop_ngay.sql`, mỗi feature có đổi schema một file; `npm run db:migrate` áp các file chưa chạy. Lưu ý `0029_tich_diem.sql`: số dư điểm cũ được ghi thành một dòng `ADJUST` "Số dư trước F-039", từ đó tích 1 điểm / 10.000đ (D-27).
+- Từ ADR-022 (29/10/2026) `db:migrate` còn bật `READ_COMMITTED_SNAPSHOT` cho database đang trỏ tới (một lần; đã bật thì bỏ qua) — **tắt app trước khi migrate**. Login thiếu quyền `ALTER DATABASE` → chỉ in cảnh báo kèm lệnh cho người quản trị.
 - Migration `0033_sua_xoa_mon.sql` (ADR-007, F-046 sửa / xóa món, hủy bàn) đã áp lên `CafeQrDev` ngày 18/10/2026 (chỉ thêm bảng / cột). Migration mới tiếp theo dùng số **`0034`**.
 - Dữ liệu dev hiện có thêm vài đơn chạy thử từ lượt kiểm giao diện ngày 14/10/2026.
 
