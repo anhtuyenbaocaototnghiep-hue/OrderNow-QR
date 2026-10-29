@@ -76,4 +76,5 @@ Mục tiêu quay lui xong trong **30 phút**.
 | --- | --- | --- | --- | --- | --- | --- |
 | v1.0.0-rc.1 | 29/10/2026 | (commit gộp TASK-076) | Agent — gộp theo yêu cầu chủ dự án | — (chưa triển khai máy quán) | Cây mã giống hệt ngọn TASK-075 đã qua `npm test` 346/346, E2E 50/50 (27/10) | Ứng viên, **chưa** G5; không đẩy GitHub |
 | v1.0.0-rc.2 | 29/10/2026 | (commit gộp TASK-077) | Agent — theo yêu cầu chủ dự án | — (chưa triển khai máy quán) | Trên ngọn TASK-077 (cây mã = commit gộp): `npm test` 355/355, E2E 54/54, load 10/10, trace 375/375 | Ứng viên, **chưa** G5; migration mới `0041` (chỉ thêm); không đẩy GitHub |
+| v1.0.0-rc.3 | 29/10/2026 | (commit gộp TASK-078) | Agent — theo yêu cầu chủ dự án | — (chưa triển khai máy quán) | Trên ngọn TASK-078, CSDL test bật RCSI: `npm test` 355/355, E2E 54/54, load 10/10, trace 375/375, 0 deadlock | Ứng viên, **chưa** G5; không migration mới nhưng `db:migrate` bật `READ_COMMITTED_SNAPSHOT` (ADR-022) — dừng app trước; quay lui code không cần tắt RCSI; không đẩy GitHub |
 | v1.0.0 | (chờ G5) | | | | | |
