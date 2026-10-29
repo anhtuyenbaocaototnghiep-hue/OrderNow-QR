@@ -24,5 +24,11 @@ Migration: `0034`…`0040` — chỉ **thêm** bảng / cột, riêng `0039` **n
 ## Lệnh kiểm chứng
 `git rev-parse` so cây mã · `npm run lint` · `npm run format:check` · `npm run trace -- --check` (đầy đủ `npm test` + `npm run test:e2e` chạy lại ở TASK-077 trên chính `main` mới).
 
-## Kết quả
-(điền sau khi gộp)
+## Kết quả (29/10/2026)
+| Bước | Kết quả |
+| --- | --- |
+| Gộp | `main` = commit gộp `a250f1a` (`Merge task/TASK-076-ung-vien-phat-hanh`) — không xung đột |
+| So cây mã | `main^{tree}` = `task/TASK-076-ung-vien-phat-hanh^{tree}` (`9b4bc25…`); khác ngọn TASK-075 đúng 4 file tài liệu của task này |
+| `npm run lint`, `npm run format:check` | PASS trên `main` |
+| Tag | `v1.0.0-rc.1` (có chú thích) trên `a250f1a`; không đẩy GitHub |
+| Chạy đầy đủ | `npm test`, E2E, ép tải, `trace --check` chạy lại trên chính dòng `main` ở [TASK-077](TASK-077.md) |

@@ -26,3 +26,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-073-plan.md](TASK-073-plan.md) — chuyển khoản, thu chung nhiều bàn, tách hóa đơn (ADR-019).
 - [TASK-074-plan.md](TASK-074-plan.md) — QR Wi-Fi cho khách in kèm QR bàn (F-059).
 - [TASK-075-plan.md](TASK-075-plan.md) — phát hiện bất thường, cảnh báo qua email (F-060, ADR-020).
+- [TASK-077-plan.md](TASK-077-plan.md) — chế độ cơ bản, hướng dẫn quầy, chính sách dữ liệu, cảnh báo QR (F-061…F-063, ADR-021).

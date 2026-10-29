@@ -92,6 +92,7 @@
 | [TASK-074](TASK-074.md) | QR Wi-Fi cho khách in kèm QR bàn (F-059) | FEATURE-059 | TASK-073 | Agent | — | chủ dự án 26/10 (demo qua Wi-Fi / điểm phát) | READY_FOR_REVIEW |
 | [TASK-075](TASK-075.md) | Phát hiện bất thường, cảnh báo qua email (F-060, ADR-020) | FEATURE-060 | TASK-074 | Agent | — | chủ dự án 27/10 ("gửi về email ghi trong cài đặt") | READY_FOR_REVIEW |
 | [TASK-076](TASK-076.md) | Gộp TASK-065…075 vào `main`, ứng viên phát hành `v1.0.0-rc.1` | — | TASK-075 | Agent | — | chủ dự án 29/10 ("gộp nhánh thành bản phát hành ổn định") | READY_FOR_REVIEW |
+| [TASK-077](TASK-077.md) | Chế độ cơ bản + hướng dẫn quầy, trang chính sách dữ liệu, cảnh báo QR sai địa chỉ (F-061…F-063, ADR-021) | FEATURE-061, FEATURE-062, FEATURE-063 | TASK-076 | Agent | — | chủ dự án 29/10 (góp ý xây dựng) | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

@@ -174,6 +174,10 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-059-1 | Should | ACT-ADMIN, ACT-GUEST | Là chủ quán, tôi muốn in QR Wi-Fi cạnh QR gọi món trên mỗi bàn, để khách quét một lần là vào được Wi-Fi của quán rồi gọi món, không phải hỏi và gõ mật khẩu. | AC-059-01, AC-059-02, AC-059-03, AC-059-04 | BR-092 | UC-17 | MOD-ADMIN | SCR-33, SCR-22 | F-059 | DONE |
 | US-060-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn app tự phát hiện các thao tác dễ gây thất thoát (lệch két, chuyển khoản lạ, hủy món đã pha, hoàn tiền, giảm giá tay, sửa sổ quỹ) và gửi email cho tôi, để biết ngay mà không phải tự soi sổ mỗi ngày. | AC-060-02, AC-060-03, AC-060-04, AC-060-06, AC-060-07, AC-060-08, AC-060-09 | BR-093, BR-094, BR-095 | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-47, SCR-15 | F-060 | DONE |
 | US-060-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn tự đổi email nhận cảnh báo trong Cài đặt và được báo khi ai đó đổi nó, để không ai giấu được cảnh báo. | AC-060-01, AC-060-05, AC-060-09, AC-060-10 | BR-094, BR-095 | UC-17 | MOD-ADMIN | SCR-33 | F-060 | DONE |
+| US-061-1 | Should | ACT-ADMIN | Là chủ quán mới dùng app, tôi muốn menu quản lý chỉ hiện những mục cần cho việc bán hàng hằng ngày và tự bật thêm khi cần, để không bị ngợp bởi hàng chục trang chưa dùng tới. | AC-061-01, AC-061-02, AC-061-03, AC-061-05 | BR-096 | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33, SCR-10 | F-061 | DONE |
+| US-061-2 | Should | ACT-STAFF, ACT-LEAD, ACT-ADMIN | Là nhân viên mới, tôi muốn lần đầu vào màn quầy được chỉ từng bước mở ca, nhận đơn, hoàn tất, thu tiền, đóng ca ngay trên màn thật, để làm được việc mà không cần người kèm. | AC-061-04, AC-061-05 | BR-097 | UC-03, UC-11 | MOD-AUTH, MOD-ORDER | SCR-10 | F-061 | DONE |
+| US-062-1 | Should | ACT-GUEST, ACT-MEMBER, ACT-STAFF | Là khách được mời đăng ký hội viên bằng số điện thoại, tôi muốn đọc được quán lưu gì, để làm gì và muốn xóa thì làm sao, để yên tâm đồng ý. | AC-062-01, AC-062-02, AC-062-03 | BR-098 | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | F-062 | DONE |
+| US-063-1 | Should | ACT-ADMIN, ACT-STAFF | Là chủ quán, tôi muốn app báo ngay khi mã QR đang dán trên bàn trỏ tới địa chỉ cũ hoặc trỏ localhost, để in lại trước khi khách quét không được. | AC-063-01, AC-063-02, AC-063-03, AC-063-04 | BR-099 | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | F-063 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 
@@ -291,13 +295,13 @@ Bốn chỗ ghi cũ mâu thuẫn với quyết định sau đã được sửa t
 
 | Chỉ số | Giá trị |
 | --- | --- |
-| Tổng số story | 140 |
+| Tổng số story | 144 |
 | Must | 54 (F-001…F-012: 28 — gồm US-001-3 cho trang chủ / 404; F-046, F-047: 6; F-048: 4; F-049: 2; F-050: 2; F-051: 4; F-052: 2; F-053: 1; F-054: 1; F-055: 2; F-056: 2) |
-| Should | 85 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2) |
+| Should | 89 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4) |
 | Could | 1 (US-037-4) |
-| AC đã ánh xạ / tổng AC trong FEATURE | 363 / 363 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026) |
+| AC đã ánh xạ / tổng AC trong FEATURE | 375 / 375 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026) |
 | AC đã viết lại cho kiểm được | 25 |
-| FEATURE có story | 59 / 59 (F-001…F-043, F-045…F-060; không có F-044) |
+| FEATURE có story | 62 / 62 (F-001…F-043, F-045…F-063; không có F-044) |
 | FEATURE không có AC nào | 0 |
-| BR được tham chiếu | 95 / 95 |
+| BR được tham chiếu | 99 / 99 |
 | Màn hình `S-xx` có story | 37 / 37; thêm SCR-43 (trang chủ) và SCR-44 (404) qua US-001-3 |
