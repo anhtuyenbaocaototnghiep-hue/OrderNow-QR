@@ -8,7 +8,7 @@
 
 | Mục | Nội dung |
 | --- | --- |
-| Mã nguồn | Nhánh `main` tại thời điểm ký G5. Từ 29/10/2026 ([TASK-076](../công-việc/TASK-076.md)) `main` gồm F-001…F-043, F-045…F-060 — TASK-065…075 đã gộp, tag ứng viên `v1.0.0-rc.1` (xem [chức-năng/README.md](../chức-năng/README.md)) |
+| Mã nguồn | Nhánh `main` tại thời điểm ký G5. Từ 29/10/2026 ([TASK-076](../công-việc/TASK-076.md)) `main` gồm F-001…F-043, F-045…F-060 — TASK-065…075 đã gộp, tag ứng viên `v1.0.0-rc.1`; thêm F-061…F-063 ([TASK-077](../công-việc/TASK-077.md)) → `v1.0.0-rc.2` (xem [chức-năng/README.md](../chức-năng/README.md)) |
 | Ứng viên phát hành | `v1.0.0-rc.N` = bản ổn định để demo / UAT trên `main`; agent gắn theo yêu cầu chủ dự án. Tag `v1.0.0` chỉ gắn sau G5 |
 | CSDL | CSDL chạy thật **mới** (đề xuất tên `CafeQr`), tạo bằng `npm run setup`; dữ liệu chạy thử `CafeQrDev` **không** mang sang (D-61), trừ khi chủ dự án quyết khác |
 | Nơi chạy | Máy Windows tại quán — [deployment-checklist.md](deployment-checklist.md) phần A |
@@ -75,4 +75,5 @@ Mục tiêu quay lui xong trong **30 phút**.
 | Phiên bản | Ngày giờ | Commit | Người làm | Bản sao lưu trước | Kiểm thử khói | Ghi chú |
 | --- | --- | --- | --- | --- | --- | --- |
 | v1.0.0-rc.1 | 29/10/2026 | (commit gộp TASK-076) | Agent — gộp theo yêu cầu chủ dự án | — (chưa triển khai máy quán) | Cây mã giống hệt ngọn TASK-075 đã qua `npm test` 346/346, E2E 50/50 (27/10) | Ứng viên, **chưa** G5; không đẩy GitHub |
+| v1.0.0-rc.2 | 29/10/2026 | (commit gộp TASK-077) | Agent — theo yêu cầu chủ dự án | — (chưa triển khai máy quán) | Trên ngọn TASK-077 (cây mã = commit gộp): `npm test` 355/355, E2E 54/54, load 10/10, trace 375/375 | Ứng viên, **chưa** G5; migration mới `0041` (chỉ thêm); không đẩy GitHub |
 | v1.0.0 | (chờ G5) | | | | | |
