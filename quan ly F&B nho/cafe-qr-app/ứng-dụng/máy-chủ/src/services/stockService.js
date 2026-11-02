@@ -1,10 +1,12 @@
 // FEATURE-023 Nhập kho & kiểm kê; báo cáo giá vốn (COGS) và hao hụt theo kỳ.
 // FEATURE-048 (ADR-009): sửa / hủy phiếu nhập, sửa phiếu kiểm kê nháp, hủy phiếu kiểm kê đã chốt.
+// FEATURE-064 (ADR-023): sau khi lưu / sửa / hủy phiếu → báo động giá vốn; lỗi cảnh báo không làm hỏng phiếu.
 import { withDeadlockRetry } from '../db.js';
 import { badRequest, conflict, fromSqlError, notFound } from '../errors.js';
 import * as purchasingRepo from '../repositories/purchasingRepo.js';
 import * as stockRepo from '../repositories/stockRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
+import * as alertService from './alertService.js';
 import { refreshAvailability } from './menuService.js';
 import { invalidateCatalog } from './pricingService.js';
 import { toBaseLines } from './inventoryService.js';
@@ -33,6 +35,7 @@ export async function receive(body, user) {
   refreshAvailability(); // nhập kho → món "hết" có thể bán lại ngay (D-12)
   const receipt = await stockRepo.getReceipt(receiptId);
   publish([ROOMS.staff], 'inventory.received', { receiptId, lines: receipt.lines.length });
+  await alertService.onStockReceived(receipt).catch((err) => console.error('alert cost:', err?.message ?? err));
   return receipt;
 }
 
@@ -122,7 +125,9 @@ export async function updateReceipt(id, body, user) {
   } catch (err) {
     throw reviseError(err);
   }
-  return afterRevise(id);
+  const after = await afterRevise(id);
+  await alertService.onReceiptRevised(receipt, after, user).catch((err) => console.error('alert cost:', err?.message ?? err));
+  return after;
 }
 
 /** Hủy phiếu nhập (FEATURE-048, D-39): trừ lại kho, giữ phiếu + lý do. */
@@ -132,7 +137,9 @@ export async function voidReceipt(id, { reason }, user) {
   } catch (err) {
     throw reviseError(err);
   }
-  return afterRevise(id);
+  const after = await afterRevise(id);
+  await alertService.onReceiptRevised(after, after, user).catch((err) => console.error('alert cost:', err?.message ?? err));
+  return after;
 }
 
 export async function getReceipt(id) {

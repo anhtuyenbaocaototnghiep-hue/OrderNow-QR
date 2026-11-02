@@ -1813,3 +1813,43 @@ test('cảnh báo QR sai địa chỉ: trang In QR báo địa chỉ localhost; 
   await checked;
   await expect(P.locator('#qr-wrong')).toHaveCount(0);
 });
+
+test('báo động giá vốn: nhập sữa giá cao hơn → cảnh báo tới trang Cảnh báo qua realtime, bảng món + giá gợi ý; "Đổi giá" mở sẵn hộp sửa đúng món; Cài đặt sửa được ngưỡng (F-064, AC-064-10)', async ({
+  request,
+}) => {
+  const [category] = await apiAs(request, 'get', '/api/admin/categories');
+  const milk = (await apiAs(request, 'post', '/api/admin/ingredients', { name: 'Sữa giá vốn', unit: 'ml', stockQty: 0, lowStockThreshold: 0 })).ingredientId;
+  await apiAs(request, 'post', '/api/admin/stock-receipts', { lines: [{ ingredientId: milk, qty: 10000, unitCost: 30 }] });
+  const item = (await apiAs(request, 'post', '/api/admin/menu-items', { categoryId: category.categoryId, name: 'Latte giá vốn', price: 45000 })).menuItemId;
+  await apiAs(request, 'put', `/api/admin/menu-items/${item}/bom`, [{ ingredientId: milk, amount: 200 }]);
+
+  await P.goto('/admin/alerts');
+  await expect(P.getByRole('button', { name: /^Mới \(\d+\)$/ })).toBeVisible();
+  const receipt = await apiAs(request, 'post', '/api/admin/stock-receipts', { lines: [{ ingredientId: milk, qty: 10000, unitCost: 36 }] });
+  const title = `Giá Sữa giá vốn tăng 20% — 1 món tụt lãi (phiếu nhập #${receipt.receiptId})`;
+  await expect(P.locator('.toast', { hasText: title })).toBeVisible();
+  const card = P.locator('.alert-card', { hasText: title });
+  await expect(card.locator('.badge').first()).toHaveText('Giá vốn tăng');
+  await expect(card).toContainText('Sữa giá vốn: 30đ/ml → 36đ/ml (+20%)');
+  const row = card.getByRole('row', { name: /Latte giá vốn/ });
+  await expect(row).toContainText('6.000đ → 7.200đ');
+  await expect(row).toContainText('86,7% → 84%');
+  await expect(row).toContainText('47.000đ (giữ tiền lãi)');
+  await expect(row).toContainText('54.000đ (giữ % lãi)');
+  await card.getByRole('link', { name: 'Đổi giá Latte giá vốn' }).click();
+  await expect(P).toHaveURL(new RegExp(`/admin/menu\\?edit=${item}$`));
+  const dialog = P.getByRole('dialog');
+  await expect(dialog.locator('#price')).toHaveValue(/^45[.,]?000$/);
+  await expect(dialog.locator('input[name="name"]')).toHaveValue('Latte giá vốn');
+  await P.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+
+  await P.goto('/admin/settings');
+  const rise = P.locator('input[name="alertCostRisePct"]');
+  await expect(rise).toHaveValue('5');
+  await rise.fill('7');
+  await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
+  expect((await apiAs(request, 'get', '/api/admin/settings')).alertCostRisePct).toBe(7);
+  await apiAs(request, 'put', '/api/admin/settings', { alertCostRisePct: 5 });
+});

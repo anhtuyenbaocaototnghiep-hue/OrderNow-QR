@@ -1,4 +1,5 @@
 // S-21 Thực đơn: danh mục + món (giá, ảnh, còn bán/hết món, ẩn/hiện), link sang định lượng BOM (FEATURE-010).
+// ?edit={id}: mở sẵn hộp sửa món — link "Đổi giá" ở trang Cảnh báo (F-064)
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, el, errorMessage, modal, money, moneyInput, moneyValue, setBusy, setMoney, showFieldErrors, thumb, toast } from '../ui.js';
@@ -395,4 +396,6 @@ function editItem(item) {
   });
 }
 
-load();
+await load();
+const linked = state.items.find((i) => i.menuItemId === Number(new URLSearchParams(location.search).get('edit')));
+if (linked) editItem(linked);

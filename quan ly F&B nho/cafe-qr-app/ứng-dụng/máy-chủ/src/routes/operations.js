@@ -130,6 +130,10 @@ operationsRouter.put('/settings', async (req, res) => {
         .optional(),
       alertManualDiscountMax: z.coerce.number().int().min(0).max(100).optional(),
       alertUseStats: z.boolean().optional(),
+      // F-064 báo động giá vốn (ADR-023 D-86)
+      alertCostRisePct: z.coerce.number().int().min(1).max(100).optional(),
+      alertCostMarginDrop: z.coerce.number().int().min(1).max(100).optional(),
+      alertCostMarginMin: z.coerce.number().int().min(0).max(100).optional(),
       // F-061 (ADR-021 D-79): nhóm menu nâng cao đang bật (rỗng = chế độ cơ bản)
       uiModules: z
         .array(z.enum(MODULES, { message: 'Nhóm mục không hợp lệ' }))

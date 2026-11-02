@@ -540,3 +540,14 @@ Chi tiết: [FEATURE-061](../chức-năng/FEATURE-061.md), [FEATURE-062](../ch�
 - `GET /api/auth/me`: thêm `modules` (mảng nhóm menu nâng cao đang bật, rỗng = chế độ cơ bản) và `user.tourSeenAt` (null = chưa xem hướng dẫn). `POST /api/auth/login`, `GET /api/admin/users` cũng có `tourSeenAt` trong đối tượng tài khoản.
 - `GET /api/admin/settings`: thêm `uiModules` (mảng con của `inventory`, `customers`, `finance`, `analytics`, `advanced`), `qrPrintedBaseUrl`, `qrPrintedAt` (chỉ đọc). `PUT /api/admin/settings` nhận `uiModules` (không trùng; nhóm lạ → `400 VALIDATION_ERROR`). Ẩn nhóm **không** chặn API của nhóm đó.
 - Trang mới (không phải API): `GET /chinh-sach-du-lieu` (SCR-48).
+
+## Bổ sung F-064 — báo động giá vốn (ADR-023, 02/11/2026)
+
+Chi tiết: [FEATURE-064](../chức-năng/FEATURE-064.md), BR-100, BR-101. Không thêm endpoint.
+
+- `GET /api/admin/alerts`: thêm `kind: 'COST_RISE'`, `shiftId` và `user` là `null`. `detail`: `{ receiptId, supplier, receivedBy, ingredients: [{ ingredientId, name, unit, oldCost, newCost, risePct, oldStock, pack: { unit, oldPrice, newPrice } | null }], suspects (cùng dạng — giá nghi nhập nhầm), items: [{ menuItemId, name, itemType, price, oldCost, newCost, oldMargin, newMargin, drop, qty30, monthlyLoss, suggestKeepAmount, suggestKeepMargin | null, causes }], unknown: [{ menuItemId, name, itemType, missing }], options: [{ name, group, priceDelta, oldCost, newCost }], monthlyLoss, thresholds: { risePct, marginDrop, marginMin } }`.
+- `GET /api/admin/settings`: thêm `alertCostRisePct` (mặc định 5), `alertCostMarginDrop` (2), `alertCostMarginMin` (60).
+- `PUT /api/admin/settings` (ADMIN): nhận 3 khóa trên — `alertCostRisePct`, `alertCostMarginDrop` số nguyên 1–100; `alertCostMarginMin` số nguyên 0–100; sai → `400 VALIDATION_ERROR`. Đổi → thư báo như các cài đặt cảnh báo khác.
+- `POST /api/admin/stock-receipts`, `PUT /api/admin/stock-receipts/{id}`, `POST /api/admin/stock-receipts/{id}/void`, `POST /api/receiving/purchase-orders/{id}/receive`: **request / response không đổi**; sau khi commit, app xét báo động giá vốn (lỗi phần này chỉ ghi log). Nhân viên nhận hàng theo đơn đặt không thấy số liệu cảnh báo.
+- Sự kiện `alert.created` (phòng `admin`): thêm loại `COST_RISE`, cùng dạng `{ alert }`.
+- Trang (không phải API): `/admin/menu?edit={id}`, `/admin/combos?edit={id}` mở sẵn hộp sửa món / combo.

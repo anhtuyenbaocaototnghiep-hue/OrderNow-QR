@@ -74,6 +74,10 @@ function toSettings(map) {
     alertRefundBig: num(map.get('alert.refund_big'), 200000),
     alertManualDiscountMax: num(map.get('alert.manual_discount_max'), 5),
     alertUseStats: map.get('alert.use_stats') !== 'false',
+    // F-064 báo động giá vốn (ADR-023 D-86)
+    alertCostRisePct: num(map.get('alert.cost_rise_pct'), 5),
+    alertCostMarginDrop: num(map.get('alert.cost_margin_drop'), 2),
+    alertCostMarginMin: num(map.get('alert.cost_margin_min'), 60),
     // F-061 (ADR-021 D-79): nhóm menu nâng cao đang bật — chưa lưu = chế độ cơ bản (rỗng)
     uiModules: csv(map.get('ui.modules')).filter((m) => MODULES.includes(m)),
     // F-063 (D-82): địa chỉ máy chủ lúc quản lý in QR bàn gần nhất (không sửa qua PUT — chỉ POST /api/admin/qr-printed)
@@ -136,6 +140,9 @@ const KEYS = {
   alertRefundBig: 'alert.refund_big',
   alertManualDiscountMax: 'alert.manual_discount_max',
   alertUseStats: 'alert.use_stats',
+  alertCostRisePct: 'alert.cost_rise_pct',
+  alertCostMarginDrop: 'alert.cost_margin_drop',
+  alertCostMarginMin: 'alert.cost_margin_min',
   uiModules: 'ui.modules',
   qrPrintedBaseUrl: 'qr.printed_base_url',
   qrPrintedAt: 'qr.printed_at',

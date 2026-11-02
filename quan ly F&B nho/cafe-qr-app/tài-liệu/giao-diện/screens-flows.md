@@ -331,3 +331,17 @@ flowchart LR
   S22["S-22 In mã QR → In"] --> QRP[("qr.printed_base_url")] -->|khác PUBLIC_BASE_URL| RED["Dải đỏ: in lại QR (quản lý + quầy)"]
   S03["S-03 Ô hội viên: đồng ý"] -->|Xem chính sách dữ liệu| S48["S-48 Chính sách dữ liệu"]
 ```
+
+## F-064 — Báo động giá vốn (TASK-079, ADR-023, 02/11/2026)
+
+- **S-47 Cảnh báo:** loại mới **"Giá vốn tăng"** — danh sách giá nguyên liệu cũ → mới (kèm giá theo gói nếu nhập theo gói), tổng tiền mất mỗi tháng; bảng món (cuộn ngang ở màn hẹp): giá bán, giá vốn, tỷ lệ lãi, bán 30 ngày, mất / tháng, giá gợi ý, link **Đổi giá**; món "chưa tính được" và tùy chọn liệt kê dưới dạng dòng. Giá nghi nhập nhầm: dòng "Kiểm tra…", không có bảng. Thay nút Nhật ký thao tác bằng **Mở Nhập kho**.
+- **S-33 Cài đặt:** thẻ cảnh báo thêm 3 ô: **Báo khi giá nhập tăng từ (%)**, **Và tỷ lệ lãi món tụt từ (điểm %)**, **Hoặc lãi món xuống dưới (%)**.
+- **S-21 Thực đơn, S-27 Combo:** `?edit={id}` mở sẵn hộp sửa; id không có / đã xóa → chỉ hiện danh sách.
+
+```mermaid
+flowchart LR
+  R["Phiếu nhập (tay / theo đơn đặt / sửa giá)"] -->|so giá mốc| C{"Tăng từ ngưỡng và món tụt lãi?"}
+  C -->|không| N["Không báo"]
+  C -->|có| A["S-47 Cảnh báo + email"] -->|Đổi giá| M["S-21 / S-27 hộp sửa món"]
+  R -->|tăng trên 50%| K["Hỏi: có nhập nhầm không?"] -->|sửa / hủy phiếu| F["Cảnh báo cũ: Đã xử lý + thư đính chính"]
+```

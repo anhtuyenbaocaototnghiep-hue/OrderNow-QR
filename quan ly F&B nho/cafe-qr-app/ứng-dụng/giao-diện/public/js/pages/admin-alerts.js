@@ -1,6 +1,7 @@
 // SCR-47 Cảnh báo bất thường (FEATURE-060, ADR-020 D-75…D-78): dấu hiệu thất thoát app tự phát hiện lúc đóng ca / hoàn tiền lớn /
 // hủy – sửa khoản sổ quỹ đã duyệt. Chỉ quản lý (server kiểm quyền); cảnh báo mới tới qua phòng realtime `admin`.
 // Cảnh báo là gợi ý để kiểm tra, không kết luận ai sai — nút "Nhật ký thao tác" mở đúng khoảng giờ / người liên quan.
+// F-064 (ADR-023): giá nhập tăng → bảng món tụt lãi, giá gợi ý, link "Đổi giá" (app không tự đổi giá).
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { getToken } from '../auth.js';
@@ -17,6 +18,7 @@ const KIND = {
   MANUAL_DISCOUNT: 'Giảm giá tay nhiều',
   BIG_REFUND: 'Hoàn tiền lớn',
   CASH_VOID: 'Sửa / hủy sổ quỹ',
+  COST_RISE: 'Giá vốn tăng',
 };
 const STATUS = { NEW: 'Mới', SEEN: 'Đã xem', RESOLVED: 'Đã xử lý' };
 const state = { status: 'NEW' };
@@ -30,7 +32,7 @@ clear(
   el(
     'p',
     { class: 'small muted' },
-    'App tự kiểm khi đóng ca (lệch két, tỉ lệ chuyển khoản, món đã pha bị hủy, hoàn tiền, giảm giá tay) và ngay khi hoàn tiền lớn / sửa – hủy khoản sổ quỹ đã duyệt. Ngưỡng và email nhận chỉnh ở Cài đặt. Cảnh báo là gợi ý để kiểm tra, không kết luận ai sai.',
+    'App tự kiểm khi đóng ca (lệch két, tỉ lệ chuyển khoản, món đã pha bị hủy, hoàn tiền, giảm giá tay), ngay khi hoàn tiền lớn / sửa – hủy khoản sổ quỹ đã duyệt, và khi nhập hàng giá cao hơn làm món tụt lãi. Ngưỡng và email nhận chỉnh ở Cài đặt. Cảnh báo là gợi ý để kiểm tra, không kết luận ai sai.',
   ),
   body,
 );
@@ -63,8 +65,84 @@ function auditLink(a) {
   return `/admin/audit?${q}`;
 }
 
+const pct = (n) => `${Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%`;
+const unitMoney = (n) => `${Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}đ`; // đơn giá theo ml / g có thể lẻ
+const costLine = (c) =>
+  `${c.name}: ${unitMoney(c.oldCost)}/${c.unit} → ${unitMoney(c.newCost)}/${c.unit} (+${pct(c.risePct)})${c.pack ? ` · ${c.pack.unit}: ${money(c.pack.oldPrice)} → ${money(c.pack.newPrice)}` : ''}`;
+
+function costFacts(d) {
+  return [
+    ...d.ingredients.map(costLine),
+    ...d.suspects.map((c) => `Kiểm tra: ${costLine(c)} — nếu nhập nhầm, sửa phiếu nhập #${d.receiptId}. Chưa tính giá này vào lãi món.`),
+    ...(d.items.length ? [`Nếu giữ giá bán: mất khoảng ${money(d.monthlyLoss)} mỗi tháng (phần giá vốn tăng × số bán 30 ngày gần nhất)`] : []),
+    ...d.unknown.map((u) => `${u.name}: chưa tính được lãi — thiếu ${u.missing.join(', ')}`),
+    ...d.options.map((o) => `Tùy chọn ${o.name} (${o.group}): giá vốn thêm ${money(o.oldCost)} → ${money(o.newCost)}, đang thu thêm ${money(o.priceDelta)}`),
+    ...(d.ingredients.some((c) => c.oldStock > 0) ? ['Hàng giá cũ vẫn còn trong kho nên lãi thực tế sẽ giảm dần, chưa giảm ngay'] : []),
+    `Phiếu nhập #${d.receiptId}${d.supplier ? ` · ${d.supplier}` : ''} · ${d.receivedBy}`,
+  ];
+}
+
+/** Bảng món tụt lãi. "Đổi giá" chỉ mở sẵn hộp sửa món; giá gợi ý để tham khảo. */
+function costTable(d) {
+  if (!d.items?.length) return null;
+  const suggest = (i) =>
+    i.suggestKeepMargin && i.suggestKeepMargin !== i.suggestKeepAmount
+      ? el('span', {}, `${money(i.suggestKeepAmount)} (giữ tiền lãi)`, el('br'), `${money(i.suggestKeepMargin)} (giữ % lãi)`)
+      : money(i.suggestKeepAmount);
+  const heads = [
+    ['Món'],
+    ['Giá bán', 'num'],
+    ['Giá vốn', 'num'],
+    ['Tỷ lệ lãi', 'num'],
+    ['Bán 30 ngày', 'num'],
+    ['Mất / tháng', 'num'],
+    ['Giá gợi ý', 'num'],
+    ['Thao tác'],
+  ];
+  return el(
+    'div',
+    { class: 'table-wrap' },
+    el(
+      'table',
+      { class: 'table' },
+      el(
+        'thead',
+        {},
+        el(
+          'tr',
+          {},
+          heads.map(([h, cls]) => el('th', cls ? { class: cls } : {}, h)),
+        ),
+      ),
+      el(
+        'tbody',
+        {},
+        d.items.map((i) =>
+          el(
+            'tr',
+            {},
+            el('td', {}, i.name),
+            el('td', { class: 'num' }, money(i.price)),
+            el('td', { class: 'num' }, `${money(i.oldCost)} → ${money(i.newCost)}`),
+            el('td', { class: 'num' }, `${pct(i.oldMargin)} → ${pct(i.newMargin)}`),
+            el('td', { class: 'num' }, String(i.qty30)),
+            el('td', { class: 'num' }, money(i.monthlyLoss)),
+            el('td', { class: 'num' }, suggest(i)),
+            el(
+              'td',
+              {},
+              el('a', { href: `/admin/${i.itemType === 'COMBO' ? 'combos' : 'menu'}?edit=${i.menuItemId}`, 'aria-label': `Đổi giá ${i.name}` }, 'Đổi giá'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 function facts(a) {
   const d = a.detail ?? {};
+  if (a.kind === 'COST_RISE') return costFacts(d);
   const unit = d.unit ?? '';
   const lines = [];
   if (a.kind === 'CASH_DIFF') lines.push(`Lệch: ${d.difference < 0 ? '−' : '+'}${money(Math.abs(d.difference))} · cho phép ${money(d.fixed)}`);
@@ -113,6 +191,7 @@ function render(alerts) {
             { class: 'small' },
             facts(a).map((t) => el('li', {}, t)),
           ),
+          a.kind === 'COST_RISE' ? costTable(a.detail ?? {}) : null,
           a.status !== 'NEW'
             ? el(
                 'p',
@@ -125,7 +204,9 @@ function render(alerts) {
             { class: 'row wrap' },
             a.status === 'NEW' ? el('button', { class: 'btn', type: 'button', onclick: (e) => setStatus(a, 'SEEN', null, e.currentTarget) }, 'Đã xem') : null,
             a.status !== 'RESOLVED' ? el('button', { class: 'btn btn-primary', type: 'button', onclick: () => resolve(a) }, 'Đã xử lý…') : null,
-            el('a', { class: 'btn', href: auditLink(a) }, 'Nhật ký thao tác'),
+            a.kind === 'COST_RISE'
+              ? el('a', { class: 'btn', href: '/admin/stock' }, 'Mở Nhập kho')
+              : el('a', { class: 'btn', href: auditLink(a) }, 'Nhật ký thao tác'),
           ),
         ),
       ),

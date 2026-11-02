@@ -128,6 +128,9 @@ function render(s) {
   const alertRefundsMax = numIn('alertRefundsMax', s.alertRefundsMax, { min: 0, max: 100 });
   const alertRefundBig = numIn('alertRefundBig', s.alertRefundBig, { min: 1000, step: 10000 });
   const alertManualDiscountMax = numIn('alertManualDiscountMax', s.alertManualDiscountMax, { min: 0, max: 100 });
+  const alertCostRisePct = numIn('alertCostRisePct', s.alertCostRisePct, { min: 1, max: 100 }); // F-064
+  const alertCostMarginDrop = numIn('alertCostMarginDrop', s.alertCostMarginDrop, { min: 1, max: 100 });
+  const alertCostMarginMin = numIn('alertCostMarginMin', s.alertCostMarginMin, { min: 0, max: 100 });
   const mailStatus = el('div', { class: 'small muted', 'aria-live': 'polite' }, 'Đang kiểm hộp thư gửi…');
   loadMailStatus(mailStatus);
   const testEmail = el(
@@ -234,7 +237,7 @@ function render(s) {
     card(
       'Cảnh báo bất thường qua email',
       el('div', { class: 'field' }, el('label', {}, 'Email nhận cảnh báo (tối đa 5, cách nhau dấu phẩy)'), alertEmails),
-      el('label', { class: 'check' }, alertImmediate, 'Cảnh báo tức thì — hoàn tiền lớn, hủy / sửa khoản sổ quỹ đã duyệt'),
+      el('label', { class: 'check' }, alertImmediate, 'Cảnh báo tức thì — hoàn tiền lớn, hủy / sửa khoản sổ quỹ đã duyệt, giá nhập tăng làm món tụt lãi'),
       el('label', { class: 'check' }, alertShiftReport, 'Báo cáo khi đóng ca (két khớp hay lệch, các dấu hiệu bất thường)'),
       el('label', { class: 'check' }, alertDailyDigest, 'Tổng kết cuối ngày'),
       el(
@@ -249,6 +252,9 @@ function render(s) {
         el('div', { class: 'field' }, el('label', {}, 'Lượt hoàn tiền tối đa / ca'), alertRefundsMax),
         el('div', { class: 'field' }, el('label', {}, 'Lượt giảm giá tay tối đa / ca'), alertManualDiscountMax),
         el('div', { class: 'field' }, el('label', {}, 'Hoàn tiền "lớn" từ (đ) — báo ngay'), alertRefundBig),
+        el('div', { class: 'field' }, el('label', {}, 'Báo khi giá nhập tăng từ (%)'), alertCostRisePct),
+        el('div', { class: 'field' }, el('label', {}, 'Và tỷ lệ lãi món tụt từ (điểm %)'), alertCostMarginDrop),
+        el('div', { class: 'field' }, el('label', {}, 'Hoặc lãi món xuống dưới (%)'), alertCostMarginMin),
       ),
       el('label', { class: 'check' }, alertUseStats, 'So thêm với mức bình thường của quán (trung bình + 2 độ lệch chuẩn của 30 ca gần nhất, khi có ≥ 10 ca)'),
       mailStatus,
@@ -372,6 +378,9 @@ function render(s) {
                 alertRefundsMax: numOrKeep(alertRefundsMax),
                 alertRefundBig: numOrKeep(alertRefundBig),
                 alertManualDiscountMax: numOrKeep(alertManualDiscountMax),
+                alertCostRisePct: numOrKeep(alertCostRisePct),
+                alertCostMarginDrop: numOrKeep(alertCostMarginDrop),
+                alertCostMarginMin: numOrKeep(alertCostMarginMin),
                 alertUseStats: alertUseStats.checked,
                 uiModules: moduleChecks.filter((c) => c.checked).map((c) => c.value), // F-061
                 acceptingOrders: accepting,

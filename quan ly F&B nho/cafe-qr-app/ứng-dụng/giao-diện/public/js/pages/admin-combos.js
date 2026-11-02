@@ -1,5 +1,6 @@
 // S-27 Combo cố định (FEATURE-015, D-9): danh sách món + số lượng, giá combo do quản lý đặt, "Tiết kiệm" = Σ giá lẻ − giá combo.
 // Kho trừ theo BOM của món thành phần; combo hết khi một thành phần hết.
+// ?edit={id}: mở sẵn hộp sửa combo — link "Đổi giá" ở trang Cảnh báo (F-064)
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, el, errorMessage, modal, money, moneyInput, moneyValue, setMoney, showFieldErrors, thumb, toast } from '../ui.js';
@@ -266,4 +267,6 @@ function edit(combo) {
   });
 }
 
-load();
+await load();
+const linked = state.combos.find((c) => c.menuItemId === Number(new URLSearchParams(location.search).get('edit')));
+if (linked) edit(linked);

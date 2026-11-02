@@ -1217,3 +1217,13 @@ Không có SP mới, không đổi bảng `Members` (đồng ý `ConsentAt` + �
 ## Mức cô lập đọc (ADR-022, 29/10/2026)
 
 Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-bản/db-migrate.js`, không phải file migration vì `ALTER DATABASE` không chạy trong transaction). Lệnh đọc ở READ COMMITTED đọc bản đã commit gần nhất (row versioning, tempdb) — không chờ / deadlock với lệnh ghi (DEF-018, DEF-019). Gợi ý khóa trong SP (`UPDLOCK`, `HOLDLOCK`, `READPAST`) vẫn khóa như cũ, nên các đoạn giữ kho / thu tiền / nhận hàng đợi không đổi hành vi; `withDeadlockRetry` vẫn giữ cho lệnh ghi. Kiểm: `SELECT is_read_committed_snapshot_on FROM sys.databases WHERE name = DB_NAME()`.
+
+## Báo động giá vốn (FEATURE-064, ADR-023, 02/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0042_bao_dong_gia_von.sql` | `CK_Alerts_Kind` thêm `COST_RISE`. Bảng `CostAlertMarks (AlertId FK, IngredientId FK, ReceiptId FK, UnitCost DECIMAL(18,4), PK (AlertId, IngredientId))` — giá đã báo theo đơn vị gốc, làm mốc so giá lần sau |
+| Giá mốc | **Tính lại từ dữ liệu mỗi lần** (`domain/costImpact.js` `referencePrice`), không lưu trên `Ingredients`: dòng `CostAlertMarks` mới nhất của phiếu chưa hủy, giảm theo `StockReceiptLines.UnitCost` rẻ hơn trong 90 ngày. Sửa / hủy phiếu chỉ cần xóa dòng mốc của phiếu đó |
+| Khóa chống trùng | Cảnh báo: `COST:{receiptId}:{EditedAt tính bằng ms, 0 nếu chưa sửa}` — mỗi lần sửa một khóa, chạy lại do deadlock không tạo trùng. Email: `ALERT:{alertId}`; thư đính chính `COSTFIX:{receiptId}:{ms}` |
+| Xóa nguyên liệu | Nguyên liệu đã có dòng phiếu nhập chỉ bị xóa mềm (`sp_DeleteIngredient`), nên khóa ngoại của `CostAlertMarks` không chặn thao tác nào |
+| Cài đặt | `alert.cost_rise_pct`, `alert.cost_margin_drop`, `alert.cost_margin_min`: mặc định trong code, không cần seed |

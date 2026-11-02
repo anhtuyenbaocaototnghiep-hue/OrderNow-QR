@@ -63,6 +63,7 @@ Mỗi dòng: làm theo bước, so với **Kỳ vọng**, ghi `Đạt` / `Không
 | UAT-29 | UC-17 | Quản lý mở **Quản lý → Hệ thống → Cài đặt**, đổi **Tên quán** và **Địa chỉ**, bấm **Lưu cài đặt**; mở menu khách bằng QR, in phiếu tạm tính một bàn; rồi đổi lại tên cũ | Thanh bên đổi tên ngay; menu khách và phiếu in tên / địa chỉ mới; tên rỗng bị báo lỗi ngay dưới ô | | | |
 | UAT-30 | UC-11 | Nhân viên A mở ca, bán vài đơn, bấm **Đăng xuất**; chọn **Ở lại**, rồi bấm lại và chọn **Đến trang đóng ca**, đếm tiền, đóng ca, in phiếu, **Đăng xuất**. Nhân viên B (không mở ca) đăng xuất khi ca của A còn mở | A không thể về khi chưa đóng ca; phiếu chốt ca ghi đúng chênh lệch; B đăng xuất bình thường, ca của A vẫn chạy | | | |
 | UAT-31 | UC-02, UC-03 | Cuối ngày đóng ca. Sáng hôm sau, trước khi mở ca: khách quét QR một bàn và thử gửi đơn; nhân viên thử tiếp nhận đơn còn chờ. Sau đó nhân viên bấm **Mở ca** | Khách xem được menu nhưng nút gửi ghi "Quán chưa mở ca"; quầy thấy dải cảnh báo, nút Tiếp nhận khóa; mở ca xong điện thoại khách tự gửi được (không cần quét lại), quầy tiếp nhận được | | | |
+| UAT-32 | UC-13, UC-17 | Quản lý nhập phiếu kho cho **Sữa tươi** với giá cao hơn lần trước khoảng 20%; mở **Quản lý → Cảnh báo** và hộp thư đã cài, đọc các món tụt lãi và giá gợi ý, bấm **Đổi giá**; rồi sửa giá trên phiếu về mức cũ. | Có cảnh báo "Giá vốn tăng" và một email; số liệu khớp định lượng; giá món chỉ đổi khi tự sửa; sau khi sửa phiếu, cảnh báo cũ "Đã xử lý" và có thư đính chính. | | |
 
 ## 3. Kiểm tra chỉ làm được bằng tay (NOT_RUN trong kiểm thử tự động)
 

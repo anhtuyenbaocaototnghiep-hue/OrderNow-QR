@@ -6,10 +6,13 @@
 // Gọi SAU khi transaction nghiệp vụ đã commit; nơi gọi bắt lỗi — phát hiện / email lỗi không làm hỏng đóng ca / hoàn tiền.
 // Chạy lại an toàn (DedupeKey) → bị chọn làm nạn nhân deadlock thì chạy lại cả lượt (withDeadlockRetry).
 // Email không chứa thông tin khách: chữ nhân viên gõ (lý do) được che số điện thoại.
+// F-064 (ADR-023): nhập hàng giá cao hơn → báo món tụt lãi + giá gợi ý; cùng trang Cảnh báo, cùng hàng đợi email.
 import { config } from '../config.js';
 import { withDeadlockRetry } from '../db.js';
+import { classifyLines, menuImpact, referencePrice } from '../domain/costImpact.js';
 import { vnClock, toMinutes } from '../pricing/pricing.js';
 import * as alertsRepo from '../repositories/alertsRepo.js';
+import * as costAlertRepo from '../repositories/costAlertRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { baseline, judge, quietMinutesLeft } from '../utils/anomaly.js';
 import { addDays, vnDayStartUtc } from '../utils/time.js';
@@ -189,7 +192,7 @@ async function enqueueShiftReport(s, m, results) {
 }
 
 // ---------------- Tức thì ----------------
-async function enqueueImmediate(s, alert, rows) {
+async function enqueueImmediate(s, alert, rows, footer = DISCLAIMER) {
   if (!s.alertImmediate || !s.alertEmails.length) return null;
   const shop = (await shopInfo()).name;
   const email = await alertsRepo.enqueue({
@@ -198,8 +201,8 @@ async function enqueueImmediate(s, alert, rows) {
     dedupeKey: `ALERT:${alert.alertId}`,
     recipients: s.alertEmails,
     subject: `[${shop}] ⚠️ ${alert.title}`,
-    text: textMail(alert.title, rows, DISCLAIMER),
-    html: htmlMail(shop, alert.title, rows, DISCLAIMER),
+    text: textMail(alert.title, rows, footer),
+    html: htmlMail(shop, alert.title, rows, footer),
     notBefore: quietUntil(s),
   });
   if (email) mailService.kick();
@@ -272,6 +275,177 @@ async function checkCashVoid(voided, replacement, user) {
   return { alert, email: await enqueueImmediate(s, alert, rows) };
 }
 
+// ---------------- Giá vốn (F-064) ----------------
+const MAIL_ITEMS_MAX = 15;
+const NO_COST_ALERT = { alert: null, email: null };
+const pct = (n) => `${Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%`;
+/** Đơn giá theo đơn vị gốc có thể nhỏ hơn 1đ (đồng / ml) → giữ 2 số lẻ. */
+const unitVnd = (n) => `${Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}đ`;
+const costKey = (r) => `COST:${r.receiptId}:${r.editedAt ? new Date(r.editedAt).getTime() : 0}`;
+const pricesOf = (r) =>
+  r.lines
+    .map((l) => `${l.ingredientId}:${l.unitCost ?? ''}`)
+    .sort()
+    .join(',');
+
+/** Dòng giá của một nguyên liệu cho Detail: đơn giá gốc + giá theo gói nếu phiếu nhập theo gói. */
+function costLine(c, line, snap) {
+  return {
+    ingredientId: c.ingredientId,
+    name: line.name,
+    unit: line.unit,
+    oldCost: c.oldCost,
+    newCost: c.newCost,
+    risePct: c.risePct,
+    oldStock: Math.max(0, (snap.ingredients.get(c.ingredientId)?.stockQty ?? 0) - line.qty),
+    pack:
+      line.packUnitCode && line.packPrice && line.unitCost
+        ? { unit: line.packUnitCode, oldPrice: Math.round((c.oldCost * line.packPrice) / line.unitCost), newPrice: line.packPrice }
+        : null,
+  };
+}
+const costLineText = (c) =>
+  `${unitVnd(c.oldCost)}/${c.unit} → ${unitVnd(c.newCost)}/${c.unit} (+${pct(c.risePct)})${c.pack ? ` · ${c.pack.unit}: ${vnd(c.pack.oldPrice)} → ${vnd(c.pack.newPrice)}` : ''}`;
+
+function costTitle(receiptId, raised, suspects, items, unknown) {
+  const tail = `(phiếu nhập #${receiptId})`;
+  if (!raised.length) {
+    const what = suspects.length === 1 ? `Giá ${suspects[0].name} tăng ${pct(suspects[0].risePct)}` : `Giá ${suspects.length} nguyên liệu tăng rất mạnh`;
+    return `${what} — có nhập nhầm không? ${tail}`;
+  }
+  const what = raised.length === 1 ? `Giá ${raised[0].name} tăng ${pct(raised[0].risePct)}` : `Giá ${raised.length} nguyên liệu tăng`;
+  const effect = items.length ? `${items.length} món tụt lãi` : `${unknown.length} món chưa tính được lãi`;
+  return `${what} — ${effect}${suspects.length ? ', cần kiểm tra thêm giá nghi nhầm' : ''} ${tail}`;
+}
+
+function costRows(d) {
+  const suggest = (i) =>
+    i.suggestKeepMargin && i.suggestKeepMargin !== i.suggestKeepAmount
+      ? `gợi ý ${vnd(i.suggestKeepAmount)} (giữ tiền lãi) hoặc ${vnd(i.suggestKeepMargin)} (giữ % lãi)`
+      : `gợi ý ${vnd(i.suggestKeepAmount)}`;
+  return [
+    ...d.ingredients.map((c) => [c.name, costLineText(c), true]),
+    ...d.suspects.map((c) => [
+      `Kiểm tra giá ${c.name}`,
+      `${costLineText(c)} — nếu nhập nhầm, sửa phiếu nhập #${d.receiptId}. Chưa tính giá này vào lãi món.`,
+      true,
+    ]),
+    ...(d.items.length ? [['Nếu giữ giá bán', `mất khoảng ${vnd(d.monthlyLoss)} mỗi tháng`, true]] : []),
+    ...d.items
+      .slice(0, MAIL_ITEMS_MAX)
+      .map((i) => [
+        i.name,
+        `lãi ${pct(i.oldMargin)} → ${pct(i.newMargin)} · giá vốn ${vnd(i.oldCost)} → ${vnd(i.newCost)} · bán ${i.qty30}/30 ngày, mất ${vnd(i.monthlyLoss)}/tháng · ${suggest(i)}`,
+        i.newMargin < d.thresholds.marginMin,
+      ]),
+    ...(d.items.length > MAIL_ITEMS_MAX ? [['…', `và ${d.items.length - MAIL_ITEMS_MAX} món khác — xem trong app`, false]] : []),
+    ...d.unknown.map((u) => [u.name, `chưa tính được lãi — thiếu: ${u.missing.join(', ')}`, false]),
+    ...d.options.map((o) => [
+      `Tùy chọn ${o.name} (${o.group})`,
+      `giá vốn thêm ${vnd(o.oldCost)} → ${vnd(o.newCost)}, đang thu thêm ${vnd(o.priceDelta)}`,
+      false,
+    ]),
+    ...(d.ingredients.some((c) => c.oldStock > 0) ? [['Hàng giá cũ', 'vẫn còn trong kho nên lãi thực tế sẽ giảm dần, chưa giảm ngay', false]] : []),
+    ['Phiếu nhập', `#${d.receiptId}${d.supplier ? ` · ${d.supplier}` : ''} · ${d.receivedBy}`, false],
+  ];
+}
+const COST_FOOTER =
+  'Giá gợi ý chỉ để tham khảo, app không tự đổi giá. Tiền mất mỗi tháng = phần giá vốn tăng × số bán 30 ngày gần nhất; giá vốn chưa tính hao hụt.';
+
+/** Phiếu nhập vừa lưu (kể cả nhận theo đơn đặt) → so giá với mốc, báo món tụt lãi (ADR-023). receipt: stockRepo.getReceipt. */
+export const onStockReceived = (receipt) => withDeadlockRetry(() => checkCostRise(receipt));
+
+async function checkCostRise(receipt) {
+  if (receipt.status !== 'POSTED') return NO_COST_ALERT;
+  const priced = receipt.lines.filter((l) => l.unitCost !== null);
+  if (!priced.length) return NO_COST_ALERT;
+  const s = await getSettings();
+  const now = new Date();
+  const { history, anchors, later } = await costAlertRepo.priceHistory(
+    priced.map((l) => l.ingredientId),
+    receipt.receiptId,
+  );
+  const refs = new Map(
+    priced.map((l) => [l.ingredientId, referencePrice({ anchor: anchors.get(l.ingredientId) ?? null, history: history.get(l.ingredientId) ?? [], now })]),
+  );
+  const changes = classifyLines(
+    priced.filter((l) => !later.has(l.ingredientId)), // đã có phiếu mới hơn → giá này không còn là giá hiện tại
+    refs,
+    { risePct: s.alertCostRisePct },
+  );
+  if (!changes.some((c) => c.major || c.suspect)) return NO_COST_ALERT;
+  const snap = await costAlertRepo.snapshot();
+  const impact = menuImpact(snap, changes, { marginDrop: s.alertCostMarginDrop, marginMin: s.alertCostMarginMin });
+  const causeIds = new Set([...impact.items, ...impact.unknown].flatMap((i) => i.causeIds));
+  const lineOf = new Map(receipt.lines.map((l) => [l.ingredientId, l]));
+  const raised = changes.filter((c) => c.major && causeIds.has(c.ingredientId));
+  const suspects = changes.filter((c) => c.suspect);
+  if (!raised.length && !suspects.length) return NO_COST_ALERT;
+  const ingredients = raised.map((c) => costLine(c, lineOf.get(c.ingredientId), snap));
+  const suspectLines = suspects.map((c) => costLine(c, lineOf.get(c.ingredientId), snap));
+  const detail = {
+    receiptId: receipt.receiptId,
+    supplier: receipt.supplier ? maskPhones(receipt.supplier) : null,
+    receivedBy: receipt.receivedBy,
+    ingredients,
+    suspects: suspectLines,
+    items: impact.items.map(({ causeIds: _c, ...i }) => i),
+    unknown: impact.unknown.map(({ causeIds: _c, ...u }) => u),
+    options: raised.length ? impact.options : [],
+    monthlyLoss: impact.monthlyLoss,
+    thresholds: { risePct: s.alertCostRisePct, marginDrop: s.alertCostMarginDrop, marginMin: s.alertCostMarginMin },
+  };
+  const alert = await immediateAlert({
+    kind: 'COST_RISE',
+    severity: suspects.length || impact.items.some((i) => i.newMargin < s.alertCostMarginMin) ? 'HIGH' : 'MEDIUM',
+    title: costTitle(receipt.receiptId, ingredients, suspectLines, impact.items, impact.unknown),
+    detail,
+    dedupeKey: costKey(receipt),
+  });
+  await costAlertRepo.addMarks(
+    alert.alertId,
+    receipt.receiptId,
+    raised.map((c) => ({ ingredientId: c.ingredientId, unitCost: c.newCost })),
+  );
+  return { alert, email: await enqueueImmediate(s, alert, costRows(detail), COST_FOOTER) };
+}
+
+/** Sửa / hủy phiếu nhập (D-88): đổi giá hoặc hủy → gỡ cảnh báo cũ + thư đính chính, sửa thì tính lại. before / after: stockRepo.getReceipt. */
+export const onReceiptRevised = (before, after, user) => withDeadlockRetry(() => checkRevisedReceipt(before, after, user));
+
+async function checkRevisedReceipt(before, after, user) {
+  const voided = after.status !== 'POSTED';
+  if (!voided && pricesOf(before) === pricesOf(after)) return NO_COST_ALERT;
+  const note = `Phiếu nhập #${after.receiptId} đã ${voided ? 'hủy' : 'sửa giá'} — cảnh báo này không còn hiệu lực`;
+  const retired = await costAlertRepo.retireForReceipt(after.receiptId, { keepKey: voided ? null : costKey(after), note, userId: user.userId });
+  if (retired) await enqueueCostCorrection(after, note, voided);
+  return voided ? NO_COST_ALERT : checkCostRise(after);
+}
+
+async function enqueueCostCorrection(receipt, note, voided) {
+  const s = await getSettings();
+  if (!s.alertImmediate || !s.alertEmails.length) return;
+  const shop = (await shopInfo()).name;
+  const at = new Date(voided ? receipt.voidedAt : receipt.editedAt);
+  const rows = [
+    ['Người thao tác', `${(voided ? receipt.voidedBy : receipt.editedBy) ?? ''} · ${fmtTime(at)}`, false],
+    ['Lý do', maskPhones((voided ? receipt.voidReason : receipt.editReason) ?? ''), false],
+  ];
+  const footer = voided
+    ? 'Bỏ qua email báo động giá vốn trước đó của phiếu này.'
+    : 'Bỏ qua email báo động giá vốn trước đó của phiếu này. Nếu giá đúng vẫn làm món tụt lãi, app sẽ gửi email mới.';
+  const email = await alertsRepo.enqueue({
+    kind: 'NOTICE',
+    dedupeKey: `COSTFIX:${receipt.receiptId}:${at.getTime()}`,
+    recipients: s.alertEmails,
+    subject: `[${shop}] Đính chính: phiếu nhập #${receipt.receiptId} đã ${voided ? 'hủy' : 'sửa giá'}`,
+    text: textMail(note, rows, footer),
+    html: htmlMail(shop, note, rows, footer),
+    notBefore: quietUntil(s),
+  });
+  if (email) mailService.kick();
+}
+
 // ---------------- Đổi cài đặt cảnh báo ----------------
 const onOff = (v) => (v ? 'bật' : 'tắt');
 const clock = (v) => v || 'tắt';
@@ -290,6 +464,9 @@ const WATCHED = [
   ['alertManualDiscountMax', 'Lượt giảm giá tay tối đa / ca', String],
   ['alertRefundBig', 'Hoàn tiền "lớn" từ', vnd],
   ['alertUseStats', 'So với mức bình thường', onOff],
+  ['alertCostRisePct', 'Báo khi giá nhập tăng từ', (v) => `${v}%`],
+  ['alertCostMarginDrop', 'Báo khi tỷ lệ lãi tụt từ', (v) => `${v} điểm %`],
+  ['alertCostMarginMin', 'Tỷ lệ lãi tối thiểu', (v) => `${v}%`],
 ];
 const sameList = (a, b) => [...a].sort().join(',') === [...b].sort().join(',');
 
