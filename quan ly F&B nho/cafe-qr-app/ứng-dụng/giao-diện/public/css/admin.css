@@ -1233,3 +1233,86 @@ table.pnl-flow {
     display: none;
   }
 }
+
+/* S-26 Hội viên dễ theo dõi (TASK-082) */
+.mem-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  align-items: start;
+}
+.mem-grid > * {
+  min-width: 0;
+}
+@media (min-width: 1100px) {
+  .mem-grid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1.2fr);
+  }
+}
+.mem-views {
+  margin-bottom: 0.75rem;
+}
+.mem-views [aria-pressed='true'] {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
+.mem-progress progress {
+  width: 100%;
+  max-width: 14rem;
+  height: 0.5rem;
+  accent-color: var(--c-accent-600);
+}
+.mem-table td {
+  vertical-align: top;
+}
+ul.mem-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mem-feed li {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--c-border);
+}
+.mem-delta {
+  min-width: 3.5rem;
+  font-weight: 700;
+  text-align: right;
+}
+.mem-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-surface-2);
+}
+.mem-big {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.mem-edit > summary {
+  cursor: pointer;
+  color: var(--c-primary);
+  font-weight: 600;
+}
+
+/* Nút trông như liên kết (tên hội viên trong "Tích điểm gần đây" — TASK-082) */
+.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--c-primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.mem-kpis {
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+}

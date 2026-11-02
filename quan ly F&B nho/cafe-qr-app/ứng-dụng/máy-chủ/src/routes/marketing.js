@@ -26,9 +26,18 @@ const zImage = () =>
 
 // ---- Hội viên ----
 marketingRouter.get('/members', async (req, res) => {
-  const q = parse(z.object({ q: z.string().max(100).optional().default(''), page: z.coerce.number().int().min(1).default(1) }), req.query);
+  const q = parse(
+    z.object({
+      q: z.string().max(100).optional().default(''),
+      page: z.coerce.number().int().min(1).default(1),
+      view: z.enum(memberService.MEMBER_VIEWS).default('all'), // TASK-082: lọc nhanh
+    }),
+    req.query,
+  );
   res.json(await memberService.adminList(q));
 });
+// TASK-082: tổng quan + tích điểm gần đây — đặt trước /members/:id
+marketingRouter.get('/members/overview', async (_req, res) => res.json(await memberService.adminOverview()));
 marketingRouter.get('/members/:id', async (req, res) => res.json(await memberService.adminGet(paramId(req))));
 marketingRouter.put('/members/:id', async (req, res) => {
   const body = parse(

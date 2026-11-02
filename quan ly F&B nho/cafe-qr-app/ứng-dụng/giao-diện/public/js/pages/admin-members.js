@@ -1,6 +1,8 @@
 // S-26 Hội viên (FEATURE-014): danh sách che số (D-16), tìm theo SĐT đầy đủ hoặc tên, lịch sử, sửa tên/hạng/ghi chú,
 // "Ẩn danh theo yêu cầu"; tab Hạng hội viên (mức chi tiêu + % chiết khấu — D-5).
 // ADR-006: sổ điểm + điều chỉnh có lý do, thẻ tem, voucher, người đã giới thiệu (F-039, F-038); từ chối nhận tin chiến dịch (F-037).
+// TASK-082 (dễ theo dõi): ô tổng quan (tích điểm hôm nay, lượt thu có hội viên, khách quay lại…), lọc nhanh (sắp lên hạng, lâu chưa quay lại,
+// sinh nhật…), tiến độ lên hạng, "Tích điểm gần đây"; hồ sơ hội viên: điểm / hạng / đã chi nổi bật, sửa thông tin thu gọn, nút điểm nhanh.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, showFieldErrors, toast } from '../ui.js';
@@ -8,7 +10,7 @@ import { icon } from '../icons.js';
 
 await mountAdminShell('members');
 
-const state = { tab: 'members', q: '', page: 1, tiers: [] };
+const state = { tab: 'members', q: '', page: 1, view: 'all', tiers: [] };
 const body = el('div');
 const tabs = el(
   'div',
@@ -48,8 +50,115 @@ async function load() {
 
 const tierName = (code) => state.tiers.find((t) => t.tierCode === code)?.name ?? code;
 
+const VIEWS = [
+  ['all', 'Tất cả', null],
+  ['new', 'Mới tháng này', 'newThisMonth'],
+  ['top', 'Chi nhiều nhất', null],
+  ['points', 'Nhiều điểm', null],
+  ['near', 'Sắp lên hạng', 'nearTier'],
+  ['lapsed', 'Lâu chưa quay lại', 'lapsed'],
+  ['birthday', 'Sinh nhật tháng này', 'birthdays'],
+];
+const EMPTY = {
+  all: 'Chưa có hội viên nào khớp.',
+  new: 'Tháng này chưa có hội viên mới.',
+  top: 'Chưa có hội viên nào khớp.',
+  points: 'Chưa hội viên nào có điểm.',
+  near: 'Chưa có ai sắp lên hạng (đã chi từ 80% mức hạng kế).',
+  lapsed: 'Không có hội viên nào vắng quá 30 ngày.',
+  birthday: 'Tháng này không có hội viên nào sinh nhật (hoặc chưa ghi ngày sinh).',
+};
+const pct = (a, b) => (b ? Math.round((a * 100) / b) : 0);
+/** "hôm nay" / "hôm qua" / "5 ngày trước" — theo ngày giờ quán. */
+function ago(d) {
+  if (!d) return 'chưa ghé';
+  const day = (x) => Math.floor((new Date(x).getTime() + 7 * 3600e3) / 86400e3);
+  const n = day(Date.now()) - day(d);
+  return n <= 0 ? 'hôm nay' : n === 1 ? 'hôm qua' : `${n} ngày trước`;
+}
+/** Hạng kế tiếp theo bảng hạng (null = đang ở hạng cao nhất). */
+function nextTierOf(m) {
+  const sorted = [...state.tiers].sort((a, b) => a.minSpent - b.minSpent);
+  const cur = sorted.find((t) => t.tierCode === m.tierCode);
+  const next = sorted.find((t) => t.minSpent > (cur?.minSpent ?? 0));
+  return next ? { name: next.name, minSpent: next.minSpent, remaining: Math.max(0, next.minSpent - m.totalSpent) } : null;
+}
+/** Thanh tiến độ lên hạng + câu "còn X lên Y". */
+const tierProgress = (m, next) =>
+  next
+    ? el(
+        'div',
+        { class: 'mem-progress' },
+        el('progress', { max: next.minSpent, value: Math.min(m.totalSpent, next.minSpent), 'aria-label': `Tiến độ lên hạng ${next.name}` }),
+        el('div', { class: 'small muted' }, next.remaining ? `còn ${money(next.remaining)} lên ${next.name}` : `đủ mức lên ${next.name}`),
+      )
+    : el('div', { class: 'small muted' }, 'Hạng cao nhất');
+const kpi = (label, value, hint = '') =>
+  el(
+    'div',
+    { class: 'card kpi' },
+    el('div', { class: 'label' }, label),
+    el('div', { class: 'value' }, value),
+    hint ? el('div', { class: 'small muted' }, hint) : null,
+  );
+
+function overviewCards(o) {
+  const share = pct(o.memberPaymentsToday, o.paymentsToday);
+  return el(
+    'div',
+    { class: 'kpis mem-kpis' },
+    kpi('Hội viên', num(o.total), `+${num(o.newThisMonth)} tháng này`),
+    kpi('Quay lại trong 30 ngày', num(o.active30), `${pct(o.active30, o.total)}% hội viên`),
+    kpi('Điểm tích hôm nay', `+${num(o.earnToday)}`, `${num(o.earnMembersToday)} khách · 7 ngày +${num(o.earn7)}`),
+    kpi(
+      'Lượt thu có hội viên hôm nay',
+      `${num(o.memberPaymentsToday)} / ${num(o.paymentsToday)}`,
+      o.paymentsToday && share < 50 ? 'Nhắc nhân viên hỏi SĐT để khách được tích điểm' : `${share}% lượt thu`,
+    ),
+    kpi('Doanh thu từ hội viên (30 ngày)', `${pct(o.memberRevenue30, o.revenue30)}%`, money(o.memberRevenue30)),
+    kpi('Điểm khách đang giữ', num(o.pointsHeld), 'chưa đổi quà'),
+  );
+}
+
+const PT_LABEL = { EARN: 'tích khi thu tiền', REDEEM: 'đổi quà', ADJUST: 'quản lý điều chỉnh', EXPIRE: 'hết hạn', REFUND: 'trừ lại do hoàn tiền' };
+
+function recentCard(o) {
+  return el(
+    'section',
+    { class: 'card', 'aria-labelledby': 'mem-recent-title' },
+    el('h2', { id: 'mem-recent-title' }, 'Tích điểm gần đây'),
+    el('p', { class: 'small muted' }, 'Điểm tự cộng lúc thu tiền khi bàn / đơn đã gắn SĐT hội viên (tỷ lệ điểm chỉnh ở Khách hàng → Tích điểm & quà).'),
+    o.recent.length
+      ? el(
+          'ul',
+          { class: 'mem-feed' },
+          o.recent.map((t) =>
+            el(
+              'li',
+              {},
+              el('span', { class: `mem-delta ${t.delta > 0 ? 'pos-val' : 'neg'}` }, `${t.delta > 0 ? '+' : '−'}${num(Math.abs(t.delta))}`),
+              el(
+                'div',
+                {},
+                el('button', { class: 'linklike', type: 'button', onclick: () => openMember(t.memberId) }, t.fullName),
+                el(
+                  'div',
+                  { class: 'small muted' },
+                  `${dateTime(t.createdAt)} · ${PT_LABEL[t.type] ?? t.type}${t.paymentId ? ` · lượt thu #${t.paymentId}` : ''}${t.note ? ` — ${t.note}` : ''}`,
+                ),
+              ),
+            ),
+          ),
+        )
+      : el('p', { class: 'muted' }, 'Chưa có lượt tích điểm nào.'),
+  );
+}
+
 async function renderMembers() {
-  const r = await staffApi(`/api/admin/members?${new URLSearchParams({ q: state.q, page: state.page })}`);
+  const [r, o] = await Promise.all([
+    staffApi(`/api/admin/members?${new URLSearchParams({ q: state.q, page: state.page, view: state.view })}`),
+    staffApi('/api/admin/members/overview'),
+  ]);
   const pages = Math.max(1, Math.ceil(r.total / r.pageSize));
   const q = el('input', {
     class: 'input',
@@ -64,30 +173,42 @@ async function renderMembers() {
     load();
   };
   q.addEventListener('keydown', (e) => e.key === 'Enter' && search());
-  clear(
-    body,
-    el(
-      'div',
-      { class: 'filters' },
-      q,
-      el('button', { class: 'btn btn-primary', type: 'button', onclick: search }, 'Tìm'),
-      el('span', { class: 'muted small' }, `${r.total} hội viên · SĐT được che, tìm bằng số đầy đủ`),
+  const chips = el(
+    'div',
+    { class: 'row wrap mem-views', role: 'group', 'aria-label': 'Lọc nhanh hội viên' },
+    VIEWS.map(([key, label, countKey]) =>
+      el(
+        'button',
+        {
+          class: 'btn btn-sm',
+          type: 'button',
+          'aria-pressed': String(state.view === key),
+          onclick: () => {
+            state.view = key;
+            state.page = 1;
+            load();
+          },
+        },
+        countKey ? `${label} (${num(o[countKey])})` : label,
+      ),
     ),
+  );
+  const table =
     r.items.length === 0
-      ? el('div', { class: 'empty card' }, 'Chưa có hội viên nào khớp.')
+      ? el('div', { class: 'empty' }, state.q ? 'Chưa có hội viên nào khớp.' : EMPTY[state.view])
       : el(
           'div',
           { class: 'table-wrap' },
           el(
             'table',
-            { class: 'table' },
+            { class: 'table mem-table' },
             el(
               'thead',
               {},
               el(
                 'tr',
                 {},
-                ['Họ tên', 'SĐT', 'Hạng', 'Đã chi', 'Lượt', 'Điểm', 'Lần cuối', ''].map((h, i) => el('th', { class: i >= 3 && i <= 5 ? 'num' : '' }, h)),
+                ['Hội viên', 'Điểm', 'Đã chi · lên hạng', 'Lần cuối ghé', ''].map((h, i) => el('th', { class: i === 1 ? 'num' : '' }, h)),
               ),
             ),
             el(
@@ -97,54 +218,84 @@ async function renderMembers() {
                 el(
                   'tr',
                   { style: { cursor: 'pointer' }, onclick: () => openMember(m.memberId) },
-                  el('td', {}, el('strong', {}, m.fullName), m.isActive ? null : el('span', { class: 'pill off' }, 'Đã khóa')),
-                  el('td', { class: 'mono' }, m.phone),
                   el(
                     'td',
                     {},
+                    el('strong', {}, m.fullName),
+                    ' ',
                     el('span', { class: 'pill' }, m.tierName),
+                    m.isActive ? null : el('span', { class: 'pill off' }, 'Đã khóa'),
                     m.firstOrderDiscount ? el('span', { class: 'pill on' }, 'chưa dùng ưu đãi đơn đầu') : null,
+                    el('div', { class: 'small muted mono' }, m.phone),
                   ),
-                  el('td', { class: 'num' }, money(m.totalSpent)),
-                  el('td', { class: 'num' }, num(m.visitCount)),
-                  el('td', { class: 'num' }, num(m.points)),
-                  el('td', { class: 'nowrap' }, m.lastVisitAt ? dateTime(m.lastVisitAt) : '—'),
-                  el('td', {}, el('button', { class: 'btn btn-sm', type: 'button' }, 'Xem')),
+                  el('td', { class: 'num' }, el('strong', {}, num(m.points))),
+                  el('td', {}, money(m.totalSpent), el('span', { class: 'small muted' }, ` · ${num(m.visitCount)} lần`), tierProgress(m, m.nextTier)),
+                  el(
+                    'td',
+                    { class: 'nowrap' },
+                    ago(m.lastVisitAt),
+                    m.birthDate && state.view === 'birthday'
+                      ? el('div', { class: 'small muted' }, `sinh nhật ${m.birthDate.slice(8, 10)}/${m.birthDate.slice(5, 7)}`)
+                      : null,
+                  ),
+                  el('td', {}, el('button', { class: 'btn btn-sm', type: 'button', 'aria-label': `Xem ${m.fullName}` }, 'Xem')),
                 ),
               ),
             ),
           ),
-        ),
+        );
+  clear(
+    body,
+    overviewCards(o),
     el(
       'div',
-      { class: 'pager' },
+      { class: 'mem-grid' },
       el(
-        'button',
-        {
-          class: 'btn btn-sm',
-          type: 'button',
-          disabled: state.page <= 1,
-          onclick: () => {
-            state.page--;
-            load();
-          },
-        },
-        '‹ Trước',
+        'section',
+        { class: 'card', 'aria-labelledby': 'mem-list-title' },
+        el('h2', { id: 'mem-list-title' }, 'Danh sách hội viên'),
+        chips,
+        el(
+          'div',
+          { class: 'filters' },
+          q,
+          el('button', { class: 'btn btn-primary', type: 'button', onclick: search }, 'Tìm'),
+          el('span', { class: 'muted small' }, `${num(r.total)} hội viên · SĐT được che, tìm bằng số đầy đủ`),
+        ),
+        table,
+        el(
+          'div',
+          { class: 'pager' },
+          el(
+            'button',
+            {
+              class: 'btn btn-sm',
+              type: 'button',
+              disabled: state.page <= 1,
+              onclick: () => {
+                state.page--;
+                load();
+              },
+            },
+            '‹ Trước',
+          ),
+          el('span', { class: 'small' }, `Trang ${state.page}/${pages}`),
+          el(
+            'button',
+            {
+              class: 'btn btn-sm',
+              type: 'button',
+              disabled: state.page >= pages,
+              onclick: () => {
+                state.page++;
+                load();
+              },
+            },
+            'Sau ›',
+          ),
+        ),
       ),
-      el('span', { class: 'small' }, `Trang ${state.page}/${pages}`),
-      el(
-        'button',
-        {
-          class: 'btn btn-sm',
-          type: 'button',
-          disabled: state.page >= pages,
-          onclick: () => {
-            state.page++;
-            load();
-          },
-        },
-        'Sau ›',
-      ),
+      recentCard(o),
     ),
   );
 }
@@ -182,12 +333,27 @@ async function openMember(id) {
       'div',
       { class: 'stack' },
       el(
+        'div',
+        { class: 'mem-summary' },
+        el('div', {}, el('div', { class: 'small muted' }, 'Điểm hiện có'), el('div', { class: 'mem-big' }, num(m.points))),
+        el('div', {}, el('div', { class: 'small muted' }, 'Hạng'), el('div', { class: 'mem-big' }, m.tierName), tierProgress(m, nextTierOf(m))),
+        el(
+          'div',
+          {},
+          el('div', { class: 'small muted' }, 'Đã chi'),
+          el('div', { class: 'mem-big' }, money(m.totalSpent)),
+          el('div', { class: 'small muted' }, `${num(m.visitCount)} lần · lần cuối ${ago(m.lastVisitAt)}`),
+        ),
+      ),
+      el(
         'p',
         { class: 'small muted' },
-        `SĐT ${m.phone} · đăng ký ${dateTime(m.createdAt)} (đồng ý lưu thông tin lúc ${dateTime(m.consentAt)}) · đã chi ${money(m.totalSpent)} · ${m.visitCount} lượt · ${m.points} điểm`,
+        `SĐT ${m.phone} · đăng ký ${dateTime(m.createdAt)} (đồng ý lưu thông tin lúc ${dateTime(m.consentAt)})${m.birthDate ? ` · sinh nhật ${m.birthDate.slice(8, 10)}/${m.birthDate.slice(5, 7)}` : ''}`,
       ),
-      m.anonymizedAt ? el('div', { class: 'alert warning' }, `Đã ẩn danh lúc ${dateTime(m.anonymizedAt)}`) : form,
-      el('h3', { style: { fontSize: '1rem', marginTop: '0.5rem' } }, 'Lịch sử'),
+      m.anonymizedAt
+        ? el('div', { class: 'alert warning' }, `Đã ẩn danh lúc ${dateTime(m.anonymizedAt)}`)
+        : el('details', { class: 'mem-edit' }, el('summary', {}, 'Sửa thông tin (tên, hạng, ngày sinh, ghi chú)'), form),
+      el('h3', { style: { fontSize: '1rem', marginTop: '0.5rem' } }, 'Lịch sử mua'),
       history.length === 0
         ? el('p', { class: 'muted' }, 'Chưa có giao dịch.')
         : el(
@@ -292,6 +458,7 @@ async function renderLoyalty(m, box) {
   clear(
     box,
     el('h3', { style: { fontSize: '1rem', marginTop: '0.5rem' } }, 'Điểm · tem · voucher'),
+    el('p', { class: 'small muted' }, 'Cộng / trừ điểm tay (khách quên đọc SĐT, tặng điểm xin lỗi…) — bắt buộc ghi lý do, có trong lịch sử điểm.'),
     el('label', { class: 'check' }, optOut, 'Khách từ chối nhận tin chiến dịch (opt-out)'),
     d.cards.length
       ? el(
@@ -307,6 +474,24 @@ async function renderLoyalty(m, box) {
           ),
         )
       : el('p', { class: 'small muted' }, 'Chưa có thẻ tem.'),
+    el(
+      'div',
+      { class: 'row wrap', role: 'group', 'aria-label': 'Điểm nhanh' },
+      [10, 50, 100, -10].map((v) =>
+        el(
+          'button',
+          {
+            class: 'btn btn-sm',
+            type: 'button',
+            onclick: () => {
+              delta.value = String(v);
+              reason.focus();
+            },
+          },
+          v > 0 ? `+${v}` : `−${-v}`,
+        ),
+      ),
+    ),
     el(
       'div',
       { class: 'row wrap' },

@@ -52,6 +52,9 @@
   - AC-014-03: Tổng chi vượt 1.000.000đ → `MemberTransactions` ghi MEMBER → LOYAL; lần sau giảm 5%.
   - AC-014-04: SĐT sai → 400. Tra cứu lần thứ 11 trong một phút từ một IP → 429.
   - AC-014-05: Ẩn danh → không còn tên/SĐT, tra cứu không thấy, `Payments` vẫn đủ.
+  - AC-014-09: `GET /api/admin/members/overview` (ADMIN) trả đúng: tổng hội viên, mới tháng này, quay lại trong 30 ngày, vắng > 30 ngày, sinh nhật tháng này, sắp lên hạng, điểm khách đang giữ, điểm tích hôm nay / 7 ngày (tự tích lúc thu tiền), lượt thu có hội viên hôm nay / tổng, doanh thu từ hội viên 30 ngày, 12 lần cộng / trừ điểm gần nhất; nhân viên → 403. _(TASK-082, 02/11/2026)_
+  - AC-014-10: `GET /api/admin/members?view=` lọc đúng sắp lên hạng (≥ 80% mức hạng kế, kèm `nextTier.remaining`), lâu chưa quay lại, sinh nhật tháng này, mới tháng này, chi nhiều / nhiều điểm (thứ tự); hạng cao nhất → `nextTier: null`; SĐT vẫn che; view lạ → 400. _(TASK-082)_
+  - AC-014-11: Trang Hội viên: khách mua → điểm hiện ở "Tích điểm gần đây" và ô "Điểm tích hôm nay"; lọc nhanh đổi danh sách; dòng có tiến độ "còn X lên hạng Y"; hồ sơ có khung Điểm / Hạng / Đã chi, sửa thông tin thu gọn, nút điểm nhanh; 390 px không cuộn ngang. _(TASK-082)_
   - AC-014-06: Khách gọi `/api/admin/members` → 401. STAFF → 403. Danh sách quản lý che số (`09xx***678`).
   - AC-014-07: Đăng ký hội viên không tick đồng ý → 400 `CONSENT_REQUIRED`; SĐT đã là hội viên (kể cả viết dạng +84…) → 409 `PHONE_EXISTS`. _(bổ sung — TASK-057, 20/10/2026)_
   - AC-014-08: Khách gắn SĐT hội viên vào phiên không thuộc điện thoại của mình → 403; gắn vào phiên của mình → 200, quầy nhận `session.member_changed` chỉ có tên che ("Nguyễn V. A."), quầy tra cứu thấy tên đầy đủ. _(bổ sung — TASK-057, 20/10/2026)_

@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 380 test, sửa lúc 2026-11-02 12:36 UTC
-- `npm run test:e2e` (JSON): 57 test, sửa lúc 2026-11-02 12:39 UTC
+- `npm test` (JUnit): 382 test, sửa lúc 2026-11-02 12:54 UTC
+- `npm run test:e2e` (JSON): 58 test, sửa lúc 2026-11-02 12:57 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 146 |
-| Acceptance Criteria | 390 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 390 |
+| Acceptance Criteria | 393 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 393 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -188,6 +188,9 @@
 | AC-014-06 | TC-014-06 | F-014 | US-014-4 | ACT-ADMIN | UC-10 | MOD-LOYALTY, MOD-AUTH | SCR-26 | BR-024, BR-044 | Integration: `members.test.js` › khách gọi API quản lý → 401, nhân viên → 403; danh sách che số; tìm theo SĐT đầy đủ — **PASS** | **PASS** |
 | AC-014-07 | TC-014-07 | F-014 | US-014-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF | UC-10, UC-04 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-13, SCR-12 | BR-021, BR-024, BR-025 | Integration: `members.test.js` › SĐT sai định dạng → 400; chưa có → found=false; đăng ký phải đồng ý; trùng → 409 — **PASS** | **PASS** |
 | AC-014-08 | TC-014-08 | F-014 | US-014-3 | ACT-MEMBER | UC-10 | MOD-LOYALTY | SCR-03, SCR-26 | BR-024 | Integration: `members.test.js` › gắn hội viên vào phiên: khách khác 403; quầy nhận session.member_changed; quầy tra cứu thấy tên đầy đủ — **PASS** | **PASS** |
+| AC-014-09 | TC-014-09 | F-014 | US-014-4 | ACT-ADMIN | UC-10 | MOD-LOYALTY, MOD-AUTH | SCR-26 | BR-024, BR-044 | Integration: `member-overview.test.js` › AC-014-09: tổng quan — số hội viên, mới tháng này, quay lại 30 ngày, điểm tích hôm nay, lượt thu có hội viên, doanh thu từ hội viên, tích điểm gần đây — **PASS** | **PASS** |
+| AC-014-10 | TC-014-10 | F-014 | US-014-4 | ACT-ADMIN | UC-10 | MOD-LOYALTY, MOD-AUTH | SCR-26 | BR-024, BR-044 | Integration: `member-overview.test.js` › AC-014-10: lọc nhanh (sắp lên hạng, lâu chưa quay lại, sinh nhật, chi nhiều, nhiều điểm, mới) và hạng kế tiếp trên mỗi dòng — **PASS** | **PASS** |
+| AC-014-11 | TC-014-11 | F-014 | US-014-4 | ACT-ADMIN | UC-10 | MOD-LOYALTY, MOD-AUTH | SCR-26 | BR-024, BR-044 | E2E: `flow.spec.js` › hội viên dễ theo dõi: khách mua → điểm tự tích hiện ở "Tích điểm gần đây"; ô tổng quan, lọc nhanh, tiến độ lên hạng; hồ sơ có điểm / hạng nổi bật, sửa thông tin thu gọn, nút điểm nhanh (F-014, AC-014-11) — **PASS** | **PASS** |
 | AC-015-01 | TC-015-01 | F-015 | US-015-1 | ACT-ADMIN | UC-14 | MOD-MENU, MOD-INVENTORY | SCR-27 | BR-011, BR-029 | Integration: `sales.test.js` › bán combo ×2: 1 dòng cha + dòng con giá 0; tổng = giá combo; hoàn tất trừ kho theo BOM thành phần — **PASS**<br>Unit: `pricing.test.js` › combo: không nhận ITEM_PRICE, sinh dòng con theo số lượng; tùy chọn trên combo → lỗi — **PASS** | **PASS** |
 | AC-015-02 | TC-015-02 | F-015 | US-015-2 | ACT-GUEST, ACT-STAFF | UC-02, UC-05 | MOD-MENU, MOD-ORDER | SCR-02, SCR-13, SCR-12 | BR-009, BR-029 | Integration: `sales.test.js` › thành phần tắt "còn bán" → combo báo hết + gửi đơn bị từ chối; đổi giá lẻ → tiết kiệm đổi, đơn cũ giữ nguyên; xóa thành phần bị chặn — **PASS** | **PASS** |
 | AC-015-03 | TC-015-03 | F-015 | US-015-1 | ACT-ADMIN | UC-14 | MOD-MENU, MOD-INVENTORY | SCR-27 | BR-011, BR-029 | Integration: `sales.test.js` › thành phần tắt "còn bán" → combo báo hết + gửi đơn bị từ chối; đổi giá lẻ → tiết kiệm đổi, đơn cũ giữ nguyên; xóa thành phần bị chặn — **PASS** | **PASS** |

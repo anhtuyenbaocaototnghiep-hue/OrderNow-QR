@@ -361,3 +361,9 @@ flowchart LR
 - **Bảng sổ quỹ:** 5 cột Giờ · Khoản · Số tiền · Trạng thái · nút.
 - **S-15 thẻ Sổ quỹ trong ca:** nút "Chi tiền" (chính), "Thu thêm"; câu hướng dẫn dùng nút nào.
 - **S-36 Sổ quỹ:** nút kỳ (Hôm nay · **7 ngày** · Tháng này · Tháng trước) + "Lọc thêm (n)" thu gọn (ngày, loại, danh mục, trạng thái); dải cảnh báo "Có n khoản chờ duyệt" + "Xem các khoản chờ duyệt"; ô số Đã chi · Đã thu thêm · Két thay đổi · Chờ duyệt; đầu trang: Chi tiền / Thu thêm (khi có ca mở, không có thì ghi "Mở ca ở màn quầy để ghi khoản") · Xuất CSV.
+
+## TASK-082 — S-26 Hội viên dễ theo dõi (02/11/2026)
+
+- Trên cùng: 6 ô số (Hội viên · Quay lại trong 30 ngày · Điểm tích hôm nay · Lượt thu có hội viên hôm nay · Doanh thu từ hội viên 30 ngày · Điểm khách đang giữ).
+- Hai cột (≥ 1100 px): **Danh sách hội viên** (nhóm nút lọc nhanh `aria-pressed` kèm số đếm, ô tìm, bảng Hội viên · Điểm · Đã chi + `<progress>` lên hạng · Lần cuối ghé, phân trang) | **Tích điểm gần đây** (12 dòng, tên là nút mở hồ sơ).
+- Hồ sơ (hộp thoại): khung Điểm hiện có · Hạng (+ tiến độ) · Đã chi; dòng SĐT che, ngày đăng ký, sinh nhật; "Sửa thông tin" là `<details>` thu gọn; Lịch sử mua; Điểm · tem · voucher có nhóm nút "Điểm nhanh" (+10, +50, +100, −10) điền sẵn ô điểm, vẫn phải ghi lý do.

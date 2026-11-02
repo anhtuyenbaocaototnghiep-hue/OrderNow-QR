@@ -559,3 +559,10 @@ Chi tiết: [FEATURE-064](../chức-năng/FEATURE-064.md), BR-100, BR-101. Khôn
 ## Bổ sung TASK-081 — sổ quỹ dễ dùng (02/11/2026)
 
 - `GET /api/shifts/current`: thêm `cashApproveThreshold` (số, ngưỡng chi cần duyệt — `cash.approve_threshold`). Hộp ghi khoản dùng để báo trước khoản nào sẽ "Chờ duyệt"; máy chủ vẫn là nơi quyết định trạng thái.
+
+## Bổ sung TASK-082 — hội viên dễ theo dõi (02/11/2026)
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `GET /api/admin/members?q&page&view` | ADMIN | Như cũ + `view` = `all` (mặc định) \| `new` \| `top` \| `points` \| `near` \| `lapsed` \| `birthday` (sai → 400); mỗi dòng thêm `nextTier: { name, minSpent, remaining } \| null` |
+| `GET /api/admin/members/overview` | ADMIN | `{ total, newThisMonth, active30, lapsed, birthdays, nearTier, pointsHeld, earnToday, earnMembersToday, earn7, paymentsToday, memberPaymentsToday, revenue30, memberRevenue30, recent: [{ memberId, fullName, delta, type, note, paymentId, createdAt }] }` — mốc ngày / tháng theo giờ quán; hội viên đã ẩn danh không có trong `recent` |

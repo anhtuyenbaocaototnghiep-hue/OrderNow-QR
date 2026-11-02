@@ -2022,3 +2022,49 @@ test('sổ quỹ dễ dùng: chọn danh mục bằng nút, số tiền nhanh, n
   await P.setViewportSize({ width: 1366, height: 860 });
   await apiAs(request, 'post', `/api/cash-transactions/${pending.cashTxnId}/reject`, { rejectReason: 'dọn dữ liệu E2E' });
 });
+
+test('hội viên dễ theo dõi: khách mua → điểm tự tích hiện ở "Tích điểm gần đây"; ô tổng quan, lọc nhanh, tiến độ lên hạng; hồ sơ có điểm / hạng nổi bật, sửa thông tin thu gọn, nút điểm nhanh (F-014, AC-014-11)', async ({
+  request,
+}) => {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  const water = (await apiAs(request, 'get', '/api/admin/menu-items')).find((i) => i.name === 'Nước suối');
+  const m = await apiAs(request, 'post', '/api/members', { phone: '0907000082', fullName: 'Khách Theo Dõi', consent: true });
+  await apiAs(request, 'post', '/api/orders/takeaway', {
+    items: [{ menuItemId: water.menuItemId, quantity: 10 }],
+    amountReceived: 5_000_000,
+    memberId: m.memberId,
+  });
+
+  await P.goto('/admin/members');
+  await expect(P.locator('.kpi', { hasText: 'Điểm tích hôm nay' }).locator('.value')).toHaveText(/^\+[1-9]/);
+  await expect(P.locator('.kpi', { hasText: 'Lượt thu có hội viên hôm nay' })).toBeVisible();
+  const feed = P.locator('.mem-feed li').first();
+  await expect(feed).toContainText('Khách Theo Dõi');
+  await expect(feed).toContainText('tích khi thu tiền');
+  await expect(feed.locator('.mem-delta')).toHaveText(/^\+[1-9]/);
+
+  const views = P.getByRole('group', { name: 'Lọc nhanh hội viên' });
+  await expect(views.getByRole('button', { name: 'Tất cả' })).toHaveAttribute('aria-pressed', 'true');
+  await views.getByRole('button', { name: /^Mới tháng này \(\d+\)$/ }).click();
+  await expect(views.getByRole('button', { name: /^Mới tháng này/ })).toHaveAttribute('aria-pressed', 'true');
+  const row = P.locator('table.mem-table tbody tr', { hasText: 'Khách Theo Dõi' });
+  await expect(row).toContainText('lên Thân thiết');
+  await expect(row.getByRole('progressbar', { name: 'Tiến độ lên hạng Thân thiết' })).toBeVisible();
+  await expect(row).toContainText('hôm nay');
+
+  await feed.getByRole('button', { name: 'Khách Theo Dõi' }).click();
+  const dlg = P.getByRole('dialog');
+  await expect(dlg.locator('.mem-summary')).toContainText('Điểm hiện có');
+  await expect(dlg.locator('.mem-summary')).toContainText('lên Thân thiết');
+  await expect(dlg.locator('input[name="fullName"]')).toBeHidden(); // sửa thông tin thu gọn
+  await dlg.locator('.mem-edit > summary').click();
+  await expect(dlg.locator('input[name="fullName"]')).toHaveValue('Khách Theo Dõi');
+  await dlg.getByRole('group', { name: 'Điểm nhanh' }).getByRole('button', { name: '+50' }).click();
+  await expect(dlg.getByLabel('Số điểm cộng / trừ')).toHaveValue('50');
+  await P.keyboard.press('Escape');
+  await expect(dlg).toHaveCount(0);
+
+  await P.setViewportSize({ width: 390, height: 800 });
+  expect(await P.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+  await P.setViewportSize({ width: 1366, height: 860 });
+});

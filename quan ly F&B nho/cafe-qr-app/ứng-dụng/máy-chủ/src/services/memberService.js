@@ -138,12 +138,38 @@ export const memberForPricing = async (id) => (id ? activeMember(id) : null);
 // ---------- Quản lý ----------
 const adminView = (m) => ({ ...m, phone: maskPhone(m.phone) });
 
-export async function adminList({ q = '', page = 1 }) {
+export { MEMBER_VIEWS } from '../repositories/membersRepo.js';
+
+/** Mốc thời gian theo giờ quán cho danh sách / tổng quan (TASK-082). */
+function periodMarks(now = new Date()) {
+  const today = todayVn();
+  return {
+    todayStart: vnDayStartUtc(today),
+    monthStart: vnDayStartUtc(`${today.slice(0, 8)}01`),
+    month: Number(today.slice(5, 7)),
+    d7: new Date(now.getTime() - 7 * 86_400_000),
+    d30: new Date(now.getTime() - 30 * 86_400_000),
+  };
+}
+
+export async function adminList({ q = '', page = 1, view = 'all' }) {
   const query = String(q).trim();
   const phone = normalizePhone(query);
-  const res = await membersRepo.list({ phone, name: phone || !query ? null : query, page });
+  const t = periodMarks();
+  const res = await membersRepo.list({
+    phone,
+    name: phone || !query ? null : query,
+    page,
+    view,
+    monthStart: t.monthStart,
+    month: t.month,
+    lapsedBefore: t.d30,
+  });
   return { ...res, items: res.items.map(adminView) };
 }
+
+/** Tổng quan hội viên + tích điểm gần đây (TASK-082) — chỉ quản lý. */
+export const adminOverview = () => membersRepo.overview(periodMarks());
 
 export async function adminGet(id) {
   const m = await membersRepo.findById(id);
