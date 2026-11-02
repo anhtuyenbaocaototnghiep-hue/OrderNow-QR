@@ -1,15 +1,32 @@
 // S-36 Sổ quỹ (FEATURE-033, ADR-006 D-23): thu / chi tiền mặt ngoài bán hàng theo ngày + danh mục; tổng theo danh mục (khoản đã duyệt);
 // duyệt khoản chờ (khi ca còn mở); xem ảnh hóa đơn; xuất CSV. Tab "Danh mục" — thêm / sửa / ngừng dùng danh mục thu chi.
+// TASK-081 (dễ dùng): nút chọn kỳ nhanh, "Lọc thêm" thu gọn, dải "Có n khoản chờ duyệt", ghi khoản ngay ở trang này khi có ca đang mở.
 import { staffApi, staffBlobUrl } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
-import { cashBookTable } from '../cash-book.js';
+import { cashBookTable, cashEntryDialog } from '../cash-book.js';
 import { $, clear, el, errorMessage, modal, money, showFieldErrors, toast, todayVn } from '../ui.js';
 import { icon } from '../icons.js';
 
 const me = await mountAdminShell('cash');
 
 const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
-const state = { tab: 'book', from: addDays(todayVn(), -6), to: todayVn(), categoryId: '', status: '', direction: '', categories: [] };
+const PRESETS = [
+  ['today', 'Hôm nay'],
+  ['7d', '7 ngày'],
+  ['month', 'Tháng này'],
+  ['lastMonth', 'Tháng trước'],
+];
+function rangeOf(key) {
+  const t = todayVn();
+  if (key === 'today') return [t, t];
+  if (key === 'month') return [`${t.slice(0, 8)}01`, t];
+  if (key === 'lastMonth') {
+    const end = addDays(`${t.slice(0, 8)}01`, -1);
+    return [`${end.slice(0, 8)}01`, end];
+  }
+  return [addDays(t, -6), t];
+}
+const state = { tab: 'book', preset: '7d', from: addDays(todayVn(), -6), to: todayVn(), categoryId: '', status: '', direction: '', categories: [] };
 const body = el('div');
 const tabs = el(
   'div',
@@ -54,9 +71,11 @@ const query = () =>
 
 function filters() {
   const date = (key, label) => {
-    const input = el('input', { type: 'date', class: 'input', value: state[key], max: todayVn(), 'aria-label': label });
+    const input = el('input', { type: 'date', class: 'input', value: state[key], max: todayVn() });
     input.addEventListener('change', () => {
+      if (!input.value) return;
       state[key] = input.value;
+      state.preset = '';
       load();
     });
     return el('div', { class: 'field' }, el('label', {}, label), input);
@@ -64,7 +83,7 @@ function filters() {
   const select = (key, label, options) => {
     const s = el(
       'select',
-      { class: 'input', 'aria-label': label },
+      { class: 'input' },
       options.map(([v, l]) => el('option', { value: v, selected: String(state[key]) === String(v) }, l)),
     );
     s.addEventListener('change', () => {
@@ -73,24 +92,70 @@ function filters() {
     });
     return el('div', { class: 'field' }, el('label', {}, label), s);
   };
+  const extra = [state.direction, state.categoryId, state.status].filter(Boolean).length;
   return el(
     'div',
-    { class: 'filters' },
-    date('from', 'Từ ngày'),
-    date('to', 'Đến ngày'),
-    select('direction', 'Loại', [
-      ['', 'Tất cả'],
-      ['OUT', 'Chi'],
-      ['IN', 'Thu'],
-    ]),
-    select('categoryId', 'Danh mục', [['', 'Tất cả'], ...state.categories.map((c) => [c.categoryId, c.name])]),
-    select('status', 'Trạng thái', [
-      ['', 'Tất cả'],
-      ['PENDING', 'Chờ duyệt'],
-      ['APPROVED', 'Đã duyệt'],
-      ['REJECTED', 'Từ chối'],
-      ['VOIDED', 'Đã hủy'], // F-050
-    ]),
+    { class: 'cash-filters' },
+    el(
+      'div',
+      { class: 'row wrap', role: 'group', 'aria-label': 'Chọn khoảng thời gian' },
+      PRESETS.map(([key, label]) =>
+        el(
+          'button',
+          {
+            class: 'btn btn-sm',
+            type: 'button',
+            'aria-pressed': String(state.preset === key),
+            onclick: () => {
+              [state.from, state.to] = rangeOf(key);
+              state.preset = key;
+              load();
+            },
+          },
+          label,
+        ),
+      ),
+    ),
+    el(
+      'details',
+      { class: 'cash-more', open: !state.preset || extra > 0 },
+      el('summary', {}, extra ? `Lọc thêm (${extra})` : 'Lọc thêm'),
+      el(
+        'div',
+        { class: 'filters' },
+        date('from', 'Từ ngày'),
+        date('to', 'Đến ngày'),
+        select('direction', 'Loại', [
+          ['', 'Tất cả'],
+          ['OUT', 'Chi'],
+          ['IN', 'Thu'],
+        ]),
+        select('categoryId', 'Danh mục', [['', 'Tất cả'], ...state.categories.map((c) => [c.categoryId, c.name])]),
+        select('status', 'Trạng thái', [
+          ['', 'Tất cả'],
+          ['PENDING', 'Chờ duyệt'],
+          ['APPROVED', 'Đã duyệt'],
+          ['REJECTED', 'Từ chối'],
+          ['VOIDED', 'Đã hủy'], // F-050
+        ]),
+      ),
+    ),
+  );
+}
+
+/** Nút trên đầu trang: ghi khoản (chỉ khi có ca đang mở — quy tắc F-033) + xuất CSV. */
+async function headActions() {
+  let open = false;
+  try {
+    open = Boolean((await staffApi('/api/shifts/current')).shift);
+  } catch {
+    open = false; // không đọc được ca → chỉ ẩn nút ghi khoản
+  }
+  const add = (direction, label, cls) =>
+    el('button', { class: `btn ${cls}`, type: 'button', onclick: async () => (await cashEntryDialog(direction)) && load() }, label);
+  clear(
+    $('#head-actions'),
+    open ? [add('OUT', 'Chi tiền', 'btn-primary'), add('IN', 'Thu thêm', '')] : el('span', { class: 'small muted' }, 'Mở ca ở màn quầy để ghi khoản'),
     el('button', { class: 'btn', type: 'button', onclick: exportCsv }, 'Xuất CSV'),
   );
 }
@@ -116,48 +181,63 @@ async function renderBook() {
   clear(
     body,
     filters(),
+    s.pending && state.status !== 'PENDING'
+      ? el(
+          'div',
+          { class: 'alert warning row wrap between' },
+          el('span', {}, `Có ${s.pending} khoản chờ duyệt — chưa trừ vào két tới khi duyệt.`),
+          el(
+            'button',
+            {
+              class: 'btn btn-sm',
+              type: 'button',
+              onclick: () => {
+                state.status = 'PENDING';
+                load();
+              },
+            },
+            'Xem các khoản chờ duyệt',
+          ),
+        )
+      : null,
     el(
       'div',
       { class: 'kpis' },
-      kpi('Thu khác (đã duyệt)', money(s.totalIn)),
-      kpi('Chi quỹ (đã duyệt)', money(s.totalOut)),
-      kpi('Ròng', money(s.net)),
+      kpi('Đã chi', money(s.totalOut)),
+      kpi('Đã thu thêm', money(s.totalIn)),
+      kpi('Két thay đổi', `${s.net > 0 ? '+' : s.net < 0 ? '−' : ''}${money(Math.abs(s.net))}`, s.net < 0 ? 'neg' : ''),
       kpi('Chờ duyệt', String(s.pending), s.pending ? 'neg' : ''),
     ),
     el(
       'div',
-      { class: 'grid-2' },
-      el(
-        'div',
-        { class: 'card' },
-        el('h2', {}, 'Theo danh mục'),
-        s.byCategory.length
-          ? el(
-              'table',
-              { class: 'table' },
-              el(
-                'tbody',
-                {},
-                s.byCategory.map((c) =>
-                  el(
-                    'tr',
-                    {},
-                    el('td', {}, c.name, c.isExpense ? el('span', { class: 'pill', title: 'Tính vào chi phí ở báo cáo lãi/lỗ' }, ' chi phí') : null),
-                    el('td', { class: 'num' }, c.count),
-                    el('td', { class: `num ${c.direction === 'OUT' ? 'neg' : ''}` }, `${c.direction === 'OUT' ? '−' : '+'}${money(c.amount)}`),
-                  ),
+      { class: 'card' },
+      el('h2', {}, `Các khoản (${r.rows.length})`),
+      el('p', { class: 'small muted' }, 'Duyệt / từ chối / sửa / hủy làm được khi ca của khoản đó còn mở.'),
+      cashBookTable(r.rows, { user: me, editable: true, onChange: load, showDate: true }),
+    ),
+    el(
+      'div',
+      { class: 'card', style: { marginTop: '1rem' } },
+      el('h2', {}, 'Theo danh mục'),
+      s.byCategory.length
+        ? el(
+            'table',
+            { class: 'table' },
+            el(
+              'tbody',
+              {},
+              s.byCategory.map((c) =>
+                el(
+                  'tr',
+                  {},
+                  el('td', {}, c.name, c.isExpense ? el('span', { class: 'pill', title: 'Tính vào chi phí ở trang Lãi / lỗ' }, ' chi phí') : null),
+                  el('td', { class: 'num' }, `${c.count} lần`),
+                  el('td', { class: `num ${c.direction === 'OUT' ? 'neg' : ''}` }, `${c.direction === 'OUT' ? '−' : '+'}${money(c.amount)}`),
                 ),
               ),
-            )
-          : el('p', { class: 'muted' }, 'Chưa có khoản nào đã duyệt.'),
-      ),
-      el(
-        'div',
-        { class: 'card' },
-        el('h2', {}, `Các khoản (${r.rows.length})`),
-        el('p', { class: 'small muted' }, 'Khoản chờ duyệt chỉ duyệt / từ chối được khi ca của khoản đó còn mở.'),
-        cashBookTable(r.rows, { user: me, editable: true, onChange: load, showDate: true }),
-      ),
+            ),
+          )
+        : el('p', { class: 'muted' }, 'Chưa có khoản nào đã duyệt.'),
     ),
   );
 }
@@ -170,7 +250,11 @@ function renderCategories() {
       'div',
       { class: 'row', style: { marginBottom: '1rem' } },
       el('button', { class: 'btn btn-primary', type: 'button', onclick: () => editCategory(null) }, '+ Thêm danh mục'),
-      el('span', { class: 'small muted' }, '"Chi phí" = tính vào báo cáo lãi/lỗ; "Cần duyệt" = mọi khoản chi danh mục này đều chờ trưởng ca / quản lý duyệt.'),
+      el(
+        'span',
+        { class: 'small muted' },
+        '"Chi phí" = trừ vào lãi ở trang Lãi / lỗ (bỏ tích với khoản không phải chi phí, như nộp tiền về két tổng). "Cần duyệt" = mọi khoản chi danh mục này đều chờ trưởng ca / quản lý duyệt và phải ghi rõ nội dung.',
+      ),
     ),
     el(
       'div',
@@ -252,9 +336,9 @@ function editCategory(c) {
     {},
     el('div', { class: 'field' }, el('label', {}, 'Tên danh mục'), name),
     el('div', { class: 'field' }, el('label', {}, 'Loại'), dir),
-    el('label', { class: 'check' }, expense, 'Tính vào chi phí (lãi/lỗ)'),
-    el('label', { class: 'check' }, approval, 'Luôn cần duyệt'),
-    el('div', { class: 'field' }, el('label', {}, 'Thứ tự'), sort),
+    el('label', { class: 'check' }, expense, 'Là chi phí của quán (trừ vào lãi ở trang Lãi / lỗ)'),
+    el('label', { class: 'check' }, approval, 'Khoản chi nào cũng phải duyệt (và ghi rõ nội dung)'),
+    el('div', { class: 'field' }, el('label', {}, 'Thứ tự hiện (số nhỏ đứng trước)'), sort),
   );
   modal({
     title: c ? `Sửa danh mục: ${c.name}` : 'Thêm danh mục thu chi',
@@ -287,4 +371,5 @@ function editCategory(c) {
   });
 }
 
+headActions();
 await load();

@@ -209,7 +209,10 @@ staffRouter.get('/sessions/:id/receipt', async (req, res) => {
 });
 
 // ---- Ca tiền mặt (FEATURE-018) ----
-staffRouter.get('/shifts/current', async (_req, res) => res.json({ shift: (await shiftService.current()) ?? null }));
+// TASK-081: kèm ngưỡng chi cần duyệt để hộp ghi khoản báo trước "khoản này sẽ chờ duyệt"
+staffRouter.get('/shifts/current', async (_req, res) =>
+  res.json({ shift: (await shiftService.current()) ?? null, cashApproveThreshold: (await settingsService.getSettings()).cashApproveThreshold }),
+);
 
 staffRouter.post('/shifts/open', async (req, res) => {
   const { openingCash } = parse(z.object({ openingCash: zMoney() }), req.body);

@@ -1018,3 +1018,37 @@ body:has(.tour-layer) .toasts {
 .module-hidden-note {
   margin-bottom: 0.75rem;
 }
+
+/* Sổ quỹ dễ dùng (TASK-081): chọn danh mục bằng nút, nút số tiền nhanh */
+.cash-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.cash-chips [aria-pressed='true'],
+.cash-filters [aria-pressed='true'] {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
+.cash-quick {
+  gap: 0.4rem;
+}
+.cash-note .badge {
+  margin-right: 0.25rem;
+}
+.cash-filters {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.cash-more > summary {
+  cursor: pointer;
+  color: var(--c-primary);
+  font-weight: 600;
+  width: fit-content;
+}
+.cash-actions {
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}

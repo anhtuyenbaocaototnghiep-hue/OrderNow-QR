@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 379 test, sửa lúc 2026-11-02 11:42 UTC
-- `npm run test:e2e` (JSON): 56 test, sửa lúc 2026-11-02 11:50 UTC
+- `npm test` (JUnit): 380 test, sửa lúc 2026-11-02 12:36 UTC
+- `npm run test:e2e` (JSON): 57 test, sửa lúc 2026-11-02 12:39 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 146 |
-| Acceptance Criteria | 388 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 388 |
+| Acceptance Criteria | 390 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 390 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -302,6 +302,8 @@
 | AC-033-08 | TC-033-08 | F-033 | US-033-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT | SCR-15 | BR-048, BR-050, BR-051 | Integration: `finance.test.js` › đóng ca: tiền dự kiến = đầu ca + thu − hoàn + thu khác − chi đã duyệt; két khớp → chênh 0; ca đóng không ghi quỹ được — **PASS** | **PASS** |
 | AC-033-09 | TC-033-09 | F-033 | US-033-3 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-36 | BR-048 | Integration: `finance.test.js` › sổ quỹ quản lý: tổng theo danh mục (chỉ khoản đã duyệt), CSV có BOM; phiếu chốt ca có bảng thu/chi quỹ — **PASS** | **PASS** |
 | AC-033-10 | TC-033-10 | F-033 | US-033-3 | ACT-ADMIN | UC-11, UC-16 | MOD-SHIFT, MOD-REPORT | SCR-36 | BR-048 | Unit: `finance-unit.test.js` › BOM UTF-8, bọc ô có dấu phẩy / ngoặc kép / xuống dòng, chặn công thức Excel; số âm giữ nguyên — **PASS** | **PASS** |
+| AC-033-11 | TC-033-11 | F-033 | US-033-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT | SCR-15 | BR-048, BR-050, BR-051 | Integration: `finance.test.js` › AC-033-11: GET /api/shifts/current trả ngưỡng chi cần duyệt theo Cài đặt (hộp ghi khoản báo trước "chờ duyệt") — **PASS**<br>E2E: `flow.spec.js` › sổ quỹ dễ dùng: chọn danh mục bằng nút, số tiền nhanh, nội dung để trống = tên danh mục, báo trước khoản chờ duyệt; trang quản lý có kỳ nhanh, dải chờ duyệt, ghi khoản khi có ca (F-033, AC-033-11, AC-033-12) — **PASS** | **PASS** |
+| AC-033-12 | TC-033-12 | F-033 | US-033-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT | SCR-15 | BR-048, BR-050, BR-051 | E2E: `flow.spec.js` › sổ quỹ dễ dùng: chọn danh mục bằng nút, số tiền nhanh, nội dung để trống = tên danh mục, báo trước khoản chờ duyệt; trang quản lý có kỳ nhanh, dải chờ duyệt, ghi khoản khi có ca (F-033, AC-033-11, AC-033-12) — **PASS** | **PASS** |
 | AC-034-01 | TC-034-01 | F-034 | US-034-1 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-044, BR-056 | Integration: `finance.test.js` › một ngày: doanh thu thuần, giá vốn, lãi gộp, chi quỹ, cố định phân bổ, lợi nhuận, hòa vốn đúng công thức — **PASS**<br>Unit: `finance-unit.test.js` › chỉ tiêu: thuần = phải thu − hoàn; giảm = gộp − phải thu; lợi nhuận = lãi gộp − chi quỹ − cố định; doanh thu 0 → biên null — **PASS** | **PASS** |
 | AC-034-02 | TC-034-02 | F-034 | US-034-2 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-056 | Integration: `finance.test.js` › theo tháng: cố định phân bổ đủ 30.000.000 cho cả tháng 9; khoảng sai → 400; trưởng ca → 403 — **PASS**<br>Integration: `finance.test.js` › chi phí cố định: hết hiệu lực giữa tháng chỉ tính tới ngày kết thúc; ngày kết thúc trước ngày bắt đầu → 400 — **PASS**<br>Unit: `finance-unit.test.js` › chi phí cố định/ngày = số tiền tháng ÷ số ngày của tháng, chỉ trong thời gian hiệu lực — **PASS** | **PASS** |
 | AC-034-03 | TC-034-03 | F-034 | US-034-1 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-044, BR-056 | Integration: `finance.test.js` › đơn chưa có giá vốn chốt → ước tính theo định lượng đã giữ × giá vốn hiện tại, gắn cờ estimatedCogsRows — **PASS** | **PASS** |

@@ -555,3 +555,7 @@ Chi tiết: [FEATURE-064](../chức-năng/FEATURE-064.md), BR-100, BR-101. Khôn
 ## Bổ sung TASK-080 — trang Lãi / lỗ dễ hiểu (02/11/2026)
 
 - `GET /api/admin/reports/pnl`: thêm `lossValue` — giá trị hàng mất ròng trong kỳ (dòng `InventoryTransactions.Type = 'ADJUST'`: điều chỉnh tay, hao hụt, lệch kiểm kê; thừa bù trừ; ≥ 0). **Không** trừ vào `operatingProfit`; giao diện chỉ dùng để nhắc. Các trường khác và công thức không đổi.
+
+## Bổ sung TASK-081 — sổ quỹ dễ dùng (02/11/2026)
+
+- `GET /api/shifts/current`: thêm `cashApproveThreshold` (số, ngưỡng chi cần duyệt — `cash.approve_threshold`). Hộp ghi khoản dùng để báo trước khoản nào sẽ "Chờ duyệt"; máy chủ vẫn là nơi quyết định trạng thái.

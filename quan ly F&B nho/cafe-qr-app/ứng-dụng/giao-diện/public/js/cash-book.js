@@ -1,6 +1,8 @@
 // Sổ quỹ ca (FEATURE-033, ADR-006 D-23) — dùng ở màn Ca (POS) và trang Sổ quỹ (admin).
 // Chi > ngưỡng / danh mục cần duyệt → "Chờ duyệt"; trưởng ca / quản lý duyệt. Nhân viên đứng quầy → nhập tài khoản người duyệt.
 // F-050: khoản đã duyệt của ca còn mở có Sửa / Hủy (quyền như duyệt); khoản đã hủy giữ trong sổ, nhãn "Đã hủy".
+// TASK-081 (dễ dùng): chọn danh mục bằng nút, nút số tiền nhanh, nội dung để trống = tên danh mục (trừ danh mục luôn cần duyệt),
+// báo trước khoản nào sẽ chờ duyệt, chụp ảnh hóa đơn bằng camera; bảng gọn 5 cột.
 import { staffApi, staffBlobUrl, staffUpload } from './api.js';
 import { clear, dateTime, el, errorMessage, modal, money, moneyInput, moneyValue, setMoney, time, toast } from './ui.js';
 import { icon } from './icons.js';
@@ -19,8 +21,8 @@ let categoriesCache = null;
 const loadCategories = async () => (categoriesCache ??= await staffApi('/api/cash-categories'));
 
 function fileField() {
-  const input = el('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', class: 'input', 'aria-label': 'Ảnh hóa đơn' });
-  return input;
+  // capture: điện thoại / máy tính bảng mở thẳng camera để chụp hóa đơn (máy tính bỏ qua, vẫn chọn tệp)
+  return el('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', capture: 'environment', class: 'input', 'aria-label': 'Ảnh hóa đơn' });
 }
 
 async function uploadReceipt(id, file) {
@@ -28,44 +30,104 @@ async function uploadReceipt(id, file) {
   return staffUpload(`/api/cash-transactions/${id}/receipt`, file);
 }
 
-/** Hộp thoại ghi khoản chi (OUT) / thu khác (IN). Trả khoản vừa ghi hoặc null. */
+const QUICK_AMOUNTS = [20000, 50000, 100000, 200000, 500000];
+let thresholdCache = null;
+const loadThreshold = async () => (thresholdCache ??= (await staffApi('/api/shifts/current')).cashApproveThreshold ?? null);
+
+/** Hộp thoại ghi khoản chi (OUT) / thu thêm (IN). Trả khoản vừa ghi hoặc null. */
 export async function cashEntryDialog(direction) {
   let cats;
+  let threshold = null;
   try {
-    cats = (await loadCategories()).filter((c) => c.direction === direction);
+    [cats, threshold] = await Promise.all([
+      loadCategories().then((all) => all.filter((c) => c.direction === direction)),
+      direction === 'OUT' ? loadThreshold().catch(() => null) : null, // không đọc được ngưỡng → chỉ không báo trước
+    ]);
   } catch (err) {
     toast(errorMessage(err), 'error');
     return null;
   }
-  const cat = el(
-    'select',
-    { class: 'input', id: 'cash-cat', 'aria-label': 'Danh mục' },
-    cats.map((c) => el('option', { value: c.categoryId }, c.name + (c.requiresApproval ? ' (cần duyệt)' : ''))),
+  if (!cats.length) {
+    toast('Chưa có danh mục — quản lý thêm ở Quản lý → Sổ quỹ → Danh mục thu chi', 'warning', 6000);
+    return null;
+  }
+  let chosen = cats[0];
+  const chips = el(
+    'div',
+    { class: 'cash-chips', role: 'group', 'aria-labelledby': 'cash-cat-label' },
+    cats.map((c) =>
+      el(
+        'button',
+        {
+          class: 'btn btn-sm',
+          type: 'button',
+          'aria-pressed': String(c === chosen),
+          onclick: () => {
+            chosen = c;
+            [...chips.children].forEach((b, k) => b.setAttribute('aria-pressed', String(cats[k] === c)));
+            refresh();
+          },
+        },
+        c.name,
+      ),
+    ),
   );
-  const amount = moneyInput({ id: 'cash-amount', 'aria-label': 'Số tiền' });
-  const reason = el('input', {
-    class: 'input',
-    id: 'cash-reason',
-    maxlength: 200,
-    placeholder: direction === 'OUT' ? 'Ví dụ: mua 2 bao đá' : 'Ví dụ: chủ quán bổ sung tiền lẻ',
-  });
+  const amount = moneyInput({ id: 'cash-amount' });
+  amount.addEventListener('input', () => refresh());
+  const quick = el(
+    'div',
+    { class: 'row wrap cash-quick', role: 'group', 'aria-label': 'Số tiền nhanh' },
+    QUICK_AMOUNTS.map((v) =>
+      el(
+        'button',
+        {
+          class: 'btn btn-sm',
+          type: 'button',
+          onclick: () => {
+            setMoney(amount, v);
+            refresh();
+          },
+        },
+        money(v),
+      ),
+    ),
+  );
+  const reason = el('input', { class: 'input', id: 'cash-reason', maxlength: 200 });
+  const reasonLabel = el('label', { for: 'cash-reason' });
   const file = fileField();
+  const note = el('p', { class: 'small cash-note', 'aria-live': 'polite' });
   const msg = el('div');
+  const willWait = () => direction === 'OUT' && (chosen.requiresApproval || (threshold !== null && (moneyValue(amount) ?? 0) > threshold));
+  function refresh() {
+    clear(reasonLabel, chosen.requiresApproval ? 'Nội dung (bắt buộc với danh mục này)' : 'Nội dung (không bắt buộc)');
+    reason.placeholder = chosen.requiresApproval ? 'Ghi rõ chi cho việc gì' : `Để trống sẽ ghi "${chosen.name}"`;
+    clear(
+      note,
+      willWait()
+        ? [
+            el('span', { class: 'badge pending' }, 'Cần duyệt'),
+            ` Khoản này chờ trưởng ca / quản lý duyệt, chưa trừ vào két tới khi duyệt${chosen.requiresApproval ? ` (danh mục "${chosen.name}" luôn cần duyệt)` : ` (chi trên ${money(threshold)})`}.`,
+          ]
+        : direction === 'OUT'
+          ? 'Lưu xong là trừ vào tiền dự kiến trong két.'
+          : 'Lưu xong là cộng vào tiền dự kiến trong két.',
+    );
+  }
+  refresh();
   const result = await modal({
-    title: direction === 'OUT' ? 'Chi tiền từ két' : 'Thu khác vào két',
+    title: direction === 'OUT' ? 'Chi tiền từ két' : 'Thu thêm vào két',
     body: el(
       'div',
       { class: 'stack' },
-      el('label', { for: 'cash-cat' }, 'Danh mục'),
-      cat,
+      el('div', { id: 'cash-cat-label' }, 'Danh mục'),
+      chips,
       el('label', { for: 'cash-amount' }, 'Số tiền'),
       amount,
-      el('label', { for: 'cash-reason' }, 'Nội dung / lý do (bắt buộc)'),
+      quick,
+      reasonLabel,
       reason,
-      direction === 'OUT' ? [el('label', {}, 'Ảnh hóa đơn (không bắt buộc, ≤ 2 MB)'), file] : null,
-      direction === 'OUT'
-        ? el('p', { class: 'small muted' }, 'Khoản chi lớn hoặc danh mục "Khác" sẽ chờ trưởng ca / quản lý duyệt — chưa trừ vào két cho tới khi duyệt.')
-        : null,
+      direction === 'OUT' ? [el('label', {}, 'Ảnh hóa đơn (không bắt buộc, ≤ 2 MB — máy có camera thì chụp luôn)'), file] : null,
+      note,
       msg,
     ),
     actions: [
@@ -79,8 +141,9 @@ export async function cashEntryDialog(direction) {
             clear(msg, el('div', { class: 'field-error' }, 'Nhập số tiền'));
             return false;
           }
-          if (!reason.value.trim()) {
-            clear(msg, el('div', { class: 'field-error' }, 'Nhập nội dung / lý do'));
+          const text = reason.value.trim() || (chosen.requiresApproval ? '' : chosen.name);
+          if (!text) {
+            clear(msg, el('div', { class: 'field-error' }, `Danh mục "${chosen.name}" cần ghi rõ nội dung`));
             return false;
           }
           const f = file.files?.[0];
@@ -91,7 +154,7 @@ export async function cashEntryDialog(direction) {
           try {
             let txn = await staffApi('/api/cash-transactions', {
               method: 'POST',
-              body: { categoryId: Number(cat.value), amount: v, reason: reason.value.trim() },
+              body: { categoryId: chosen.categoryId, amount: v, reason: text },
             });
             if (f) {
               try {
@@ -327,7 +390,7 @@ export function attachReceiptPicker(txn, onDone) {
   input.click();
 }
 
-/** Bảng sổ quỹ. opts: { user, editable (ca đang mở — duyệt / gắn ảnh), onChange, showDate (nhiều ngày) } */
+/** Bảng sổ quỹ (5 cột: giờ · khoản · số tiền · trạng thái · thao tác). opts: { user, editable (ca đang mở — duyệt / gắn ảnh), onChange, showDate (nhiều ngày) } */
 export function cashBookTable(rows, { user, editable = false, onChange, showDate = false } = {}) {
   if (!rows.length) return el('p', { class: 'muted' }, 'Chưa có khoản thu / chi nào ngoài bán hàng.');
   return el(
@@ -342,7 +405,7 @@ export function cashBookTable(rows, { user, editable = false, onChange, showDate
         el(
           'tr',
           {},
-          ['Giờ', 'Loại', 'Danh mục', 'Nội dung', 'Số tiền', 'Trạng thái', 'Người ghi', ''].map((h, i) => el('th', { class: i === 4 ? 'num' : '' }, h)),
+          ['Giờ', 'Khoản', 'Số tiền', 'Trạng thái', ''].map((h, i) => el('th', { class: i === 2 ? 'num' : '' }, h)),
         ),
       ),
       el(
@@ -353,13 +416,17 @@ export function cashBookTable(rows, { user, editable = false, onChange, showDate
             'tr',
             { class: t.status === 'REJECTED' ? 'muted' : t.status === 'VOIDED' ? 'voided' : '' },
             el('td', { class: 'nowrap' }, showDate ? dateTime(t.createdAt) : time(t.createdAt)),
-            el('td', {}, t.direction === 'IN' ? 'Thu' : 'Chi'),
-            el('td', {}, t.category.name),
             el(
               'td',
               {},
-              el('span', { class: 'small muted mono' }, `#${t.cashTxnId} `),
-              t.reason,
+              el('strong', {}, t.category.name),
+              t.reason !== t.category.name ? ` — ${t.reason}` : null,
+              el(
+                'div',
+                { class: 'small muted' },
+                el('span', { class: 'mono' }, `#${t.cashTxnId}`),
+                ` · ${t.direction === 'IN' ? 'thu' : 'chi'} · ghi bởi ${t.createdBy.fullName}`,
+              ),
               t.rejectReason ? el('div', { class: 'small muted' }, `Từ chối: ${t.rejectReason}`) : null,
               t.voidReason
                 ? el(
@@ -369,7 +436,7 @@ export function cashBookTable(rows, { user, editable = false, onChange, showDate
                   )
                 : null,
             ),
-            el('td', { class: `num ${t.direction === 'OUT' ? 'neg' : ''}` }, `${t.direction === 'OUT' ? '−' : '+'}${money(t.amount)}`),
+            el('td', { class: `num ${t.direction === 'OUT' ? 'neg' : 'pos-val'}` }, `${t.direction === 'OUT' ? '−' : '+'}${money(t.amount)}`),
             el(
               'td',
               {},
@@ -380,58 +447,62 @@ export function cashBookTable(rows, { user, editable = false, onChange, showDate
                   ? el('div', { class: 'small muted' }, t.approvedBy.fullName)
                   : null,
             ),
-            el('td', {}, t.createdBy.fullName),
             el(
               'td',
-              { class: 'row no-print' },
-              t.hasReceipt
-                ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => showReceipt(t), title: 'Xem ảnh hóa đơn' }, icon('receipt'), 'Ảnh')
-                : null,
-              editable &&
-                !t.hasReceipt &&
-                t.direction === 'OUT' &&
-                (t.status === 'APPROVED' || t.status === 'PENDING') &&
-                (t.createdBy.userId === user.userId || canApprove(user))
-                ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => attachReceiptPicker(t, onChange) }, 'Gắn ảnh')
-                : null,
-              editable && t.status === 'APPROVED' && t.shiftOpen !== false
-                ? [
-                    el(
-                      'button',
-                      {
-                        class: 'btn btn-sm',
-                        type: 'button',
-                        'aria-label': `Sửa khoản #${t.cashTxnId}`,
-                        onclick: async () => (await voidDialog(t, user, { edit: true })) && onChange?.(),
-                      },
-                      'Sửa',
-                    ),
-                    el(
-                      'button',
-                      {
-                        class: 'btn btn-sm btn-danger',
-                        type: 'button',
-                        'aria-label': `Hủy khoản #${t.cashTxnId}`,
-                        onclick: async () => (await voidDialog(t, user)) && onChange?.(),
-                      },
-                      'Hủy',
-                    ),
-                  ]
-                : null,
-              editable && t.status === 'PENDING'
-                ? [
-                    el(
-                      'button',
-                      { class: 'btn btn-sm btn-primary', type: 'button', onclick: async () => (await reviewDialog(t, user, true)) && onChange?.() },
-                      'Duyệt',
-                    ),
-                    el(
-                      'button',
-                      { class: 'btn btn-sm btn-danger', type: 'button', onclick: async () => (await reviewDialog(t, user, false)) && onChange?.() },
-                      'Từ chối',
-                    ),
-                  ]
-                : null,
+              { class: 'no-print' },
+              // nút nằm trong div: ô bảng giữ display: table-cell, đường kẻ hàng không lệch
+              el(
+                'div',
+                { class: 'row cash-actions' },
+                t.hasReceipt
+                  ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => showReceipt(t), title: 'Xem ảnh hóa đơn' }, icon('receipt'), 'Ảnh')
+                  : null,
+                editable &&
+                  !t.hasReceipt &&
+                  t.direction === 'OUT' &&
+                  (t.status === 'APPROVED' || t.status === 'PENDING') &&
+                  (t.createdBy.userId === user.userId || canApprove(user))
+                  ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => attachReceiptPicker(t, onChange) }, 'Gắn ảnh')
+                  : null,
+                editable && t.status === 'APPROVED' && t.shiftOpen !== false
+                  ? [
+                      el(
+                        'button',
+                        {
+                          class: 'btn btn-sm',
+                          type: 'button',
+                          'aria-label': `Sửa khoản #${t.cashTxnId}`,
+                          onclick: async () => (await voidDialog(t, user, { edit: true })) && onChange?.(),
+                        },
+                        'Sửa',
+                      ),
+                      el(
+                        'button',
+                        {
+                          class: 'btn btn-sm btn-danger',
+                          type: 'button',
+                          'aria-label': `Hủy khoản #${t.cashTxnId}`,
+                          onclick: async () => (await voidDialog(t, user)) && onChange?.(),
+                        },
+                        'Hủy',
+                      ),
+                    ]
+                  : null,
+                editable && t.status === 'PENDING'
+                  ? [
+                      el(
+                        'button',
+                        { class: 'btn btn-sm btn-primary', type: 'button', onclick: async () => (await reviewDialog(t, user, true)) && onChange?.() },
+                        'Duyệt',
+                      ),
+                      el(
+                        'button',
+                        { class: 'btn btn-sm btn-danger', type: 'button', onclick: async () => (await reviewDialog(t, user, false)) && onChange?.() },
+                        'Từ chối',
+                      ),
+                    ]
+                  : null,
+              ),
             ),
           ),
         ),

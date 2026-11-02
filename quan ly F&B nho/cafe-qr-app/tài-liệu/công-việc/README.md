@@ -96,6 +96,7 @@
 | [TASK-078](TASK-078.md) | Trị gốc deadlock bằng READ_COMMITTED_SNAPSHOT (ADR-022), sửa DEF-014, phiếu chốt câu hỏi G1 | — (DEF-014, DEF-018, DEF-019) | TASK-077 | Agent | — | chủ dự án 29/10 (góp ý xây dựng nhóm 4) | READY_FOR_REVIEW |
 | [TASK-079](TASK-079.md) | Báo động giá vốn khi nhập hàng giá cao hơn (F-064, ADR-023) | FEATURE-064 | TASK-078 | Agent | — | chủ dự án 02/11 | READY_FOR_REVIEW |
 | [TASK-080](TASK-080.md) | Trang Lãi / lỗ dễ hiểu cho chủ quán (F-034, AC-034-07…09) | FEATURE-034 | TASK-079 | Agent | — | chủ dự án 02/11 | READY_FOR_REVIEW |
+| [TASK-081](TASK-081.md) | Sổ quỹ dễ dùng, thao tác đơn giản (F-033, AC-033-11, AC-033-12) | FEATURE-033 | TASK-080 | Agent | — | chủ dự án 02/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

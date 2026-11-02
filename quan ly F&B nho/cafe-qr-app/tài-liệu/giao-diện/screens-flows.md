@@ -354,3 +354,10 @@ flowchart LR
 - **Chi phí cố định hằng tháng**: tổng đang áp dụng / tháng ≈ / ngày; nút + Tiền mặt bằng, + Lương nhân viên, + Internet (điền sẵn tên), + Khoản khác; danh sách xuống dòng ở màn hẹp.
 - **Xem chi tiết từng ngày / tháng** (`<details>`, thu gọn): biểu đồ, bảng theo kỳ (nhãn: Bán được · Nguyên liệu · Chi phí khác · Cố định · Lãi / lỗ), chi quỹ theo danh mục.
 - Dòng cuối: "Số liệu là ước tính: chưa gồm thuế và các khoản chi không ghi vào Sổ quỹ."
+
+## TASK-081 — Sổ quỹ dễ dùng (02/11/2026)
+
+- **Hộp "Chi tiền từ két" / "Thu thêm vào két"** (S-15, S-36): danh mục là nhóm nút (`aria-pressed`, nhãn nhóm "Danh mục"); ô số tiền + nhóm nút "Số tiền nhanh" (20.000đ … 500.000đ); ô nội dung không bắt buộc (gợi ý "Để trống sẽ ghi …"), bắt buộc với danh mục luôn cần duyệt; dòng `aria-live` báo "Cần duyệt …" hoặc "Lưu xong là trừ / cộng vào két"; ô ảnh `capture` mở camera.
+- **Bảng sổ quỹ:** 5 cột Giờ · Khoản · Số tiền · Trạng thái · nút.
+- **S-15 thẻ Sổ quỹ trong ca:** nút "Chi tiền" (chính), "Thu thêm"; câu hướng dẫn dùng nút nào.
+- **S-36 Sổ quỹ:** nút kỳ (Hôm nay · **7 ngày** · Tháng này · Tháng trước) + "Lọc thêm (n)" thu gọn (ngày, loại, danh mục, trạng thái); dải cảnh báo "Có n khoản chờ duyệt" + "Xem các khoản chờ duyệt"; ô số Đã chi · Đã thu thêm · Két thay đổi · Chờ duyệt; đầu trang: Chi tiền / Thu thêm (khi có ca mở, không có thì ghi "Mở ca ở màn quầy để ghi khoản") · Xuất CSV.

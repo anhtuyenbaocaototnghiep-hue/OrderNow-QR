@@ -610,7 +610,7 @@ test('trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt kho�
   // Trưởng ca ghi chi 50.000đ mua đá → duyệt ngay
   await L.goto('/pos/shift');
   await L.locator('.card', { hasText: 'Sổ quỹ trong ca' }).getByRole('button', { name: 'Chi tiền' }).click();
-  await L.locator('#cash-cat').selectOption({ label: 'Mua đá' });
+  await L.locator('.modal').getByRole('button', { name: 'Mua đá', exact: true }).click(); // TASK-081: danh mục là nút
   await L.fill('#cash-amount', '50000');
   await L.fill('#cash-reason', 'Mua 2 bao đá');
   await L.locator('.modal').getByRole('button', { name: 'Ghi khoản chi' }).click();
@@ -641,7 +641,7 @@ test('trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt kho�
   // Quản lý: sổ quỹ
   await P.goto('/admin/cash');
   await expect(P.locator('table.cash-book')).toContainText('Mua 2 bao đá');
-  await expect(P.locator('.kpi', { hasText: 'Chi quỹ (đã duyệt)' })).toContainText('850.000đ');
+  await expect(P.locator('.kpi', { hasText: 'Đã chi' })).toContainText('850.000đ');
 
   // Quản lý: kéo ca của trưởng ca từ thứ Hai sang thứ Ba (cùng tuần)
   const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
@@ -1957,4 +1957,68 @@ test('lãi / lỗ dễ hiểu: câu trả lời lãi hay lỗ, "Tiền đi đâu
   }
   await P.goto('/admin/pnl');
   await expect(P.locator('.pnl-answer .pnl-verdict')).toContainText(/Quán đang (lãi|lỗ)|Chưa có tiền bán hàng/);
+});
+
+test('sổ quỹ dễ dùng: chọn danh mục bằng nút, số tiền nhanh, nội dung để trống = tên danh mục, báo trước khoản chờ duyệt; trang quản lý có kỳ nhanh, dải chờ duyệt, ghi khoản khi có ca (F-033, AC-033-11, AC-033-12)', async ({
+  request,
+}) => {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  const threshold = (await apiAs(request, 'get', '/api/admin/settings')).cashApproveThreshold;
+  const vnd = (n) => `${n.toLocaleString('vi-VN')}đ`;
+  await P.goto('/pos/shift');
+  const card = P.locator('.card', { hasText: 'Sổ quỹ trong ca' });
+  const open = async (label) => {
+    await card.getByRole('button', { name: label, exact: true }).click();
+    return P.locator('.modal');
+  };
+  // Chi 50.000đ "Mua đá", để trống nội dung
+  let m = await open('Chi tiền');
+  const chips = m.getByRole('group', { name: 'Danh mục' });
+  await expect(chips.getByRole('button').first()).toHaveAttribute('aria-pressed', 'true');
+  await chips.getByRole('button', { name: 'Mua đá', exact: true }).click();
+  await m.getByRole('group', { name: 'Số tiền nhanh' }).getByRole('button', { name: '50.000đ' }).click();
+  await expect(m.locator('#cash-amount')).toHaveValue('50.000');
+  await expect(m.locator('#cash-reason')).toHaveAttribute('placeholder', 'Để trống sẽ ghi "Mua đá"');
+  await expect(m.locator('.cash-note')).toContainText('Lưu xong là trừ vào tiền dự kiến trong két');
+  await m.getByRole('button', { name: 'Ghi khoản chi' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã ghi 50.000đ' })).toBeVisible();
+  const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+  const rows = (await apiAs(request, 'get', `/api/admin/cash-transactions?from=${today}&to=${today}`)).rows;
+  const mine = rows.reduce((a, b) => (b.cashTxnId > a.cashTxnId ? b : a));
+  expect([mine.reason, mine.amount, mine.status]).toEqual(['Mua đá', 50000, 'APPROVED']);
+  await expect(P.locator('table.cash-book tr', { hasText: `#${mine.cashTxnId}` })).toContainText('Mua đá');
+  // Danh mục luôn cần duyệt: báo trước + bắt ghi nội dung
+  m = await open('Chi tiền');
+  await m.getByRole('button', { name: 'Khác (chi)', exact: true }).click();
+  await m.locator('#cash-amount').fill('10000');
+  await expect(m.locator('.cash-note')).toContainText('Cần duyệt');
+  await expect(m.locator('.cash-note')).toContainText('danh mục "Khác (chi)" luôn cần duyệt');
+  await m.getByRole('button', { name: 'Ghi khoản chi' }).click();
+  await expect(m.locator('.field-error')).toHaveText('Danh mục "Khác (chi)" cần ghi rõ nội dung');
+  // Chi vượt ngưỡng: báo trước theo ngưỡng trong Cài đặt
+  await m.getByRole('button', { name: 'Mua đá', exact: true }).click();
+  await m.locator('#cash-amount').fill(String(threshold + 100000));
+  await expect(m.locator('.cash-note')).toContainText(`chi trên ${vnd(threshold)}`);
+  await m.getByRole('button', { name: 'Hủy', exact: true }).click();
+  await expect(P.locator('.modal')).toHaveCount(0);
+
+  // Trang quản lý: kỳ nhanh, dải chờ duyệt, ghi khoản khi có ca
+  const cats = Object.fromEntries((await apiAs(request, 'get', '/api/cash-categories')).map((c) => [c.name, c.categoryId]));
+  const pending = await apiAs(request, 'post', '/api/cash-transactions', { categoryId: cats['Khác (chi)'], amount: 20000, reason: 'Sổ quỹ dễ dùng E2E' });
+  await P.goto('/admin/cash');
+  await expect(P.getByRole('button', { name: '7 ngày' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(P.locator('#head-actions').getByRole('button', { name: 'Chi tiền' })).toBeVisible();
+  await expect(P.locator('.kpi', { hasText: 'Đã chi' })).toBeVisible();
+  await P.getByRole('button', { name: 'Hôm nay' }).click();
+  await expect(P.getByRole('button', { name: 'Hôm nay' })).toHaveAttribute('aria-pressed', 'true');
+  const banner = P.locator('.alert.warning', { hasText: 'khoản chờ duyệt' });
+  await expect(banner).toBeVisible();
+  await banner.getByRole('button', { name: 'Xem các khoản chờ duyệt' }).click();
+  await expect(P.locator('.cash-more > summary')).toHaveText('Lọc thêm (1)');
+  await expect(P.locator('table.cash-book tbody tr', { hasText: 'Sổ quỹ dễ dùng E2E' })).toContainText('Chờ duyệt');
+  expect(await P.locator('table.cash-book tbody tr').evaluateAll((trs) => trs.every((tr) => tr.textContent.includes('Chờ duyệt')))).toBe(true);
+  await P.setViewportSize({ width: 390, height: 800 });
+  expect(await P.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+  await P.setViewportSize({ width: 1366, height: 860 });
+  await apiAs(request, 'post', `/api/cash-transactions/${pending.cashTxnId}/reject`, { rejectReason: 'dọn dữ liệu E2E' });
 });

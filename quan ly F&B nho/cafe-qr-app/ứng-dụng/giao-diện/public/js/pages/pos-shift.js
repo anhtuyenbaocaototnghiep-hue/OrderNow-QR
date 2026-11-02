@@ -74,8 +74,8 @@ function summary({ shift, report }) {
       kpi(`Chuyển khoản (${shift.transferCount ?? 0} lượt) — không vào két`, money(shift.transferIn ?? 0)),
       kpi('Đã hoàn tiền mặt', money(shift.cashOut)),
       shift.transferRefunds ? kpi('Đã hoàn chuyển khoản', money(shift.transferRefunds)) : null,
-      shift.cashBookIn ? kpi('Thu khác (sổ quỹ)', money(shift.cashBookIn)) : null,
-      kpi('Chi quỹ (đã duyệt)', money(shift.cashBookOut)),
+      shift.cashBookIn ? kpi('Thu thêm (sổ quỹ)', money(shift.cashBookIn)) : null,
+      kpi('Đã chi (sổ quỹ)', money(shift.cashBookOut)),
       kpi(shift.status === 'OPEN' ? 'Tiền dự kiến trong két' : 'Tiền dự kiến', money(shift.expectedCash), 'strong'),
       shift.status === 'CLOSED' ? kpi('Đếm thực tế', money(shift.countedCash)) : null,
       shift.status === 'CLOSED' ? kpi('Chênh lệch', money(shift.difference), shift.difference < 0 ? 'neg' : 'pos') : null,
@@ -274,12 +274,16 @@ function cashCard({ shift, report }, editable) {
         ? el(
             'div',
             { class: 'row no-print' },
-            el('button', { class: 'btn', type: 'button', onclick: async () => (await cashEntryDialog('OUT')) && load() }, 'Chi tiền'),
-            el('button', { class: 'btn', type: 'button', onclick: async () => (await cashEntryDialog('IN')) && load() }, 'Thu khác'),
+            el('button', { class: 'btn btn-primary', type: 'button', onclick: async () => (await cashEntryDialog('OUT')) && load() }, 'Chi tiền'),
+            el('button', { class: 'btn', type: 'button', onclick: async () => (await cashEntryDialog('IN')) && load() }, 'Thu thêm'),
           )
         : null,
     ),
-    el('p', { class: 'small muted' }, `Thu khác ${money(shift.cashBookIn)} · Chi đã duyệt ${money(shift.cashBookOut)} — đã tính vào tiền dự kiến trong két.`),
+    el(
+      'p',
+      { class: 'small muted' },
+      `Đã chi ${money(shift.cashBookOut)} · thu thêm ${money(shift.cashBookIn)} — đã tính vào tiền dự kiến trong két. Mua đá, trả shipper… bấm "Chi tiền"; chủ quán bỏ thêm tiền lẻ bấm "Thu thêm".`,
+    ),
     cashBookTable(report.cashBook ?? [], { user: shell.user, editable, onChange: load }),
   );
 }

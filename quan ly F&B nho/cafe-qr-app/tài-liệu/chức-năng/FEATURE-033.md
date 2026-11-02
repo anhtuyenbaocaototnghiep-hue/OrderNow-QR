@@ -83,6 +83,8 @@ Realtime `staff`: `cash.created`, `cash.reviewed` `{ txn }`.
 - AC-033-07: Ghi khoản thu / chi với số tiền ≤ 0 hoặc lý do trống → 400; danh mục không tồn tại → 400 `CASH_CATEGORY_INVALID`. _(bổ sung — TASK-057, 20/10/2026)_
 - AC-033-08: Sau khi ca đã đóng, ghi khoản sổ quỹ → 409 `NO_OPEN_SHIFT`. _(bổ sung — TASK-057, 20/10/2026)_
 - AC-033-09: Màn Sổ quỹ của quản lý (S-36), lọc hôm nay: tổng chi = Σ khoản chi đã duyệt; tổng theo danh mục đúng (Mua đá = 50.000đ); lọc trạng thái "Từ chối" chỉ trả khoản bị từ chối (1 khoản); Xuất CSV có BOM UTF-8 (ký tự đầu U+FEFF), có dòng "Mua đá" với số "-50000"; trưởng ca gọi → 403. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-033-11: `GET /api/shifts/current` trả `cashApproveThreshold` = ngưỡng chi cần duyệt trong Cài đặt (đổi Cài đặt → đổi theo). _(TASK-081, 02/11/2026)_
+- AC-033-12: Hộp ghi khoản: danh mục chọn bằng nút; nút số tiền nhanh điền số; nội dung để trống thì ghi tên danh mục, riêng danh mục luôn cần duyệt thì bắt ghi rõ; dòng "Cần duyệt" hiện trước khi lưu khi vượt ngưỡng hoặc danh mục cần duyệt. Trang Sổ quỹ của quản lý: nút kỳ nhanh, dải "Có n khoản chờ duyệt" lọc đúng khoản chờ, nút ghi khoản khi có ca đang mở; màn 390 px không cuộn ngang. _(TASK-081)_
 - AC-033-10: File CSV xuất ra chặn công thức Excel: ô bắt đầu bằng "=" được thêm dấu ' phía trước; ô có dấu phẩy / ngoặc kép / xuống dòng được bọc ngoặc kép; số âm giữ nguyên. _(bổ sung — TASK-057, 20/10/2026)_
 
 ## Bằng chứng
@@ -90,3 +92,7 @@ Realtime `staff`: `cash.created`, `cash.reviewed` `{ txn }`.
 - `tests/finance.test.js` → "Sổ quỹ (F-033)": 10 test.
 - `tests/finance-unit.test.js` → CSV.
 - E2E "trưởng ca + sổ quỹ…" (chi tiền ở màn Ca, duyệt khoản 800.000đ, sổ quỹ quản lý).
+
+## Dễ dùng (TASK-081, 02/11/2026)
+
+Hộp ghi khoản: danh mục là nút, nút số tiền nhanh, nội dung để trống = tên danh mục (trừ danh mục luôn cần duyệt), báo trước "Cần duyệt", ô ảnh mở camera. Bảng gọn 5 cột. Trang quản lý: nút kỳ nhanh, "Lọc thêm", dải khoản chờ duyệt, nút ghi khoản khi có ca. Chi tiết: [TASK-081](../công-việc/TASK-081.md).

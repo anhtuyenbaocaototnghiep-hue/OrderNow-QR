@@ -202,6 +202,13 @@ describe('Vai Trưởng ca & ma trận quyền (F-036)', () => {
 
 // ===================== F-033 Sổ quỹ =====================
 describe('Sổ quỹ (F-033)', () => {
+  test('AC-033-11: GET /api/shifts/current trả ngưỡng chi cần duyệt theo Cài đặt (hộp ghi khoản báo trước "chờ duyệt")', async () => {
+    assert.equal((await call(staff, 'get', '/api/shifts/current')).body.cashApproveThreshold, 500_000);
+    assert.equal((await call(admin, 'put', '/api/admin/settings', { cashApproveThreshold: 300_000 })).status, 200);
+    assert.equal((await call(staff, 'get', '/api/shifts/current')).body.cashApproveThreshold, 300_000);
+    assert.equal((await call(admin, 'put', '/api/admin/settings', { cashApproveThreshold: 500_000 })).status, 200);
+  });
+
   test('chi 50k mua đá → duyệt ngay, tiền dự kiến trong két giảm đúng 50k', async () => {
     const before = await currentShift();
     const t = await cashCreate(staff, 'Mua đá', 50_000, 'mua 2 bao đá');
