@@ -178,6 +178,8 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-061-2 | Should | ACT-STAFF, ACT-LEAD, ACT-ADMIN | Là nhân viên mới, tôi muốn lần đầu vào màn quầy được chỉ từng bước mở ca, nhận đơn, hoàn tất, thu tiền, đóng ca ngay trên màn thật, để làm được việc mà không cần người kèm. | AC-061-04, AC-061-05 | BR-097 | UC-03, UC-11 | MOD-AUTH, MOD-ORDER | SCR-10 | F-061 | DONE |
 | US-062-1 | Should | ACT-GUEST, ACT-MEMBER, ACT-STAFF | Là khách được mời đăng ký hội viên bằng số điện thoại, tôi muốn đọc được quán lưu gì, để làm gì và muốn xóa thì làm sao, để yên tâm đồng ý. | AC-062-01, AC-062-02, AC-062-03 | BR-098 | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | F-062 | DONE |
 | US-063-1 | Should | ACT-ADMIN, ACT-STAFF | Là chủ quán, tôi muốn app báo ngay khi mã QR đang dán trên bàn trỏ tới địa chỉ cũ hoặc trỏ localhost, để in lại trước khi khách quét không được. | AC-063-01, AC-063-02, AC-063-03, AC-063-04 | BR-099 | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | F-063 | DONE |
+| US-064-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn được báo ngay khi nhập hàng giá cao hơn làm món nào tụt lãi, mất bao nhiêu tiền mỗi tháng và nên bán giá nào, để quyết định trước khi lãi mất dần. | AC-064-01, AC-064-02, AC-064-03, AC-064-07, AC-064-08, AC-064-09, AC-064-10 | BR-100, BR-101 | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | F-064 | DONE |
+| US-064-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn app không báo lặp hay báo giả khi nhập nhầm giá, để còn tin vào cảnh báo. | AC-064-04, AC-064-05, AC-064-06 | BR-100, BR-101 | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-31 | F-064 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 
@@ -295,13 +297,13 @@ Bốn chỗ ghi cũ mâu thuẫn với quyết định sau đã được sửa t
 
 | Chỉ số | Giá trị |
 | --- | --- |
-| Tổng số story | 144 |
+| Tổng số story | 146 |
 | Must | 54 (F-001…F-012: 28 — gồm US-001-3 cho trang chủ / 404; F-046, F-047: 6; F-048: 4; F-049: 2; F-050: 2; F-051: 4; F-052: 2; F-053: 1; F-054: 1; F-055: 2; F-056: 2) |
-| Should | 89 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4) |
+| Should | 91 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4; F-064: 2) |
 | Could | 1 (US-037-4) |
-| AC đã ánh xạ / tổng AC trong FEATURE | 375 / 375 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026) |
+| AC đã ánh xạ / tổng AC trong FEATURE | 385 / 385 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026 + 10 của F-064 ngày 02/11/2026) |
 | AC đã viết lại cho kiểm được | 25 |
-| FEATURE có story | 62 / 62 (F-001…F-043, F-045…F-063; không có F-044) |
+| FEATURE có story | 63 / 63 (F-001…F-043, F-045…F-064; không có F-044) |
 | FEATURE không có AC nào | 0 |
-| BR được tham chiếu | 99 / 99 |
+| BR được tham chiếu | 101 / 101 |
 | Màn hình `S-xx` có story | 37 / 37; thêm SCR-43 (trang chủ) và SCR-44 (404) qua US-001-3 |
