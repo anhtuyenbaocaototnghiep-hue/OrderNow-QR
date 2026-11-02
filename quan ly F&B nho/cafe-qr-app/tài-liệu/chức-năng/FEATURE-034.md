@@ -4,13 +4,15 @@
 
 - **Status:** CONFIRMED (ADR-006 D-31) · Triển khai: READY_FOR_REVIEW (17/10/2026)
 - **Actor:** ADMIN (MANAGER → 403).
-- **Màn hình:** **Quản lý → Lãi / lỗ**
-  - Bộ lọc: khoảng ngày, nhóm theo ngày / tháng, nút nhanh (tháng này, 30 ngày, năm nay).
-  - Nhãn **"Ước tính"** cố định.
-  - Các ô số: doanh thu thuần, giá vốn, lãi gộp (+ biên %), chi quỹ, cố định phân bổ, lợi nhuận hoạt động, hòa vốn mỗi ngày.
-  - Biểu đồ cột tự vẽ (SVG) doanh thu thuần – giá vốn – chi phí, kèm đường hòa vốn khi nhóm theo ngày.
-  - Bảng theo kỳ, chi quỹ theo danh mục.
-  - Thẻ **Chi phí cố định / tháng** (thêm / sửa / xóa).
+- **Màn hình:** **Quản lý → Lãi / lỗ** (trình bày lại cho dễ hiểu — [TASK-080](../công-việc/TASK-080.md), 02/11/2026)
+  - Nút chọn nhanh: Hôm nay, Tuần này, Tháng này (mặc định), Tháng trước, Năm nay; "Chọn ngày khác" mở ô từ ngày / đến ngày. Khoảng ≤ 62 ngày xem theo ngày, dài hơn theo tháng.
+  - Câu trả lời: "Quán đang lãi / lỗ X" + một câu giải thích + so với khoảng trước cùng độ dài.
+  - **Tiền đi đâu:** Tiền bán được (doanh thu thuần) − Nguyên liệu (giá vốn) − Chi phí khác (chi quỹ) − Chi phí cố định = Lãi / Lỗ (lợi nhuận hoạt động); mỗi dòng có câu giải thích và thanh ngang.
+  - **Mỗi ngày cần bán bao nhiêu để không lỗ?** (hòa vốn) + thanh hôm nay + số ngày đạt trong khoảng.
+  - **Cần để ý:** lưu ý tự phát hiện (xem TASK-080).
+  - Thẻ **Chi phí cố định hằng tháng** (thêm nhanh: Tiền mặt bằng, Lương nhân viên, Internet; thêm / sửa / xóa).
+  - "Xem chi tiết": biểu đồ tự vẽ (SVG) kèm đường mức cần bán khi xem theo ngày, bảng theo kỳ, chi quỹ theo danh mục.
+  - Dòng cuối: số liệu là ước tính.
 - **Dữ liệu:** migration `0028_lai_lo.sql`: `FixedCosts(Name, MonthlyAmount ≥ 0, EffectiveFrom DATE, EffectiveTo NULL)`.
 
 ## Công thức (ADR-006 D-31 — luôn là ước tính)
@@ -27,6 +29,7 @@
 | Cố định phân bổ | Mỗi ngày: Σ (số tiền tháng ÷ số ngày của tháng đó) các khoản đang hiệu lực |
 | Lợi nhuận hoạt động | Lãi gộp − chi quỹ − cố định phân bổ |
 | Hòa vốn / ngày | Cố định bình quân / ngày × doanh thu thuần ÷ lãi gộp (= cố định / ngày ÷ biên %); lãi gộp ≤ 0 → không tính |
+| Hàng mất (`lossValue`, TASK-080) | Σ (−Delta × giá) các dòng `InventoryTransactions.Type = 'ADJUST'` trong kỳ (điều chỉnh tay, hao hụt, lệch kiểm kê; thừa bù trừ), ≥ 0 — **chỉ để nhắc, không trừ vào lợi nhuận** |
 
 Ghi chú về giá vốn:
 
@@ -51,9 +54,13 @@ Ghi chú về giá vốn:
 - AC-034-04: MANAGER gọi → 403.
 - AC-034-05: Báo cáo lãi / lỗ với `from > to` → 400. _(bổ sung — TASK-057, 20/10/2026)_
 - AC-034-06: Thêm chi phí cố định có ngày kết thúc trước ngày bắt đầu → 400. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-034-07: Báo cáo trả `lossValue` = hàng mất ròng trong kỳ (chỉ dòng điều chỉnh tồn; thừa bù trừ; hàng bán không tính), không làm đổi lợi nhuận hoạt động. _(TASK-080, 02/11/2026)_
+- AC-034-08: Trang hiện câu "Quán đang lãi / lỗ X" kèm giải thích và so với khoảng trước; "Tiền đi đâu" với 4 dòng và dòng kết quả; mức cần bán mỗi ngày, hôm nay bán được bao nhiêu và còn thiếu bao nhiêu, số ngày đạt; biểu đồ và bảng nằm trong "Xem chi tiết" (thu gọn mặc định); màn 390 px không cuộn ngang. _(TASK-080)_
+- AC-034-09: Thẻ "Cần để ý" hiện đúng khi: chưa khai chi phí cố định; lương có trong cả Sổ quỹ và chi phí cố định; có hàng hao hụt; khi đã khai chi phí cố định thì hiện mức cần bán, chưa khai thì hướng dẫn khai. Nút thêm nhanh điền sẵn tên khoản. _(TASK-080)_
 
 ## Bằng chứng
 
 - `tests/finance.test.js` → "Lãi / lỗ ước tính (F-034)": 4 test.
 - `tests/finance-unit.test.js` → phân bổ cố định, công thức chỉ tiêu.
-- E2E "trưởng ca + sổ quỹ…" (trang Lãi / lỗ: nhãn Ước tính, biểu đồ).
+- E2E "trưởng ca + sổ quỹ…" (trang Lãi / lỗ: dòng ước tính, biểu đồ trong "Xem chi tiết").
+- E2E "lãi / lỗ dễ hiểu…" (AC-034-08, AC-034-09) — số liệu giả lập qua route để kiểm từng câu chữ.

@@ -3,6 +3,7 @@
 //   lãi gộp = doanh thu thuần − giá vốn (COGS);  lợi nhuận hoạt động = lãi gộp − chi quỹ (danh mục chi phí) − chi phí cố định phân bổ ngày
 //   chi phí cố định/ngày = Σ (số tiền tháng ÷ số ngày của tháng) các khoản đang hiệu lực ngày đó
 //   hòa vốn/ngày = chi phí cố định bình quân/ngày ÷ biên lãi gộp % (doanh thu thuần cần đạt mỗi ngày)
+//   lossValue (TASK-080): hàng mất ròng trong kỳ (điều chỉnh / hao hụt / lệch kiểm kê) — chỉ để nhắc, không trừ vào lợi nhuận
 import { badRequest, notFound } from '../errors.js';
 import * as pnlRepo from '../repositories/pnlRepo.js';
 import { addDays, eachDay, vnDayStartUtc } from '../utils/time.js';
@@ -89,6 +90,7 @@ export async function report(from, to, groupBy = 'day') {
     fixedCostsPerDay: fixedPerDay,
     breakEvenPerDay: totals.grossMargin > 0 && totals.revenueNet > 0 ? Math.round((fixedPerDay * totals.revenueNet) / totals.grossMargin) : null,
     expensesByCategory: [...byCategory.values()].sort((a, b) => b.amount - a.amount),
+    lossValue: data.lossValue,
     series: [...groups].map(([period, g]) => ({ period, ...finalize(g) })),
   };
 }

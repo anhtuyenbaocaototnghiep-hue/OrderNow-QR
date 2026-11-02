@@ -602,6 +602,20 @@ describe('Lãi / lỗ ước tính (F-034)', () => {
     assert.deepEqual(p.expensesByCategory, [{ categoryId: cats['Mua đá'], name: 'Mua đá', amount: 150_000 }]);
   });
 
+  test('AC-034-07: hàng mất ròng trong kỳ (điều chỉnh, hao hụt, lệch kiểm kê; thừa bù trừ) → lossValue, không trừ vào lợi nhuận', async () => {
+    const [{ IngredientId: ing }] = (await pool.request().query('SELECT TOP 1 IngredientId FROM dbo.Ingredients WHERE DeletedAt IS NULL ORDER BY IngredientId'))
+      .recordset;
+    await pool.request().query(`
+      INSERT dbo.InventoryTransactions (IngredientId, Type, Delta, BalanceAfter, Reason, CreatedBy, CreatedAt, UnitCost, CostAmount) VALUES
+        (${ing}, 'ADJUST', -10, 0, N'đổ bỏ', ${users.admin}, '2026-09-15T06:00:00', 1000, 10000),
+        (${ing}, 'ADJUST', 2, 0, N'kiểm kê thừa', ${users.admin}, '2026-09-15T07:00:00', 1000, 2000),
+        (${ing}, 'DEDUCT', -50, 0, N'bán', ${users.admin}, '2026-09-15T07:00:00', 1000, 50000);`);
+    const p = (await call(admin, 'get', '/api/admin/reports/pnl?from=2026-09-15&to=2026-09-15')).body;
+    assert.equal(p.lossValue, 8000, 'chỉ ADJUST, thừa bù trừ; bán (DEDUCT) đã nằm trong giá vốn');
+    assert.equal(p.operatingProfit, 150_000, 'không trừ vào lợi nhuận');
+    assert.equal((await call(admin, 'get', '/api/admin/reports/pnl?from=2026-09-16&to=2026-09-16')).body.lossValue, 0);
+  });
+
   test('theo tháng: cố định phân bổ đủ 30.000.000 cho cả tháng 9; khoảng sai → 400; trưởng ca → 403', async () => {
     const r = await call(admin, 'get', '/api/admin/reports/pnl?from=2026-09-01&to=2026-09-30&groupBy=month');
     assert.equal(r.status, 200);

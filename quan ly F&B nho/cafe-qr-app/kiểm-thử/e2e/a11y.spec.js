@@ -465,10 +465,16 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
   await A.locator('svg.fc-chart').hover();
   await check(A, 'quan-ly-analytics-du-bao');
   await A.goto('/admin/pnl');
+  await A.locator('.pnl-detail > summary').click(); // TASK-080: biểu đồ nằm trong "Xem chi tiết"
   await A.locator('svg.pnl-chart').hover();
   await check(A, 'quan-ly-pnl-hop-so-lieu');
-  // Kỳ dài → 3 đường thay cột mỏng; màn hẹp: biểu đồ cuộn trong khung, trang không cuộn ngang (review G3 TASK-069)
-  await A.getByRole('button', { name: 'Năm nay' }).click();
+  // Kỳ dài theo ngày (60 ngày) → 3 đường thay cột mỏng; màn hẹp: biểu đồ cuộn trong khung, trang không cuộn ngang (review G3 TASK-069)
+  const vnToday = new Date(Date.now() + 7 * 3600e3);
+  const from60 = new Date(vnToday.getTime() - 59 * 86400e3).toISOString().slice(0, 10);
+  await A.locator('.pnl-custom > summary').click();
+  await A.getByLabel('Từ ngày').fill(from60);
+  await expect(A.locator('.pnl-answer')).toContainText(`${from60.slice(8, 10)}/${from60.slice(5, 7)}/${from60.slice(0, 4)}`);
+  await A.locator('.pnl-detail > summary').click();
   await expect(A.locator('svg.pnl-chart path.pnl-line')).toHaveCount(3);
   await check(A, 'quan-ly-pnl-nam-nay');
   // (Trang Phân tích / Lãi / lỗ còn cuộn ngang ở màn hẹp vì thanh tab / cột bảng dưới — DEF-014, có từ trước, ngoài phạm vi)

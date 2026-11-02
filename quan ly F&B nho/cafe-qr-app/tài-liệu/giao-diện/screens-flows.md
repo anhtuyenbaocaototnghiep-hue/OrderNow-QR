@@ -345,3 +345,12 @@ flowchart LR
   C -->|có| A["S-47 Cảnh báo + email"] -->|Đổi giá| M["S-21 / S-27 hộp sửa món"]
   R -->|tăng trên 50%| K["Hỏi: có nhập nhầm không?"] -->|sửa / hủy phiếu| F["Cảnh báo cũ: Đã xử lý + thư đính chính"]
 ```
+
+## TASK-080 — S-39 Lãi / lỗ dễ hiểu (02/11/2026)
+
+- Trên cùng: nút chọn nhanh (Hôm nay · Tuần này · **Tháng này** · Tháng trước · Năm nay, `aria-pressed`) + "Chọn ngày khác" (ô từ ngày / đến ngày). Bỏ ô "Nhóm theo": ≤ 62 ngày xem theo ngày, dài hơn theo tháng.
+- Thẻ câu trả lời: "Quán đang **lãi** X" (xanh) / "Quán đang **lỗ** X" (đỏ) / "Chưa có tiền bán hàng trong khoảng này"; câu giải thích; so với khoảng trước cùng độ dài.
+- Hai cột (≥ 1000 px; hẹp hơn thì xếp dọc): **Tiền đi đâu** (bảng 5 dòng, thanh ngang trang trí `aria-hidden`, ẩn thanh ở ≤ 560 px) | **Mỗi ngày cần bán bao nhiêu để không lỗ?** (`<progress>` hôm nay) + **Cần để ý** (chỉ hiện khi có lưu ý).
+- **Chi phí cố định hằng tháng**: tổng đang áp dụng / tháng ≈ / ngày; nút + Tiền mặt bằng, + Lương nhân viên, + Internet (điền sẵn tên), + Khoản khác; danh sách xuống dòng ở màn hẹp.
+- **Xem chi tiết từng ngày / tháng** (`<details>`, thu gọn): biểu đồ, bảng theo kỳ (nhãn: Bán được · Nguyên liệu · Chi phí khác · Cố định · Lãi / lỗ), chi quỹ theo danh mục.
+- Dòng cuối: "Số liệu là ước tính: chưa gồm thuế và các khoản chi không ghi vào Sổ quỹ."

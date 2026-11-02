@@ -28,3 +28,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-075-plan.md](TASK-075-plan.md) — phát hiện bất thường, cảnh báo qua email (F-060, ADR-020).
 - [TASK-077-plan.md](TASK-077-plan.md) — chế độ cơ bản, hướng dẫn quầy, chính sách dữ liệu, cảnh báo QR (F-061…F-063, ADR-021).
 - [TASK-079-plan.md](TASK-079-plan.md) — báo động giá vốn (F-064, ADR-023).
+- [TASK-080-plan.md](TASK-080-plan.md) — trang Lãi / lỗ dễ hiểu (F-034).

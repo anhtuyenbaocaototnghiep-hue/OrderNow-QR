@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 378 test, sửa lúc 2026-11-02 05:53 UTC
-- `npm run test:e2e` (JSON): 55 test, sửa lúc 2026-11-02 05:56 UTC
+- `npm test` (JUnit): 379 test, sửa lúc 2026-11-02 11:42 UTC
+- `npm run test:e2e` (JSON): 56 test, sửa lúc 2026-11-02 11:50 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 146 |
-| Acceptance Criteria | 385 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 385 |
+| Acceptance Criteria | 388 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 388 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -308,6 +308,9 @@
 | AC-034-04 | TC-034-04 | F-034 | US-034-1 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-044, BR-056 | Integration: `finance.test.js` › theo tháng: cố định phân bổ đủ 30.000.000 cho cả tháng 9; khoảng sai → 400; trưởng ca → 403 — **PASS**<br>Integration: `finance.test.js` › ma trận actor × endpoint sinh từ PERMISSIONS: vai được phép không bị 401/403, vai khác 403 — **PASS** | **PASS** |
 | AC-034-05 | TC-034-05 | F-034 | US-034-1 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-044, BR-056 | Integration: `finance.test.js` › theo tháng: cố định phân bổ đủ 30.000.000 cho cả tháng 9; khoảng sai → 400; trưởng ca → 403 — **PASS** | **PASS** |
 | AC-034-06 | TC-034-06 | F-034 | US-034-2 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-056 | Integration: `finance.test.js` › chi phí cố định: hết hiệu lực giữa tháng chỉ tính tới ngày kết thúc; ngày kết thúc trước ngày bắt đầu → 400 — **PASS** | **PASS** |
+| AC-034-07 | TC-034-07 | F-034 | US-034-1 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-044, BR-056 | Integration: `finance.test.js` › AC-034-07: hàng mất ròng trong kỳ (điều chỉnh, hao hụt, lệch kiểm kê; thừa bù trừ) → lossValue, không trừ vào lợi nhuận — **PASS** | **PASS** |
+| AC-034-08 | TC-034-08 | F-034 | US-034-1 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-044, BR-056 | E2E: `flow.spec.js` › lãi / lỗ dễ hiểu: câu trả lời lãi hay lỗ, "Tiền đi đâu", mức cần bán mỗi ngày và hôm nay, lưu ý tự phát hiện, chi tiết thu gọn (F-034, AC-034-08, AC-034-09) — **PASS** | **PASS** |
+| AC-034-09 | TC-034-09 | F-034 | US-034-1 | ACT-ADMIN | UC-16 | MOD-REPORT | SCR-39 | BR-044, BR-056 | E2E: `flow.spec.js` › lãi / lỗ dễ hiểu: câu trả lời lãi hay lỗ, "Tiền đi đâu", mức cần bán mỗi ngày và hôm nay, lưu ý tự phát hiện, chi tiết thu gọn (F-034, AC-034-08, AC-034-09) — **PASS** | **PASS** |
 | AC-035-01 | TC-035-01 | F-035 | US-035-1 | ACT-STAFF, ACT-LEAD | UC-12 | MOD-SHIFT, MOD-AUTH, MOD-JOBS | SCR-09, SCR-15 | BR-052 | Integration: `finance.test.js` › đăng nhập → vào ca (nhân viên / trưởng ca); đăng nhập lại không tạo thêm; quản lý không tự chấm; đăng xuất → ra ca — **PASS**<br>Integration: `finance.test.js` › đăng nhập đồng thời 5 lần → đúng một lần chấm công đang mở — **PASS**<br>Integration: `finance.test.js` › đóng ca → chấm công của người đóng ca kết thúc — **PASS**<br>E2E: `flow.spec.js` › trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt khoản chi lớn ở màn Ca, thấy tab Kiểm kê; quản lý xem sổ quỹ, kéo ca trong lịch tuần, lãi/lỗ ước tính, nhật ký (F-036, F-033, F-035, F-034) — **PASS** | **PASS** |
 | AC-035-02 | TC-035-02 | F-035 | US-035-2 | ACT-LEAD, ACT-ADMIN | UC-12 | MOD-SHIFT | SCR-15, SCR-37 | BR-053 | Integration: `finance.test.js` › sửa chấm công: thiếu lý do → 400; trưởng ca sửa trong ngày được, ngày trước → 403; quản lý sửa mọi ngày; chồng giờ → 409 — **PASS** | **PASS** |
 | AC-035-03 | TC-035-03 | F-035 | US-035-4 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-JOBS | SCR-38 | BR-055 | Integration: `finance.test.js` › hoàn tiền → một dòng nhật ký có trước/sau; duyệt chi, sửa chấm công, đổi vai trò đều có nhật ký — **PASS** | **PASS** |

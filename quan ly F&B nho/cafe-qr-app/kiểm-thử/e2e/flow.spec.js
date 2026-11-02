@@ -659,15 +659,16 @@ test('trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt kho�
 
   // Quản lý: lãi/lỗ ước tính + nhật ký thao tác
   await P.goto('/admin/pnl');
-  await expect(P.locator('.alert.warning')).toContainText('Ước tính');
+  await expect(P.locator('.pnl-note')).toContainText('ước tính');
+  await P.locator('.pnl-detail > summary').click(); // TASK-080: biểu đồ nằm trong "Xem chi tiết"
   await expect(P.locator('svg.pnl-chart')).toBeVisible();
   // TASK-069: Tab vào biểu đồ + phím mũi tên → hộp số liệu ngày (3 chuỗi + lợi nhuận)
   await P.locator('svg.pnl-chart').focus();
   await P.keyboard.press('ArrowLeft');
-  await expect(P.locator('.chart-tip')).toContainText('Lợi nhuận hoạt động');
+  await expect(P.locator('.chart-tip')).toContainText('Lãi / lỗ');
   await P.keyboard.press('Escape'); // WCAG 1.4.13: Esc ẩn hộp số liệu
   await expect(P.locator('.chart-tip')).toBeHidden();
-  await expect(P.locator('.kpi', { hasText: 'Lợi nhuận hoạt động' })).toBeVisible();
+  await expect(P.locator('.pnl-flow')).toContainText('lợi nhuận hoạt động');
   await P.goto('/admin/audit');
   await expect(P.locator('#content table')).toContainText('cash.approve');
   await P.locator('#content tr', { hasText: 'cash.approve' }).first().getByRole('button', { name: 'Chi tiết' }).click();
@@ -1856,4 +1857,104 @@ test('báo động giá vốn: nhập sữa giá cao hơn → cảnh báo tới 
   await expect(P.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
   expect((await apiAs(request, 'get', '/api/admin/settings')).alertCostRisePct).toBe(7);
   await apiAs(request, 'put', '/api/admin/settings', { alertCostRisePct: 5 });
+});
+
+test('lãi / lỗ dễ hiểu: câu trả lời lãi hay lỗ, "Tiền đi đâu", mức cần bán mỗi ngày và hôm nay, lưu ý tự phát hiện, chi tiết thu gọn (F-034, AC-034-08, AC-034-09)', async () => {
+  // Số liệu giả lập (route) để kiểm đúng từng câu chữ; phần tính toán đã có test integration (AC-034-01…07)
+  const day = (offset) => new Date(Date.now() + 7 * 3600e3 + offset * 86400e3).toISOString().slice(0, 10);
+  const today = day(0);
+  const lastMonthEnd = new Date(Date.parse(`${today.slice(0, 8)}01T00:00:00Z`) - 86400e3).toISOString().slice(0, 10);
+  const lastMonthFrom = `${lastMonthEnd.slice(0, 8)}01`;
+  const row = (period, revenueNet) => ({
+    period,
+    revenueNet,
+    cogs: 0,
+    grossMargin: revenueNet,
+    cashExpenses: 0,
+    fixedCostsAllocated: 0,
+    operatingProfit: revenueNet,
+  });
+  const main = {
+    note: 'ước tính',
+    revenueGross: 2_000_000,
+    discounts: 100_000,
+    refunds: 50_000,
+    revenueNet: 1_850_000,
+    cogs: 650_000,
+    grossMargin: 1_200_000,
+    grossMarginPct: 64.86,
+    cashExpenses: 50_000,
+    fixedCostsAllocated: 500_000,
+    fixedCostsPerDay: 500_000,
+    operatingProfit: 650_000,
+    breakEvenPerDay: 770_833,
+    estimatedCogsRows: 0,
+    payments: 50,
+    lossValue: 120_000,
+    expensesByCategory: [{ categoryId: 4, name: 'Lương tạm ứng', amount: 50_000 }],
+    series: [row(lastMonthFrom, 900_000), row(lastMonthEnd, 500_000)],
+  };
+  let data = main;
+  await P.route('**/api/admin/reports/pnl?*', (route) => {
+    const u = new URL(route.request().url());
+    const [from, to] = [u.searchParams.get('from'), u.searchParams.get('to')];
+    if (from === today && to === today) return route.fulfill({ json: { ...data, revenueNet: 520_000 } });
+    if (from === lastMonthFrom) return route.fulfill({ json: data });
+    return route.fulfill({ json: { ...data, operatingProfit: 400_000, payments: 10 } }); // khoảng trước để so sánh
+  });
+  await P.route('**/api/admin/fixed-costs', (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({ json: [{ costId: 1, name: 'Lương nhân viên', monthlyAmount: 6_000_000, effectiveFrom: '2026-01-01', effectiveTo: null }] })
+      : route.continue(),
+  );
+  try {
+    await P.goto('/admin/pnl');
+    await P.getByRole('button', { name: 'Tháng trước' }).click();
+    await expect(P.getByRole('button', { name: 'Tháng trước' })).toHaveAttribute('aria-pressed', 'true');
+    const answer = P.locator('.pnl-answer');
+    await expect(answer).toContainText('Quán đang lãi 650.000đ');
+    await expect(answer).toContainText('Bán được 1.850.000đ, trả nguyên liệu 650.000đ và các chi phí 550.000đ, còn lại 650.000đ.');
+    await expect(answer).toContainText('(lãi 400.000đ): tốt hơn 250.000đ');
+    const flow = P.locator('.pnl-flow');
+    await expect(flow.getByRole('row', { name: /Tiền bán được/ })).toContainText('1.850.000đ');
+    await expect(flow.getByRole('row', { name: /Nguyên liệu/ })).toContainText('Cứ 100.000đ bán được thì tốn khoảng 35.135đ nguyên liệu');
+    await expect(flow.locator('tr.pnl-total')).toContainText('Lãi');
+    await expect(flow.locator('tr.pnl-total')).toContainText('650.000đ');
+    const be = P.locator('.pnl-need');
+    await expect(be).toContainText('Ít nhất 770.833đ tiền bán được mỗi ngày');
+    await expect(be).toContainText('Hôm nay bán được 520.000đ — còn thiếu 250.833đ (67%)');
+    await expect(be).toContainText('Trong khoảng đã chọn: 1 / 2 ngày đạt mức này.');
+    await expect(be.getByRole('progressbar', { name: 'Hôm nay đã bán so với mức cần bán' })).toBeVisible();
+    const hints = P.locator('.pnl-hints');
+    await expect(hints).toContainText('lương đang bị trừ hai lần');
+    await expect(hints).toContainText('Hàng hao hụt, đổ bỏ, lệch kiểm kê khoảng 120.000đ');
+    await expect(hints).not.toContainText('Chưa khai chi phí cố định');
+    // Chi tiết thu gọn mặc định
+    await expect(P.locator('svg.pnl-chart')).toBeHidden();
+    await P.locator('.pnl-detail > summary').click();
+    await expect(P.locator('svg.pnl-chart')).toBeVisible();
+    // Nút thêm nhanh điền sẵn tên
+    await P.getByRole('button', { name: '+ Tiền mặt bằng' }).click();
+    await expect(P.getByRole('dialog').locator('input[name="name"]')).toHaveValue('Tiền mặt bằng');
+    await P.keyboard.press('Escape');
+    await expect(P.getByRole('dialog')).toHaveCount(0);
+    // Màn điện thoại không cuộn ngang
+    await P.setViewportSize({ width: 390, height: 800 });
+    expect(await P.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+    await P.setViewportSize({ width: 1366, height: 860 });
+
+    // Lỗ + chưa khai chi phí cố định
+    data = { ...main, operatingProfit: -300_000, fixedCostsAllocated: 0, fixedCostsPerDay: 0, breakEvenPerDay: null, lossValue: 0, expensesByCategory: [] };
+    await P.getByRole('button', { name: 'Tháng trước' }).click();
+    await expect(answer).toContainText('Quán đang lỗ 300.000đ');
+    await expect(answer).toContainText('còn thiếu 300.000đ');
+    await expect(P.locator('.pnl-flow tr.pnl-total')).toContainText('Lỗ');
+    await expect(P.locator('.pnl-need')).toContainText('Khai chi phí cố định (mặt bằng, lương…) ở mục bên dưới');
+    await expect(P.locator('.pnl-hints')).toContainText('Chưa khai chi phí cố định');
+  } finally {
+    await P.unroute('**/api/admin/reports/pnl?*');
+    await P.unroute('**/api/admin/fixed-costs');
+  }
+  await P.goto('/admin/pnl');
+  await expect(P.locator('.pnl-answer .pnl-verdict')).toContainText(/Quán đang (lãi|lỗ)|Chưa có tiền bán hàng/);
 });

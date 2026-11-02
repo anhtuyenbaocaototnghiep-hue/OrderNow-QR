@@ -551,3 +551,7 @@ Chi tiết: [FEATURE-064](../chức-năng/FEATURE-064.md), BR-100, BR-101. Khôn
 - `POST /api/admin/stock-receipts`, `PUT /api/admin/stock-receipts/{id}`, `POST /api/admin/stock-receipts/{id}/void`, `POST /api/receiving/purchase-orders/{id}/receive`: **request / response không đổi**; sau khi commit, app xét báo động giá vốn (lỗi phần này chỉ ghi log). Nhân viên nhận hàng theo đơn đặt không thấy số liệu cảnh báo.
 - Sự kiện `alert.created` (phòng `admin`): thêm loại `COST_RISE`, cùng dạng `{ alert }`.
 - Trang (không phải API): `/admin/menu?edit={id}`, `/admin/combos?edit={id}` mở sẵn hộp sửa món / combo.
+
+## Bổ sung TASK-080 — trang Lãi / lỗ dễ hiểu (02/11/2026)
+
+- `GET /api/admin/reports/pnl`: thêm `lossValue` — giá trị hàng mất ròng trong kỳ (dòng `InventoryTransactions.Type = 'ADJUST'`: điều chỉnh tay, hao hụt, lệch kiểm kê; thừa bù trừ; ≥ 0). **Không** trừ vào `operatingProfit`; giao diện chỉ dùng để nhắc. Các trường khác và công thức không đổi.

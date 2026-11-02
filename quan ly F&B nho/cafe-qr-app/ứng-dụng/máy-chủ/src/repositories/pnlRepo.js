@@ -3,10 +3,14 @@ import { query, sql } from '../db.js';
 
 const VN_DAY = (col) => `CONVERT(CHAR(10), DATEADD(HOUR, 7, ${col}), 23)`;
 
-/** Mỗi ngày: doanh thu gộp (trước giảm), số phải thu, hoàn tiền, giá vốn, chi quỹ (danh mục chi phí). */
+/**
+ * Mỗi ngày: doanh thu gộp (trước giảm), số phải thu, hoàn tiền, giá vốn, chi quỹ (danh mục chi phí).
+ * + lossValue (TASK-080): giá trị hàng mất ròng cả kỳ — điều chỉnh tồn tay, ghi hao hụt, lệch kiểm kê (InventoryTransactions.Type = 'ADJUST';
+ *   kiểm kê thừa / điều chỉnh tăng bù trừ). Chỉ để nhắc trên trang, KHÔNG trừ vào lợi nhuận (công thức D-31 giữ nguyên).
+ */
 export async function daily(fromUtc, toUtc) {
   const p = { f: [sql.DateTime2(0), fromUtc], t: [sql.DateTime2(0), toUtc] };
-  const [pay, ref, cogs, cash] = await Promise.all([
+  const [pay, ref, cogs, cash, loss] = await Promise.all([
     query(
       `SELECT ${VN_DAY('PaidAt')} AS D, SUM(ISNULL(SubtotalAmount, AmountDue)) AS Gross, SUM(AmountDue) AS Due, COUNT(*) AS N
        FROM dbo.Payments WHERE PaidAt >= @f AND PaidAt < @t GROUP BY ${VN_DAY('PaidAt')}`,
@@ -39,12 +43,19 @@ export async function daily(fromUtc, toUtc) {
        GROUP BY ${VN_DAY('c.CreatedAt')}, cc.CategoryId, cc.Name`,
       p,
     ),
+    query(
+      `SELECT ISNULL(SUM(-t.Delta * COALESCE(t.UnitCost, i.AvgCost, 0)), 0) AS Loss
+       FROM dbo.InventoryTransactions t JOIN dbo.Ingredients i ON i.IngredientId = t.IngredientId
+       WHERE t.Type = 'ADJUST' AND t.CreatedAt >= @f AND t.CreatedAt < @t`,
+      p,
+    ),
   ]);
   return {
     payments: pay.recordset.map((x) => ({ date: x.D, gross: Number(x.Gross), due: Number(x.Due), count: x.N })),
     refunds: ref.recordset.map((x) => ({ date: x.D, amount: Number(x.Amount) })),
     cogs: cogs.recordset.map((x) => ({ date: x.D, amount: Math.round(Number(x.Cogs)), estimatedRows: x.EstRows })),
     expenses: cash.recordset.map((x) => ({ date: x.D, categoryId: x.CategoryId, name: x.Name, amount: Number(x.Amount) })),
+    lossValue: Math.max(0, Math.round(Number(loss.recordset[0].Loss))),
   };
 }
 
