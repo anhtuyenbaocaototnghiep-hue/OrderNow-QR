@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 355 test, sửa lúc 2026-10-29 07:40 UTC
-- `npm run test:e2e` (JSON): 54 test, sửa lúc 2026-10-29 07:43 UTC
+- `npm test` (JUnit): 378 test, sửa lúc 2026-11-02 05:53 UTC
+- `npm run test:e2e` (JSON): 55 test, sửa lúc 2026-11-02 05:56 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 144 |
-| Acceptance Criteria | 375 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 375 |
+| User Story | 146 |
+| Acceptance Criteria | 385 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 385 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -470,4 +470,14 @@
 | AC-063-02 | TC-063-02 | F-063 | US-063-1 | ACT-ADMIN, ACT-STAFF | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | BR-099 | Integration: `basic-mode.test.js` › AC-063-02: địa chỉ đang chạy khác lúc in → mismatch kèm cả hai địa chỉ; in lại → hết; IP trong PUBLIC_BASE_URL không còn trên máy → unreachable; localhost / 127.0.0.1 → localhost — **PASS** | **PASS** |
 | AC-063-03 | TC-063-03 | F-063 | US-063-1 | ACT-ADMIN, ACT-STAFF | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | BR-099 | Integration: `basic-mode.test.js` › AC-063-03: quyền — qr-check: khách 401, nhân viên 200; qr-printed: nhân viên / trưởng ca 403 — **PASS** | **PASS** |
 | AC-063-04 | TC-063-04 | F-063 | US-063-1 | ACT-ADMIN, ACT-STAFF | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | BR-099 | E2E: `flow.spec.js` › cảnh báo QR sai địa chỉ: trang In QR báo địa chỉ localhost; bấm In → lưu địa chỉ đang chạy; QR in ở địa chỉ cũ hoặc máy chủ đã đổi IP → dải đỏ ở trang quản lý và màn quầy (F-063, AC-063-04) — **PASS** | **PASS** |
+| AC-064-01 | TC-064-01 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-01: sữa tăng 20% → một cảnh báo: giá vốn, lãi, tiền mất theo số bán 30 ngày, 2 giá gợi ý, xếp theo tiền mất; giá bán không đổi — **PASS**<br>Unit: `cost-alert.test.js` › AC-064-01 (unit): giá gợi ý làm tròn lên 1.000đ; không có mức giữ % khi giá cũ đã lỗ / hòa vốn — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-01: chạy lại sau lỗi giữa chừng (deadlock) không tạo trùng cảnh báo, mốc, email, không gỡ nhầm cảnh báo vừa tạo — **PASS** | **PASS** |
+| AC-064-02 | TC-064-02 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-02: dò qua bán thành phẩm và combo; nhập theo gói quy về đơn vị gốc; tùy chọn được liệt kê; món ẩn / đã xóa không báo — **PASS**<br>Unit: `cost-alert.test.js` › AC-064-02 (unit): bán thành phẩm lồng nhau và giá nghi nhầm được tính đúng; công thức vòng lặp không treo — **PASS** | **PASS** |
+| AC-064-03 | TC-064-03 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-03: không báo khi tăng dưới ngưỡng, giá giảm, không có giá, lãi không vượt ngưỡng; món thiếu giá vào danh sách "chưa tính được" — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-03: món vốn đã dưới mức tối thiểu: giá vốn tăng rất ít không báo; tụt đủ điểm thì báo mức vừa — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-03: phiếu hàng tặng 0đ không làm tắt báo động và không bị coi là giá thật — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-03: giá tăng mạnh của nguyên liệu không món nào dùng không tạo cảnh báo — **PASS** | **PASS** |
+| AC-064-04 | TC-064-04 | F-064 | US-064-2 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-31 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-04: tăng dần cộng dồn tới ngưỡng thì báo; đã báo rồi nhập lại cùng giá không báo; giá giảm thì mốc giảm theo — **PASS**<br>Unit: `cost-alert.test.js` › AC-064-04 (unit): giá mốc = lần báo gần nhất, giảm theo phiếu rẻ hơn trong 90 ngày; chưa báo → thấp nhất 90 ngày, không có thì phiếu gần nhất — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-04: một phiếu rẻ bất thường không làm phiếu giá thường sau đó bị báo — **PASS** | **PASS** |
+| AC-064-05 | TC-064-05 | F-064 | US-064-2 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-31 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-05: giá tăng trên 50% → hỏi nhập nhầm, không gợi ý giá, không dời mốc; phiếu sau vẫn giá đó → báo bình thường có giá gợi ý — **PASS**<br>Unit: `cost-alert.test.js` › AC-064-05 (unit): trên 50% so với cả mốc lẫn phiếu trước mới nghi nhầm; đúng 50% hoặc phiếu trước đã cao thì không — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-05: giá nghi nhầm chưa sửa không làm sai lãi món ở phiếu nguyên liệu khác sau đó — **PASS** | **PASS** |
+| AC-064-06 | TC-064-06 | F-064 | US-064-2 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-31 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-06: sửa giá → cảnh báo cũ "Đã xử lý" + thư đính chính + tính lại; hủy phiếu → mốc trở về; sửa không đổi giá → không có gì mới — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-06: hủy phiếu đã báo trong khi phiếu sau cùng giá → phiếu sau được xét lại, không mất báo động — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-06: hủy lần báo mới hơn → mốc về lần báo trước; sửa phiếu cũ khi đã có phiếu mới hơn không tạo báo động theo giá cũ — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-06: email chưa gửi thì sửa phiếu xóa luôn email đó, không có thư đính chính — **PASS** | **PASS** |
+| AC-064-07 | TC-064-07 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-07: nhận theo đơn đặt cũng báo; tắt tức thì không có email; giờ yên lặng hoãn; che SĐT nhà cung cấp; lỗi cảnh báo không làm hỏng phiếu — **PASS**<br>Integration: `cost-alert.test.js` › AC-064-07: tên món / nhà cung cấp chứa thẻ HTML được thoát trong email — **PASS** | **PASS** |
+| AC-064-08 | TC-064-08 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-08: ba ngưỡng có mặc định, lưu được, sai → 400; đổi ngưỡng → thư báo; ngưỡng mới có hiệu lực — **PASS**<br>E2E: `flow.spec.js` › báo động giá vốn: nhập sữa giá cao hơn → cảnh báo tới trang Cảnh báo qua realtime, bảng món + giá gợi ý; "Đổi giá" mở sẵn hộp sửa đúng món; Cài đặt sửa được ngưỡng (F-064, AC-064-10) — **PASS** | **PASS** |
+| AC-064-09 | TC-064-09 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-09: nhân viên không đọc được cảnh báo, không nhận alert.created; quản lý nhận qua phòng admin — **PASS** | **PASS** |
+| AC-064-10 | TC-064-10 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | E2E: `flow.spec.js` › báo động giá vốn: nhập sữa giá cao hơn → cảnh báo tới trang Cảnh báo qua realtime, bảng món + giá gợi ý; "Đổi giá" mở sẵn hộp sửa đúng món; Cài đặt sửa được ngưỡng (F-064, AC-064-10) — **PASS** | **PASS** |
 

@@ -9,29 +9,55 @@ const round2 = (n) => Math.round(n * 100) / 100;
 
 /**
  * Giá mốc của một nguyên liệu (D-85).
- * anchor: lần báo gần nhất { receiptId, unitCost } | null; history: các dòng có giá của phiếu trước, chưa hủy [{ receiptId, unitCost, receivedAt }].
+ * anchor: lần báo gần nhất { receiptId, unitCost } | null; history: các dòng có giá > 0 của phiếu trước, chưa hủy [{ receiptId, unitCost, receivedAt }].
+ * Mốc giảm theo phiếu rẻ hơn; một phiếu rẻ bất thường (dưới một nửa mốc) đứng riêng lẻ không kéo mốc xuống — khuyến mãi / gõ nhầm — trừ khi phiếu sau cũng rẻ như vậy.
  * → { ref: giá mốc | null, last: giá phiếu gần nhất | null }
  */
 export function referencePrice({ anchor = null, history = [], now = new Date() }) {
-  const newest = history.reduce((a, h) => (!a || h.receiptId > a.receiptId ? h : a), null);
-  const last = newest ? newest.unitCost : null;
+  const sorted = [...history].sort((a, b) => a.receiptId - b.receiptId);
+  const last = sorted.length ? sorted[sorted.length - 1].unitCost : null;
   const since = now.getTime() - HISTORY_DAYS * 86_400_000;
-  const recent = history.filter((h) => (!anchor || h.receiptId > anchor.receiptId) && new Date(h.receivedAt).getTime() >= since).map((h) => h.unitCost);
-  if (anchor) return { ref: Math.min(anchor.unitCost, ...recent), last };
-  return { ref: recent.length ? Math.min(...recent) : last, last };
+  const after = sorted.filter((h) => !anchor || h.receiptId > anchor.receiptId);
+  const recent = after.filter((h) => new Date(h.receivedAt).getTime() >= since).map((h) => h.unitCost);
+  const prices = recent.length || !after.length ? recent : [after[after.length - 1].unitCost]; // mua thưa: vẫn tính phiếu gần nhất
+  let ref = anchor ? anchor.unitCost : (prices[0] ?? null);
+  const floor = () => ref * (1 - SUSPECT_PCT / 100);
+  prices.forEach((p, i) => {
+    if (p < ref && (p >= floor() || prices[i + 1] < floor())) ref = p;
+  });
+  return { ref, last };
+}
+
+/** Tăng trên SUSPECT_PCT so với cả mốc lẫn phiếu trước → nghi nhập nhầm (D-88). */
+const isSuspect = (price, r) =>
+  r.ref > 0 && r.last > 0 && round2(((price - r.ref) / r.ref) * 100) > SUSPECT_PCT && round2(((price - r.last) / r.last) * 100) > SUSPECT_PCT;
+
+/**
+ * Nguyên liệu mà giá phiếu gần nhất vẫn đang nghi nhầm → Map id → giá mốc: `LastUnitCost` đã mang giá đó, không được dùng để tính lãi món khác (D-88).
+ * prices: { history: Map id → dòng phiếu chưa hủy, anchors: Map id → [lần báo] (cả hai theo ReceiptId tăng dần).
+ */
+export function unconfirmedPrices({ history, anchors }, now = new Date()) {
+  const out = new Map();
+  for (const [id, lines] of history) {
+    const newest = lines[lines.length - 1];
+    const marks = (anchors.get(id) ?? []).filter((m) => m.receiptId < newest.receiptId);
+    const r = referencePrice({ anchor: marks[marks.length - 1] ?? null, history: lines.slice(0, -1), now });
+    if (isSuspect(newest.unitCost, r)) out.set(id, r.ref);
+  }
+  return out;
 }
 
 /**
  * Phân loại dòng phiếu theo giá mốc. lines: [{ ingredientId, unitCost }]; refs: Map ingredientId → { ref, last }.
- * → [{ ...line, oldCost, newCost, risePct, major, suspect }] (bỏ dòng không có giá hoặc chưa từng có giá)
+ * → [{ ...line, oldCost, newCost, risePct, major, suspect }]
  */
 export function classifyLines(lines, refs, { risePct }) {
   const out = [];
   for (const l of lines) {
     const r = refs.get(l.ingredientId);
-    if (l.unitCost === null || l.unitCost === undefined || !r || !(r.ref > 0)) continue;
+    if (!(l.unitCost > 0) || !r || !(r.ref > 0)) continue; // dòng không có giá, hàng tặng 0đ, lần đầu có giá
     const pct = round2(((l.unitCost - r.ref) / r.ref) * 100);
-    const suspect = pct > SUSPECT_PCT && r.last > 0 && round2(((l.unitCost - r.last) / r.last) * 100) > SUSPECT_PCT;
+    const suspect = isSuspect(l.unitCost, r);
     out.push({ ...l, oldCost: r.ref, newCost: l.unitCost, risePct: pct, major: !suspect && pct >= risePct, suspect });
   }
   return out;
@@ -55,7 +81,7 @@ const marginPct = (price, cost) => ((price - cost) / price) * 100;
  *             items: [{ menuItemId, name, itemType, price }], options: [{ name, group, priceDelta, bom: [{ ingredientId, amount }] }],
  *             sales: Map menuItemId → số bán 30 ngày }
  * changes: kết quả classifyLines. thresholds: { marginDrop, marginMin }.
- * → { items (bị báo, xếp theo tiền mất), unknown (chưa tính được), options, monthlyLoss }
+ * → { items (bị báo, xếp theo tiền mất), unknown (chưa tính được), options, monthlyLoss, usedIds (nguyên liệu trên phiếu mà món / tùy chọn đang dùng) }
  */
 export function menuImpact(snapshot, changes, { marginDrop, marginMin }) {
   const oldPrices = new Map();
@@ -80,7 +106,7 @@ export function menuImpact(snapshot, changes, { marginDrop, marginMin }) {
       };
     }
     const i = snapshot.ingredients.get(id);
-    const known = i?.lastUnitCost ?? (i?.avgCost > 0 ? i.avgCost : null);
+    const known = i?.lastUnitCost > 0 ? i.lastUnitCost : i?.avgCost > 0 ? i.avgCost : null; // hàng tặng 0đ không phải giá thật
     return { cost: known, missing: known === null ? [nameOf(id)] : [], uses: new Set() };
   }
   /** Giá vốn một danh sách định lượng [{ ingredientId, amount }]. */
@@ -109,8 +135,10 @@ export function menuImpact(snapshot, changes, { marginDrop, marginMin }) {
 
   const items = [];
   const unknown = [];
+  const usedIds = new Set();
   for (const item of snapshot.items) {
     const before = itemCost(item, oldPrices);
+    before.uses.forEach((id) => usedIds.add(id));
     const causes = [...before.uses].filter((id) => major.has(id));
     if (!causes.length || !(item.price > 0)) continue;
     if (before.cost === null) {
@@ -123,7 +151,8 @@ export function menuImpact(snapshot, changes, { marginDrop, marginMin }) {
     const oldMargin = round1(marginPct(item.price, oldCost));
     const newMargin = round1(marginPct(item.price, newCost));
     const drop = round1(oldMargin - newMargin);
-    if (drop < marginDrop && newMargin >= marginMin) continue;
+    const crossed = oldMargin >= marginMin && newMargin < marginMin; // vừa rơi xuống dưới mức tối thiểu; món vốn đã dưới mức thì chỉ xét độ tụt
+    if (drop < marginDrop && !crossed) continue;
     const qty30 = snapshot.sales.get(item.menuItemId) ?? 0;
     const prices = suggestPrices({ price: item.price, oldCost, newCost });
     items.push({
@@ -136,6 +165,7 @@ export function menuImpact(snapshot, changes, { marginDrop, marginMin }) {
       oldMargin,
       newMargin,
       drop,
+      crossed,
       qty30,
       monthlyLoss: (newCost - oldCost) * qty30,
       suggestKeepAmount: prices.keepAmount,
@@ -149,10 +179,11 @@ export function menuImpact(snapshot, changes, { marginDrop, marginMin }) {
   const options = [];
   for (const o of snapshot.options) {
     const before = cost(o.bom, oldPrices);
+    before.uses.forEach((id) => usedIds.add(id));
     if (before.cost === null || ![...before.uses].some((id) => major.has(id))) continue;
     const newCost = Math.round(cost(o.bom, newPrices).cost);
     if (newCost > Math.round(before.cost)) options.push({ name: o.name, group: o.group, priceDelta: o.priceDelta, oldCost: Math.round(before.cost), newCost });
   }
 
-  return { items, unknown, options, monthlyLoss: items.reduce((s, i) => s + i.monthlyLoss, 0) };
+  return { items, unknown, options, monthlyLoss: items.reduce((s, i) => s + i.monthlyLoss, 0), usedIds };
 }

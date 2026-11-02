@@ -1080,3 +1080,13 @@ table.heatmap td.peak {
 .alert-card ul {
   margin: 0 0 0.75rem;
 }
+/* F-064: thẻ co nhỏ hơn bảng bên trong — bảng tự cuộn trong .table-wrap, trang không cuộn ngang (như DEF-014) */
+.alert-list > * {
+  min-width: 0;
+}
+.alert-card .table-wrap {
+  margin-bottom: 0.75rem;
+}
+.alert-card td.num {
+  white-space: nowrap;
+}

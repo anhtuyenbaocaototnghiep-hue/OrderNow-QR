@@ -9,10 +9,11 @@
 // F-064 (ADR-023): nhập hàng giá cao hơn → báo món tụt lãi + giá gợi ý; cùng trang Cảnh báo, cùng hàng đợi email.
 import { config } from '../config.js';
 import { withDeadlockRetry } from '../db.js';
-import { classifyLines, menuImpact, referencePrice } from '../domain/costImpact.js';
+import { classifyLines, menuImpact, referencePrice, unconfirmedPrices } from '../domain/costImpact.js';
 import { vnClock, toMinutes } from '../pricing/pricing.js';
 import * as alertsRepo from '../repositories/alertsRepo.js';
 import * as costAlertRepo from '../repositories/costAlertRepo.js';
+import * as stockRepo from '../repositories/stockRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { baseline, judge, quietMinutesLeft } from '../utils/anomaly.js';
 import { addDays, vnDayStartUtc } from '../utils/time.js';
@@ -284,7 +285,8 @@ const unitVnd = (n) => `${Number(n).toLocaleString('vi-VN', { maximumFractionDig
 const costKey = (r) => `COST:${r.receiptId}:${r.editedAt ? new Date(r.editedAt).getTime() : 0}`;
 const pricesOf = (r) =>
   r.lines
-    .map((l) => `${l.ingredientId}:${l.unitCost ?? ''}`)
+    .filter((l) => l.unitCost > 0)
+    .map((l) => `${l.ingredientId}:${l.unitCost}`)
     .sort()
     .join(',');
 
@@ -336,7 +338,7 @@ function costRows(d) {
       .map((i) => [
         i.name,
         `lãi ${pct(i.oldMargin)} → ${pct(i.newMargin)} · giá vốn ${vnd(i.oldCost)} → ${vnd(i.newCost)} · bán ${i.qty30}/30 ngày, mất ${vnd(i.monthlyLoss)}/tháng · ${suggest(i)}`,
-        i.newMargin < d.thresholds.marginMin,
+        i.crossed,
       ]),
     ...(d.items.length > MAIL_ITEMS_MAX ? [['…', `và ${d.items.length - MAIL_ITEMS_MAX} món khác — xem trong app`, false]] : []),
     ...d.unknown.map((u) => [u.name, `chưa tính được lãi — thiếu: ${u.missing.join(', ')}`, false]),
@@ -355,9 +357,10 @@ const COST_FOOTER =
 /** Phiếu nhập vừa lưu (kể cả nhận theo đơn đặt) → so giá với mốc, báo món tụt lãi (ADR-023). receipt: stockRepo.getReceipt. */
 export const onStockReceived = (receipt) => withDeadlockRetry(() => checkCostRise(receipt));
 
-async function checkCostRise(receipt) {
+/** only: chỉ xét các nguyên liệu này (xét lại sau khi sửa / hủy phiếu cũ); key: khóa chống trùng của lần xét. */
+async function checkCostRise(receipt, { only = null, key = costKey(receipt) } = {}) {
   if (receipt.status !== 'POSTED') return NO_COST_ALERT;
-  const priced = receipt.lines.filter((l) => l.unitCost !== null);
+  const priced = receipt.lines.filter((l) => l.unitCost > 0 && (!only || only.includes(l.ingredientId)));
   if (!priced.length) return NO_COST_ALERT;
   const s = await getSettings();
   const now = new Date();
@@ -375,11 +378,17 @@ async function checkCostRise(receipt) {
   );
   if (!changes.some((c) => c.major || c.suspect)) return NO_COST_ALERT;
   const snap = await costAlertRepo.snapshot();
+  const prices = await costAlertRepo.allPrices();
+  for (const [id, lines] of prices.history) {
+    const ing = snap.ingredients.get(id);
+    if (ing.lastUnitCost === 0) ing.lastUnitCost = lines[lines.length - 1].unitCost; // phiếu hàng tặng 0đ: dùng giá mua thật gần nhất
+  }
+  for (const [id, ref] of unconfirmedPrices(prices, now)) snap.ingredients.get(id).lastUnitCost = ref;
   const impact = menuImpact(snap, changes, { marginDrop: s.alertCostMarginDrop, marginMin: s.alertCostMarginMin });
   const causeIds = new Set([...impact.items, ...impact.unknown].flatMap((i) => i.causeIds));
   const lineOf = new Map(receipt.lines.map((l) => [l.ingredientId, l]));
   const raised = changes.filter((c) => c.major && causeIds.has(c.ingredientId));
-  const suspects = changes.filter((c) => c.suspect);
+  const suspects = changes.filter((c) => c.suspect && impact.usedIds.has(c.ingredientId)); // nguyên liệu không món nào dùng thì không ảnh hưởng lãi (D-86)
   if (!raised.length && !suspects.length) return NO_COST_ALERT;
   const ingredients = raised.map((c) => costLine(c, lineOf.get(c.ingredientId), snap));
   const suspectLines = suspects.map((c) => costLine(c, lineOf.get(c.ingredientId), snap));
@@ -397,10 +406,10 @@ async function checkCostRise(receipt) {
   };
   const alert = await immediateAlert({
     kind: 'COST_RISE',
-    severity: suspects.length || impact.items.some((i) => i.newMargin < s.alertCostMarginMin) ? 'HIGH' : 'MEDIUM',
+    severity: suspects.length || impact.items.some((i) => i.crossed) ? 'HIGH' : 'MEDIUM',
     title: costTitle(receipt.receiptId, ingredients, suspectLines, impact.items, impact.unknown),
     detail,
-    dedupeKey: costKey(receipt),
+    dedupeKey: key,
   });
   await costAlertRepo.addMarks(
     alert.alertId,
@@ -410,16 +419,34 @@ async function checkCostRise(receipt) {
   return { alert, email: await enqueueImmediate(s, alert, costRows(detail), COST_FOOTER) };
 }
 
-/** Sửa / hủy phiếu nhập (D-88): đổi giá hoặc hủy → gỡ cảnh báo cũ + thư đính chính, sửa thì tính lại. before / after: stockRepo.getReceipt. */
+/**
+ * Sửa / hủy phiếu nhập (D-88): đổi giá hoặc hủy → gỡ cảnh báo cũ + thư đính chính (nếu email cũ đã đi), sửa thì tính lại;
+ * nguyên liệu đã có phiếu mới hơn → xét lại phiếu đó, vì mốc vừa đổi. before / after: stockRepo.getReceipt.
+ */
 export const onReceiptRevised = (before, after, user) => withDeadlockRetry(() => checkRevisedReceipt(before, after, user));
 
 async function checkRevisedReceipt(before, after, user) {
   const voided = after.status !== 'POSTED';
   if (!voided && pricesOf(before) === pricesOf(after)) return NO_COST_ALERT;
   const note = `Phiếu nhập #${after.receiptId} đã ${voided ? 'hủy' : 'sửa giá'} — cảnh báo này không còn hiệu lực`;
-  const retired = await costAlertRepo.retireForReceipt(after.receiptId, { keepKey: voided ? null : costKey(after), note, userId: user.userId });
-  if (retired) await enqueueCostCorrection(after, note, voided);
-  return voided ? NO_COST_ALERT : checkCostRise(after);
+  const { hadAlerts, delivered } = await costAlertRepo.retireForReceipt(after.receiptId, {
+    keepKey: voided ? null : costKey(after),
+    note,
+    userId: user.userId,
+  });
+  if (delivered) await enqueueCostCorrection(after, note, voided);
+  const result = voided ? NO_COST_ALERT : await checkCostRise(after);
+  if (hadAlerts) await reviewLaterReceipts(before, after, voided);
+  return result;
+}
+
+async function reviewLaterReceipts(before, after, voided) {
+  const ids = [...new Set([...before.lines, ...after.lines].filter((l) => l.unitCost > 0).map((l) => l.ingredientId))];
+  if (!ids.length) return;
+  const at = new Date(voided ? after.voidedAt : after.editedAt).getTime();
+  for (const [receiptId, only] of await costAlertRepo.newestLaterReceipts(ids, after.receiptId)) {
+    await checkCostRise(await stockRepo.getReceipt(receiptId), { only, key: `COST:${receiptId}:R${after.receiptId}:${at}` });
+  }
 }
 
 async function enqueueCostCorrection(receipt, note, voided) {

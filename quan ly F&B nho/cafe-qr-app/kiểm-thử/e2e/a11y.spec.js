@@ -448,7 +448,8 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     await check(A, `quan-ly-${r.replace(/\//g, '-').replace(/-\d+-/, '-id-')}`);
   }
   // DEF-014: Phân tích, Lãi / lỗ không cuộn ngang ở 320 / 390 px (WCAG 1.4.10) — trước đây 441 / 638 px
-  for (const r of ['analytics', 'pnl']) {
+  // F-064: Cảnh báo có bảng món tụt lãi — flow để lại một cảnh báo giá vốn
+  for (const r of ['analytics', 'pnl', 'alerts']) {
     await A.goto(`/admin/${r}`);
     await A.waitForLoadState('networkidle');
     for (const w of [320, 390]) {

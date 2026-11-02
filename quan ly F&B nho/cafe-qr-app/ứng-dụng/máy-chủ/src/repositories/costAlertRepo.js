@@ -12,7 +12,7 @@ export async function priceHistory(ingredientIds, receiptId) {
   const res = await query(
     `SELECT l.IngredientId, l.ReceiptId, l.UnitCost, sr.ReceivedAt
      FROM dbo.StockReceiptLines l JOIN dbo.StockReceipts sr ON sr.ReceiptId = l.ReceiptId
-     WHERE l.UnitCost IS NOT NULL AND sr.Status = 'POSTED' AND l.ReceiptId <> @r
+     WHERE l.UnitCost > 0 AND sr.Status = 'POSTED' AND l.ReceiptId <> @r
        AND l.IngredientId IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@ids, ','));
      SELECT m.IngredientId, m.ReceiptId, m.UnitCost
      FROM dbo.CostAlertMarks m JOIN dbo.StockReceipts sr ON sr.ReceiptId = m.ReceiptId
@@ -33,6 +33,47 @@ export async function priceHistory(ingredientIds, receiptId) {
   }
   const anchors = new Map(res.recordsets[1].map((x) => [x.IngredientId, { receiptId: x.ReceiptId, unitCost: Number(x.UnitCost) }])); // ReceiptId tăng dần → giữ lần mới nhất
   return { history, later, anchors };
+}
+
+/** Mọi giá nhập + mọi mốc, gom theo nguyên liệu, ReceiptId tăng dần — để biết giá nào còn đang nghi nhầm. */
+export async function allPrices() {
+  const res = await query(
+    `SELECT l.IngredientId, l.ReceiptId, l.UnitCost, sr.ReceivedAt
+     FROM dbo.StockReceiptLines l JOIN dbo.StockReceipts sr ON sr.ReceiptId = l.ReceiptId
+     WHERE l.UnitCost > 0 AND sr.Status = 'POSTED' ORDER BY l.ReceiptId;
+     SELECT m.IngredientId, m.ReceiptId, m.UnitCost
+     FROM dbo.CostAlertMarks m JOIN dbo.StockReceipts sr ON sr.ReceiptId = m.ReceiptId
+     WHERE sr.Status = 'POSTED' ORDER BY m.ReceiptId;`,
+  );
+  const collect = (rows) => {
+    const m = new Map();
+    for (const x of rows) {
+      if (!m.has(x.IngredientId)) m.set(x.IngredientId, []);
+      m.get(x.IngredientId).push({ receiptId: x.ReceiptId, unitCost: Number(x.UnitCost), receivedAt: x.ReceivedAt });
+    }
+    return m;
+  };
+  return { history: collect(res.recordsets[0]), anchors: collect(res.recordsets[1]) };
+}
+
+/**
+ * Phiếu mới nhất sau `receiptId` của từng nguyên liệu, bỏ nguyên liệu đã có mốc sau phiếu đó — sửa / hủy phiếu cũ thì phiếu này phải được xét lại.
+ * → Map receiptId → [ingredientId]
+ */
+export async function newestLaterReceipts(ingredientIds, receiptId) {
+  const r = await query(
+    `SELECT l.IngredientId, MAX(l.ReceiptId) AS ReceiptId
+     FROM dbo.StockReceiptLines l JOIN dbo.StockReceipts sr ON sr.ReceiptId = l.ReceiptId
+     WHERE l.UnitCost > 0 AND sr.Status = 'POSTED' AND l.ReceiptId > @r
+       AND l.IngredientId IN (SELECT CAST(value AS INT) FROM STRING_SPLIT(@ids, ','))
+       AND NOT EXISTS (SELECT 1 FROM dbo.CostAlertMarks m JOIN dbo.StockReceipts s2 ON s2.ReceiptId = m.ReceiptId
+                       WHERE m.IngredientId = l.IngredientId AND m.ReceiptId > @r AND s2.Status = 'POSTED')
+     GROUP BY l.IngredientId`,
+    { ids: [sql.NVarChar(sql.MAX), ingredientIds.join(',')], r: [sql.Int, receiptId] },
+  );
+  const out = new Map();
+  for (const x of r.recordset) out.set(x.ReceiptId, [...(out.get(x.ReceiptId) ?? []), x.IngredientId]);
+  return out;
 }
 
 /** Ảnh chụp để tính tác động: nguyên liệu, công thức, định lượng, combo, món đang hiện, tùy chọn, số bán 30 ngày (dòng khách chọn, đơn đã thu). */
@@ -106,19 +147,21 @@ export async function addMarks(alertId, receiptId, marks) {
 }
 
 /**
- * Phiếu bị sửa giá / hủy: bỏ mốc, chuyển cảnh báo cũ của phiếu sang Đã xử lý. keepKey: khóa của lần tính hiện tại (không gỡ khi chạy lại do deadlock).
- * → số cảnh báo còn hiệu lực vừa bị gỡ
+ * Phiếu bị sửa giá / hủy: bỏ mốc, chuyển cảnh báo cũ của phiếu sang Đã xử lý, bỏ email của chúng chưa gửi. keepKey: khóa của lần tính hiện tại (không gỡ khi chạy lại do deadlock).
+ * Kết quả tính từ dữ liệu, không phải từ việc vừa đổi, nên chạy lại sau lỗi giữa chừng vẫn ra như nhau.
+ * → { hadAlerts: phiếu từng có cảnh báo, delivered: đã có email gửi đi → cần thư đính chính }
  */
 export async function retireForReceipt(receiptId, { keepKey = null, note, userId }) {
   const r = await query(
-    `DECLARE @Old TABLE (AlertId INT PRIMARY KEY, Active BIT);
+    `DECLARE @Old TABLE (AlertId INT PRIMARY KEY);
      INSERT @Old
-     SELECT a.AlertId, CASE WHEN a.Status <> 'RESOLVED' OR EXISTS (SELECT 1 FROM dbo.CostAlertMarks m WHERE m.AlertId = a.AlertId) THEN 1 ELSE 0 END
-     FROM dbo.Alerts a WHERE a.DedupeKey LIKE @like AND (@keep IS NULL OR a.DedupeKey <> @keep);
+     SELECT a.AlertId FROM dbo.Alerts a WHERE a.DedupeKey LIKE @like AND (@keep IS NULL OR a.DedupeKey <> @keep);
+     DELETE x FROM dbo.AlertOutbox x JOIN @Old o ON o.AlertId = x.AlertId WHERE x.Status = 'PENDING';
      DELETE m FROM dbo.CostAlertMarks m JOIN @Old o ON o.AlertId = m.AlertId;
      UPDATE a SET Status = 'RESOLVED', Note = @note, HandledBy = @u, HandledAt = SYSUTCDATETIME()
      FROM dbo.Alerts a JOIN @Old o ON o.AlertId = a.AlertId WHERE a.Status <> 'RESOLVED';
-     SELECT COUNT(*) AS Retired FROM @Old WHERE Active = 1;`,
+     SELECT (SELECT COUNT(*) FROM @Old) AS HadAlerts,
+            (SELECT COUNT(*) FROM dbo.AlertOutbox x JOIN @Old o ON o.AlertId = x.AlertId WHERE x.Status IN ('SENT', 'SENDING')) AS Delivered;`,
     {
       like: [sql.VarChar(100), `COST:${receiptId}:%`],
       keep: [sql.VarChar(100), keepKey],
@@ -126,5 +169,5 @@ export async function retireForReceipt(receiptId, { keepKey = null, note, userId
       u: [sql.Int, userId],
     },
   );
-  return r.recordset[0].Retired;
+  return { hadAlerts: r.recordset[0].HadAlerts > 0, delivered: r.recordset[0].Delivered > 0 };
 }

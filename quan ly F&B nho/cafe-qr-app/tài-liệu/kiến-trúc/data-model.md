@@ -1223,7 +1223,7 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Thành phần | Nội dung |
 | --- | --- |
 | Migration `0042_bao_dong_gia_von.sql` | `CK_Alerts_Kind` thêm `COST_RISE`. Bảng `CostAlertMarks (AlertId FK, IngredientId FK, ReceiptId FK, UnitCost DECIMAL(18,4), PK (AlertId, IngredientId))` — giá đã báo theo đơn vị gốc, làm mốc so giá lần sau |
-| Giá mốc | **Tính lại từ dữ liệu mỗi lần** (`domain/costImpact.js` `referencePrice`), không lưu trên `Ingredients`: dòng `CostAlertMarks` mới nhất của phiếu chưa hủy, giảm theo `StockReceiptLines.UnitCost` rẻ hơn trong 90 ngày. Sửa / hủy phiếu chỉ cần xóa dòng mốc của phiếu đó |
-| Khóa chống trùng | Cảnh báo: `COST:{receiptId}:{EditedAt tính bằng ms, 0 nếu chưa sửa}` — mỗi lần sửa một khóa, chạy lại do deadlock không tạo trùng. Email: `ALERT:{alertId}`; thư đính chính `COSTFIX:{receiptId}:{ms}` |
+| Giá mốc | **Tính lại từ dữ liệu mỗi lần** (`domain/costImpact.js` `referencePrice`), không lưu trên `Ingredients`: dòng `CostAlertMarks` mới nhất của phiếu chưa hủy, giảm theo `StockReceiptLines.UnitCost` rẻ hơn trong 90 ngày. Sửa / hủy phiếu chỉ cần xóa dòng mốc của phiếu đó. `alertService` thay `LastUnitCost` trong ảnh chụp khi giá đó là 0đ hoặc đang nghi nhầm (SP đã ghi đè trước khi hook chạy) |
+| Khóa chống trùng | Cảnh báo: `COST:{receiptId}:{EditedAt tính bằng ms, 0 nếu chưa sửa}` — mỗi lần sửa một khóa, chạy lại do deadlock không tạo trùng. Xét lại phiếu mới hơn sau khi sửa / hủy phiếu cũ: `COST:{phiếu mới hơn}:R{phiếu vừa sửa}:{ms}`. Email: `ALERT:{alertId}`; thư đính chính `COSTFIX:{receiptId}:{ms}` |
 | Xóa nguyên liệu | Nguyên liệu đã có dòng phiếu nhập chỉ bị xóa mềm (`sp_DeleteIngredient`), nên khóa ngoại của `CostAlertMarks` không chặn thao tác nào |
 | Cài đặt | `alert.cost_rise_pct`, `alert.cost_margin_drop`, `alert.cost_margin_min`: mặc định trong code, không cần seed |

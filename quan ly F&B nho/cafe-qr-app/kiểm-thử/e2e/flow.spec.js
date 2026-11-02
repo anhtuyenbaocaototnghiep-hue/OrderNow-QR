@@ -1836,6 +1836,10 @@ test('báo động giá vốn: nhập sữa giá cao hơn → cảnh báo tới 
   await expect(row).toContainText('86,7% → 84%');
   await expect(row).toContainText('47.000đ (giữ tiền lãi)');
   await expect(row).toContainText('54.000đ (giữ % lãi)');
+  // Màn điện thoại: bảng cuộn trong khung, trang không cuộn ngang
+  await P.setViewportSize({ width: 390, height: 800 });
+  expect(await P.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+  await P.setViewportSize({ width: 1366, height: 860 });
   await card.getByRole('link', { name: 'Đổi giá Latte giá vốn' }).click();
   await expect(P).toHaveURL(new RegExp(`/admin/menu\\?edit=${item}$`));
   const dialog = P.getByRole('dialog');

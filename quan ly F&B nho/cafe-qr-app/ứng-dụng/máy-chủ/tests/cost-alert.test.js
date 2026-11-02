@@ -9,7 +9,7 @@ process.env.MAIL_HOURLY_MAX = '100000';
 // Không bao giờ gửi email thật từ test, kể cả khi .env có hộp thư gửi thật (SMTP_*)
 for (const k of ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'MAIL_TRANSPORT']) delete process.env[k];
 
-let app, api, pool, admin, staff, mailService, cost;
+let app, api, pool, admin, staff, lead, mailService, alertService, cost;
 
 const q1 = async (sqlText) => (await pool.request().query(sqlText)).recordset;
 const call = (token, method, path, body) => {
@@ -58,16 +58,25 @@ const alertsOf = async (receiptId) =>
   }));
 const mailsOf = (alertId) => q1(`SELECT * FROM dbo.AlertOutbox WHERE AlertId = ${alertId}`);
 const marksOf = (ingredientId) => q1(`SELECT * FROM dbo.CostAlertMarks WHERE IngredientId = ${ingredientId}`);
+/** Giờ yên lặng phủ lúc này: từ 1 giờ trước tới 2 giờ sau (giờ quán) — không phụ thuộc giờ chạy test. */
+function quietNow() {
+  const h = new Date(Date.now() + 7 * 3600e3).getUTCHours();
+  const at = (x) => `${String((x + 24) % 24).padStart(2, '0')}:00`;
+  return settings({ alertImmediate: true, alertQuietStart: at(h - 1), alertQuietEnd: at(h + 2) });
+}
 const noAlert = async (receipt, why) => assert.deepEqual(await alertsOf(receipt.receiptId), [], why);
 
 before(async () => {
   app = await startApp();
   ({ api, pool } = app);
   mailService = await import('../src/services/mailService.js');
+  alertService = await import('../src/services/alertService.js');
   cost = await import('../src/domain/costImpact.js');
   mailService._setTransport({ sendMail: async () => ({ messageId: 'x' }) });
   admin = await app.login('admin', 'Admin@123');
   staff = await app.login('staff1', 'Staff@123');
+  ok(await call(admin, 'post', '/api/admin/users', { username: 'leadca', password: 'Pass@123', fullName: 'Trưởng ca giá vốn', role: 'MANAGER' }), 201);
+  lead = await app.login('leadca', 'Pass@123');
   ok(await call(staff, 'post', '/api/shifts/open', { openingCash: 0 }), 201);
   ok(await call(admin, 'put', '/api/admin/units/hộp1l', { name: 'hộp 1 lít', baseUnitCode: 'ml', factor: 1000 }));
   await settings({ alertEmails: ['chuquan@example.com'] });
@@ -93,6 +102,15 @@ describe('Hàm thuần (F-064, ADR-023)', () => {
     assert.deepEqual(cost.referencePrice({ history: h.slice(0, 1), now }), { ref: 20, last: 20 }, 'cả lịch sử đều cũ → phiếu gần nhất');
     assert.deepEqual(cost.referencePrice({ anchor: { receiptId: 2, unitCost: 30 }, history: h, now }), { ref: 30, last: 31 }, 'tăng sau khi báo: giữ mốc');
     assert.deepEqual(cost.referencePrice({ anchor: { receiptId: 1, unitCost: 40 }, history: h, now }).ref, 30, 'giá giảm: mốc giảm theo');
+    const line = (receiptId, unitCost, days = 5) => ({ receiptId, unitCost, receivedAt: daysAgo(days) });
+    assert.equal(cost.referencePrice({ history: [line(1, 30), line(2, 14)], now }).ref, 30, 'một phiếu rẻ bất thường không kéo mốc xuống');
+    assert.equal(cost.referencePrice({ history: [line(1, 30), line(2, 14), line(3, 14)], now }).ref, 14, 'phiếu sau cũng rẻ → giá thật');
+    assert.equal(cost.referencePrice({ history: [line(1, 30), line(2, 15)], now }).ref, 15, 'đúng một nửa vẫn là giá thường');
+    assert.equal(
+      cost.referencePrice({ anchor: { receiptId: 1, unitCost: 120 }, history: [line(1, 120, 300), line(2, 90, 100)], now }).ref,
+      90,
+      'mua thưa: phiếu gần nhất sau lần báo vẫn được tính dù quá 90 ngày',
+    );
   });
 
   test('AC-064-05 (unit): trên 50% so với cả mốc lẫn phiếu trước mới nghi nhầm; đúng 50% hoặc phiếu trước đã cao thì không', () => {
@@ -363,6 +381,7 @@ describe('Nhập hàng giá cao hơn (F-064)', () => {
     const edit = (receipt, unitCost, reason) =>
       call(admin, 'put', `/api/admin/stock-receipts/${receipt.receiptId}`, { reason, lines: [{ ingredientId: milk, qty: 100_000, unitCost }] });
     const correction = (receiptId) => q1(`SELECT * FROM dbo.AlertOutbox WHERE DedupeKey LIKE 'COSTFIX:${receiptId}:%'`);
+    const send = () => mailService.flushOnce(); // email cũ đã đi thì mới cần thư đính chính
 
     // Sửa không đổi giá: giữ nguyên cảnh báo, không có thư
     const same = await receive([[milk, 120]]);
@@ -371,6 +390,16 @@ describe('Nhập hàng giá cao hơn (F-064)', () => {
         reason: 'sửa ghi chú',
         note: 'ghi chú mới',
         lines: [{ ingredientId: milk, qty: 100_000, unitCost: 120 }],
+      }),
+    );
+    await send();
+    ok(
+      await call(admin, 'put', `/api/admin/stock-receipts/${same.receiptId}`, {
+        reason: 'thêm dòng quên',
+        lines: [
+          { ingredientId: milk, qty: 100_000, unitCost: 120 },
+          { ingredientId: await newIngredient('Quên giá A6', 'g'), qty: 5 },
+        ],
       }),
     );
     const kept = await alertsOf(same.receiptId);
@@ -389,6 +418,7 @@ describe('Nhập hàng giá cao hơn (F-064)', () => {
     const fixed = await receive([[milk, 120]]);
     const [old] = await alertsOf(fixed.receiptId);
     assert.deepEqual([old.detail.ingredients[0].oldCost, old.detail.ingredients[0].newCost], [100, 120], 'mốc đã trở về');
+    await send();
     ok(await edit(fixed, 102, 'gõ nhầm'));
     const afterFix = await alertsOf(fixed.receiptId);
     assert.deepEqual(
@@ -440,6 +470,7 @@ describe('Nhập hàng giá cao hơn (F-064)', () => {
       }),
       201,
     );
+    assert.equal(JSON.stringify(rc).includes('monthlyLoss'), false, 'nhân viên nhận hàng không thấy số liệu cảnh báo');
     const [viaPo] = await alertsOf(rc.receipt.receiptId);
     assert.deepEqual([viaPo.detail.ingredients[0].oldCost, viaPo.detail.ingredients[0].newCost], [30, 36]);
     assert.equal(viaPo.detail.supplier, 'NCC A7');
@@ -450,15 +481,15 @@ describe('Nhập hàng giá cao hơn (F-064)', () => {
     assert.ok(s, 'vẫn có cảnh báo trong app');
     assert.deepEqual(await mailsOf(s.AlertId), []);
 
-    await settings({ alertImmediate: true, alertQuietStart: '00:00', alertQuietEnd: '23:59' });
+    await quietNow();
     const quiet = await receive([[milk, 54]], { supplier: 'Anh Ba 0912345678' });
     const [q] = await alertsOf(quiet.receiptId);
     const [mail] = await mailsOf(q.AlertId);
-    assert.ok(new Date(mail.NextAttemptAt).getTime() > Date.now() + 60_000 || new Date().getUTCHours() === 16, 'email bị hoãn tới hết giờ yên lặng');
+    assert.ok(new Date(mail.NextAttemptAt).getTime() > Date.now() + 30 * 60_000, 'email bị hoãn tới hết giờ yên lặng');
     assert.equal(mail.BodyText.includes('0912345678'), false);
     assert.match(mail.BodyText, /Anh Ba \*\*\*/);
     assert.equal(q.detail.supplier, 'Anh Ba ***');
-    await settings({ alertQuietStart: '', alertQuietEnd: '' });
+    await settings({ alertImmediate: true, alertQuietStart: '', alertQuietEnd: '' });
 
     await pool.request().query("EXEC sp_rename 'dbo.CostAlertMarks', 'CostAlertMarks_tam'");
     try {
@@ -504,6 +535,7 @@ describe('Nhập hàng giá cao hơn (F-064)', () => {
     await newItem('Món A9', 40000, [[milk, 200]]);
     assert.equal((await call(staff, 'get', '/api/admin/alerts?status=ALL')).status, 403);
     assert.equal((await call(staff, 'put', '/api/admin/settings', { alertCostRisePct: 50 })).status, 403);
+    assert.equal((await call(lead, 'get', '/api/admin/alerts?status=ALL')).status, 403);
     const adminSock = await app.connect({ auth: { token: admin } });
     const staffSock = await app.connect({ auth: { token: staff } });
     const toAdmin = app.waitFor(adminSock, 'alert.created', (p) => p.alert.kind === 'COST_RISE' && /Sữa A9/.test(p.alert.title));
@@ -516,5 +548,171 @@ describe('Nhập hàng giá cao hơn (F-064)', () => {
     await receive([[milk, 120]]);
     assert.equal((await toAdmin).alert.detail.items[0].name, 'Món A9');
     assert.equal(await toStaff, 'không nhận');
+  });
+});
+
+describe('Các trường hợp từ review G3 (F-064)', () => {
+  test('AC-064-03: món vốn đã dưới mức tối thiểu: giá vốn tăng rất ít không báo; tụt đủ điểm thì báo mức vừa', async () => {
+    const butter = await newIngredient('Bơ G1', 'g');
+    const bread = await newIngredient('Bánh G1', 'g');
+    await receive([
+      [butter, 20],
+      [bread, 100],
+    ]);
+    await newItem('Bánh mì G1', 25000, [
+      [butter, 5],
+      [bread, 150],
+    ]);
+    await noAlert(await receive([[butter, 22]]), 'lãi 39,6% → 39,6%: không vừa rơi xuống dưới mức, không tụt đủ điểm');
+    const [a] = await alertsOf((await receive([[bread, 110]])).receiptId);
+    assert.deepEqual([a.Severity, a.detail.items[0].crossed, a.detail.items[0].drop], ['MEDIUM', false, 6]);
+  });
+
+  test('AC-064-03: phiếu hàng tặng 0đ không làm tắt báo động và không bị coi là giá thật', async () => {
+    const milk = await newIngredient('Sữa G2');
+    const tea = await newIngredient('Trà G2', 'g');
+    await receive([
+      [milk, 30],
+      [tea, 50],
+    ]);
+    await newItem('Món G2', 40000, [
+      [milk, 400],
+      [tea, 100],
+    ]);
+    await noAlert(await receive([[milk, 0]]), 'hàng tặng');
+    const [a] = await alertsOf((await receive([[tea, 60]])).receiptId);
+    assert.deepEqual([a.detail.items[0].oldCost, a.detail.items[0].newCost], [17000, 18000], 'sữa tính theo giá vốn bình quân, không phải 0đ');
+    const [b] = await alertsOf((await receive([[milk, 36]])).receiptId);
+    assert.deepEqual([b.detail.ingredients[0].oldCost, b.detail.ingredients[0].newCost], [30, 36], 'vẫn so với giá thật trước đó');
+  });
+
+  test('AC-064-03: giá tăng mạnh của nguyên liệu không món nào dùng không tạo cảnh báo', async () => {
+    const cup = await newIngredient('Ly giấy G3', 'g');
+    await receive([[cup, 100]]);
+    await noAlert(await receive([[cup, 300]]));
+  });
+
+  test('AC-064-04: một phiếu rẻ bất thường không làm phiếu giá thường sau đó bị báo', async () => {
+    const milk = await newIngredient('Sữa G4');
+    await receive([[milk, 30]]);
+    await newItem('Món G4', 40000, [[milk, 100]]);
+    await noAlert(await receive([[milk, 14]]), 'khuyến mãi / gõ nhầm giá thấp');
+    await noAlert(await receive([[milk, 30]]), 'về giá thường');
+  });
+
+  test('AC-064-05: giá nghi nhầm chưa sửa không làm sai lãi món ở phiếu nguyên liệu khác sau đó', async () => {
+    const milk = await newIngredient('Sữa G5');
+    const tea = await newIngredient('Trà G5', 'g');
+    await receive([
+      [milk, 30],
+      [tea, 50],
+    ]);
+    await newItem('Trà sữa G5', 30000, [
+      [milk, 150],
+      [tea, 150],
+    ]);
+    await receive([[milk, 360]]);
+    const [a] = await alertsOf((await receive([[tea, 60]])).receiptId);
+    const [i] = a.detail.items;
+    assert.deepEqual([i.oldCost, i.newCost, i.oldMargin, i.newMargin, i.suggestKeepMargin], [12000, 13500, 60, 55, 34000]);
+  });
+
+  test('AC-064-06: hủy phiếu đã báo trong khi phiếu sau cùng giá → phiếu sau được xét lại, không mất báo động', async () => {
+    const milk = await newIngredient('Sữa G6');
+    await receive([[milk, 100]]);
+    await newItem('Món G6', 40000, [[milk, 200]]);
+    const marked = await receive([[milk, 120]]);
+    const next = await receive([[milk, 120]]);
+    await noAlert(next, 'đã báo ở phiếu trước');
+    ok(await call(admin, 'post', `/api/admin/stock-receipts/${marked.receiptId}/void`, { reason: 'phiếu trùng' }));
+    assert.equal((await alertsOf(marked.receiptId))[0].Status, 'RESOLVED');
+    const reviewed = await alertsOf(next.receiptId);
+    assert.deepEqual(
+      reviewed.map((a) => [a.Status, a.detail.ingredients[0].oldCost, a.detail.ingredients[0].newCost]),
+      [['NEW', 100, 120]],
+    );
+    assert.deepEqual(
+      (await marksOf(milk)).map((m) => [m.ReceiptId, Number(m.UnitCost)]),
+      [[next.receiptId, 120]],
+    );
+    await noAlert(await receive([[milk, 120]]), 'đã báo lại rồi, không báo lần nữa');
+  });
+
+  test('AC-064-06: hủy lần báo mới hơn → mốc về lần báo trước; sửa phiếu cũ khi đã có phiếu mới hơn không tạo báo động theo giá cũ', async () => {
+    const milk = await newIngredient('Sữa G7');
+    await receive([[milk, 100]]);
+    await newItem('Món G7', 40000, [[milk, 200]]);
+    await receive([[milk, 120]]);
+    const newer = await receive([[milk, 140]]);
+    assert.equal((await alertsOf(newer.receiptId)).length, 1);
+    ok(await call(admin, 'post', `/api/admin/stock-receipts/${newer.receiptId}/void`, { reason: 'nhầm' }));
+    await noAlert(await receive([[milk, 120]]), 'mốc 120 của lần báo trước');
+
+    const tea = await newIngredient('Trà G7', 'g');
+    await receive([[tea, 100]]);
+    await newItem('Món trà G7', 40000, [[tea, 200]]);
+    const older = await receive([[tea, 102]]);
+    await receive([[tea, 102]]);
+    ok(
+      await call(admin, 'put', `/api/admin/stock-receipts/${older.receiptId}`, { reason: 'sửa', lines: [{ ingredientId: tea, qty: 100_000, unitCost: 130 }] }),
+    );
+    await noAlert(older, 'giá hiện tại là giá phiếu mới hơn');
+  });
+
+  test('AC-064-06: email chưa gửi thì sửa phiếu xóa luôn email đó, không có thư đính chính', async () => {
+    const milk = await newIngredient('Sữa G8');
+    await receive([[milk, 100]]);
+    await newItem('Món G8', 40000, [[milk, 200]]);
+    await quietNow();
+    const r = await receive([[milk, 120]]);
+    const [a] = await alertsOf(r.receiptId);
+    assert.equal((await mailsOf(a.AlertId)).length, 1);
+    ok(
+      await call(admin, 'put', `/api/admin/stock-receipts/${r.receiptId}`, { reason: 'gõ nhầm', lines: [{ ingredientId: milk, qty: 100_000, unitCost: 101 }] }),
+    );
+    await settings({ alertQuietStart: '', alertQuietEnd: '' });
+    assert.deepEqual(await mailsOf(a.AlertId), []);
+    assert.deepEqual(await q1(`SELECT 1 AS x FROM dbo.AlertOutbox WHERE DedupeKey LIKE 'COSTFIX:${r.receiptId}:%'`), []);
+    assert.equal((await alertsOf(r.receiptId))[0].Status, 'RESOLVED');
+  });
+
+  test('AC-064-01: chạy lại sau lỗi giữa chừng (deadlock) không tạo trùng cảnh báo, mốc, email, không gỡ nhầm cảnh báo vừa tạo', async () => {
+    const milk = await newIngredient('Sữa G9');
+    await receive([[milk, 100]]);
+    await newItem('Món G9', 40000, [[milk, 200]]);
+    const r = await receive([[milk, 120]]);
+    const before = ok(await call(admin, 'get', `/api/admin/stock-receipts/${r.receiptId}`));
+    await alertService.onStockReceived(before);
+    const [a, extra] = await alertsOf(r.receiptId);
+    assert.equal(extra, undefined);
+    assert.equal((await mailsOf(a.AlertId)).length, 1);
+    assert.equal((await marksOf(milk)).length, 1);
+
+    ok(
+      await call(admin, 'put', `/api/admin/stock-receipts/${r.receiptId}`, {
+        reason: 'giá đúng',
+        lines: [{ ingredientId: milk, qty: 100_000, unitCost: 130 }],
+      }),
+    );
+    const edited = ok(await call(admin, 'get', `/api/admin/stock-receipts/${r.receiptId}`));
+    const [{ UserId: adminId }] = await q1("SELECT UserId FROM dbo.Users WHERE Username = 'admin'");
+    await alertService.onReceiptRevised(before, edited, { userId: adminId });
+    assert.deepEqual(
+      (await alertsOf(r.receiptId)).map((x) => x.Status),
+      ['RESOLVED', 'NEW'],
+    );
+    assert.equal((await marksOf(milk)).length, 1);
+  });
+
+  test('AC-064-07: tên món / nhà cung cấp chứa thẻ HTML được thoát trong email', async () => {
+    const milk = await newIngredient('Sữa G10');
+    await receive([[milk, 100]]);
+    await newItem('<img src=x onerror=alert(1)>', 40000, [[milk, 200]]);
+    const r = await receive([[milk, 120]], { supplier: '<script>alert(2)</script>' });
+    const [a] = await alertsOf(r.receiptId);
+    const [mail] = await mailsOf(a.AlertId);
+    assert.equal(/<img|<script/.test(mail.BodyHtml), false);
+    assert.match(mail.BodyHtml, /&lt;img src=x/);
+    assert.match(mail.BodyHtml, /&lt;script&gt;/);
   });
 });
