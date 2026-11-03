@@ -651,6 +651,7 @@ function renderTotals() {
       ? el('p', { class: 'small eta', id: 'cart-eta' }, icon('timer'), `Dự kiến có món sau khoảng ${state.eta.minMinutes}–${state.eta.maxMinutes} phút`)
       : null,
     m ? el('p', { class: 'small save' }, `Ưu đãi hội viên (${m.maskedName}) được trừ khi thanh toán.`) : null,
+    holdPicker(),
     el('p', { class: 'muted small' }, 'Thanh toán bằng tiền mặt hoặc chuyển khoản sau khi dùng xong — bấm "Gọi thanh toán" ở màn hình theo dõi đơn.'),
     acceptingOrders() ? null : el('div', { class: 'alert warning' }, closedReason()),
   );
@@ -660,6 +661,48 @@ function renderTotals() {
     : state.menu.store.acceptingOrders === false
       ? 'Quán tạm ngưng nhận đơn'
       : 'Quán chưa mở ca';
+}
+
+// F-066 (ADR-024 D-93): khách chọn lúc làm món cho đơn này
+const HOLD_CHOICES = [
+  ['now', 'Làm ngay'],
+  ['10', 'Sau 10 phút'],
+  ['20', 'Sau 20 phút'],
+  ['arrival', 'Khi bạn tới'],
+];
+let holdChoice = 'now';
+const holdBody = () => (holdChoice === 'now' ? undefined : holdChoice === 'arrival' ? { mode: 'ARRIVAL' } : { mode: 'TIME', minutes: Number(holdChoice) });
+
+function holdPicker() {
+  return el(
+    'div',
+    { class: 'hold-picker' },
+    el('div', { class: 'small', id: 'hold-label' }, 'Khi nào làm món?'),
+    el(
+      'div',
+      { class: 'note-chips', role: 'group', 'aria-labelledby': 'hold-label' },
+      HOLD_CHOICES.map(([key, label]) =>
+        el(
+          'button',
+          {
+            class: 'chip',
+            type: 'button',
+            'aria-pressed': String(holdChoice === key),
+            onclick: () => {
+              holdChoice = key;
+              renderTotals();
+            },
+          },
+          label,
+        ),
+      ),
+    ),
+    holdChoice === 'arrival'
+      ? el('p', { class: 'small muted' }, 'Quán giữ món tối đa 45 phút. Bạn của bạn tới thì bấm "Bạn đã tới — làm món" ở màn theo dõi đơn.')
+      : holdChoice !== 'now'
+        ? el('p', { class: 'small muted' }, `Quán bắt đầu làm sau ${holdChoice} phút — vẫn bấm "Làm ngay" được ở màn theo dõi đơn.`)
+        : null,
+  );
 }
 
 let idempotencyKey = null;
@@ -673,13 +716,21 @@ async function submit(button) {
   try {
     await api('/api/orders', {
       method: 'POST',
-      body: { sessionId, items: toOrderItems(state.cart) },
+      body: { sessionId, items: toOrderItems(state.cart), hold: holdBody() },
       headers: { 'Idempotency-Key': idempotencyKey },
     });
     idempotencyKey = null;
     state.cart = [];
     clearCart(sessionId);
-    setFlash('Đặt món thành công! Quầy đã nhận đơn của bạn.', 'success');
+    setFlash(
+      holdChoice === 'now'
+        ? 'Đặt món thành công! Quầy đã nhận đơn của bạn.'
+        : holdChoice === 'arrival'
+          ? 'Đã gửi đơn — quán giữ món tới khi bạn bấm "Bạn đã tới".'
+          : `Đã gửi đơn — quán bắt đầu làm sau ${holdChoice} phút.`,
+      'success',
+    );
+    holdChoice = 'now';
     submitting = false;
     if (pendingMove && followTable(qr, sessionId, { ...pendingMove, path: '/track' })) return;
     location.href = `/t/${qr}/track`;

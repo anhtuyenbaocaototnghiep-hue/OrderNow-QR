@@ -124,7 +124,22 @@ publicRouter.post('/orders/quote', async (req, res) => {
 });
 
 publicRouter.post('/orders', orderLimiter, async (req, res) => {
-  const body = parse(z.object({ sessionId: zGuid(), items: zOrderItems(), note: zText(200).optional().nullable() }), req.body);
+  const body = parse(
+    z.object({
+      sessionId: zGuid(),
+      items: zOrderItems(),
+      note: zText(200).optional().nullable(),
+      // F-066 (ADR-024 D-93): hẹn giờ làm món — sau 5–45 phút, hoặc chờ bạn tới (tối đa 45 phút)
+      hold: z
+        .discriminatedUnion('mode', [
+          z.object({ mode: z.literal('TIME'), minutes: z.coerce.number().int().min(5, 'Hẹn từ 5 phút').max(45, 'Hẹn tối đa 45 phút') }),
+          z.object({ mode: z.literal('ARRIVAL') }),
+        ])
+        .optional()
+        .nullable(),
+    }),
+    req.body,
+  );
   const key = parse(z.string().max(100).optional(), req.get('idempotency-key') || undefined);
   const order = await orderService.submitDineIn(body, req.clientToken, key);
   res.status(201).json({
@@ -135,6 +150,11 @@ publicRouter.post('/orders', orderLimiter, async (req, res) => {
     paymentStatus: order.paymentStatus,
     order,
   });
+});
+
+// F-066: "Bạn đã tới — làm món" (thiết bị trong phiên hoặc nhân viên)
+publicRouter.post('/orders/:id/release', optionalStaff, async (req, res) => {
+  res.json({ order: await orderService.release(paramId(req), { user: req.user, clientToken: req.clientToken }) });
 });
 
 publicRouter.get('/orders/:id', optionalStaff, async (req, res) => {

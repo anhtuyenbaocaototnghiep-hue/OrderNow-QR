@@ -10,6 +10,7 @@ import { adminRouter } from './routes/admin.js';
 import { engagementRouter } from './routes/engagement.js';
 import { financeRouter } from './routes/finance.js';
 import { loyaltyRouter } from './routes/loyalty.js';
+import { luckySpinRouter } from './routes/luckySpin.js';
 import { dashboardRouter } from './routes/analytics.js';
 import { opsRouter } from './routes/ops.js';
 import { notFoundPage, pagesRouter, publicDir } from './routes/pages.js';
@@ -49,6 +50,7 @@ export function createApp() {
     ['', opsRouter], // ADR-006: kho cho quầy (sơ chế, hủy hàng, lô, nhận hàng; trưởng ca: điều chỉnh, kiểm kê)
     ['', financeRouter], // ADR-006: sổ quỹ, chấm công, đăng xuất
     ['', loyaltyRouter], // ADR-006: điểm / tem / voucher (quầy)
+    ['', luckySpinRouter], // F-065: vòng quay may mắn (khách theo mã, màn cảm ơn của phiên)
     ['', dashboardRouter], // ADR-006 F-043: dashboard chủ quán (quản lý + trưởng ca)
     ['', staffRouter],
   ];

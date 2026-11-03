@@ -98,6 +98,7 @@
 | [TASK-080](TASK-080.md) | Trang Lãi / lỗ dễ hiểu cho chủ quán (F-034, AC-034-07…09) | FEATURE-034 | TASK-079 | Agent | — | chủ dự án 02/11 | READY_FOR_REVIEW |
 | [TASK-081](TASK-081.md) | Sổ quỹ dễ dùng, thao tác đơn giản (F-033, AC-033-11, AC-033-12) | FEATURE-033 | TASK-080 | Agent | — | chủ dự án 02/11 | READY_FOR_REVIEW |
 | [TASK-082](TASK-082.md) | Hội viên dễ theo dõi, thao tác thực tế (F-014, AC-014-09…11) | FEATURE-014 | TASK-081 | Agent | — | chủ dự án 02/11 | READY_FOR_REVIEW |
+| [TASK-083](TASK-083.md) | Vòng quay may mắn (F-065) + ra món khi bạn bè tới (F-066), ADR-024 | FEATURE-065, FEATURE-066 | TASK-082 | Agent | — | chủ dự án 03/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

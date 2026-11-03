@@ -2068,3 +2068,137 @@ test('hội viên dễ theo dõi: khách mua → điểm tự tích hiện ở "
   expect(await P.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
   await P.setViewportSize({ width: 1366, height: 860 });
 });
+
+test('ra món khi bạn tới: khách chọn "Khi bạn tới" → quầy thấy phiếu "Chờ bạn tới" cuối cột Mới, không đồng hồ chờ; khách bấm "Bạn đã tới — làm món" → phiếu thành đơn mới, quầy tiếp nhận; đơn hẹn giờ tới giờ tự thành đơn mới (F-066, AC-066-04)', async ({
+  request,
+}) => {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'HB1', name: 'Bàn HB1' });
+  const phone = await browser.newContext(phoneOpts);
+  const G = await phone.newPage();
+  watch(G, 'hold');
+  try {
+    await G.goto(`/t/${t.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .c-item', { hasText: 'Cà phê đen' }).locator('.add-btn').click();
+    await G.click('#open-cart');
+    const when = G.getByRole('group', { name: 'Khi nào làm món?' });
+    await expect(when.getByRole('button', { name: 'Làm ngay' })).toHaveAttribute('aria-pressed', 'true');
+    await when.getByRole('button', { name: 'Khi bạn tới' }).click();
+    await expect(G.locator('.sheet')).toContainText('Quán giữ món tối đa 45 phút');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    const card = G.locator('.order-card').first();
+    await expect(card.locator('.badge')).toHaveText('Chờ bạn tới');
+
+    await P.goto('/pos');
+    const held = P.locator('#col-PENDING .ticket.held', { hasText: 'Bàn HB1' });
+    await expect(held).toContainText('Chờ bạn tới');
+    await expect(held.locator('.wait-chip')).toHaveCount(0);
+    await expect(P.locator('#col-PENDING .ticket').last()).toHaveClass(/held/); // nằm cuối cột Mới
+
+    await card.getByRole('button', { name: 'Bạn đã tới — làm món' }).click();
+    await expect(card.locator('.badge')).toHaveText('Chờ xác nhận');
+    await expect(P.locator('.toast', { hasText: 'Bàn HB1: khách đã tới' })).toBeVisible();
+    const ready = P.locator('#col-PENDING .ticket:not(.held)', { hasText: 'Bàn HB1' });
+    await expect(ready.locator('.wait-chip')).toBeVisible();
+    await ready.getByRole('button', { name: 'Tiếp nhận', exact: true }).click();
+    await expect(card.locator('.badge')).toHaveText('Đang chuẩn bị');
+
+    // Đơn hẹn 10 phút: máy quầy (đồng hồ giả) tua 11 phút → phiếu tự thành đơn mới + báo "tới giờ làm"
+    const counter = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+    await counter.clock.install();
+    const Q = await counter.newPage();
+    try {
+      await Q.goto('/pos/login');
+      await Q.fill('#username', 'staff1');
+      await Q.fill('#password', 'Staff@123');
+      await Q.click('#submit');
+      await expect(Q).toHaveURL(/\/pos$/);
+      await G.goto(`/t/${t.qrToken}/menu`);
+      await G.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).locator('.add-btn').click();
+      await G.click('#open-cart');
+      await G.getByRole('group', { name: 'Khi nào làm món?' }).getByRole('button', { name: 'Sau 10 phút' }).click();
+      await G.locator('.sheet .modal-foot .btn-primary').click();
+      await expect(G).toHaveURL(/\/track$/);
+      const timed = Q.locator('#col-PENDING .ticket', { hasText: 'Nước suối' }).filter({ hasText: 'Bàn HB1' });
+      await expect(timed).toHaveClass(/held/);
+      await expect(timed).toContainText('Làm lúc');
+      await Q.clock.fastForward('11:00');
+      await expect(Q.locator('.toast', { hasText: 'Bàn HB1: tới giờ làm đơn' })).toBeVisible();
+      await expect(timed).not.toHaveClass(/held/);
+      await expect(timed.getByRole('button', { name: 'Tiếp nhận', exact: true })).toBeVisible();
+    } finally {
+      await counter.close();
+    }
+  } finally {
+    await phone.close();
+  }
+});
+
+test('vòng quay may mắn: quản lý bật + chỉnh ô quà ở Tích điểm → hóa đơn có QR; khách ở màn cảm ơn bấm "quay ngay" → quay → nhận voucher; mở lại thấy kết quả cũ, không quay lần 2 (F-065, AC-065-07)', async ({
+  request,
+}) => {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  await P.goto('/admin/loyalty');
+  await P.getByRole('tab', { name: 'Vòng quay may mắn' }).click();
+  const enabled = P.getByLabel('Bật vòng quay may mắn');
+  await expect(enabled).not.toBeChecked(); // mặc định tắt
+  await P.getByText('Bật vòng quay (in QR trên hóa đơn và màn cảm ơn)').click(); // bấm nhãn công tắc như người dùng
+  await expect(enabled).toBeChecked();
+  // Chỉ để ô "Giảm 10%" có tỷ lệ → chắc chắn trúng voucher (ô "Chúc may mắn" vẫn phải có, tỷ lệ 0)
+  for (const i of [2, 3, 4]) await P.getByLabel(`Tỷ lệ ô ${i}`).fill('0');
+  await expect(P.locator('table.spin-prizes tbody tr').first().locator('td.num')).toHaveText('100%');
+  await P.getByRole('button', { name: 'Lưu vòng quay' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu — hóa đơn từ giờ in QR vòng quay' })).toBeVisible();
+
+  const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'VQ1', name: 'Bàn VQ1' });
+  const phone = await browser.newContext({ ...phoneOpts, reducedMotion: 'reduce' });
+  const G = await phone.newPage();
+  watch(G, 'spin');
+  try {
+    await G.goto(`/t/${t.qrToken}`);
+    const den = G.locator('.c-section.cat .c-item', { hasText: 'Cà phê đen' });
+    await den.locator('.add-btn').click();
+    await den.getByRole('button', { name: 'Thêm Cà phê đen' }).click(); // nút + của ô số lượng
+    await G.click('#open-cart');
+    await expect(G.locator('.sheet .modal-foot .btn-primary')).toContainText('50.000đ'); // đủ mức quay 30.000đ
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    const sessionId = await G.evaluate((k) => globalThis.localStorage.getItem(k), `cf_session_${t.qrToken}`);
+    const session = await apiAs(request, 'get', `/api/sessions/${sessionId}`);
+    for (const o of session.orders) await apiAs(request, 'post', `/api/orders/${o.orderId}/accept`);
+    await apiAs(request, 'post', `/api/sessions/${sessionId}/settle`, { amountReceived: 100000 });
+
+    await P.goto(`/pos/sessions/${sessionId}/receipt`);
+    await expect(P.locator('#receipt')).toContainText('QUÉT QR ĐỂ QUAY MAY MẮN');
+    await expect(P.getByRole('img', { name: 'Mã QR vòng quay may mắn' })).toBeVisible();
+
+    const go = G.getByRole('link', { name: 'Bạn có 1 lượt quay may mắn — quay ngay' });
+    await expect(go).toBeVisible();
+    await go.click();
+    await expect(G).toHaveURL(/\/quay\/[0-9a-f]{32}$/);
+    await expect(G.getByRole('img', { name: /Vòng quay gồm các ô: Giảm 10%/ })).toBeVisible();
+    await G.getByRole('button', { name: 'Quay ngay' }).click();
+    const result = G.locator('.spin-result');
+    await expect(result.getByRole('heading')).toHaveText('Bạn trúng: Giảm 10%');
+    await expect(result.locator('.voucher-code')).toHaveText(/^QM[0-9A-F]{8}$/);
+    await expect(result).toContainText('đọc mã này cho nhân viên khi thanh toán');
+    await expect(G.locator('#spin-live')).toHaveText('Bạn trúng Giảm 10%.');
+    const code = await result.locator('.voucher-code').textContent();
+
+    await G.reload();
+    await expect(G.getByRole('heading', { name: 'Kết quả lượt quay của bạn' })).toBeVisible();
+    await expect(G.getByRole('button', { name: 'Quay ngay' })).toHaveCount(0);
+    await expect(G.locator('.voucher-code')).toHaveText(code);
+    expect(await G.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+
+    await P.goto('/admin/loyalty');
+    await P.getByRole('tab', { name: 'Vòng quay may mắn' }).click();
+    await expect(P.locator('.kpi', { hasText: 'Lượt quay (7 ngày)' }).locator('.value')).toHaveText('1');
+    await P.getByRole('tab', { name: 'Voucher' }).click();
+    await expect(P.locator('#content tbody tr', { hasText: code })).toContainText('Vòng quay may mắn');
+  } finally {
+    await phone.close();
+  }
+});

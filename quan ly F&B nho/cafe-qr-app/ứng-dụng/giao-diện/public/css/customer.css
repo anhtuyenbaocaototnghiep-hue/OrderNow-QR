@@ -776,3 +776,152 @@ body.customer .c-tabs {
 .policy li {
   margin: 0.2rem 0;
 }
+
+/* F-066 hẹn giờ làm món: chọn ở giỏ hàng, dòng "đang giữ" trên thẻ đơn */
+.hold-picker {
+  margin-top: 0.75rem;
+}
+.hold-picker .note-chips {
+  margin-top: 0.35rem;
+}
+.hold-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.4rem 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: var(--c-warning-50);
+  color: var(--c-warning-text);
+  font-weight: 600;
+}
+
+/* F-065 lượt quay trên màn cảm ơn + SCR-49 trang vòng quay */
+.spin-cta {
+  margin: 1rem 0;
+}
+.spin-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem 1rem 3rem;
+  text-align: center;
+}
+.spin-page h1 {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  margin: 0.5rem 0 0.25rem;
+}
+.wheel-wrap {
+  position: relative;
+  width: min(320px, 100%);
+  aspect-ratio: 1;
+  margin: 1.25rem auto 1rem;
+}
+.wheel {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 8px 18px rgba(42, 27, 18, 0.22));
+}
+.wheel .slice {
+  stroke: var(--c-surface);
+  stroke-width: 2;
+}
+.wheel .slice.s0 {
+  fill: var(--c-primary);
+}
+.wheel .slice.s1,
+.wheel .slice.s-last {
+  fill: var(--c-accent-100);
+}
+.wheel .slice.s2 {
+  fill: var(--c-surface);
+}
+.wheel .slice-label {
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--c-text);
+}
+.wheel .slice-label.s0:not(.s-last) {
+  fill: #fff;
+}
+.wheel .rim {
+  fill: none;
+  stroke: var(--c-espresso);
+  stroke-width: 6;
+}
+.wheel-pointer {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 26px solid var(--c-espresso);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+.wheel-hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 58px;
+  height: 58px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 3px solid var(--c-surface);
+  background: var(--c-espresso);
+  color: var(--c-on-dark);
+}
+.wheel-hub .ic {
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0;
+}
+.spin-btn {
+  min-width: 12rem;
+}
+.spin-result {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  background: var(--c-surface);
+}
+.spin-result h2 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  margin: 0.25rem 0 0.5rem;
+}
+.spin-result .big {
+  color: var(--c-primary);
+}
+.spin-result .big .ic {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+}
+.voucher-code {
+  display: inline-block;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.45rem 1rem;
+  border: 2px dashed var(--c-accent);
+  border-radius: var(--radius-sm);
+  background: var(--c-primary-50);
+  color: var(--c-primary-600);
+  font-family: var(--mono);
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wheel {
+    transition: none !important;
+  }
+}

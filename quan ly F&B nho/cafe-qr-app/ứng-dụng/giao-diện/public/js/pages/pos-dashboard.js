@@ -4,6 +4,7 @@
 // F-024: ghi chú bàn (chỉ nhân viên thấy), nút "Gọi món" sang trang gọi món tại bàn, phiếu ghi nhân viên nhập đơn.
 // ADR-006: hàng chờ + thời gian chờ ước tính ở cột Mới (F-025); bàn chia bill → thu từng phần, in bill từng phần, "Thu chung" (F-026).
 // ADR-019: thu bằng chuyển khoản (F-056), thu chung nhiều bàn (F-057), tách hóa đơn theo món (F-058) trong ngăn Thu tiền bàn.
+// ADR-024 (F-066): đơn hẹn giờ / chờ bạn tới nằm cuối cột Mới, không kêu; tới giờ hoặc khách báo đã tới → thành đơn mới + kêu.
 import { staffApi } from '../api.js';
 import { billingControls } from '../billing-controls.js';
 import { mountPosShell } from '../pos-shell.js';
@@ -78,7 +79,7 @@ async function loadAll({ detectLate = false } = {}) {
     return;
   }
   if (detectLate) {
-    const lateOrders = [...state.orders.values()].filter((o) => !knownOrders.has(o.orderId) && o.status === 'PENDING');
+    const lateOrders = [...state.orders.values()].filter((o) => !knownOrders.has(o.orderId) && o.status === 'PENDING' && !isHeld(o));
     const latePays = state.sessions.filter((s) => s.status === 'PAYMENT_REQUESTED' && !knownPayReq.has(s.sessionId));
     const lateCalls = state.calls.filter((c) => !knownCalls.has(c.callId));
     if (lateOrders.length || latePays.length || lateCalls.length) {
@@ -98,6 +99,7 @@ async function loadAll({ detectLate = false } = {}) {
     }
   }
   renderBoard();
+  checkHolds(); // F-066: nhớ đơn đang giữ ngay khi tải (và báo đơn hết giữ trong lúc mất kết nối)
   renderSessions();
   renderCalls();
   renderReviews();
@@ -153,11 +155,81 @@ function markWait(chip, since) {
   chip.classList.toggle('late', min >= WAIT_LATE_MIN);
 }
 
+// F-066 (ADR-024 D-94): đơn đang giữ = chờ, chưa làm; chờ tính từ lúc hết giữ (khách báo đã tới / tới giờ)
+const isHeld = (o, now = Date.now()) => o.status === 'PENDING' && Boolean(o.holdMode) && !o.releasedAt && new Date(o.holdUntil).getTime() > now;
+const holdOverdue = (o) => o.status === 'PENDING' && o.holdMode === 'ARRIVAL' && !o.releasedAt && !isHeld(o);
+const readySince = (o) => (!o.holdMode ? o.createdAt : o.releasedAt && new Date(o.releasedAt) < new Date(o.holdUntil) ? o.releasedAt : o.holdUntil);
+
+/** Phiếu đang giữ: không đồng hồ chờ, chỉ giờ làm + "Làm ngay" (= tiếp nhận) / Hủy. */
+function heldTicket(o) {
+  const gate = shiftGate();
+  return el(
+    'article',
+    { class: 'ticket pending held', tabindex: 0, onclick: () => openOrder(o.orderId), onkeydown: openOnKey(o) },
+    el(
+      'div',
+      { class: 'ticket-head' },
+      el('span', { class: 'where' }, whereLabel(o)),
+      el(
+        'span',
+        { class: 'hold-chip' },
+        icon('timer'),
+        o.holdMode === 'ARRIVAL' ? `Chờ bạn tới · tối đa ${time(o.holdUntil)}` : `Làm lúc ${time(o.holdUntil)}`,
+      ),
+    ),
+    el(
+      'div',
+      { class: 'ticket-meta' },
+      el('span', { class: 'code' }, `#${o.orderCode}`),
+      el('span', {}, `đặt ${time(o.createdAt)}`),
+      el('span', {}, 'Khách hẹn — chưa làm'),
+    ),
+    el('div', { class: 'held-items' }, o.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')),
+    el(
+      'div',
+      { class: 'ticket-actions' },
+      el('button', { class: 'btn', type: 'button', ...gate, onclick: (e) => act(e, () => accept(o, e.currentTarget)) }, 'Làm ngay'),
+      el('button', { class: 'btn btn-danger', type: 'button', ...gate, onclick: (e) => act(e, () => cancelOrder(o)) }, 'Hủy'),
+    ),
+  );
+}
+
+// F-066: đơn đang giữ vừa hết giữ (tới giờ / khách báo đã tới) → thành đơn mới: nháy + kêu như đơn vừa đặt
+const heldIds = new Set();
+function checkHolds() {
+  let due = 0;
+  for (const id of [...heldIds]) {
+    const o = state.orders.get(id);
+    if (o && isHeld(o)) continue;
+    heldIds.delete(id);
+    if (o?.status !== 'PENDING') continue;
+    due += 1;
+    state.fresh.add(id);
+    ticketCache.delete(id);
+    toast(
+      o.releasedAt
+        ? `${whereLabel(o)}: khách đã tới — làm đơn #${o.orderCode}`
+        : o.holdMode === 'ARRIVAL'
+          ? `${whereLabel(o)}: hết giờ giữ đơn #${o.orderCode} — hỏi bàn trước khi làm`
+          : `${whereLabel(o)}: tới giờ làm đơn #${o.orderCode}`,
+      'warning',
+      6000,
+    );
+  }
+  for (const o of state.orders.values()) if (isHeld(o)) heldIds.add(o.orderId);
+  if (due) {
+    playSound('ting');
+    renderBoard();
+    refreshQueueEta();
+  }
+}
+
 // Enter trên chính phiếu mới mở chi tiết — Enter ở nút trong phiếu chỉ bấm nút (review G3)
 const openOnKey = (o) => (e) => e.key === 'Enter' && e.target === e.currentTarget && openOrder(o.orderId);
 
 function ticket(o) {
   if (o.status === 'COMPLETED') return doneTicket(o);
+  if (isHeld(o)) return heldTicket(o);
   const actions = [];
   const gate = shiftGate();
   if (o.status === 'PENDING') {
@@ -173,9 +245,9 @@ function ticket(o) {
     'span',
     { class: 'wait-chip' },
     icon('clock', { label: 'Đã chờ' }),
-    el('span', { class: 'ago', dataset: { since: o.createdAt } }, elapsed(o.createdAt)),
+    el('span', { class: 'ago', dataset: { since: readySince(o) } }, elapsed(readySince(o))),
   );
-  markWait(wait, o.createdAt);
+  markWait(wait, readySince(o));
   return el(
     'article',
     {
@@ -198,6 +270,7 @@ function ticket(o) {
       o.items.map((i) => el('li', {}, el('span', { class: 'qty' }, `${i.quantity}×`), i.name, itemDetail(i))),
     ),
     o.note ? el('div', { class: 'order-note' }, `Ghi chú đơn: ${o.note}`) : null,
+    holdOverdue(o) ? el('div', { class: 'order-note' }, 'Hết giờ giữ — hỏi bàn trước khi làm') : null,
     el('div', { class: 'ticket-foot' }, el('strong', {}, money(o.totalAmount)), paymentBadge(o.paymentStatus)),
     actions.length ? el('div', { class: 'ticket-actions' }, actions) : null,
   );
@@ -228,7 +301,19 @@ const ticketCache = new Map(); // orderId → { key, node }
 // Có bàn trong khóa: chuyển bàn (F-049) phải vẽ lại thẻ đơn với bàn mới
 // Có ca trong khóa: mở / đóng ca (F-055) phải vẽ lại để bật / khóa nút xử lý đơn
 const ticketKey = (o) =>
-  [o.status, o.paymentStatus, o.totalAmount, o.items.length, o.acceptedAt, o.completedAt, o.paidAt, o.table?.tableId, shell.shift ? 1 : 0].join('|');
+  [
+    o.status,
+    o.paymentStatus,
+    o.totalAmount,
+    o.items.length,
+    o.acceptedAt,
+    o.completedAt,
+    o.paidAt,
+    o.table?.tableId,
+    shell.shift ? 1 : 0,
+    isHeld(o) ? 1 : 0, // F-066: hết giữ → vẽ lại thành phiếu thường
+    o.releasedAt,
+  ].join('|');
 shell.onShiftChange(() => {
   renderBoard();
   renderSessions();
@@ -249,6 +334,9 @@ function renderBoard() {
   const byStatus = { PENDING: [], PREPARING: [], COMPLETED: [] };
   for (const o of state.orders.values()) byStatus[o.status]?.push(o);
   byStatus.COMPLETED.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+  // F-066: đơn đang giữ xuống cuối cột Mới, cái tới giờ trước nằm trên
+  const held = byStatus.PENDING.filter((o) => isHeld(o)).sort((a, b) => new Date(a.holdUntil) - new Date(b.holdUntil));
+  byStatus.PENDING = [...byStatus.PENDING.filter((o) => !isHeld(o)), ...held];
   for (const id of ticketCache.keys()) if (!state.orders.has(id)) ticketCache.delete(id);
   for (const s of COLUMNS) {
     $(`#count-${s}`).textContent = byStatus[s].length;
@@ -1524,15 +1612,23 @@ function openSettle(sessionId) {
 }
 
 // ---------- Realtime ----------
+
 function onOrderEvent(payload) {
   const order = payload.order;
   if (!order) return loadAll();
   const isNew = !state.orders.has(order.orderId);
-  if (isNew && order.status === 'PENDING') {
+  if (isNew && order.status === 'PENDING' && isHeld(order)) {
+    heldIds.add(order.orderId); // F-066: đơn hẹn — báo nhẹ, chưa kêu
+    toast(
+      `${whereLabel(order)} đặt trước đơn #${order.orderCode} — ${order.holdMode === 'ARRIVAL' ? 'chờ bạn tới' : `làm lúc ${time(order.holdUntil)}`}`,
+      'info',
+    );
+  } else if (isNew && order.status === 'PENDING') {
     state.fresh.add(order.orderId);
     playSound('ting');
   }
   upsert(order);
+  checkHolds();
   refreshQueueEta();
   if (order.sessionId) refreshSessionsSoon();
   if (state.drawer && order.sessionId === state.drawer.sessionId) state.drawer.reload();
@@ -1705,6 +1801,7 @@ shell.attach(socket);
 socket?.on('order.created', onOrderEvent);
 socket?.on('order.status_changed', onOrderEvent);
 socket?.on('order.cancelled', onOrderEvent);
+socket?.on('order.released', onOrderEvent); // F-066 khách báo "Bạn đã tới"
 socket?.on('session.payment_requested', (p) => {
   playSound('chime');
   toast(`${p.table?.name ?? 'Một bàn'} gọi thanh toán · ${money(p.amountDue)}`, 'warning', 6000);
@@ -1743,8 +1840,9 @@ socket?.on('session.staff_call_handled', (c) => {
 });
 socket?.on('inventory.low', (p) => toast(`Nguyên liệu sắp hết: ${p.name} (còn ${num(p.available)} ${p.unit ?? ''})`, 'warning', 6000));
 
-// Cập nhật đồng hồ chờ mỗi giây; phiếu đơn đổi màu khi chờ lâu (D-68)
+// Cập nhật đồng hồ chờ mỗi giây; phiếu đơn đổi màu khi chờ lâu (D-68); đơn hẹn tới giờ → thành đơn mới (F-066)
 setInterval(() => {
+  checkHolds();
   document.querySelectorAll('[data-since]').forEach((n) => {
     n.textContent = elapsed(n.dataset.since);
     if (n.classList.contains('ago')) markWait(n.parentElement, n.dataset.since);

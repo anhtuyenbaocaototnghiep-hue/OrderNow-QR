@@ -14,6 +14,7 @@ import * as tablesRepo from '../repositories/tablesRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { approvalFor, computeTotals, loyaltyInput, manualInput, orderForSplit, orderForTotals } from './billingService.js';
 import * as loyaltyService from './loyaltyService.js';
+import * as luckySpinService from './luckySpinService.js';
 import { partOrders } from '../pricing/pricing.js';
 import { maskName, maskPhone } from './memberService.js';
 import { paymentBreakdown, receiptLines } from './orderService.js';
@@ -386,6 +387,7 @@ export async function receipt(sessionId, mode, mergeIds = []) {
     payment,
     splitPayments: splitPaid ? payments.map((p) => ({ paymentId: p.paymentId, amountDue: p.amountDue, paidAt: p.paidAt })) : null,
     memberCard: payment ? await loyaltyService.receiptCard(payment.member?.memberId) : null, // F-047 D-38
+    luckySpin: mode === 'final' && payment ? await luckySpinService.forReceipt(payment) : null, // F-065
     printedAt: new Date(),
   };
 }
@@ -411,6 +413,7 @@ export async function paymentReceipt(paymentId) {
     breakdown: paymentBreakdown(payment, payment.subtotalAmount),
     payment,
     memberCard: await loyaltyService.receiptCard(payment.member?.memberId), // F-047 D-38
+    luckySpin: await luckySpinService.forReceipt(payment), // F-065
     printedAt: new Date(),
   };
 }

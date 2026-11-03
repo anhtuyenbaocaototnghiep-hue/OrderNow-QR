@@ -326,12 +326,28 @@ test('khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn 
   if (!before) await request.post('/api/shifts/open', { headers: auth, data: { openingCash: 0 } });
   await request.post(`/api/orders/${det.orders[0].orderId}/accept`, { headers: auth });
   expect((await request.post(`/api/sessions/${mine.sessionId}/settle`, { headers: auth, data: { amountReceived: 100000 } })).ok()).toBeTruthy();
+  // F-065: một lượt mang đi đủ mức → hóa đơn có mã vòng quay (bật vòng quay nếu flow chưa bật)
+  const spinCfg = await (await request.get('/api/admin/lucky-spin', { headers: auth })).json();
+  if (!spinCfg.enabled) await request.put('/api/admin/lucky-spin', { headers: auth, data: { ...spinCfg, enabled: true, stats: undefined } });
+  const coffee = (await (await request.get('/api/admin/menu-items', { headers: auth })).json()).find((i) => i.name === 'Cà phê đen');
+  const ta = await (
+    await request.post('/api/orders/takeaway', { headers: auth, data: { items: [{ menuItemId: coffee.menuItemId, quantity: 2 }], amountReceived: 100000 } })
+  ).json();
+  const spinUrl = (await (await request.get(`/api/orders/${ta.order.orderId}/receipt`, { headers: auth })).json()).luckySpin?.url;
+  expect(spinUrl).toBeTruthy();
   if (!before) {
     const sh = (await (await request.get('/api/shifts/current', { headers: auth })).json()).shift;
     await request.post(`/api/shifts/${sh.shiftId}/close`, { headers: auth, data: { countedCash: sh.expectedCash } });
   }
   await expect(D.getByRole('heading', { name: 'Bạn thấy món hôm nay thế nào?' })).toBeVisible();
   await check(D, 'khach-danh-gia', { narrow: true });
+  // F-065: trang vòng quay (SCR-49) trước và sau khi quay
+  await D.goto(new URL(spinUrl).pathname);
+  await expect(D.getByRole('button', { name: 'Quay ngay' })).toBeVisible();
+  await check(D, 'khach-vong-quay', { narrow: true });
+  await D.getByRole('button', { name: 'Quay ngay' }).click();
+  await expect(D.locator('.spin-result')).toBeVisible({ timeout: 10000 });
+  await check(D, 'khach-vong-quay-ket-qua', { narrow: true });
   // F-062: trang Chính sách dữ liệu (SCR-48)
   await D.goto('/chinh-sach-du-lieu');
   await expect(D.getByRole('heading', { name: 'Quyền của bạn' })).toBeVisible();
@@ -447,6 +463,12 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     await A.goto(`/admin/${r}`);
     await check(A, `quan-ly-${r.replace(/\//g, '-').replace(/-\d+-/, '-id-')}`);
   }
+  // F-065: tab Vòng quay may mắn (bảng ô quà nhập được) — nhãn ô nhập, không cuộn ngang ở màn hẹp
+  await A.goto('/admin/loyalty');
+  await A.getByRole('tab', { name: 'Vòng quay may mắn' }).click();
+  await expect(A.locator('table.spin-prizes')).toBeVisible();
+  await check(A, 'quan-ly-loyalty-vong-quay', { narrow: true });
+  await A.setViewportSize(desk.viewport);
   // DEF-014: Phân tích, Lãi / lỗ không cuộn ngang ở 320 / 390 px (WCAG 1.4.10) — trước đây 441 / 638 px
   // F-064: Cảnh báo có bảng món tụt lãi — flow để lại một cảnh báo giá vốn
   for (const r of ['analytics', 'pnl', 'alerts']) {

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { paramId, parse, parseRange, parseUtcRange, zDate, zId, zText, zTime } from '../middleware/validate.js';
 import * as marketingService from '../services/marketingService.js';
 import * as memberService from '../services/memberService.js';
+import * as luckySpinService from '../services/luckySpinService.js';
 import * as loyaltyService from '../services/loyaltyService.js';
 import * as campaignService from '../services/campaignService.js';
 import { sendCsv } from '../utils/csv.js';
@@ -35,6 +36,34 @@ marketingRouter.get('/members', async (req, res) => {
     req.query,
   );
   res.json(await memberService.adminList(q));
+});
+// F-065 (ADR-024 D-92): vòng quay may mắn — bật / tắt, ô quà, kết quả 7 ngày
+marketingRouter.get('/lucky-spin', async (_req, res) => res.json(await luckySpinService.adminGet()));
+marketingRouter.put('/lucky-spin', async (req, res) => {
+  const body = parse(
+    z.object({
+      enabled: z.boolean(),
+      minAmount: z.coerce.number().int().min(0).max(10_000_000),
+      dailyWinCap: z.coerce.number().int().min(0).max(1000),
+      voucherDays: z.coerce.number().int().min(1).max(365),
+      expireHours: z.coerce.number().int().min(1).max(168),
+      prizes: z
+        .array(
+          z.object({
+            prizeId: zId().optional().nullable(),
+            label: zText(40).min(1, 'Nhập tên ô'),
+            kind: z.enum(['PERCENT', 'AMOUNT', 'POINTS', 'NONE']),
+            value: z.coerce.number().int().min(0).max(10_000_000).default(0),
+            maxDiscount: z.coerce.number().int().min(0).max(10_000_000).optional().nullable(),
+            weight: z.coerce.number().int().min(0, 'Tỷ lệ không âm').max(1000),
+          }),
+        )
+        .min(1)
+        .max(20),
+    }),
+    req.body,
+  );
+  res.json(await luckySpinService.adminSave(body));
 });
 // TASK-082: tổng quan + tích điểm gần đây — đặt trước /members/:id
 marketingRouter.get('/members/overview', async (_req, res) => res.json(await memberService.adminOverview()));

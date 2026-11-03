@@ -367,3 +367,22 @@ flowchart LR
 - Trên cùng: 6 ô số (Hội viên · Quay lại trong 30 ngày · Điểm tích hôm nay · Lượt thu có hội viên hôm nay · Doanh thu từ hội viên 30 ngày · Điểm khách đang giữ).
 - Hai cột (≥ 1100 px): **Danh sách hội viên** (nhóm nút lọc nhanh `aria-pressed` kèm số đếm, ô tìm, bảng Hội viên · Điểm · Đã chi + `<progress>` lên hạng · Lần cuối ghé, phân trang) | **Tích điểm gần đây** (12 dòng, tên là nút mở hồ sơ).
 - Hồ sơ (hộp thoại): khung Điểm hiện có · Hạng (+ tiến độ) · Đã chi; dòng SĐT che, ngày đăng ký, sinh nhật; "Sửa thông tin" là `<details>` thu gọn; Lịch sử mua; Điểm · tem · voucher có nhóm nút "Điểm nhanh" (+10, +50, +100, −10) điền sẵn ô điểm, vẫn phải ghi lý do.
+
+## F-065 / F-066 — Vòng quay may mắn, ra món khi bạn bè tới (TASK-083, ADR-024, 03/11/2026)
+
+- **S-03 Giỏ hàng:** nhóm nút **"Khi nào làm món?"** (`role=group`, `aria-pressed`): Làm ngay (mặc định) · Sau 10 phút · Sau 20 phút · Khi bạn tới; chọn hẹn thì có câu giải thích dưới nhóm nút.
+- **S-05 Theo dõi đơn:** đơn đang giữ có nhãn "Chờ bạn tới" / "Hẹn giờ làm" và dòng "Quán bắt đầu làm lúc HH:MM" / "Chờ bạn tới (quán giữ tới HH:MM)" + nút **"Bạn đã tới — làm món"** / **"Làm ngay"**; tới giờ trang tự tải lại. **Màn cảm ơn:** nút "Bạn có 1 lượt quay may mắn — quay ngay"; đã quay → "Bạn đã quay: … · Xem lại".
+- **S-10 Đơn hàng (quầy):** phiếu đang giữ viền đứt, nằm **cuối cột Mới** (tới giờ trước nằm trên), chip "Chờ bạn tới · tối đa HH:MM" / "Làm lúc HH:MM" thay đồng hồ chờ, món gọn một dòng, nút **Làm ngay** (= Tiếp nhận) · Hủy; không kêu chuông lúc gửi. Hết giữ → phiếu thường + nháy + chuông + thông báo ("khách đã tới" / "tới giờ làm" / "hết giờ giữ — hỏi bàn trước khi làm"); đồng hồ chờ tính từ lúc hết giữ.
+- **S-12 Hóa đơn:** khối "QUÉT QR ĐỂ QUAY MAY MẮN" + QR 30 mm + "Mỗi hóa đơn 1 lượt · quay trước …".
+- **SCR-49 `/quay/{mã}` (mới):** vòng quay SVG (2–8 ô, kim ở đỉnh, nhãn `aria-label` liệt kê các ô), nút **Quay ngay**; kết quả: mã voucher lớn + mức giảm + hạn + "Chép mã" / "+N điểm" / "Chúc bạn may mắn lần sau"; vùng `aria-live` đọc kết quả; giảm chuyển động → không quay, hiện kết quả ngay. Đã quay → "Kết quả lượt quay của bạn"; hết hạn / đã hoàn tiền / sai mã → thông báo.
+- **S-40 Tích điểm & voucher:** tab mới **Vòng quay may mắn** — 4 ô số 7 ngày (lượt quay, voucher đã phát / đã dùng, tiền khách quay lại dùng voucher, điểm đã tặng); công tắc bật; 4 ô cài đặt; bảng ô quà (tên, loại, giá trị, giảm tối đa, tỷ lệ, **cơ hội %** tính ngay khi gõ) + "Thêm ô" (tối đa 8) + "Lưu vòng quay". Tab Voucher ghi nguồn "Vòng quay may mắn".
+
+```mermaid
+flowchart LR
+  B["S-12 Hóa đơn có QR"] --> Q["SCR-49 /quay/{mã}"]
+  T["S-05 Màn cảm ơn: quay ngay"] --> Q
+  Q -->|Quay ngay| R["Máy chủ chọn ô → voucher / điểm / chúc may mắn"]
+  R -->|lần sau| P["S-14 Thu tiền: nhập mã voucher"]
+  G["S-03 Giỏ: Khi bạn tới"] --> H["S-10 phiếu giữ cuối cột Mới"]
+  H -->|"khách bấm Bạn đã tới / tới giờ"| N["Đơn mới + chuông"]
+```

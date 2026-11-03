@@ -10,6 +10,7 @@ import { publish, publishOrderEvent, ROOMS } from '../realtime/publisher.js';
 import { toSpLines } from '../pricing/pricing.js';
 import { approvalFor, computeTotals, loyaltyInput, manualInput, orderFromPriced } from './billingService.js';
 import * as loyaltyService from './loyaltyService.js';
+import * as luckySpinService from './luckySpinService.js';
 import { refreshAvailability } from './menuService.js';
 import { invalidatePromotions, publicQuote, quote } from './pricingService.js';
 import { visibility } from './scheduleService.js';
@@ -72,7 +73,7 @@ async function assertSellHours(priced, catalog) {
  * Gửi một đơn dine-in vào phiên. Khuyến mãi khóa lúc gửi (D-8); tranh lượt cuối thua → tính lại không có khuyến mãi đó.
  * `staff` (F-024): nhân viên nhập → ghi CreatedBy, vào thẳng PREPARING, không xét giờ bán (giống bán mang đi).
  */
-async function submitToSession({ sessionId, items, note }, staff = null) {
+async function submitToSession({ sessionId, items, note, hold = null }, staff = null) {
   const exclude = [];
   for (let attempt = 1; ; attempt++) {
     const { priced, catalog } = await quote(items, { exclude });
@@ -84,6 +85,7 @@ async function submitToSession({ sessionId, items, note }, staff = null) {
         sessionId,
         createdBy: staff?.userId ?? null,
         acceptNow: Boolean(staff),
+        hold: staff ? null : hold, // F-066: chỉ khách hẹn giờ làm món
         note,
         lines: rows,
         options,
@@ -107,7 +109,7 @@ async function submitToSession({ sessionId, items, note }, staff = null) {
 }
 
 /** FEATURE-003: khách gửi đơn dine-in (cần quán đang nhận đơn QR + thiết bị thuộc phiên). */
-export async function submitDineIn({ sessionId, items, note }, clientToken, idempotencyKey) {
+export async function submitDineIn({ sessionId, items, note, hold = null }, clientToken, idempotencyKey) {
   const settings = await getSettings();
   if (!settings.acceptingOrders) throw new AppError(503, 'STORE_CLOSED', settings.closedMessage);
   // F-055 (ADR-017 D-64): chưa mở ca thì khách không gửi được đơn (vẫn xem menu)
@@ -115,7 +117,7 @@ export async function submitDineIn({ sessionId, items, note }, clientToken, idem
   if (!(await sessionsRepo.isMember(sessionId, clientToken))) {
     throw forbidden('Phiên này không thuộc thiết bị của bạn. Vui lòng quét lại mã QR tại bàn.');
   }
-  return idempotent(idempotencyKey ? `${clientToken}:${idempotencyKey}` : null, () => submitToSession({ sessionId, items, note }));
+  return idempotent(idempotencyKey ? `${clientToken}:${idempotencyKey}` : null, () => submitToSession({ sessionId, items, note, hold }));
 }
 
 /**
@@ -168,6 +170,22 @@ export async function accept(orderId) {
   invalidateQueue();
   publishOrderEvent('order.status_changed', order, { orderId, sessionId: order.sessionId, status: order.status, changedAt: order.acceptedAt, order });
   return order;
+}
+
+/**
+ * F-066 (ADR-024 D-94): khách báo "bạn đã tới" (thiết bị trong phiên) hoặc nhân viên → đơn hết giữ, quầy làm ngay.
+ * viewer: { user, clientToken }. Đơn không còn giữ → 409 NOT_HELD.
+ */
+export async function release(orderId, viewer) {
+  const order = await getForViewer(orderId, viewer);
+  if (!(await ordersRepo.release(orderId))) {
+    const why = order.status !== 'PENDING' ? 'Đơn đã được quầy làm rồi' : order.holdMode ? 'Đã báo quán làm món rồi' : 'Đơn này không hẹn giờ làm';
+    throw conflict('NOT_HELD', why);
+  }
+  const fresh = await ordersRepo.getById(orderId);
+  invalidateQueue();
+  publishOrderEvent('order.released', fresh, { order: fresh });
+  return fresh;
 }
 
 export async function complete(orderId, user) {
@@ -327,6 +345,7 @@ export async function receipt(orderId) {
     breakdown: payment ? paymentBreakdown(payment, order.totalAmount) : null,
     payment,
     memberCard: await loyaltyService.receiptCard(payment?.member?.memberId), // F-047 D-38
+    luckySpin: await luckySpinService.forReceipt(payment), // F-065
     printedAt: new Date(),
   };
 }

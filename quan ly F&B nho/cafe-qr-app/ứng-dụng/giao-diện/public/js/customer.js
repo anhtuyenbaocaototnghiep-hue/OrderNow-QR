@@ -60,6 +60,14 @@ export function goEntry(qr, flash) {
 }
 
 /** Nhãn trạng thái đơn phía khách (FEATURE-004). */
+/**
+ * F-066: trạng thái hẹn giờ làm món của một đơn → null (không hẹn / đã báo / đã làm) | { held: true } (đang giữ) | { held: false } (hết giờ giữ).
+ */
+export function holdState(o, now = Date.now()) {
+  if (o.status !== 'PENDING' || !o.holdMode || o.releasedAt) return null;
+  return { held: new Date(o.holdUntil).getTime() > now, mode: o.holdMode, until: o.holdUntil };
+}
+
 export const CUSTOMER_STATUS = {
   PENDING: 'Chờ xác nhận',
   PREPARING: 'Đang chuẩn bị',

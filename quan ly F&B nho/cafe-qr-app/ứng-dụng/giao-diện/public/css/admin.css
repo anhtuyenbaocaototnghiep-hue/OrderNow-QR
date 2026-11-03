@@ -1316,3 +1316,40 @@ ul.mem-feed {
 .mem-kpis {
   grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
 }
+
+/* F-065 vòng quay may mắn (tab trong Tích điểm & voucher) */
+.spin-admin h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.25rem;
+}
+.spin-admin h3 {
+  font-size: 0.95rem;
+  margin: 1.1rem 0 0.4rem;
+}
+.spin-switch {
+  margin: 0.75rem 0;
+  font-weight: 600;
+}
+.spin-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0 0.75rem;
+}
+.spin-prizes .input {
+  min-width: 5.5rem;
+}
+.spin-prizes td:first-child .input {
+  min-width: 11rem;
+}
+.spin-prizes select.input {
+  min-width: 9.5rem;
+}
+.spin-prizes th {
+  white-space: nowrap;
+}
+.spin-val {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}

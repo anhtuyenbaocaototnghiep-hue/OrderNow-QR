@@ -1227,3 +1227,13 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Khóa chống trùng | Cảnh báo: `COST:{receiptId}:{EditedAt tính bằng ms, 0 nếu chưa sửa}` — mỗi lần sửa một khóa, chạy lại do deadlock không tạo trùng. Xét lại phiếu mới hơn sau khi sửa / hủy phiếu cũ: `COST:{phiếu mới hơn}:R{phiếu vừa sửa}:{ms}`. Email: `ALERT:{alertId}`; thư đính chính `COSTFIX:{receiptId}:{ms}` |
 | Xóa nguyên liệu | Nguyên liệu đã có dòng phiếu nhập chỉ bị xóa mềm (`sp_DeleteIngredient`), nên khóa ngoại của `CostAlertMarks` không chặn thao tác nào |
 | Cài đặt | `alert.cost_rise_pct`, `alert.cost_margin_drop`, `alert.cost_margin_min`: mặc định trong code, không cần seed |
+
+## Vòng quay may mắn, ra món khi bạn bè tới (FEATURE-065, FEATURE-066, ADR-024, 03/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0043_vong_quay_hen_gio_ra_mon.sql` | `Orders` thêm `HoldMode VARCHAR(10) NULL` (CHECK `TIME` / `ARRIVAL`), `HoldUntil DATETIME2(0) NULL`, `ReleasedAt DATETIME2(0) NULL`, `CK_Orders_Hold` (có `HoldMode` thì phải có `HoldUntil`). `CK_Vouchers_Source` thêm `GAME`. Bảng `SpinPrizes (PrizeId, Label NVARCHAR(40), Kind PERCENT/AMOUNT/POINTS/NONE, Value, MaxDiscount, Weight, SortOrder, IsActive)` + 4 ô mẫu (Giảm 10% tối đa 20.000đ · Giảm 5.000đ · +20 điểm · Chúc may mắn lần sau). Bảng `LuckySpins (SpinId, PaymentId UNIQUE FK, Token CHAR(32) UNIQUE, CreatedAt, ExpiresAt, SpunAt, PrizeId FK, Kind, PrizeLabel, VoucherId FK, Points)` + chỉ mục `IX_LuckySpins_SpunAt` |
+| `sp_SpinLucky` | Khóa ứng dụng `LuckySpinBudget` (giữ tới hết transaction) → khóa dòng lượt quay → đã quay thì trả lại; hết hạn 50241, đã hoàn tiền 50242, ô không hợp lệ 50243; đủ số lượt trúng hôm nay → đổi sang ô `NONE`; tạo voucher (`Source = 'GAME'`, `IssuedForPaymentId`) hoặc cộng `Members.Points` + `PointTransactions` (ADJUST) → ghi kết quả vào `LuckySpins` |
+| `sp_SubmitOrder` | Thêm `@HoldMode`, `@HoldMinutes` (mặc định NULL — đơn cũ không đổi); chỉ đơn tại bàn, không nhận ngay; sai → 50012 |
+| Giữ kho | Đơn đang giữ là `PENDING` nên vẫn giữ `ReservedQty` như mọi đơn chờ; hủy thì trả như cũ |
+| Cài đặt | `spin.enabled` (false), `spin.min_amount` (30000), `spin.daily_win_cap` (20), `spin.voucher_days` (14), `spin.expire_hours` (24): mặc định trong code |

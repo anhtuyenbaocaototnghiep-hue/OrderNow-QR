@@ -426,7 +426,7 @@ async function openMember(id) {
 }
 
 const PT_TYPE = { EARN: 'Tích', REDEEM: 'Đổi quà', ADJUST: 'Điều chỉnh', EXPIRE: 'Hết hạn', REFUND: 'Hoàn tiền' };
-const VOUCHER_SOURCE = { REFERRAL: 'giới thiệu bạn', CAMPAIGN: 'chiến dịch', MANUAL: 'quản lý tặng' };
+const VOUCHER_SOURCE = { REFERRAL: 'giới thiệu bạn', CAMPAIGN: 'chiến dịch', MANUAL: 'quản lý tặng', GAME: 'vòng quay may mắn' };
 
 /** F-039 / F-038 / F-037 trong hồ sơ hội viên. */
 async function renderLoyalty(m, box) {

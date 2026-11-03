@@ -117,6 +117,11 @@ const SQL_ERRORS = {
   50210: [400, 'VALIDATION_ERROR', 'Chọn 1–10 bàn khác (không trùng, không chọn chính bàn này) để thu chung'],
   50211: [404, 'NOT_FOUND', 'Không tìm thấy bàn được chọn để thu chung'],
   50212: [409, 'SESSION_CLOSED', 'Có bàn được chọn vừa thanh toán / đã đóng — chọn lại các bàn thu chung'],
+  // F-065 vòng quay may mắn (ADR-024)
+  50240: [404, 'SPIN_NOT_FOUND', 'Mã quay không đúng hoặc đã bị xóa'],
+  50241: [410, 'SPIN_EXPIRED', 'Lượt quay đã hết hạn'],
+  50242: [409, 'SPIN_REFUNDED', 'Hóa đơn đã hoàn tiền — không còn lượt quay'],
+  50243: [409, 'PRIZE_INVALID', 'Ô quà vừa được quán sửa — vui lòng quay lại'],
   50213: [409, 'SESSION_HAS_SPLITS', 'Có bàn được chọn đang chia bill — hãy bấm "Thu chung" ở bàn đó để gộp lại trước'],
 };
 

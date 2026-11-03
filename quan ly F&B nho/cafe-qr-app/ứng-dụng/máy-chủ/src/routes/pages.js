@@ -8,6 +8,7 @@ export const publicDir = path.resolve(path.dirname(fileURLToPath(import.meta.url
 const PAGES = {
   '/': 'index.html',
   '/chinh-sach-du-lieu': 'chinh-sach-du-lieu.html', // SCR-48 (F-062)
+  '/quay/:token': 'quay.html', // SCR-49 vòng quay may mắn (F-065)
   // Khách (S-01 … S-05)
   '/t/:qrToken': 't/index.html',
   '/t/:qrToken/menu': 't/menu.html',

@@ -1,5 +1,6 @@
 // S-40 Tích điểm, voucher & chiến dịch (ADR-006): quà đổi điểm + chương trình tem (F-039), voucher (F-038),
 // phân khúc + chiến dịch (F-037: xem trước số người, chạy ngay / hẹn giờ, xuất CSV, hiệu quả). Chỉ quản lý.
+// ADR-024: vòng quay may mắn trên hóa đơn (F-065) — bật/tắt, mức hóa đơn, ngân sách lượt trúng, các ô quà + tỷ lệ, kết quả 7 ngày.
 import { staffApi, staffBlobUrl } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, dateTime, el, errorMessage, modal, money, showFieldErrors, toast, todayVn } from '../ui.js';
@@ -15,6 +16,7 @@ const TABS = [
   ['stamps', 'Chương trình tem'],
   ['vouchers', 'Voucher'],
   ['campaigns', 'Phân khúc & chiến dịch'],
+  ['spin', 'Vòng quay may mắn'],
 ];
 const tabs = el(
   'div',
@@ -49,6 +51,7 @@ async function load() {
     if (state.tab === 'stamps') await renderStamps();
     else if (state.tab === 'vouchers') await renderVouchers();
     else if (state.tab === 'campaigns') await renderCampaigns();
+    else if (state.tab === 'spin') await renderSpin();
     else await renderRewards();
   } catch (err) {
     clear(body, el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -302,7 +305,7 @@ function editProgram(p) {
 }
 
 // ---------- Voucher (F-038) ----------
-const SOURCE = { REFERRAL: 'Giới thiệu bạn', CAMPAIGN: 'Chiến dịch', MANUAL: 'Quản lý tặng' };
+const SOURCE = { REFERRAL: 'Giới thiệu bạn', CAMPAIGN: 'Chiến dịch', MANUAL: 'Quản lý tặng', GAME: 'Vòng quay may mắn' };
 async function renderVouchers() {
   const from = addDays(todayVn(), -29);
   const list = await staffApi(`/api/admin/vouchers?from=${from}&to=${todayVn()}`);
@@ -381,6 +384,234 @@ function newVoucher() {
       },
     ],
   });
+}
+
+// ---------- Vòng quay may mắn (F-065, ADR-024) ----------
+const KIND_LABEL = { PERCENT: 'Giảm %', AMOUNT: 'Giảm tiền', POINTS: 'Cộng điểm', NONE: 'Chúc may mắn' };
+const KIND_UNIT = { PERCENT: '% (1–50)', AMOUNT: 'đ', POINTS: 'điểm' };
+const MAX_SLICES = 8;
+const kpi = (label, value, hint = '') =>
+  el(
+    'div',
+    { class: 'card kpi' },
+    el('div', { class: 'label' }, label),
+    el('div', { class: 'value' }, value),
+    hint ? el('div', { class: 'small muted' }, hint) : null,
+  );
+
+async function renderSpin() {
+  const data = await staffApi('/api/admin/lucky-spin');
+  const st = data.stats;
+  const rows = data.prizes.map((p) => ({ ...p }));
+  const enabled = el('input', { type: 'checkbox', checked: data.enabled, 'aria-label': 'Bật vòng quay may mắn' });
+  const num = (value, attrs = {}) => el('input', { class: 'input', type: 'number', value, ...attrs });
+  const minAmount = num(data.minAmount, { min: 0, step: 1000, name: 'minAmount' });
+  const dailyWinCap = num(data.dailyWinCap, { min: 0, max: 1000, name: 'dailyWinCap' });
+  const voucherDays = num(data.voucherDays, { min: 1, max: 365, name: 'voucherDays' });
+  const expireHours = num(data.expireHours, { min: 1, max: 168, name: 'expireHours' });
+  const prizeBody = el('tbody');
+  const odds = el('p', { class: 'small' });
+
+  function drawOdds() {
+    const total = rows.reduce((s, p) => s + (Number(p.weight) || 0), 0);
+    const win = rows.filter((p) => p.kind !== 'NONE').reduce((s, p) => s + (Number(p.weight) || 0), 0);
+    prizeBody.querySelectorAll('[data-share]').forEach((n, i) => {
+      n.textContent = total ? `${Math.round(((Number(rows[i].weight) || 0) / total) * 100)}%` : '—';
+    });
+    clear(
+      odds,
+      total
+        ? `Khoảng ${Math.round((win / total) * 100)} / 100 lượt quay trúng quà (khách hội viên). Khách chưa là hội viên không thấy ô cộng điểm.`
+        : 'Nhập tỷ lệ cho các ô.',
+    );
+  }
+
+  function drawRows() {
+    clear(
+      prizeBody,
+      rows.map((p, i) => {
+        const set =
+          (key, cast = (v) => v) =>
+          (e) => {
+            p[key] = cast(e.target.value);
+            if (key === 'kind') drawRows();
+            else drawOdds();
+          };
+        const value =
+          p.kind === 'NONE'
+            ? el('span', { class: 'muted' }, '—')
+            : el('input', {
+                class: 'input',
+                type: 'number',
+                min: 0,
+                step: p.kind === 'AMOUNT' ? 1000 : 1,
+                value: p.value,
+                'aria-label': `Giá trị ô ${i + 1}`,
+                oninput: set('value', Number),
+              });
+        return el(
+          'tr',
+          {},
+          el('td', {}, el('input', { class: 'input', maxlength: 40, value: p.label, 'aria-label': `Tên ô ${i + 1}`, oninput: set('label') })),
+          el(
+            'td',
+            {},
+            el(
+              'select',
+              { class: 'input', 'aria-label': `Loại ô ${i + 1}`, onchange: set('kind') },
+              Object.entries(KIND_LABEL).map(([k, l]) => el('option', { value: k, selected: k === p.kind }, l)),
+            ),
+          ),
+          el('td', {}, p.kind === 'NONE' ? value : el('div', { class: 'spin-val' }, value, el('span', { class: 'small muted' }, KIND_UNIT[p.kind]))),
+          el(
+            'td',
+            {},
+            p.kind === 'PERCENT'
+              ? el('input', {
+                  class: 'input',
+                  type: 'number',
+                  min: 0,
+                  step: 1000,
+                  value: p.maxDiscount ?? '',
+                  placeholder: 'không giới hạn',
+                  'aria-label': `Giảm tối đa ô ${i + 1}`,
+                  oninput: set('maxDiscount', (v) => (v === '' ? null : Number(v))),
+                })
+              : el('span', { class: 'muted' }, '—'),
+          ),
+          el(
+            'td',
+            {},
+            el('input', {
+              class: 'input',
+              type: 'number',
+              min: 0,
+              max: 1000,
+              value: p.weight,
+              'aria-label': `Tỷ lệ ô ${i + 1}`,
+              oninput: set('weight', Number),
+            }),
+          ),
+          el('td', { class: 'num', dataset: { share: '' } }),
+          el(
+            'td',
+            {},
+            el(
+              'button',
+              {
+                class: 'btn btn-sm btn-ghost',
+                type: 'button',
+                'aria-label': `Bỏ ô ${p.label || i + 1}`,
+                disabled: rows.length <= 2,
+                onclick: () => {
+                  rows.splice(i, 1);
+                  drawRows();
+                },
+              },
+              icon('x'),
+            ),
+          ),
+        );
+      }),
+    );
+    addBtn.disabled = rows.length >= MAX_SLICES;
+    drawOdds();
+  }
+
+  const addBtn = el(
+    'button',
+    {
+      class: 'btn',
+      type: 'button',
+      onclick: () => {
+        rows.push({ prizeId: null, label: 'Giảm 5.000đ', kind: 'AMOUNT', value: 5000, maxDiscount: null, weight: 10 });
+        drawRows();
+      },
+    },
+    '+ Thêm ô',
+  );
+
+  async function save(button) {
+    button.disabled = true;
+    try {
+      await staffApi('/api/admin/lucky-spin', {
+        method: 'PUT',
+        body: {
+          enabled: enabled.checked,
+          minAmount: Number(minAmount.value),
+          dailyWinCap: Number(dailyWinCap.value),
+          voucherDays: Number(voucherDays.value),
+          expireHours: Number(expireHours.value),
+          prizes: rows.map((p) => ({
+            prizeId: p.prizeId ?? null,
+            label: p.label.trim(),
+            kind: p.kind,
+            value: p.kind === 'NONE' ? 0 : Number(p.value) || 0,
+            maxDiscount: p.kind === 'PERCENT' ? (p.maxDiscount ?? null) : null,
+            weight: Number(p.weight) || 0,
+          })),
+        },
+      });
+      toast(enabled.checked ? 'Đã lưu — hóa đơn từ giờ in QR vòng quay' : 'Đã lưu (vòng quay đang tắt)', 'success');
+      load();
+    } catch (err) {
+      button.disabled = false;
+      toast(errorMessage(err), 'error', 6000);
+    }
+  }
+
+  clear(
+    body,
+    el(
+      'div',
+      { class: 'kpis mem-kpis' },
+      kpi('Lượt quay (7 ngày)', String(st.spins), `${st.wins} lượt trúng quà`),
+      kpi('Voucher đã phát', String(st.vouchers), `${st.used} đã dùng`),
+      kpi('Khách quay lại dùng voucher', money(st.usedRevenue), 'tổng tiền các lượt thu có dùng voucher trúng'),
+      kpi('Điểm đã tặng', String(st.points), 'cho khách hội viên'),
+    ),
+    el(
+      'div',
+      { class: 'card spin-admin' },
+      el('h2', {}, 'Vòng quay may mắn trên hóa đơn'),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Mỗi hóa đơn đủ mức in một QR — khách quét, quay một lần, nhận voucher cho lần sau / điểm / lời chúc. Máy chủ quyết định kết quả theo tỷ lệ dưới đây; hết lượt trúng trong ngày thì mọi lượt quay ra "Chúc may mắn".',
+      ),
+      el('label', { class: 'row spin-switch' }, el('span', { class: 'switch' }, enabled, el('span')), 'Bật vòng quay (in QR trên hóa đơn và màn cảm ơn)'),
+      el(
+        'div',
+        { class: 'spin-fields' },
+        el('div', { class: 'field' }, el('label', {}, 'Hóa đơn từ (đ)'), minAmount),
+        el('div', { class: 'field' }, el('label', {}, 'Tối đa lượt trúng / ngày'), dailyWinCap),
+        el('div', { class: 'field' }, el('label', {}, 'Voucher dùng trong (ngày)'), voucherDays),
+        el('div', { class: 'field' }, el('label', {}, 'Được quay trong (giờ)'), expireHours),
+      ),
+      el('h3', {}, `Các ô trên vòng (2–${MAX_SLICES} ô, phải có ít nhất 1 ô "Chúc may mắn")`),
+      el(
+        'div',
+        { class: 'table-wrap' },
+        el(
+          'table',
+          { class: 'table spin-prizes' },
+          el(
+            'thead',
+            {},
+            el(
+              'tr',
+              {},
+              ['Tên ô (khách thấy)', 'Loại', 'Giá trị', 'Giảm tối đa (đ)', 'Tỷ lệ', 'Cơ hội', ''].map((h) => el('th', {}, h)),
+            ),
+          ),
+          prizeBody,
+        ),
+      ),
+      odds,
+      el('div', { class: 'row' }, addBtn, el('button', { class: 'btn btn-primary', type: 'button', onclick: (e) => save(e.currentTarget) }, 'Lưu vòng quay')),
+    ),
+  );
+  drawRows();
 }
 
 // ---------- Phân khúc & chiến dịch (F-037) ----------

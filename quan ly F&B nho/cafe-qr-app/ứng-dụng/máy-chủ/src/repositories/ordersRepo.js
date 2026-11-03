@@ -5,7 +5,8 @@ const ORDER_SELECT = `
   SELECT o.OrderId, o.OrderCode, o.SessionId, o.TableId, t.Code AS TableCode, t.Name AS TableName, o.Type, o.Status,
          o.PaymentStatus, o.PaymentMethod, o.TotalAmount, o.SubtotalAmount, o.PromoDiscount, o.OrderPromotionId, op.Name AS OrderPromotionName,
          o.MemberId, o.Note, o.CreatedBy, cu.FullName AS CreatedByName,
-         o.CreatedAt, o.AcceptedAt, o.PaidAt, o.CompletedAt, o.CancelledAt, o.CancelReason, o.VoidedAt
+         o.CreatedAt, o.AcceptedAt, o.PaidAt, o.CompletedAt, o.CancelledAt, o.CancelReason, o.VoidedAt,
+         o.HoldMode, o.HoldUntil, o.ReleasedAt
   FROM dbo.Orders o
   LEFT JOIN dbo.Tables t ON t.TableId = o.TableId
   LEFT JOIN dbo.Users cu ON cu.UserId = o.CreatedBy
@@ -34,6 +35,10 @@ const mapOrder = (r) => ({
   cancelledAt: r.CancelledAt,
   cancelReason: r.CancelReason,
   voidedAt: r.VoidedAt ?? null,
+  // F-066: hẹn giờ làm món — đang giữ = holdUntil có, releasedAt trống, chưa tới holdUntil
+  holdMode: r.HoldMode ?? null,
+  holdUntil: r.HoldUntil ?? null,
+  releasedAt: r.ReleasedAt ?? null,
   items: [],
 });
 
@@ -178,6 +183,7 @@ export async function submit({
   options = [],
   orderPromotion = null,
   acceptNow = false,
+  hold = null,
   pay = {},
 }) {
   const tvp = new sql.Table('dbo.OrderLineInput');
@@ -224,6 +230,8 @@ export async function submit({
     .input('ExpectedDue', sql.Decimal(12, 0), pay.expectedDue ?? null)
     .input('ShiftId', sql.Int, pay.shiftId ?? null)
     .input('AcceptNow', sql.Bit, acceptNow)
+    .input('HoldMode', sql.VarChar(10), hold?.mode ?? null)
+    .input('HoldMinutes', sql.Int, hold ? (hold.mode === 'ARRIVAL' ? 45 : hold.minutes) : null)
     .output('OrderId', sql.Int)
     .output('OrderCode', sql.Char(8))
     .output('SessionReopened', sql.Bit)
@@ -231,10 +239,23 @@ export async function submit({
   return { orderId: r.output.OrderId, orderCode: r.output.OrderCode, sessionReopened: Boolean(r.output.SessionReopened) };
 }
 
+/** F-066: đơn đang giữ (PENDING, có hẹn, chưa báo) → ghi lúc báo đã tới. Hết giờ giữ mà chưa báo vẫn ghi (khách tới muộn). → true nếu đổi */
+export async function release(orderId) {
+  const r = await query(
+    `UPDATE dbo.Orders SET ReleasedAt = SYSUTCDATETIME()
+     WHERE OrderId = @id AND Status = 'PENDING' AND HoldMode IS NOT NULL AND ReleasedAt IS NULL;
+     SELECT @@ROWCOUNT AS Changed;`,
+    { id: [sql.Int, orderId] },
+  );
+  return r.recordset[0].Changed === 1;
+}
+
 /** PENDING → PREPARING (Q-004b). Trả trạng thái hiện tại nếu không đổi được. */
 export async function accept(orderId) {
   const r = await query(
-    `UPDATE dbo.Orders SET Status = 'PREPARING', AcceptedAt = SYSUTCDATETIME() WHERE OrderId = @id AND Status = 'PENDING';
+    `UPDATE dbo.Orders SET Status = 'PREPARING', AcceptedAt = SYSUTCDATETIME(),
+            ReleasedAt = CASE WHEN HoldMode IS NOT NULL AND ReleasedAt IS NULL THEN SYSUTCDATETIME() ELSE ReleasedAt END -- F-066: tiếp nhận đơn đang giữ = làm luôn
+     WHERE OrderId = @id AND Status = 'PENDING';
      SELECT @@ROWCOUNT AS Changed, (SELECT Status FROM dbo.Orders WHERE OrderId = @id) AS Status;`,
     { id: [sql.Int, orderId] },
   );

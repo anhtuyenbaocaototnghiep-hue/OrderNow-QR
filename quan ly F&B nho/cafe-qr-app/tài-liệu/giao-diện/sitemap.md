@@ -121,8 +121,9 @@ Thanh bên (ADR-013 D-58, từ 23/10/2026): **Hôm nay** (SCR-42) luôn ở trê
 | SCR-46 (**mới**, F-052) | `/admin/api-docs` | `admin/api-docs.html`, `js/pages/admin-api-docs.js` | ACT-ADMIN | [F-052](../chức-năng/FEATURE-052.md) | Tra cứu API: mọi endpoint `/api` đang chạy (method, đường dẫn, quyền), tìm / lọc, mở dòng xem request / response / mã lỗi từ `api-contract.md`, sao chép lệnh curl |
 | SCR-47 (**mới**, F-060) | `/admin/alerts` | `admin/alerts.html`, `js/pages/admin-alerts.js` | ACT-ADMIN | [F-060](../chức-năng/FEATURE-060.md) | Cảnh báo bất thường: lọc Mới / Tất cả, Đã xem / Đã xử lý (ghi chú), link Nhật ký thao tác lọc sẵn; nhận `alert.created` qua phòng realtime `admin` |
 | SCR-48 (**mới**, F-062) | `/chinh-sach-du-lieu` | `chinh-sach-du-lieu.html`, `js/pages/privacy.js` | Mọi actor (công khai) | [F-062](../chức-năng/FEATURE-062.md) | Chính sách dữ liệu khách hàng; link từ câu đồng ý hội viên (khách + quầy) và trang chủ |
+| SCR-49 (**mới**, F-065) | `/quay/{mã}` | `quay.html`, `js/pages/lucky-spin.js` | ACT-GUEST, ACT-MEMBER (có mã trên hóa đơn) | [F-065](../chức-năng/FEATURE-065.md) | Vòng quay may mắn: quay một lần, xem voucher / điểm; mở lại thấy kết quả cũ |
 
-Tổng: 39 file HTML; 40 route trang trong `PAGES` + 1 chuyển hướng (`/admin`) + trang 404; 41 mã SCR đang dùng (SCR-01…05, SCR-09…17, SCR-20…46).
+Tổng: 42 file HTML; 44 route trang trong `PAGES` + 1 chuyển hướng (`/admin`) + trang 404; 44 mã SCR đang dùng (SCR-01…05, SCR-09…17, SCR-20…49).
 
 ## Đối chiếu route ↔ file
 

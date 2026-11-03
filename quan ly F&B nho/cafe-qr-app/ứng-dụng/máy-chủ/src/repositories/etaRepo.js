@@ -37,6 +37,7 @@ export async function queueLines() {
     SELECT o.OrderId, o.SessionId, o.CreatedAt, oi.MenuItemId, oi.Quantity
     FROM dbo.Orders o JOIN dbo.OrderItems oi ON oi.OrderId = o.OrderId JOIN dbo.MenuItems m ON m.MenuItemId = oi.MenuItemId
     WHERE o.Status IN ('PENDING', 'PREPARING') AND m.ItemType = 'SINGLE'
+      AND NOT (o.HoldMode IS NOT NULL AND o.ReleasedAt IS NULL AND o.HoldUntil > SYSUTCDATETIME()) -- F-066: đơn đang giữ chưa vào hàng chờ
     ORDER BY o.CreatedAt, o.OrderId`);
   return r.recordset.map((x) => ({
     orderId: x.OrderId,

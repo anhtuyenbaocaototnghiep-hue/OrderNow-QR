@@ -2,11 +2,12 @@
 // Mỗi sự kiện realtime hoặc khi kết nối lại → tải lại ảnh chụp phiên (không tin sự kiện bị nhỡ).
 // ADR-005: ô hội viên SĐT (F-014), tổng ước tính sau ưu đãi (bill.breakdown từ server), Gọi nhân viên (F-021).
 // ADR-006: thời gian chờ ước tính (F-025), chia bill theo người — mỗi điện thoại chọn món của mình (F-026).
+// ADR-024: đơn hẹn giờ làm / chờ bạn tới + nút "Bạn đã tới — làm món" (F-066); màn cảm ơn có lượt quay may mắn (F-065).
 import { api } from '../api.js';
 import { mountMemberBox } from '../member-box.js';
 import { connectRealtime } from '../socket.js';
 import { $, clear, el, elapsed, errorMessage, modal, money, setBusy, time, toast } from '../ui.js';
-import { CUSTOMER_STATUS, clearSessionId, followMerged, followTable, getSessionId, goEntry, qrToken, takeFlash } from '../customer.js';
+import { CUSTOMER_STATUS, clearSessionId, followMerged, followTable, getSessionId, goEntry, holdState, qrToken, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
 
 const qr = qrToken();
@@ -29,6 +30,8 @@ let prevStatuses = null;
 let loadTimer = null;
 let lastCall = null; // { at, handled }
 let review = null; // F-051: { canReview, reason, submitted, items[] } khi phiên đã thanh toán
+let spins = []; // F-065: lượt quay may mắn của các lượt thu trong phiên
+let holdTimer = null; // F-066: tải lại đúng lúc đơn hẹn giờ tới giờ làm
 const reviewDraft = { picked: new Map(), comment: '' }; // bản nháp giữ qua các lần vẽ lại (review G3)
 let closedKey = null; // màn cảm ơn đang vẽ — không vẽ lại khi không đổi (giữ ô đang gõ / đang chọn)
 const memberSlot = el('div');
@@ -55,14 +58,17 @@ async function load() {
   if (followMerged(qr, session.mergedInto)) return;
   $('#table').textContent = session.table.name;
   const waiting = session.orders.some((o) => o.status === 'PENDING' || o.status === 'PREPARING');
-  const [e, sp, rv] = await Promise.all([
+  const [e, sp, rv, ls] = await Promise.all([
     waiting && session.status !== 'CLOSED' ? api(`/api/sessions/${sessionId}/eta`).catch(() => null) : null,
     session.splitCount > 0 && session.status !== 'CLOSED' ? api(`/api/sessions/${sessionId}/splits`).catch(() => null) : null,
     session.status === 'CLOSED' ? api(`/api/sessions/${sessionId}/review`).catch(() => null) : null,
+    session.status === 'CLOSED' ? api(`/api/sessions/${sessionId}/lucky-spins`).catch(() => []) : [],
   ]);
   eta = e?.eta ?? null;
+  spins = ls ?? [];
   splits = sp;
   review = rv;
+  scheduleHoldReload();
   notifyCompleted();
   render();
   splitSheet?.refresh();
@@ -195,8 +201,54 @@ function orderLine(i) {
   );
 }
 
+/** F-066: hẹn giờ tới thì tải lại để thẻ đơn đổi sang "Chờ xác nhận". */
+function scheduleHoldReload() {
+  clearTimeout(holdTimer);
+  const next = (session?.orders ?? [])
+    .filter((o) => holdState(o)?.held)
+    .map((o) => new Date(o.holdUntil).getTime())
+    .sort((a, b) => a - b)[0];
+  if (next) holdTimer = setTimeout(load, Math.max(1000, next - Date.now() + 1000));
+}
+
+async function releaseOrder(o, button) {
+  setBusy(button, true);
+  try {
+    await api(`/api/orders/${o.orderId}/release`, { method: 'POST' });
+    toast('Đã báo quán làm món ngay.', 'success');
+    load();
+  } catch (err) {
+    setBusy(button, false);
+    toast(errorMessage(err), 'error');
+    load();
+  }
+}
+
+/** F-066: dòng hẹn giờ trên thẻ đơn đang chờ. */
+function holdLine(o) {
+  const h = holdState(o);
+  if (!h) return null;
+  if (!h.held)
+    return el(
+      'div',
+      { class: 'hold-line small' },
+      h.mode === 'ARRIVAL' ? 'Hết giờ giữ — nhân viên sẽ hỏi bạn trước khi làm.' : 'Đã tới giờ — quầy đang nhận đơn.',
+    );
+  return el(
+    'div',
+    { class: 'hold-line' },
+    el('span', { class: 'small' }, h.mode === 'ARRIVAL' ? `Chờ bạn tới (quán giữ tới ${time(h.until)})` : `Quán bắt đầu làm lúc ${time(h.until)}`),
+    el(
+      'button',
+      { class: 'btn btn-primary btn-sm', type: 'button', onclick: (e) => releaseOrder(o, e.currentTarget) },
+      h.mode === 'ARRIVAL' ? 'Bạn đã tới — làm món' : 'Làm ngay',
+    ),
+  );
+}
+
 function orderCard(o) {
-  const label = o.status === 'VOIDED' ? 'Đã hoàn tiền' : CUSTOMER_STATUS[o.status];
+  const hold = holdState(o);
+  const label = o.status === 'VOIDED' ? 'Đã hoàn tiền' : hold?.held ? (hold.mode === 'ARRIVAL' ? 'Chờ bạn tới' : 'Hẹn giờ làm') : CUSTOMER_STATUS[o.status];
   return el(
     'article',
     { class: `order-card ${o.status.toLowerCase()}` },
@@ -211,8 +263,29 @@ function orderCard(o) {
       : o.cancelReason
         ? el('div', { class: 'muted small' }, `Lý do: ${o.cancelReason}`)
         : null,
+    holdLine(o),
     el('ul', {}, o.items.map(orderLine)),
     o.orderPromotion ? el('div', { class: 'small save' }, `${o.orderPromotion.name}: −${money(o.orderPromotion.discount)}`) : null,
+  );
+}
+
+/** F-065: lượt quay may mắn trên màn cảm ơn. */
+function spinBlock() {
+  const open = spins.filter((x) => x.status === 'NEW');
+  const done = spins.filter((x) => x.status === 'SPUN');
+  if (!open.length && !done.length) return null;
+  return el(
+    'div',
+    { class: 'spin-cta' },
+    open.length
+      ? el(
+          'a',
+          { class: 'btn btn-primary btn-lg', href: `/quay/${open[0].token}` },
+          icon('gift'),
+          open.length > 1 ? `Bạn có ${open.length} lượt quay may mắn — quay ngay` : 'Bạn có 1 lượt quay may mắn — quay ngay',
+        )
+      : null,
+    done.map((x) => el('p', { class: 'small' }, `Bạn đã quay: ${x.label ?? ''} · `, el('a', { href: `/quay/${x.token}` }, 'Xem lại'))),
   );
 }
 
@@ -238,7 +311,14 @@ function render() {
     actions.hidden = true;
     const paid = session.payment;
     // Sự kiện realtime / kết nối lại sau khi đã thu (đơn pha xong, voucher…) → không vẽ lại nếu màn cảm ơn không đổi
-    const key = JSON.stringify([paid?.amountDue, session.payments?.length, review?.canReview, review?.submitted, review?.items?.length]);
+    const key = JSON.stringify([
+      paid?.amountDue,
+      session.payments?.length,
+      review?.canReview,
+      review?.submitted,
+      review?.items?.length,
+      spins.map((x) => `${x.token}:${x.status}`),
+    ]);
     if (key === closedKey && main.querySelector('.thanks')) return;
     closedKey = key;
     clear(
@@ -255,6 +335,7 @@ function render() {
             : el('p', {}, 'Bàn đã được đóng.'),
         paid?.memberDiscount > 0 ? el('p', { class: 'save' }, `Bạn đã tiết kiệm ${money(paid.memberDiscount)} nhờ ưu đãi hội viên.`) : null,
         el('p', { class: 'muted' }, 'Hẹn gặp lại bạn lần sau.'),
+        spinBlock(),
         reviewBlock(),
         el(
           'button',
@@ -613,6 +694,7 @@ for (const evt of [
   'order.created',
   'order.status_changed',
   'order.cancelled',
+  'order.released', // F-066
   'session.payment_requested',
   'session.payment_cancelled',
   'session.settled',

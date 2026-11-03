@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 382 test, sửa lúc 2026-11-02 12:54 UTC
-- `npm run test:e2e` (JSON): 58 test, sửa lúc 2026-11-02 12:57 UTC
+- `npm test` (JUnit): 392 test, sửa lúc 2026-11-03 07:11 UTC
+- `npm run test:e2e` (JSON): 60 test, sửa lúc 2026-11-03 07:32 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 146 |
-| Acceptance Criteria | 393 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 393 |
+| User Story | 149 |
+| Acceptance Criteria | 404 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 404 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -488,4 +488,15 @@
 | AC-064-08 | TC-064-08 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-08: ba ngưỡng có mặc định, lưu được, sai → 400; đổi ngưỡng → thư báo; ngưỡng mới có hiệu lực — **PASS**<br>E2E: `flow.spec.js` › báo động giá vốn: nhập sữa giá cao hơn → cảnh báo tới trang Cảnh báo qua realtime, bảng món + giá gợi ý; "Đổi giá" mở sẵn hộp sửa đúng món; Cài đặt sửa được ngưỡng (F-064, AC-064-10) — **PASS** | **PASS** |
 | AC-064-09 | TC-064-09 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | Integration: `cost-alert.test.js` › AC-064-09: nhân viên không đọc được cảnh báo, không nhận alert.created; quản lý nhận qua phòng admin — **PASS** | **PASS** |
 | AC-064-10 | TC-064-10 | F-064 | US-064-1 | ACT-ADMIN | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | BR-100, BR-101 | E2E: `flow.spec.js` › báo động giá vốn: nhập sữa giá cao hơn → cảnh báo tới trang Cảnh báo qua realtime, bảng món + giá gợi ý; "Đổi giá" mở sẵn hộp sửa đúng món; Cài đặt sửa được ngưỡng (F-064, AC-064-10) — **PASS** | **PASS** |
+| AC-065-01 | TC-065-01 | F-065 | US-065-1 | ACT-GUEST, ACT-MEMBER | UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-49, SCR-05, SCR-12 | BR-102 | Integration: `lucky-spin.test.js` › AC-065-01: hóa đơn có QR quay khi bật và đủ mức; tắt / dưới mức / đã hoàn tiền → không có; in lại giữ mã; màn cảm ơn của phiên thấy lượt quay — **PASS** | **PASS** |
+| AC-065-02 | TC-065-02 | F-065 | US-065-1 | ACT-GUEST, ACT-MEMBER | UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-49, SCR-05, SCR-12 | BR-102 | Unit: `lucky-spin.test.js` › AC-065-02 (unit): chọn ô theo trọng số, ô trọng số 0 không trúng; ô điểm ẩn với khách không phải hội viên; kiểm cấu hình ô — **PASS**<br>Integration: `lucky-spin.test.js` › AC-065-02: quay ra đúng ô máy chủ chọn — voucher (mã tự do) / điểm (hội viên) được tạo đúng; quay lại trả kết quả cũ, không thêm quà — **PASS** | **PASS** |
+| AC-065-03 | TC-065-03 | F-065 | US-065-2 | ACT-ADMIN | UC-10 | MOD-LOYALTY | SCR-40 | BR-102 | Integration: `lucky-spin.test.js` › AC-065-03: đủ số lượt trúng trong ngày → "Chúc may mắn lần sau"; hai lượt quay cùng lúc không vượt ngân sách — **PASS** | **PASS** |
+| AC-065-04 | TC-065-04 | F-065 | US-065-1 | ACT-GUEST, ACT-MEMBER | UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-49, SCR-05, SCR-12 | BR-102 | Integration: `lucky-spin.test.js` › AC-065-04: mã hết hạn → 410; mã không tồn tại → 404; mã sai dạng → 400 — **PASS** | **PASS** |
+| AC-065-05 | TC-065-05 | F-065 | US-065-2 | ACT-ADMIN | UC-10 | MOD-LOYALTY | SCR-40 | BR-102 | Integration: `lucky-spin.test.js` › AC-065-05: cài đặt — ô hợp lệ lưu được, ô sai → 400, nhân viên → 403; thống kê 7 ngày đếm đúng — **PASS** | **PASS** |
+| AC-065-06 | TC-065-06 | F-065 | US-065-1 | ACT-GUEST, ACT-MEMBER | UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-49, SCR-05, SCR-12 | BR-102 | Integration: `lucky-spin.test.js` › AC-065-06: voucher trúng dùng được ở lần thu sau (mã ở khung thu tiền); hết hạn thì không dùng được — **PASS** | **PASS** |
+| AC-065-07 | TC-065-07 | F-065 | US-065-1, US-065-2 | ACT-GUEST, ACT-MEMBER, ACT-ADMIN | UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-49, SCR-05, SCR-12, SCR-40 | BR-102 | E2E: `flow.spec.js` › vòng quay may mắn: quản lý bật + chỉnh ô quà ở Tích điểm → hóa đơn có QR; khách ở màn cảm ơn bấm "quay ngay" → quay → nhận voucher; mở lại thấy kết quả cũ, không quay lần 2 (F-065, AC-065-07) — **PASS** | **PASS** |
+| AC-066-01 | TC-066-01 | F-066 | US-066-1 | ACT-GUEST, ACT-STAFF | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | BR-103 | Integration: `hold-order.test.js` › AC-066-01: gửi đơn hẹn 10 phút / chờ bạn tới → PENDING, HoldUntil đúng, giữ kho như đơn thường; hẹn sai → 400; không hẹn như cũ — **PASS** | **PASS** |
+| AC-066-02 | TC-066-02 | F-066 | US-066-1 | ACT-GUEST, ACT-STAFF | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | BR-103 | Integration: `hold-order.test.js` › AC-066-02: "Bạn đã tới" từ điện thoại trong phiên → hết giữ, quầy nhận order.released; điện thoại khác → 403; báo lại → 409 NOT_HELD — **PASS** | **PASS** |
+| AC-066-03 | TC-066-03 | F-066 | US-066-1 | ACT-GUEST, ACT-STAFF | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | BR-103 | Integration: `hold-order.test.js` › AC-066-03: tiếp nhận đơn đang giữ = làm luôn; đơn đang giữ không vào hàng chờ ước tính; thu tiền khi còn đơn đang giữ → 409 — **PASS** | **PASS** |
+| AC-066-04 | TC-066-04 | F-066 | US-066-1 | ACT-GUEST, ACT-STAFF | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | BR-103 | E2E: `flow.spec.js` › ra món khi bạn tới: khách chọn "Khi bạn tới" → quầy thấy phiếu "Chờ bạn tới" cuối cột Mới, không đồng hồ chờ; khách bấm "Bạn đã tới — làm món" → phiếu thành đơn mới, quầy tiếp nhận; đơn hẹn giờ tới giờ tự thành đơn mới (F-066, AC-066-04) — **PASS** | **PASS** |
 

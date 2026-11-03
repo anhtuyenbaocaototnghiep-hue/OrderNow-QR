@@ -111,6 +111,15 @@ function render(data) {
             : null,
         ]
       : null,
+    // F-065 (ADR-024 D-89): QR vòng quay may mắn — mỗi lượt thu đủ mức quay một lần, trước hạn in bên dưới
+    data.luckySpin
+      ? [
+          el('hr'),
+          el('div', { class: 'center' }, 'QUÉT QR ĐỂ QUAY MAY MẮN'),
+          el('div', { class: 'center' }, el('img', { class: 'spin-qr', src: data.luckySpin.qr, alt: 'Mã QR vòng quay may mắn', width: 120, height: 120 })),
+          el('div', { class: 'center note' }, `Mỗi hóa đơn 1 lượt · quay trước ${dateTime(data.luckySpin.expiresAt)}`),
+        ]
+      : null,
     el('hr'),
     el('div', { class: 'center' }, provisional ? 'Phiếu này không phải hóa đơn thanh toán' : 'Cảm ơn quý khách! Hẹn gặp lại.'),
     el('div', { class: 'center' }, `In lúc ${dateTime(data.printedAt)}`),

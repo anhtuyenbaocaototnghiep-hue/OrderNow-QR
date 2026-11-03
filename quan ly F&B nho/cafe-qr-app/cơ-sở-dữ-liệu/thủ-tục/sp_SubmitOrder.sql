@@ -33,6 +33,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_SubmitOrder
   @RewardDiscount   DECIMAL(12,0) = 0,
   @LoyaltyJson      NVARCHAR(MAX) = NULL,
   @AcceptNow        BIT = 0,                  -- F-024: nhân viên nhập đơn tại bàn → vào thẳng PREPARING (đã tiếp nhận)
+  @HoldMode         VARCHAR(10) = NULL,       -- F-066 (ADR-024 D-93): khách hẹn làm món 'TIME' | chờ bạn tới 'ARRIVAL' — đơn vẫn PENDING
+  @HoldMinutes      INT = NULL,               --   giữ bao lâu (5–45 phút); ARRIVAL = tối đa
   @OrderId          INT OUTPUT,
   @OrderCode        CHAR(8) OUTPUT,
   @SessionReopened  BIT OUTPUT                 -- 1 nếu phiên đang PAYMENT_REQUESTED được đưa về OPEN (gọi thêm món)
@@ -46,6 +48,8 @@ BEGIN
   IF @Type = 'TAKE_AWAY' AND (ISNULL(@PaymentMethod, '') NOT IN ('CASH', 'TRANSFER') OR @CreatedBy IS NULL OR @SessionId IS NOT NULL) THROW 50012, 'INVALID_ORDER', 1;
   IF @Type = 'DINE_IN' AND (@MemberId IS NOT NULL OR @MemberDiscount <> 0 OR @ManualDiscount <> 0 OR @RoundingAdj <> 0) THROW 50012, 'INVALID_ORDER', 1;
   IF ISNULL(@AcceptNow, 0) = 1 AND (@Type <> 'DINE_IN' OR @CreatedBy IS NULL) THROW 50012, 'INVALID_ORDER', 1;
+  IF @HoldMode IS NOT NULL AND (@Type <> 'DINE_IN' OR ISNULL(@AcceptNow, 0) = 1 OR @HoldMode NOT IN ('TIME', 'ARRIVAL') OR ISNULL(@HoldMinutes, 0) NOT BETWEEN 5 AND 45)
+    THROW 50012, 'INVALID_ORDER', 1;
   IF ISNULL(@OrderPromoDiscount, -1) < 0 OR ISNULL(@MemberDiscount, -1) < 0 OR ISNULL(@ManualDiscount, -1) < 0 OR ISNULL(@RoundingAdj, -1) < 0
      OR ISNULL(@VoucherDiscount, -1) < 0 OR ISNULL(@RewardDiscount, -1) < 0 OR (@RewardDiscount > 0 AND @MemberId IS NULL)
     THROW 50012, 'INVALID_ORDER', 1;
@@ -218,7 +222,7 @@ BEGIN
 
   -- 8. Ghi đơn
   INSERT dbo.Orders (OrderCode, SessionId, TableId, Type, Status, PaymentStatus, PaymentMethod, TotalAmount, SubtotalAmount, PromoDiscount,
-                     OrderPromotionId, MemberId, Note, CreatedBy, AcceptedAt, PaidAt)
+                     OrderPromotionId, MemberId, Note, CreatedBy, AcceptedAt, PaidAt, HoldMode, HoldUntil)
   VALUES (@OrderCode, @SessionId, @TableId, @Type,
           CASE WHEN @IsCash = 1 OR @AcceptNow = 1 THEN 'PREPARING' ELSE 'PENDING' END,
           CASE WHEN @IsCash = 1 THEN 'PAID' ELSE 'UNPAID' END,
@@ -226,7 +230,8 @@ BEGIN
           @Total, @Subtotal, @Subtotal - @Total, @OrderPromotionId, @MemberId,
           NULLIF(LTRIM(RTRIM(@Note)), ''), @CreatedBy,
           CASE WHEN @IsCash = 1 OR @AcceptNow = 1 THEN SYSUTCDATETIME() END,
-          CASE WHEN @IsCash = 1 THEN SYSUTCDATETIME() END);
+          CASE WHEN @IsCash = 1 THEN SYSUTCDATETIME() END,
+          @HoldMode, CASE WHEN @HoldMode IS NOT NULL THEN DATEADD(MINUTE, @HoldMinutes, SYSUTCDATETIME()) END);
   SET @OrderId = SCOPE_IDENTITY();
 
   -- Dòng khách chọn trước (theo LineNum), rồi dòng con combo. INSERT…SELECT…ORDER BY bảo đảm thứ tự cấp identity → ghép LineNum ↔ OrderItemId.

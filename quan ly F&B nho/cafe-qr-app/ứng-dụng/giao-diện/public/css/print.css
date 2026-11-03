@@ -122,3 +122,12 @@ body.receipt-page {
     width: var(--w);
   }
 }
+
+/* F-065: QR vòng quay may mắn cuối hóa đơn */
+.receipt .spin-qr {
+  display: block;
+  width: 30mm;
+  height: 30mm;
+  margin: 1mm auto;
+  image-rendering: pixelated;
+}

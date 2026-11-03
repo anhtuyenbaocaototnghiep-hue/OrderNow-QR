@@ -566,3 +566,21 @@ Chi tiết: [FEATURE-064](../chức-năng/FEATURE-064.md), BR-100, BR-101. Khôn
 | --- | --- | --- |
 | `GET /api/admin/members?q&page&view` | ADMIN | Như cũ + `view` = `all` (mặc định) \| `new` \| `top` \| `points` \| `near` \| `lapsed` \| `birthday` (sai → 400); mỗi dòng thêm `nextTier: { name, minSpent, remaining } \| null` |
 | `GET /api/admin/members/overview` | ADMIN | `{ total, newThisMonth, active30, lapsed, birthdays, nearTier, pointsHeld, earnToday, earnMembersToday, earn7, paymentsToday, memberPaymentsToday, revenue30, memberRevenue30, recent: [{ memberId, fullName, delta, type, note, paymentId, createdAt }] }` — mốc ngày / tháng theo giờ quán; hội viên đã ẩn danh không có trong `recent` |
+
+## Bổ sung F-065 / F-066 — vòng quay may mắn, ra món khi bạn bè tới (ADR-024, 03/11/2026)
+
+Chi tiết: [FEATURE-065](../chức-năng/FEATURE-065.md), [FEATURE-066](../chức-năng/FEATURE-066.md), BR-102, BR-103.
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `GET /api/lucky-spins/{token}` | Công khai (mã 32 hex; sai dạng → 400) | `{ status: NEW \| SPUN \| EXPIRED \| REFUNDED, shopName, expiresAt, member, slices: [{ prizeId, label, kind }], result \| null }`; không có mã → `404 SPIN_NOT_FOUND` |
+| `POST /api/lucky-spins/{token}/spin` | Công khai, giới hạn tần suất như gửi đơn | `{ result: { prizeId, label, kind: PERCENT \| AMOUNT \| POINTS \| NONE, voucher: { code, percent, amount, maxDiscount, expiresAt } \| null, points, spunAt } }`; đã quay → kết quả cũ; hết hạn → `410 SPIN_EXPIRED`; lượt thu đã hoàn tiền → `409 SPIN_REFUNDED`; chưa cài ô → `400 SPIN_NOT_READY` |
+| `GET /api/sessions/{id}/lucky-spins` | Thiết bị trong phiên / nhân viên (khác → 403) | `[{ token, status, expiresAt, label }]` — tạo mã cho lượt thu đủ điều kiện nếu chưa có |
+| `GET /api/admin/lucky-spin` | ADMIN | `{ enabled, minAmount, dailyWinCap, voucherDays, expireHours, prizes: [{ prizeId, label, kind, value, maxDiscount, weight, sortOrder, isActive }], stats: { spins, wins, vouchers, used, usedRevenue, points } }` (7 ngày giờ quán) |
+| `PUT /api/admin/lucky-spin` | ADMIN | Body như trên (không `stats`); `prizes` 2–8 ô, có ô `NONE`, tổng `weight` > 0, `PERCENT` 1–50, `AMOUNT` ≥ 1.000, `POINTS` 1–1.000 → sai `400 VALIDATION_ERROR`. Ô bỏ khỏi danh sách được tắt (giữ cho lịch sử) |
+| `POST /api/orders` | Khách trong phiên | Thêm `hold` (không bắt buộc): `{ mode: 'TIME', minutes: 5–45 }` \| `{ mode: 'ARRIVAL' }`; đơn mang đi / nhận ngay / sai → 400 |
+| `POST /api/orders/{id}/release` | Thiết bị trong phiên / nhân viên (khác → 403) | `{ order }` đã hết giữ (`releasedAt`); đơn không đang giữ → `409 NOT_HELD`; phát `order.released` tới phòng `staff` và phiên |
+
+- Đơn (`order` ở mọi API / sự kiện): thêm `holdMode` (`TIME` \| `ARRIVAL` \| `null`), `holdUntil`, `releasedAt`. `POST /api/orders/{id}/accept` với đơn đang giữ ghi luôn `releasedAt`.
+- Hóa đơn (`/api/sessions/{id}/receipt?mode=final`, `/api/orders/{id}/receipt`, `/api/payments/{id}/receipt`): thêm `luckySpin: { url, qr (data URL PNG), expiresAt } | null`.
+- Trang mới (không phải API): `GET /quay/{token}` (SCR-49).

@@ -394,6 +394,33 @@ body.pos .btn:not(.btn-sm):not(.btn-lg) {
   background: var(--c-danger);
   color: #fff;
 }
+/* F-066: đơn khách hẹn (giờ / chờ bạn tới) — nằm cuối cột Mới, viền đứt, chưa có đồng hồ chờ */
+.ticket.held {
+  border-style: dashed;
+  border-color: var(--c-accent);
+  background: var(--c-bg);
+}
+.hold-chip {
+  flex: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--c-warning-50);
+  color: var(--c-warning-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.hold-chip .ic {
+  margin: 0;
+}
+.ticket .held-items {
+  margin: 0.4rem 0;
+  color: var(--c-muted);
+  font-size: 0.9rem;
+}
 .ticket-meta {
   display: flex;
   flex-wrap: wrap;
