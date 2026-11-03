@@ -1,8 +1,9 @@
 // Khung "Hội viên · giảm giá" dùng chung cho thu tiền bàn (S-14) và bán mang đi (S-13) — ADR-005 F-014, F-022.
 // ADR-006: điểm / tem + đổi thưởng (F-039), voucher (F-038), SĐT người giới thiệu khi đăng ký nhanh (F-038).
+// ADR-025 (F-067): dải "Sinh nhật khách" — máy chủ tự áp quà sinh nhật; nhân viên chọn "Không dùng quà lần này" (skipBirthday).
 // Không tự tính tiền: trang gọi API xem trước (server dùng bộ pricing) mỗi khi lựa chọn đổi.
 import { staffApi } from './api.js';
-import { clear, el, errorMessage, toast } from './ui.js';
+import { clear, dateOnly, el, errorMessage, toast, voucherValue } from './ui.js';
 import { icon } from './icons.js';
 
 /**
@@ -10,8 +11,19 @@ import { icon } from './icons.js';
  * onChange() gọi khi đổi lựa chọn (trang tải lại số xem trước). Hội viên của phiên do server giữ (attach/detach).
  */
 export function billingControls({ onChange, sessionId = null, onMember = null }) {
-  const st = { member: null, memberId: undefined, manualKind: 'AMOUNT', approval: false, reward: null, voucherCode: null, loyalty: null };
+  const st = {
+    member: null,
+    memberId: undefined,
+    manualKind: 'AMOUNT',
+    approval: false,
+    reward: null,
+    voucherCode: null,
+    loyalty: null,
+    skipBirthday: false, // F-067
+    birthdayApplied: null, // F-067: số xem trước gần nhất có trừ quà sinh nhật không
+  };
   const loyaltyBox = el('div', { class: 'loyalty-slot' });
+  const birthdaySlot = el('div', { class: 'bday-slot' });
   const earnNote = el('div', { class: 'small muted earn-note' });
   const voucherInput = el('input', { class: 'input', maxlength: 20, placeholder: 'Mã voucher', 'aria-label': 'Mã voucher', style: { maxWidth: '10rem' } });
   const voucherMsg = el('span', { class: 'small' });
@@ -137,6 +149,8 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
   // ---- F-039 điểm / tem / đổi thưởng · F-038 voucher ----
   async function loadLoyalty() {
     st.loyalty = null;
+    st.skipBirthday = false;
+    st.birthdayApplied = null;
     renderLoyalty();
     if (!st.member) return;
     try {
@@ -166,10 +180,54 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
     st.voucherCode = code ? String(code).trim().toUpperCase() : null;
     voucherInput.value = st.voucherCode ?? '';
     clear(voucherMsg, st.voucherCode ? `Đang áp ${st.voucherCode}` : '');
+    renderBirthday();
     onChange();
   }
 
+  /** F-067: dải sinh nhật — trạng thái quà theo số xem trước (máy chủ quyết định có áp hay không). */
+  function renderBirthday() {
+    const b = st.member ? st.loyalty?.birthday : null;
+    if (!b) return clear(birthdaySlot);
+    const when = b.offset === 0 ? 'hôm nay' : b.offset < 0 ? `còn ${-b.offset} ngày` : `${b.offset} ngày trước`;
+    const toggle = (skip, label) =>
+      el(
+        'button',
+        {
+          class: 'btn btn-sm',
+          type: 'button',
+          onclick: () => {
+            st.skipBirthday = skip;
+            renderBirthday();
+            onChange();
+          },
+        },
+        label,
+      );
+    let line;
+    if (b.status === 'READY') {
+      if (st.voucherCode && st.voucherCode !== b.gift.code)
+        line = `Quà ${b.gift.label} giữ tới ${dateOnly(b.gift.expiresAt)} — lượt này đang dùng voucher khác.`;
+      else if (st.skipBirthday) line = [`Không dùng quà lần này (${b.gift.label}). `, toggle(false, 'Dùng quà')];
+      else if (st.birthdayApplied === false || (st.birthdayApplied === null && b.gift.kind === 'FREE_ITEM'))
+        line = `Quà: ${b.gift.label} — thêm món này vào bill là tự trừ.`;
+      else line = [`Đã tự áp quà: ${b.gift.label}. `, toggle(true, 'Không dùng quà lần này')];
+    } else if (b.status === 'USED') line = 'Khách đã dùng quà sinh nhật năm nay.';
+    else if (b.status === 'EXPIRED') line = 'Quà sinh nhật năm nay đã hết hạn.';
+    else if (b.status === 'WAITING') line = 'Ngày sinh khách mới tự thêm — quà áp dụng từ lần sinh nhật sau.';
+    else line = 'Nhớ chúc mừng khách nhé.';
+    clear(
+      birthdaySlot,
+      el(
+        'div',
+        { class: 'bday-strip', role: 'status' },
+        icon('gift'),
+        el('div', {}, el('strong', {}, `Sinh nhật khách — ${b.dateLabel} (${when})`), el('div', { class: 'small' }, line)),
+      ),
+    );
+  }
+
   function renderLoyalty() {
+    renderBirthday();
     const l = st.loyalty;
     if (!st.member || !l) return clear(loyaltyBox);
     const options = [
@@ -215,7 +273,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
                   onclick: () => applyVoucher(st.voucherCode === v.code ? null : v.code),
                 },
                 icon('ticket'),
-                `${v.code} −${v.percent ? `${v.percent}%` : `${Number(v.amount).toLocaleString('vi-VN')}đ`}`,
+                `${v.code} ${voucherValue(v)}${v.source === 'BIRTHDAY' ? ' · quà sinh nhật' : ''}`,
               ),
             ),
           )
@@ -274,6 +332,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
       el('label', {}, 'Hội viên (SĐT)'),
       memberBox,
       msg,
+      birthdaySlot,
       loyaltyBox,
       el('label', {}, 'Voucher'),
       el('div', { class: 'row' }, voucherInput, el('button', { class: 'btn btn-sm', type: 'button', onclick: checkVoucher }, 'Áp mã'), voucherMsg),
@@ -301,6 +360,12 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
     },
     /** Điểm / tem lượt này sẽ tích (server tính từ cùng bộ pricing). */
     showEarn(totals) {
+      // F-067: số xem trước cho biết quà sinh nhật có được trừ không (quà tặng món chỉ trừ khi bill có món)
+      const applied = totals ? Boolean(totals.birthdayApplied) : null;
+      if (applied !== st.birthdayApplied) {
+        st.birthdayApplied = applied;
+        renderBirthday();
+      }
       const stamps = (totals?.stampsEarned ?? []).reduce((s, x) => s + x.stamps, 0);
       earnNote.textContent = st.member && totals ? `Lượt này tích +${totals.pointsEarned ?? 0} điểm${stamps ? `, +${stamps} tem` : ''}` : '';
     },
@@ -312,7 +377,11 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
       const v = Number(String(value.value).replace(',', '.'));
       const manual = v > 0 ? { manualDiscount: { kind: kind.value, value: v }, manualReason: reason.value.trim() || null } : {};
       const approval = !approvalBox.hidden && adminUser.value ? { adminUsername: adminUser.value.trim(), adminPassword: adminPass.value } : {};
-      const loyalty = { ...(st.voucherCode ? { voucherCode: st.voucherCode } : {}), ...(st.reward ? { reward: st.reward } : {}) };
+      const loyalty = {
+        ...(st.voucherCode ? { voucherCode: st.voucherCode } : {}),
+        ...(st.reward ? { reward: st.reward } : {}),
+        ...(st.skipBirthday ? { skipBirthday: true } : {}),
+      };
       return { ...(st.memberId !== undefined ? { memberId: st.memberId } : {}), ...(st.reward ? {} : manual), ...approval, ...loyalty };
     },
     reset() {
@@ -328,6 +397,8 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
       st.reward = null;
       st.voucherCode = null;
       st.loyalty = null;
+      st.skipBirthday = false;
+      st.birthdayApplied = null;
       voucherInput.value = '';
       clear(voucherMsg);
       earnNote.textContent = '';

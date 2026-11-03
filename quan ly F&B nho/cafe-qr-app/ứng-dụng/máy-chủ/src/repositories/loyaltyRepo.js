@@ -194,17 +194,25 @@ const mapVoucher = (v) => ({
   source: v.Source,
   campaignId: v.CampaignId,
   campaignName: v.CampaignName ?? null, // F-047: chỉ có ở vouchersOf (nối Campaigns)
+  menuItemId: v.MenuItemId ?? null, // F-067: voucher "tặng 1 món"
+  menuItemName: v.MenuItemName ?? null,
   createdAt: v.CreatedAt,
 });
 
 export async function voucherByCode(code) {
-  const r = await query('SELECT * FROM dbo.Vouchers WHERE Code = @c', { c: [sql.VarChar(20), code] });
+  const r = await query(
+    'SELECT v.*, mi.Name AS MenuItemName FROM dbo.Vouchers v LEFT JOIN dbo.MenuItems mi ON mi.MenuItemId = v.MenuItemId WHERE v.Code = @c',
+    {
+      c: [sql.VarChar(20), code],
+    },
+  );
   return r.recordset[0] ? mapVoucher(r.recordset[0]) : null;
 }
 
 export async function vouchersOf(memberId, { onlyUsable = false } = {}) {
   const r = await query(
-    `SELECT v.*, c.Name AS CampaignName FROM dbo.Vouchers v LEFT JOIN dbo.Campaigns c ON c.CampaignId = v.CampaignId
+    `SELECT v.*, c.Name AS CampaignName, mi.Name AS MenuItemName FROM dbo.Vouchers v LEFT JOIN dbo.Campaigns c ON c.CampaignId = v.CampaignId
+     LEFT JOIN dbo.MenuItems mi ON mi.MenuItemId = v.MenuItemId
      WHERE v.MemberId = @m ${onlyUsable ? 'AND v.UsedAt IS NULL AND v.ExpiresAt > SYSUTCDATETIME()' : ''}
      ORDER BY CASE WHEN v.UsedAt IS NULL AND v.ExpiresAt > SYSUTCDATETIME() THEN 0 ELSE 1 END, v.ExpiresAt`,
     { m: [sql.Int, memberId] },
@@ -253,7 +261,8 @@ export async function createVoucher({
 
 export async function listVouchers({ fromUtc, toUtc, source = null }) {
   const r = await query(
-    `SELECT v.*, m.FullName AS MemberName FROM dbo.Vouchers v LEFT JOIN dbo.Members m ON m.MemberId = v.MemberId
+    `SELECT v.*, m.FullName AS MemberName, mi.Name AS MenuItemName FROM dbo.Vouchers v LEFT JOIN dbo.Members m ON m.MemberId = v.MemberId
+     LEFT JOIN dbo.MenuItems mi ON mi.MenuItemId = v.MenuItemId
      WHERE v.CreatedAt >= @f AND v.CreatedAt < @t AND (@s IS NULL OR v.Source = @s) ORDER BY v.CreatedAt DESC`,
     { f: [sql.DateTime2(0), fromUtc], t: [sql.DateTime2(0), toUtc], s: [sql.VarChar(10), source] },
   );

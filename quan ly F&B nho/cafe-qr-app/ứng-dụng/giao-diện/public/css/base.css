@@ -1052,3 +1052,28 @@ body:has(.tour-layer) .toasts {
   flex-wrap: wrap;
   gap: 0.4rem;
 }
+
+/* F-067 quà sinh nhật: dải ở khung thu tiền (quầy) + lời chúc ở ô hội viên (khách) */
+.bday-strip,
+.bday-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--c-accent);
+  border-radius: var(--radius-sm);
+  background: var(--c-accent-100);
+  color: var(--c-text);
+}
+.bday-strip > .ic,
+.bday-note > .ic {
+  flex: none;
+  margin: 0.15rem 0 0;
+  color: var(--c-accent-600);
+}
+.bday-strip .btn {
+  margin-top: 0.3rem;
+}
+.bday-note {
+  margin: 0.3rem 0;
+}

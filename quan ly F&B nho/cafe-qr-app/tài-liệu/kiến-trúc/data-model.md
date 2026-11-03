@@ -1237,3 +1237,12 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | `sp_SubmitOrder` | Thêm `@HoldMode`, `@HoldMinutes` (mặc định NULL — đơn cũ không đổi); chỉ đơn tại bàn, không nhận ngay; sai → 50012 |
 | Giữ kho | Đơn đang giữ là `PENDING` nên vẫn giữ `ReservedQty` như mọi đơn chờ; hủy thì trả như cũ |
 | Cài đặt | `spin.enabled` (false), `spin.min_amount` (30000), `spin.daily_win_cap` (20), `spin.voucher_days` (14), `spin.expire_hours` (24): mặc định trong code |
+
+## Quà sinh nhật hội viên (FEATURE-067, ADR-025, 03/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0044_qua_sinh_nhat.sql` | `Members.BirthDateSelfAt DATETIME2(0) NULL` (khách tự thêm ngày sinh lúc nào; quản lý lưu hồ sơ → NULL). `Vouchers.MenuItemId INT NULL FK MenuItems` (voucher tặng 1 món; `DiscountAmount` = giá món lúc tặng để thỏa `CK_Vouchers_Value`, số giảm thật = đơn giá món trên bill). `CK_Vouchers_Source` thêm `BIRTHDAY`. Bảng `BirthdayGifts (MemberId FK, GiftYear SMALLINT, BirthdayDate DATE, VoucherId FK UNIQUE, CreatedAt, PK (MemberId, GiftYear))` |
+| Phát quà | `birthdayRepo.issue`: INSERT voucher + INSERT `BirthdayGifts` trong một transaction; trùng khóa chính (hai yêu cầu cùng lúc) → hủy cả voucher, đọc lại quà đã có. `GiftYear` = năm của ngày sinh nhật (tuần sinh nhật có thể vắt qua năm) |
+| Dùng quà | Không đổi SP: `sp_Loyalty` đánh dấu voucher đã dùng như mọi voucher (`UsedPaymentId`); `sp_Loyalty` không so số giảm với `DiscountAmount` nên giá món đổi sau khi tặng vẫn đúng |
+| Cài đặt | `birthday.enabled` (false), `birthday.kind` (PERCENT), `birthday.value` (20), `birthday.max_discount` (50000), `birthday.menu_item_id`, `birthday.window_days` (3): mặc định trong code |

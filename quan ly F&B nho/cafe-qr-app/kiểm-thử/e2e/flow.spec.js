@@ -2202,3 +2202,72 @@ test('vòng quay may mắn: quản lý bật + chỉnh ô quà ở Tích điểm
     await phone.close();
   }
 });
+
+test('quà sinh nhật: quản lý bật ở tab Quà sinh nhật; điện thoại khách đang sinh nhật thấy lời chúc; quầy thấy dải "Sinh nhật khách", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong hóa đơn có "Quà sinh nhật" (F-067, AC-067-07)', async ({
+  request,
+}) => {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+  const m = await apiAs(request, 'post', '/api/members', { phone: '0907067067', fullName: 'Khách Sinh Nhật', consent: true });
+  await apiAs(request, 'put', `/api/admin/members/${m.memberId}`, {
+    fullName: 'Khách Sinh Nhật',
+    tierCode: 'MEMBER',
+    birthDate: `1996-${today.slice(5)}`,
+    isActive: true,
+  });
+
+  await P.goto('/admin/loyalty');
+  await P.getByRole('tab', { name: 'Quà sinh nhật' }).click();
+  await expect(P.locator('#content tbody tr', { hasText: 'Khách Sinh Nhật' })).toContainText('Đang trong tuần sinh nhật — chưa ghé');
+  const enabled = P.getByLabel('Bật quà sinh nhật');
+  await expect(enabled).not.toBeChecked(); // mặc định tắt
+  await P.getByText('Bật quà sinh nhật', { exact: true }).click(); // bấm nhãn công tắc như người dùng
+  await expect(enabled).toBeChecked();
+  await expect(P.locator('.bday-preview')).toContainText('được giảm 20% (tối đa 50.000đ)');
+  await P.getByRole('button', { name: 'Lưu quà sinh nhật' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu — hội viên sinh nhật sẽ được tặng quà' })).toBeVisible();
+
+  const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'SN1', name: 'Bàn SN1' });
+  const phone = await browser.newContext(phoneOpts);
+  const G = await phone.newPage();
+  watch(G, 'birthday');
+  try {
+    await G.goto(`/t/${t.qrToken}`);
+    await G.locator('.c-section.cat .c-item', { hasText: 'Cà phê đen' }).locator('.add-btn').click();
+    await G.locator('.c-section.cat .c-item', { hasText: 'Cà phê đen' }).getByRole('button', { name: 'Thêm Cà phê đen' }).click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    const sessionId = await G.evaluate((k) => globalThis.localStorage.getItem(k), `cf_session_${t.qrToken}`);
+    const session = await apiAs(request, 'get', `/api/sessions/${sessionId}`);
+    for (const o of session.orders) await apiAs(request, 'post', `/api/orders/${o.orderId}/accept`);
+    await apiAs(request, 'post', `/api/sessions/${sessionId}/member`, { memberId: m.memberId });
+    const note = G.locator('.bday-note');
+    await expect(note).toContainText('Chúc mừng sinh nhật bạn!');
+    await expect(note).toContainText('Quán tặng bạn: Giảm 20% (tối đa 50.000đ) — tự trừ khi thanh toán');
+
+    await P.goto('/pos');
+    await P.locator('#tables .table-row', { hasText: 'Bàn SN1' }).getByRole('button', { name: 'Thu tiền' }).click();
+    const drawer = P.locator('.drawer');
+    const strip = drawer.locator('.bday-strip');
+    await expect(strip).toContainText('Sinh nhật khách');
+    await expect(strip).toContainText('(hôm nay)');
+    await expect(strip).toContainText('Đã tự áp quà: Giảm 20%');
+    const giftRow = drawer.locator('.due-row', { hasText: 'Quà sinh nhật' });
+    await expect(giftRow).toBeVisible();
+    await strip.getByRole('button', { name: 'Không dùng quà lần này' }).click();
+    await expect(giftRow).toHaveCount(0);
+    await strip.getByRole('button', { name: 'Dùng quà' }).click();
+    await expect(giftRow).toBeVisible();
+    await P.keyboard.press('Escape');
+
+    await apiAs(request, 'post', `/api/sessions/${sessionId}/settle`, { amountReceived: 100000 });
+    await P.goto(`/pos/sessions/${sessionId}/receipt`);
+    await expect(P.locator('#receipt')).toContainText('Quà sinh nhật');
+    await P.goto('/admin/loyalty');
+    await P.getByRole('tab', { name: 'Quà sinh nhật' }).click();
+    await expect(P.locator('#content tbody tr', { hasText: 'Khách Sinh Nhật' })).toContainText('Đã dùng quà');
+  } finally {
+    await phone.close();
+  }
+});

@@ -584,3 +584,17 @@ Chi tiết: [FEATURE-065](../chức-năng/FEATURE-065.md), [FEATURE-066](../ch�
 - Đơn (`order` ở mọi API / sự kiện): thêm `holdMode` (`TIME` \| `ARRIVAL` \| `null`), `holdUntil`, `releasedAt`. `POST /api/orders/{id}/accept` với đơn đang giữ ghi luôn `releasedAt`.
 - Hóa đơn (`/api/sessions/{id}/receipt?mode=final`, `/api/orders/{id}/receipt`, `/api/payments/{id}/receipt`): thêm `luckySpin: { url, qr (data URL PNG), expiresAt } | null`.
 - Trang mới (không phải API): `GET /quay/{token}` (SCR-49).
+
+## Bổ sung F-067 — quà sinh nhật hội viên (ADR-025, 03/11/2026)
+
+Chi tiết: [FEATURE-067](../chức-năng/FEATURE-067.md), BR-104.
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `GET /api/admin/birthday` | ADMIN | `{ enabled, kind: PERCENT \| AMOUNT \| FREE_ITEM, value, maxDiscount, menuItemId, windowDays, upcoming: [{ memberId, fullName, tierName, date, daysUntil, selfAdded, status: READY \| USED \| EXPIRED \| WAITING \| NOT_VISITED \| UPCOMING, gift }], stats: { issued, used, usedRevenue, giftValue, withoutBirthDate } }` — `upcoming` gồm hội viên đang trong tuần sinh nhật và sinh nhật trong 14 ngày tới; `stats` theo năm nay |
+| `PUT /api/admin/birthday` | ADMIN | Body như trên (không `upcoming`, `stats`); `PERCENT` 1–50, `AMOUNT` ≥ 1.000, `FREE_ITEM` cần `menuItemId` của món đang bán có giá, `windowDays` 0–15 → sai `400 VALIDATION_ERROR` |
+| `POST /api/sessions/{id}/member/birthday` | Thiết bị trong phiên / nhân viên (khác → 403) | Body `{ birthDate: 'YYYY-MM-DD' }` (không sau hôm nay) → Thẻ thành viên mới; hội viên đã có ngày sinh → `409 BIRTHDATE_SET`; bàn chưa gắn hội viên → `404 NO_MEMBER` |
+
+- `GET /api/members/{id}/loyalty`, `member.loyalty` của phiên, `GET /api/sessions/{id}/member-card`: thêm `birthday: { inWindow, date, dateLabel, offset, status: READY \| USED \| EXPIRED \| WAITING \| OFF, gift: { code (chỉ quầy), kind, label, menuItemId, expiresAt, usedAt } \| null } \| null`. Thẻ thành viên thêm `askBirthDate`. Voucher thêm `menuItemName`, `maxDiscount`, nguồn `BIRTHDAY` / `GAME`.
+- Xem trước / thu tiền (`/api/sessions/{id}/settle[/preview]`, `/api/splits/{id}/settle[/preview]`, `/api/orders/takeaway[/quote]`): body thêm `skipBirthday` (boolean); `totals.birthdayApplied`; dòng breakdown `voucher` có nhãn "Quà sinh nhật" / "Quà sinh nhật — tặng 1 …". Chọn tay voucher tặng món khi bill chưa có món → `409 VOUCHER_ITEM_NOT_IN_BILL`.
+- Hóa đơn: dòng voucher của quà ghi "Quà sinh nhật {mã}".

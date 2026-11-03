@@ -67,8 +67,19 @@ export function manualInput(manualDiscount, manualReason) {
  */
 export async function computeTotals({ orders, memberId = null, manual = null, role = 'STAFF', loyalty = {} }) {
   const [settings, member] = await Promise.all([getSettings(), memberForPricing(memberId)]);
-  const prep = await loyaltyService.prepare({ orders, member, voucherCode: loyalty?.voucherCode ?? null, reward: loyalty?.reward ?? null, manual });
-  const totals = { ...settleTotals({ orders, member, manual, settings, voucher: prep.voucher, reward: prep.reward }), stampsEarned: prep.stamps };
+  const prep = await loyaltyService.prepare({
+    orders,
+    member,
+    voucherCode: loyalty?.voucherCode ?? null,
+    reward: loyalty?.reward ?? null,
+    manual,
+    skipBirthday: Boolean(loyalty?.skipBirthday), // F-067 D-97: quầy chọn "Không dùng quà lần này"
+  });
+  const totals = {
+    ...settleTotals({ orders, member, manual, settings, voucher: prep.voucher, reward: prep.reward }),
+    stampsEarned: prep.stamps,
+    birthdayApplied: prep.birthdayApplied,
+  };
   prep.check(totals);
   const limits = discountLimits(role, settings);
   const needsApproval = limits ? manualNeedsApproval(totals.manualDiscount, totals.ordersTotal - totals.memberDiscount, limits) : false;
@@ -77,7 +88,7 @@ export async function computeTotals({ orders, memberId = null, manual = null, ro
 }
 
 /** Body thu tiền → đầu vào loyalty của computeTotals. */
-export const loyaltyInput = (body) => ({ voucherCode: body.voucherCode || null, reward: body.reward ?? null });
+export const loyaltyInput = (body) => ({ voucherCode: body.voucherCode || null, reward: body.reward ?? null, skipBirthday: body.skipBirthday === true });
 
 /**
  * D-14 / D-24: giảm tay vượt ngưỡng của người thao tác → cần người có quyền cao hơn xác thực lại (quản lý; hoặc trưởng ca nếu

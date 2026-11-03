@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { request, withDeadlockRetry } from '../db.js';
 import { optionalStaff, requireStaff } from '../middleware/auth.js';
 import { loginLimiter, memberLimiters, orderLimiter } from '../middleware/rateLimit.js';
-import { paramGuid, paramId, parse, zGuid, zId, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
+import { paramGuid, paramId, parse, zDate, zGuid, zId, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
 import * as memberService from '../services/memberService.js';
 import * as menuService from '../services/menuService.js';
 import * as orderService from '../services/orderService.js';
@@ -77,6 +77,12 @@ publicRouter.post('/sessions/:id/member', optionalStaff, ...memberLimiters, asyn
     req.body,
   );
   res.json({ member: await memberService.attachToSession(paramGuid(req), body, { user: req.user, clientToken: req.clientToken }) });
+});
+
+// F-067: khách thêm ngày sinh ở Thẻ thành viên (một lần) để nhận quà sinh nhật
+publicRouter.post('/sessions/:id/member/birthday', optionalStaff, ...memberLimiters, async (req, res) => {
+  const { birthDate } = parse(z.object({ birthDate: zDate() }), req.body);
+  res.json(await sessionService.selfBirthDate(paramGuid(req), birthDate, { user: req.user, clientToken: req.clientToken }));
 });
 
 publicRouter.delete('/sessions/:id/member', optionalStaff, async (req, res) => {

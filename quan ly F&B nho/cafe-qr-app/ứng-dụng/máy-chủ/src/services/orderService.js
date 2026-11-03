@@ -313,7 +313,12 @@ export function paymentBreakdown(payment, fallbackTotal) {
   if (payment.memberDiscount > 0) {
     lines.push({ key: 'member', label: `Hội viên ${payment.member?.fullName ?? ''} −${Number(payment.memberPercent ?? 0)}%`, amount: -payment.memberDiscount });
   }
-  if (payment.voucherDiscount > 0) lines.push({ key: 'voucher', label: `Voucher ${payment.voucherCode ?? ''}`.trim(), amount: -payment.voucherDiscount });
+  if (payment.voucherDiscount > 0)
+    lines.push({
+      key: 'voucher',
+      label: `${payment.voucherSource === 'BIRTHDAY' ? 'Quà sinh nhật' : 'Voucher'} ${payment.voucherCode ?? ''}`.trim(),
+      amount: -payment.voucherDiscount,
+    });
   if (payment.rewardDiscount > 0) lines.push({ key: 'reward', label: 'Đổi thưởng', amount: -payment.rewardDiscount });
   if (payment.manualDiscount > 0) {
     lines.push({ key: 'manual', label: payment.manualReason ? `Giảm giá (${payment.manualReason})` : 'Giảm giá', amount: -payment.manualDiscount });

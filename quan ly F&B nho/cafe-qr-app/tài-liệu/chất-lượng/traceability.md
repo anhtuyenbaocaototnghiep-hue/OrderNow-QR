@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 392 test, sửa lúc 2026-11-03 07:11 UTC
-- `npm run test:e2e` (JSON): 60 test, sửa lúc 2026-11-03 07:32 UTC
+- `npm test` (JUnit): 398 test, sửa lúc 2026-11-03 08:12 UTC
+- `npm run test:e2e` (JSON): 61 test, sửa lúc 2026-11-03 08:20 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 149 |
-| Acceptance Criteria | 404 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 404 |
+| User Story | 151 |
+| Acceptance Criteria | 411 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 411 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -499,4 +499,11 @@
 | AC-066-02 | TC-066-02 | F-066 | US-066-1 | ACT-GUEST, ACT-STAFF | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | BR-103 | Integration: `hold-order.test.js` › AC-066-02: "Bạn đã tới" từ điện thoại trong phiên → hết giữ, quầy nhận order.released; điện thoại khác → 403; báo lại → 409 NOT_HELD — **PASS** | **PASS** |
 | AC-066-03 | TC-066-03 | F-066 | US-066-1 | ACT-GUEST, ACT-STAFF | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | BR-103 | Integration: `hold-order.test.js` › AC-066-03: tiếp nhận đơn đang giữ = làm luôn; đơn đang giữ không vào hàng chờ ước tính; thu tiền khi còn đơn đang giữ → 409 — **PASS** | **PASS** |
 | AC-066-04 | TC-066-04 | F-066 | US-066-1 | ACT-GUEST, ACT-STAFF | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | BR-103 | E2E: `flow.spec.js` › ra món khi bạn tới: khách chọn "Khi bạn tới" → quầy thấy phiếu "Chờ bạn tới" cuối cột Mới, không đồng hồ chờ; khách bấm "Bạn đã tới — làm món" → phiếu thành đơn mới, quầy tiếp nhận; đơn hẹn giờ tới giờ tự thành đơn mới (F-066, AC-066-04) — **PASS** | **PASS** |
+| AC-067-01 | TC-067-01 | F-067 | US-067-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12 | BR-104 | Unit: `birthday.test.js` › AC-067-01 (unit): tuần sinh nhật với 29/02, vắt qua năm, ngoài cửa sổ; ngày sinh tự thêm phải trước ≥ 30 ngày — **PASS** | **PASS** |
+| AC-067-02 | TC-067-02 | F-067 | US-067-1, US-067-2 | ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12, SCR-40 | BR-104 | Integration: `birthday.test.js` › AC-067-02: bật + trong tuần sinh nhật → quầy thấy quà READY kèm mã; gọi lại / cùng lúc không tạo quà thứ hai; tắt → OFF; ngoài tuần → null — **PASS** | **PASS** |
+| AC-067-03 | TC-067-03 | F-067 | US-067-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12 | BR-104 | Integration: `birthday.test.js` › AC-067-03: thu tiền bàn tự áp quà (đúng %, có trần) → voucher đã dùng, hóa đơn "Quà sinh nhật"; cùng năm không có quà mới; skipBirthday không áp; voucher khác thì dùng voucher đó — **PASS** | **PASS** |
+| AC-067-04 | TC-067-04 | F-067 | US-067-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12 | BR-104 | Integration: `birthday.test.js` › AC-067-04: quà tặng món — bill chưa có món thì không áp (không lỗi); có món thì giảm đúng đơn giá món; chọn tay khi thiếu món → 409 — **PASS** | **PASS** |
+| AC-067-05 | TC-067-05 | F-067 | US-067-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12 | BR-104 | Integration: `birthday.test.js` › AC-067-05: điện thoại khách thấy lời chúc + quà (không mã); tự thêm ngày sinh một lần; thêm sát ngày → WAITING; quản lý lưu hồ sơ → có quà — **PASS** | **PASS** |
+| AC-067-06 | TC-067-06 | F-067 | US-067-2 | ACT-ADMIN | UC-10 | MOD-LOYALTY | SCR-40 | BR-104 | Integration: `birthday.test.js` › AC-067-06: cài đặt — hợp lệ lưu được, sai → 400, nhân viên → 403; danh sách sinh nhật 14 ngày tới kèm trạng thái quà; thống kê năm nay — **PASS** | **PASS** |
+| AC-067-07 | TC-067-07 | F-067 | US-067-1, US-067-2 | ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12, SCR-40 | BR-104 | E2E: `flow.spec.js` › quà sinh nhật: quản lý bật ở tab Quà sinh nhật; điện thoại khách đang sinh nhật thấy lời chúc; quầy thấy dải "Sinh nhật khách", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong hóa đơn có "Quà sinh nhật" (F-067, AC-067-07) — **PASS** | **PASS** |
 

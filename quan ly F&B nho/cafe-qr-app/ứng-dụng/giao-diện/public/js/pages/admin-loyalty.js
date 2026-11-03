@@ -1,6 +1,7 @@
 // S-40 Tích điểm, voucher & chiến dịch (ADR-006): quà đổi điểm + chương trình tem (F-039), voucher (F-038),
 // phân khúc + chiến dịch (F-037: xem trước số người, chạy ngay / hẹn giờ, xuất CSV, hiệu quả). Chỉ quản lý.
 // ADR-024: vòng quay may mắn trên hóa đơn (F-065) — bật/tắt, mức hóa đơn, ngân sách lượt trúng, các ô quà + tỷ lệ, kết quả 7 ngày.
+// ADR-025: quà sinh nhật hội viên (F-067) — bật/tắt, loại quà, số ngày quanh sinh nhật, sinh nhật 14 ngày tới, quà năm nay.
 import { staffApi, staffBlobUrl } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, dateTime, el, errorMessage, modal, money, showFieldErrors, toast, todayVn } from '../ui.js';
@@ -17,6 +18,7 @@ const TABS = [
   ['vouchers', 'Voucher'],
   ['campaigns', 'Phân khúc & chiến dịch'],
   ['spin', 'Vòng quay may mắn'],
+  ['birthday', 'Quà sinh nhật'],
 ];
 const tabs = el(
   'div',
@@ -52,6 +54,7 @@ async function load() {
     else if (state.tab === 'vouchers') await renderVouchers();
     else if (state.tab === 'campaigns') await renderCampaigns();
     else if (state.tab === 'spin') await renderSpin();
+    else if (state.tab === 'birthday') await renderBirthday();
     else await renderRewards();
   } catch (err) {
     clear(body, el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -305,7 +308,7 @@ function editProgram(p) {
 }
 
 // ---------- Voucher (F-038) ----------
-const SOURCE = { REFERRAL: 'Giới thiệu bạn', CAMPAIGN: 'Chiến dịch', MANUAL: 'Quản lý tặng', GAME: 'Vòng quay may mắn' };
+const SOURCE = { REFERRAL: 'Giới thiệu bạn', CAMPAIGN: 'Chiến dịch', MANUAL: 'Quản lý tặng', GAME: 'Vòng quay may mắn', BIRTHDAY: 'Quà sinh nhật' };
 async function renderVouchers() {
   const from = addDays(todayVn(), -29);
   const list = await staffApi(`/api/admin/vouchers?from=${from}&to=${todayVn()}`);
@@ -333,7 +336,7 @@ async function renderVouchers() {
               el(
                 'td',
                 {},
-                v.percent ? `${v.percent}%` : money(v.amount),
+                v.menuItemName ? `Tặng 1 ${v.menuItemName}` : v.percent ? `${v.percent}%` : money(v.amount),
                 v.minOrderAmount ? el('div', { class: 'small muted' }, `đơn từ ${money(v.minOrderAmount)}`) : null,
               ),
               el('td', {}, v.memberName ?? 'Ai cũng dùng được'),
@@ -612,6 +615,141 @@ async function renderSpin() {
     ),
   );
   drawRows();
+}
+
+// ---------- Quà sinh nhật (F-067, ADR-025) ----------
+const BDAY_KIND = [
+  ['PERCENT', 'Giảm %'],
+  ['AMOUNT', 'Giảm số tiền'],
+  ['FREE_ITEM', 'Tặng 1 món'],
+];
+const BDAY_STATUS = {
+  READY: ['Đã tặng, chưa dùng', 'preparing'],
+  USED: ['Đã dùng quà', 'ok'],
+  EXPIRED: ['Quà hết hạn', ''],
+  WAITING: ['Ngày sinh tự thêm < 30 ngày — năm sau mới có quà', 'pending'],
+  NOT_VISITED: ['Đang trong tuần sinh nhật — chưa ghé', 'pending'],
+  UPCOMING: ['Sắp tới', ''],
+};
+const bdayWhen = (d) => (d === 0 ? 'Hôm nay' : d > 0 ? `Còn ${d} ngày` : `${-d} ngày trước`);
+
+async function renderBirthday() {
+  const data = await staffApi('/api/admin/birthday');
+  const st = data.stats;
+  const s = { kind: data.kind };
+  const enabled = el('input', { type: 'checkbox', checked: data.enabled, 'aria-label': 'Bật quà sinh nhật' });
+  const kind = el(
+    'select',
+    { class: 'input', name: 'kind', id: 'bday-kind' },
+    BDAY_KIND.map(([k, l]) => el('option', { value: k, selected: k === data.kind }, l)),
+  );
+  const value = el('input', { class: 'input', type: 'number', min: 0, name: 'value', id: 'bday-value', value: data.kind === 'FREE_ITEM' ? '' : data.value });
+  const maxDiscount = el('input', {
+    class: 'input',
+    type: 'number',
+    min: 0,
+    step: 1000,
+    name: 'maxDiscount',
+    id: 'bday-max',
+    value: data.maxDiscount ?? '',
+    placeholder: 'không giới hạn',
+  });
+  const item = menuSelect(data.menuItemId, { name: 'menuItemId', id: 'bday-item' });
+  const windowDays = el('input', { class: 'input', type: 'number', min: 0, max: 15, name: 'windowDays', id: 'bday-window', value: data.windowDays });
+  const fields = el('div', { class: 'spin-fields' });
+  const preview = el('p', { class: 'small bday-preview', 'aria-live': 'polite' });
+
+  function draw() {
+    s.kind = kind.value;
+    const f = (label, input, id) => el('div', { class: 'field' }, el('label', { for: id }, label), input);
+    clear(
+      fields,
+      f('Loại quà', kind, 'bday-kind'),
+      s.kind === 'FREE_ITEM' ? f('Món được tặng', item, 'bday-item') : f(s.kind === 'PERCENT' ? 'Giảm (%)' : 'Giảm (đ)', value, 'bday-value'),
+      s.kind === 'PERCENT' ? f('Giảm tối đa (đ)', maxDiscount, 'bday-max') : null,
+      f('Số ngày trước / sau sinh nhật', windowDays, 'bday-window'),
+    );
+    const n = Number(windowDays.value) || 0;
+    const gift =
+      s.kind === 'FREE_ITEM'
+        ? `tặng 1 ${item.selectedOptions[0]?.value ? item.selectedOptions[0].textContent : '(chọn món)'}`
+        : s.kind === 'AMOUNT'
+          ? `giảm ${money(Number(value.value) || 0)}`
+          : `giảm ${Number(value.value) || 0}%${Number(maxDiscount.value) > 0 ? ` (tối đa ${money(Number(maxDiscount.value))})` : ''}`;
+    preview.textContent = `Hội viên ghé quán từ ${n} ngày trước tới ${n} ngày sau sinh nhật được ${gift} — mỗi năm một lần, tự trừ khi thanh toán.`;
+  }
+  kind.addEventListener('change', draw);
+  [value, maxDiscount, windowDays].forEach((i) => i.addEventListener('input', draw));
+  item.addEventListener('change', draw);
+  draw();
+
+  async function save(button) {
+    button.disabled = true;
+    try {
+      await staffApi('/api/admin/birthday', {
+        method: 'PUT',
+        body: {
+          enabled: enabled.checked,
+          kind: kind.value,
+          value: kind.value === 'FREE_ITEM' ? 0 : Number(value.value) || 0,
+          maxDiscount: kind.value === 'PERCENT' && Number(maxDiscount.value) > 0 ? Number(maxDiscount.value) : null,
+          menuItemId: kind.value === 'FREE_ITEM' && item.value ? Number(item.value) : null,
+          windowDays: Number(windowDays.value) || 0,
+        },
+      });
+      toast(enabled.checked ? 'Đã lưu — hội viên sinh nhật sẽ được tặng quà khi ghé quán' : 'Đã lưu (quà sinh nhật đang tắt)', 'success');
+      load();
+    } catch (err) {
+      button.disabled = false;
+      toast(errorMessage(err), 'error', 6000);
+    }
+  }
+
+  clear(
+    body,
+    el(
+      'div',
+      { class: 'kpis mem-kpis' },
+      kpi('Sinh nhật 14 ngày tới', String(data.upcoming.filter((u) => u.daysUntil >= 0).length), `${st.withoutBirthDate} hội viên chưa có ngày sinh`),
+      kpi('Quà đã tặng năm nay', String(st.issued), `${st.used} đã dùng`),
+      kpi('Tiền quà đã trừ', money(st.giftValue), 'năm nay'),
+      kpi('Khách trả ở các lượt dùng quà', money(st.usedRevenue), 'năm nay'),
+    ),
+    el(
+      'div',
+      { class: 'card spin-admin' },
+      el('h2', {}, 'Quà sinh nhật hội viên'),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Hội viên có ngày sinh ghé quán trong tuần sinh nhật: quầy thấy dải "Sinh nhật khách", điện thoại khách hiện lời chúc, quà tự trừ khi thanh toán. Ngày sinh khách tự thêm chỉ tính khi thêm trước sinh nhật ít nhất 30 ngày.',
+      ),
+      el('label', { class: 'row spin-switch' }, el('span', { class: 'switch' }, enabled, el('span')), 'Bật quà sinh nhật'),
+      fields,
+      preview,
+      el('button', { class: 'btn btn-primary', type: 'button', onclick: (e) => save(e.currentTarget) }, 'Lưu quà sinh nhật'),
+    ),
+    el(
+      'div',
+      { class: 'card spin-admin' },
+      el('h2', {}, 'Sinh nhật sắp tới'),
+      data.upcoming.length === 0
+        ? el('p', { class: 'muted small' }, 'Không có hội viên nào sinh nhật trong 14 ngày tới (hoặc chưa ghi ngày sinh — thêm ở trang Hội viên).')
+        : table(
+            ['Hội viên', 'Sinh nhật', 'Quà'],
+            data.upcoming.map((u) => {
+              const [label, tone] = BDAY_STATUS[u.status] ?? [u.status, ''];
+              return el(
+                'tr',
+                {},
+                el('td', {}, el('strong', {}, u.fullName), el('div', { class: 'small muted' }, u.tierName)),
+                el('td', { class: 'nowrap' }, `${u.date.slice(8, 10)}/${u.date.slice(5, 7)}`, el('div', { class: 'small muted' }, bdayWhen(u.daysUntil))),
+                el('td', {}, el('span', { class: `badge ${tone}` }, label), u.gift ? el('div', { class: 'small muted' }, u.gift.label) : null),
+              );
+            }),
+          ),
+    ),
+  );
 }
 
 // ---------- Phân khúc & chiến dịch (F-037) ----------

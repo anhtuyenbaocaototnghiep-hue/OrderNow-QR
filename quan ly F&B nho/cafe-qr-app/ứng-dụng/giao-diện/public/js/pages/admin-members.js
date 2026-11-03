@@ -426,7 +426,7 @@ async function openMember(id) {
 }
 
 const PT_TYPE = { EARN: 'Tích', REDEEM: 'Đổi quà', ADJUST: 'Điều chỉnh', EXPIRE: 'Hết hạn', REFUND: 'Hoàn tiền' };
-const VOUCHER_SOURCE = { REFERRAL: 'giới thiệu bạn', CAMPAIGN: 'chiến dịch', MANUAL: 'quản lý tặng', GAME: 'vòng quay may mắn' };
+const VOUCHER_SOURCE = { REFERRAL: 'giới thiệu bạn', CAMPAIGN: 'chiến dịch', MANUAL: 'quản lý tặng', GAME: 'vòng quay may mắn', BIRTHDAY: 'quà sinh nhật' };
 
 /** F-039 / F-038 / F-037 trong hồ sơ hội viên. */
 async function renderLoyalty(m, box) {
@@ -545,7 +545,7 @@ async function renderLoyalty(m, box) {
               'li',
               {},
               icon('ticket'),
-              `${v.code} −${v.percent ? `${v.percent}%` : money(v.amount)} · hạn ${dateTime(v.expiresAt)} · ${VOUCHER_SOURCE[v.source] ?? v.source}`,
+              `${v.code} ${v.menuItemName ? `tặng 1 ${v.menuItemName}` : `−${v.percent ? `${v.percent}%` : money(v.amount)}`} · hạn ${dateTime(v.expiresAt)} · ${VOUCHER_SOURCE[v.source] ?? v.source}`,
               v.usedAt ? ` · đã dùng ${dateTime(v.usedAt)}` : new Date(v.expiresAt) < new Date() ? ' · hết hạn' : ' · còn dùng được',
             ),
           ),

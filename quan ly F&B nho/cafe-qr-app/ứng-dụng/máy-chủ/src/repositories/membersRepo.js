@@ -4,7 +4,7 @@ import { inTransaction, query, sql, txQuery } from '../db.js';
 const SELECT = `
   SELECT m.MemberId, m.Phone, m.FullName, m.TierCode, t.Name AS TierName, t.DiscountPercent, m.TotalSpent, m.VisitCount, m.Points,
          m.FirstOrderDiscountUsed, m.BirthDate, m.Note, m.ConsentAt, m.IsActive, m.AnonymizedAt, m.CreatedAt, m.LastVisitAt,
-         m.ReferredByMemberId, m.OptOut
+         m.ReferredByMemberId, m.OptOut, m.BirthDateSelfAt
   FROM dbo.Members m JOIN dbo.MemberTiers t ON t.TierCode = m.TierCode`;
 
 const map = (r) =>
@@ -28,6 +28,7 @@ const map = (r) =>
     lastVisitAt: r.LastVisitAt,
     referredByMemberId: r.ReferredByMemberId ?? null, // F-038
     optOut: Boolean(r.OptOut), // F-037
+    birthDateSelfAt: r.BirthDateSelfAt ?? null, // F-067: khách tự thêm ngày sinh lúc nào (null = quản lý nhập / đã xác minh)
   };
 
 export async function findByPhone(phone) {
@@ -186,7 +187,8 @@ export async function overview({ todayStart, monthStart, d7, d30, month }) {
 
 export async function update(id, { fullName, tierCode, note, birthDate, isActive }) {
   const r = await query(
-    `UPDATE dbo.Members SET FullName = @n, TierCode = @t, Note = @note, BirthDate = @b, IsActive = @a
+    // F-067 (ADR-025 D-99): quản lý lưu hồ sơ = đã xác minh ngày sinh → bỏ dấu "khách tự thêm"
+    `UPDATE dbo.Members SET FullName = @n, TierCode = @t, Note = @note, BirthDate = @b, BirthDateSelfAt = NULL, IsActive = @a
      WHERE MemberId = @id AND AnonymizedAt IS NULL`,
     {
       id: [sql.Int, id],
@@ -205,7 +207,7 @@ export async function anonymize(id, phoneHash) {
   return inTransaction(async (tx) => {
     const r = await txQuery(
       tx,
-      `UPDATE dbo.Members SET FullName = N'(đã ẩn danh)', Phone = @h, Note = NULL, BirthDate = NULL, IsActive = 0, AnonymizedAt = SYSUTCDATETIME()
+      `UPDATE dbo.Members SET FullName = N'(đã ẩn danh)', Phone = @h, Note = NULL, BirthDate = NULL, BirthDateSelfAt = NULL, IsActive = 0, AnonymizedAt = SYSUTCDATETIME()
        WHERE MemberId = @id AND AnonymizedAt IS NULL`,
       { id: [sql.Int, id], h: [sql.VarChar(80), phoneHash] },
     );

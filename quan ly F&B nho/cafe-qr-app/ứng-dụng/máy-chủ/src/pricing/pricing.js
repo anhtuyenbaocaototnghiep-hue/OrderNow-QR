@@ -258,7 +258,7 @@ export function settleTotals({ orders, member = null, manual = null, settings = 
   if (voucherDiscount > 0) {
     breakdownLines.push({
       key: 'voucher',
-      label: `Voucher ${voucher.code ?? ''}${voucher.percent ? ` −${Number(voucher.percent)}%` : ''}`.trim(),
+      label: voucher.label ?? `Voucher ${voucher.code ?? ''}${voucher.percent ? ` −${Number(voucher.percent)}%` : ''}`.trim(),
       amount: -voucherDiscount,
     });
   }

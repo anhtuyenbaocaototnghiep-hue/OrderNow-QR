@@ -469,6 +469,11 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
   await expect(A.locator('table.spin-prizes')).toBeVisible();
   await check(A, 'quan-ly-loyalty-vong-quay', { narrow: true });
   await A.setViewportSize(desk.viewport);
+  // F-067: tab Quà sinh nhật (cài đặt + sinh nhật sắp tới)
+  await A.getByRole('tab', { name: 'Quà sinh nhật' }).click();
+  await expect(A.getByRole('button', { name: 'Lưu quà sinh nhật' })).toBeVisible();
+  await check(A, 'quan-ly-loyalty-qua-sinh-nhat', { narrow: true });
+  await A.setViewportSize(desk.viewport);
   // DEF-014: Phân tích, Lãi / lỗ không cuộn ngang ở 320 / 390 px (WCAG 1.4.10) — trước đây 441 / 638 px
   // F-064: Cảnh báo có bảng món tụt lãi — flow để lại một cảnh báo giá vốn
   for (const r of ['analytics', 'pnl', 'alerts']) {

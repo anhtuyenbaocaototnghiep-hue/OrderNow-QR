@@ -62,8 +62,9 @@ export const dateTime = (d) =>
 export const todayVn = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
 /** "31/10/2026" theo giờ quán (hạn voucher, lịch sử điểm). */
 export const dateOnly = (d) => (d ? new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ }) : '');
-/** Giá trị voucher: "−10% (tối đa 50.000đ)" / "−20.000đ" (F-038, F-047). */
-export const voucherValue = (v) => (v.percent ? `−${v.percent}%${v.maxDiscount ? ` (tối đa ${money(v.maxDiscount)})` : ''}` : `−${money(v.amount)}`);
+/** Giá trị voucher: "−10% (tối đa 50.000đ)" / "−20.000đ" (F-038, F-047) / "Tặng 1 Bánh croissant" (F-067). */
+export const voucherValue = (v) =>
+  v.menuItemName ? `Tặng 1 ${v.menuItemName}` : v.percent ? `−${v.percent}%${v.maxDiscount ? ` (tối đa ${money(v.maxDiscount)})` : ''}` : `−${money(v.amount)}`;
 
 /** "3:05" (phút:giây) hoặc "1 giờ 05 phút" từ một mốc thời gian. */
 export function elapsed(from, now = Date.now()) {

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { paramId, parse, parseRange, parseUtcRange, zDate, zId, zText, zTime } from '../middleware/validate.js';
 import * as marketingService from '../services/marketingService.js';
 import * as memberService from '../services/memberService.js';
+import * as birthdayService from '../services/birthdayService.js';
 import * as luckySpinService from '../services/luckySpinService.js';
 import * as loyaltyService from '../services/loyaltyService.js';
 import * as campaignService from '../services/campaignService.js';
@@ -38,6 +39,23 @@ marketingRouter.get('/members', async (req, res) => {
   res.json(await memberService.adminList(q));
 });
 // F-065 (ADR-024 D-92): vòng quay may mắn — bật / tắt, ô quà, kết quả 7 ngày
+// F-067 quà sinh nhật (ADR-025): cài đặt + sinh nhật 14 ngày tới + quà năm nay
+marketingRouter.get('/birthday', async (_req, res) => res.json(await birthdayService.adminGet()));
+marketingRouter.put('/birthday', async (req, res) => {
+  const body = parse(
+    z.object({
+      enabled: z.boolean(),
+      kind: z.enum(['PERCENT', 'AMOUNT', 'FREE_ITEM']),
+      value: z.coerce.number().int().min(0).max(10_000_000).default(0),
+      maxDiscount: z.coerce.number().int().min(0).max(10_000_000).optional().nullable(),
+      menuItemId: zId().optional().nullable(),
+      windowDays: z.coerce.number().int().min(0).max(15),
+    }),
+    req.body,
+  );
+  res.json(await birthdayService.adminSave(body));
+});
+
 marketingRouter.get('/lucky-spin', async (_req, res) => res.json(await luckySpinService.adminGet()));
 marketingRouter.put('/lucky-spin', async (req, res) => {
   const body = parse(

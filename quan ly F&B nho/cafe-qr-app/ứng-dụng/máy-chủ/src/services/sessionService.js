@@ -13,6 +13,7 @@ import * as splitsRepo from '../repositories/splitsRepo.js';
 import * as tablesRepo from '../repositories/tablesRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { approvalFor, computeTotals, loyaltyInput, manualInput, orderForSplit, orderForTotals } from './billingService.js';
+import * as birthdayService from './birthdayService.js';
 import * as loyaltyService from './loyaltyService.js';
 import * as luckySpinService from './luckySpinService.js';
 import { partOrders } from '../pricing/pricing.js';
@@ -82,6 +83,17 @@ export async function memberCard(sessionId, viewer) {
     },
     ...(await loyaltyService.memberCard(member)),
   };
+}
+
+/** F-067 (ADR-025 D-99): khách thêm ngày sinh cho hội viên đang gắn với phiên — một lần, khi còn trống. → Thẻ thành viên mới. */
+export async function selfBirthDate(sessionId, birthDate, viewer) {
+  const session = await sessionsRepo.findById(sessionId);
+  if (!session) throw notFound('Không tìm thấy phiên');
+  await assertViewer(sessionId, viewer);
+  const member = session.member ? await membersRepo.findById(session.member.memberId) : null;
+  if (!member || !member.isActive) throw notFound('Bàn chưa gắn số điện thoại hội viên', 'NO_MEMBER');
+  await birthdayService.selfSet(member, birthDate);
+  return memberCard(sessionId, viewer);
 }
 
 export async function scan(qrToken, clientToken) {

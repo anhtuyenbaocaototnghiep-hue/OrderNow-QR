@@ -46,6 +46,7 @@ const billingFields = {
     .discriminatedUnion('type', [z.object({ type: z.literal('POINTS'), rewardId: zId() }), z.object({ type: z.literal('STAMP'), programId: zId() })])
     .optional()
     .nullable(),
+  skipBirthday: z.boolean().optional(), // F-067: không tự áp quà sinh nhật lượt này
 };
 
 // F-056 (ADR-019 D-71): cách trả của một lượt thu; chuyển khoản không cần tiền khách đưa (lưu bằng số phải thu)

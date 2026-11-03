@@ -1,5 +1,6 @@
 // Ô "Nhập SĐT để nhận ưu đãi" phía khách (FEATURE-014, ADR-005 D-6, D-16): tra cứu → xác nhận (tên che) hoặc đăng ký (họ tên + đồng ý).
 // Chiết khấu tính lúc thu tiền; ở đây chỉ gắn hội viên vào phiên.
+// ADR-025 (F-067): lời chúc + quà sinh nhật (không có mã) trong ô hội viên và Thẻ thành viên; khách thêm ngày sinh một lần.
 import { api } from './api.js';
 import { clear, dateOnly, el, errorMessage, modal, money, setBusy, toast, voucherValue } from './ui.js';
 import { icon } from './icons.js';
@@ -11,27 +12,80 @@ const percentText = (m) =>
  * Gắn khung hội viên vào `container`. getSession() trả phiên hiện tại (có `member` đã che tên);
  * onChange() gọi sau khi gắn/gỡ để trang tải lại.
  */
+/** F-067: lời chúc theo ngày (trước / đúng / sau sinh nhật) + quà. null khi không trong tuần sinh nhật. */
+function birthdayNote(b) {
+  if (!b) return null;
+  const hi =
+    b.offset === 0
+      ? 'Chúc mừng sinh nhật bạn!'
+      : b.offset < 0
+        ? `Sắp tới sinh nhật bạn (${b.dateLabel}) — chúc mừng trước nhé!`
+        : `Chúc mừng sinh nhật bạn (${b.dateLabel})!`;
+  const gift =
+    b.status === 'READY'
+      ? `Quán tặng bạn: ${b.gift.label} — tự trừ khi thanh toán, dùng đến hết ${dateOnly(b.gift.expiresAt)}.`
+      : b.status === 'USED'
+        ? 'Bạn đã nhận quà sinh nhật năm nay — cảm ơn bạn!'
+        : b.status === 'WAITING'
+          ? 'Quà sinh nhật áp dụng từ lần sinh nhật sau.'
+          : null;
+  return el(
+    'div',
+    { class: 'bday-note', role: 'status' },
+    icon('gift'),
+    el('div', {}, el('strong', {}, hi), gift ? el('div', { class: 'small' }, gift) : null),
+  );
+}
+
 /** F-039 / F-038: điểm, thẻ tem ("còn N ly nữa được tặng"), voucher (không hiện mã — báo nhân viên khi thanh toán). */
 function loyaltyLines(l) {
   if (!l) return null;
+  const others = l.vouchers.filter((v) => v.source !== 'BIRTHDAY'); // quà sinh nhật tự trừ — đã nói trong lời chúc
   return el(
     'div',
     { class: 'small loyalty-lines' },
+    birthdayNote(l.birthday),
     el('div', {}, icon('award'), `${l.points} điểm`),
     l.stampCards.map((c) => el('div', {}, icon('stamp'), c.text)),
-    l.vouchers.length
-      ? el(
-          'div',
-          { class: 'save' },
-          icon('ticket'),
-          `Bạn có ${l.vouchers.length} voucher (${l.vouchers.map((v) => (v.percent ? `−${v.percent}%` : `−${Number(v.amount).toLocaleString('vi-VN')}đ`)).join(', ')}) — báo nhân viên khi thanh toán`,
-        )
+    others.length
+      ? el('div', { class: 'save' }, icon('ticket'), `Bạn có ${others.length} voucher (${others.map(voucherValue).join(', ')}) — báo nhân viên khi thanh toán`)
       : null,
   );
 }
 
+/** F-067 (D-99): ô "Thêm ngày sinh" — một lần; ngày sinh tự thêm tính quà khi thêm trước ≥ 30 ngày. */
+function birthDateForm(onSave) {
+  const input = el('input', { class: 'input', type: 'date', id: 'self-birth-date', max: new Date().toISOString().slice(0, 10), min: '1900-01-01' });
+  const save = el(
+    'button',
+    {
+      class: 'btn btn-sm btn-primary nowrap',
+      type: 'button',
+      onclick: async () => {
+        if (!input.value) return toast('Chọn ngày sinh của bạn', 'warning');
+        setBusy(save, true);
+        try {
+          await onSave(input.value);
+        } catch (err) {
+          setBusy(save, false);
+          toast(errorMessage(err), 'error');
+        }
+      },
+    },
+    'Lưu ngày sinh',
+  );
+  return el(
+    'section',
+    { class: 'card-section' },
+    el('h3', {}, icon('gift'), 'Nhận quà sinh nhật'),
+    el('label', { class: 'small', for: 'self-birth-date' }, 'Ngày sinh của bạn (chỉ lưu một lần, sai thì nhờ quán sửa)'),
+    el('div', { class: 'row' }, input, save),
+    el('p', { class: 'small muted' }, 'Quán tặng quà trong tuần sinh nhật — ngày sinh cần lưu trước sinh nhật ít nhất 30 ngày.'),
+  );
+}
+
 /** Nội dung Thẻ thành viên: hội viên (tên + SĐT che), điểm + lịch sử, thẻ tem, quà đổi điểm, voucher (giá trị, điều kiện, hạn, nguồn). */
-function cardView(c) {
+function cardView(c, { onBirthDate } = {}) {
   const section = (title, ...children) => el('section', { class: 'card-section' }, el('h3', {}, title), ...children);
   const perk =
     c.member.firstOrderPercent && c.member.firstOrderPercent > c.member.discountPercent
@@ -47,6 +101,8 @@ function cardView(c) {
       el('div', { class: 'card-points' }, el('strong', {}, String(c.points)), el('span', { class: 'small' }, ' điểm')),
     ),
     el('p', { class: 'small' }, icon('star'), perk),
+    birthdayNote(c.birthday),
+    c.askBirthDate && onBirthDate ? birthDateForm(onBirthDate) : null,
     section(
       [icon('ticket'), `Voucher của bạn (${c.vouchers.length})`],
       c.vouchers.length
@@ -157,7 +213,17 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
     const body = el('div', { class: 'member-card' }, el('p', { class: 'muted' }, 'Đang tải…'));
     modal({ title: 'Thẻ thành viên', sheet: true, body });
     try {
-      clear(body, cardView(await api(`/api/sessions/${sessionId}/member-card`)));
+      const show = (card) =>
+        clear(
+          body,
+          cardView(card, {
+            onBirthDate: async (birthDate) => {
+              show(await api(`/api/sessions/${sessionId}/member/birthday`, { method: 'POST', body: { birthDate } }));
+              toast('Đã lưu ngày sinh — quán sẽ chúc mừng bạn đúng dịp.', 'success');
+            },
+          }),
+        );
+      show(await api(`/api/sessions/${sessionId}/member-card`));
     } catch (err) {
       clear(body, el('div', { class: 'alert danger' }, errorMessage(err)));
     }

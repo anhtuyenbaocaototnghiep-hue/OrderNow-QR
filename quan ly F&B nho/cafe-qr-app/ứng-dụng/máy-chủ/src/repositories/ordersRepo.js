@@ -281,7 +281,7 @@ export async function cancel(orderId, userId, reason) {
 export const PAYMENT_SELECT = `
   SELECT p.PaymentId, p.SessionId, p.OrderId, p.SplitId, p.Method, p.AmountDue, p.AmountReceived, p.ChangeGiven, p.PaidAt, p.ReceivedBy, u.FullName,
          p.SubtotalAmount, p.PromoDiscount, p.MemberDiscount, p.MemberPercent, p.ManualDiscount, p.ManualReason, p.RoundingAdj, p.ShiftId,
-         p.VoucherDiscount, p.RewardDiscount, p.PointsEarned, p.StampsEarned, v.Code AS VoucherCode,
+         p.VoucherDiscount, p.RewardDiscount, p.PointsEarned, p.StampsEarned, v.Code AS VoucherCode, v.Source AS VoucherSource,
          p.MemberId, mem.FullName AS MemberName, ap.FullName AS ApprovedByName,
          ISNULL((SELECT SUM(rf.Amount) FROM dbo.Refunds rf WHERE rf.PaymentId = p.PaymentId), 0) AS Refunded
   FROM dbo.Payments p
@@ -326,6 +326,7 @@ export const mapPayment = (p) => ({
   // F-038 / F-039: voucher, đổi thưởng, điểm / tem đã tích
   voucherDiscount: Number(p.VoucherDiscount ?? 0),
   voucherCode: p.VoucherCode ?? null,
+  voucherSource: p.VoucherSource ?? null, // F-067: hóa đơn ghi "Quà sinh nhật"
   rewardDiscount: Number(p.RewardDiscount ?? 0),
   pointsEarned: p.PointsEarned ?? null,
   stampsEarned: p.StampsEarned ?? null,

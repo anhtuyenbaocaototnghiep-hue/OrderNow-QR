@@ -386,3 +386,12 @@ flowchart LR
   G["S-03 Giỏ: Khi bạn tới"] --> H["S-10 phiếu giữ cuối cột Mới"]
   H -->|"khách bấm Bạn đã tới / tới giờ"| N["Đơn mới + chuông"]
 ```
+
+## F-067 — Quà sinh nhật hội viên (TASK-084, ADR-025, 03/11/2026)
+
+- **S-13 / S-14 khung "Hội viên · giảm giá · voucher":** gắn hội viên đang trong tuần sinh nhật → dải **"Sinh nhật khách — 12/11 (hôm nay)"** (`role=status`) dưới ô hội viên: "Đã tự áp quà: Giảm 20% (tối đa 50.000đ)" + nút **Không dùng quà lần này** / "Không dùng quà lần này (…)" + nút **Dùng quà** / "Quà: Tặng 1 Bánh croissant — thêm món này vào bill là tự trừ" / "Khách đã dùng quà sinh nhật năm nay" / "Ngày sinh khách mới tự thêm — quà áp dụng từ lần sinh nhật sau". Bảng tính tiền có dòng **Quà sinh nhật**.
+- **S-03 / S-05 ô hội viên của khách:** khung lời chúc (trước / đúng / sau ngày sinh nhật) + "Quán tặng bạn: … — tự trừ khi thanh toán, dùng đến hết dd/mm/yyyy".
+- **Thẻ thành viên:** cùng lời chúc; hội viên chưa có ngày sinh (tính năng bật) → mục **"Nhận quà sinh nhật"**: ô ngày sinh + "Lưu ngày sinh" (một lần; ghi chú điều kiện 30 ngày).
+- **S-12 Hóa đơn:** dòng "Quà sinh nhật {mã}".
+- **S-40 Tích điểm & voucher → tab Quà sinh nhật:** 4 ô số (sinh nhật 14 ngày tới + số hội viên chưa có ngày sinh, quà đã tặng / đã dùng năm nay, tiền quà đã trừ, khách trả ở các lượt dùng quà); công tắc bật; loại quà (Giảm % · Giảm số tiền · Tặng 1 món) với ô theo loại; số ngày trước / sau; câu xem trước luật bằng lời; bảng **Sinh nhật sắp tới** (hội viên, ngày + "Hôm nay / Còn N ngày / N ngày trước", trạng thái quà). Tab Voucher ghi nguồn "Quà sinh nhật", giá trị "Tặng 1 …".
+- **SCR-48 Chính sách dữ liệu:** thêm dòng ngày sinh (không bắt buộc, dùng để tặng quà sinh nhật).
