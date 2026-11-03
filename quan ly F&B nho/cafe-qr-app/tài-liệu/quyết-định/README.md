@@ -28,6 +28,7 @@ Mỗi câu hỏi Q-xxx khi được chốt sẽ thành một ADR ngắn. Sau đ�
 | [ADR-021](ADR-021-che-do-co-ban-chinh-sach-qr.md) | (yêu cầu chủ dự án 29/10/2026) | Chế độ cơ bản = ẩn 5 nhóm menu nâng cao, không tắt chức năng (D-79); hướng dẫn 5 bước ở màn quầy lưu theo tài khoản (D-80); trang công khai Chính sách dữ liệu, link ở câu đồng ý — đồng ý + ẩn danh đã có từ F-014 (D-81); lưu địa chỉ lúc in QR, lệch → cảnh báo in lại (D-82) | ACCEPTED |
 | [ADR-022](ADR-022-read-committed-snapshot.md) | (yêu cầu chủ dự án 29/10/2026) | Bật READ_COMMITTED_SNAPSHOT cho database: lệnh đọc đọc bản đã commit, không còn deadlock với lệnh ghi (DEF-018, DEF-019); bật bằng bước riêng trong db:migrate, gợi ý khóa trong SP giữ nguyên (D-83) | ACCEPTED |
 | [ADR-023](ADR-023-bao-dong-gia-von.md) | (yêu cầu chủ dự án 02/11/2026) | Báo động giá vốn: so giá nhập mới với giá mốc (không so bình quân), chỉ báo khi món bị ảnh hưởng thật, giá gợi ý chỉ để tham khảo, xử lý giá nghi nhầm và sửa / hủy phiếu (D-84…D-88) | ACCEPTED |
+| [ADR-024](ADR-024-vong-quay-hen-gio-ra-mon.md) | (yêu cầu chủ dự án 03/11/2026) | Vòng quay may mắn: máy chủ chọn ô, ngân sách lượt trúng mỗi ngày, voucher nguồn GAME; ra món khi bạn tới: đơn giữ vẫn PENDING, giữ kho, tối đa 45 phút, không kêu chuông tới khi hết giữ (D-89…D-94) | ACCEPTED |
 
 Còn mở: **Q-000** (người ký chốt). Q-008 (hosting) đã chốt bằng ADR-016. Mỗi khi nhóm đổi một quyết định trong ADR-003, tạo ADR mới (ADR-005…) ghi rõ "thay thế mục Q-xxx của ADR-003".
 

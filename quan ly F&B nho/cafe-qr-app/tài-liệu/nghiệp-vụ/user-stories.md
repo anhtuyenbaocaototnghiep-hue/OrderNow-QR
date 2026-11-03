@@ -180,6 +180,9 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-063-1 | Should | ACT-ADMIN, ACT-STAFF | Là chủ quán, tôi muốn app báo ngay khi mã QR đang dán trên bàn trỏ tới địa chỉ cũ hoặc trỏ localhost, để in lại trước khi khách quét không được. | AC-063-01, AC-063-02, AC-063-03, AC-063-04 | BR-099 | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | F-063 | DONE |
 | US-064-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn được báo ngay khi nhập hàng giá cao hơn làm món nào tụt lãi, mất bao nhiêu tiền mỗi tháng và nên bán giá nào, để quyết định trước khi lãi mất dần. | AC-064-01, AC-064-02, AC-064-03, AC-064-07, AC-064-08, AC-064-09, AC-064-10 | BR-100, BR-101 | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-33, SCR-21 | F-064 | DONE |
 | US-064-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn app không báo lặp hay báo giả khi nhập nhầm giá, để còn tin vào cảnh báo. | AC-064-04, AC-064-05, AC-064-06 | BR-100, BR-101 | UC-13, UC-17 | MOD-INVENTORY, MOD-ADMIN | SCR-47, SCR-31 | F-064 | DONE |
+| US-065-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách vừa thanh toán, tôi muốn quét QR trên hóa đơn (hoặc bấm nút ở màn cảm ơn) để quay nhận quà cho lần sau, để có thêm lý do quay lại quán. | AC-065-01, AC-065-02, AC-065-04, AC-065-06, AC-065-07 | BR-102 | UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-49, SCR-05, SCR-12 | F-065 | DONE |
+| US-065-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn tự đặt ô quà, tỷ lệ trúng và số quà tối đa mỗi ngày, để trò chơi kéo khách quay lại mà không làm lỗ. | AC-065-03, AC-065-05, AC-065-07 | BR-102 | UC-10 | MOD-LOYALTY | SCR-40 | F-065 | DONE |
+| US-066-1 | Should | ACT-GUEST, ACT-STAFF | Là khách tới trước, tôi muốn gọi món cho cả nhóm và hẹn quán làm khi bạn tới (hoặc sau 10 / 20 phút), để đồ uống không bị nguội / tan đá trước khi bạn tới. | AC-066-01, AC-066-02, AC-066-03, AC-066-04 | BR-103 | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | F-066 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 
@@ -297,13 +300,13 @@ Bốn chỗ ghi cũ mâu thuẫn với quyết định sau đã được sửa t
 
 | Chỉ số | Giá trị |
 | --- | --- |
-| Tổng số story | 146 |
+| Tổng số story | 149 |
 | Must | 54 (F-001…F-012: 28 — gồm US-001-3 cho trang chủ / 404; F-046, F-047: 6; F-048: 4; F-049: 2; F-050: 2; F-051: 4; F-052: 2; F-053: 1; F-054: 1; F-055: 2; F-056: 2) |
-| Should | 91 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4; F-064: 2) |
+| Should | 94 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4; F-064: 2; F-065, F-066: 3) |
 | Could | 1 (US-037-4) |
-| AC đã ánh xạ / tổng AC trong FEATURE | 393 / 393 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026 + 10 của F-064 ngày 02/11/2026 + 3 của F-034 ngày 02/11/2026 (TASK-080) + 2 của F-033 (TASK-081) + 3 của F-014 (TASK-082)) |
+| AC đã ánh xạ / tổng AC trong FEATURE | 404 / 404 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026 + 10 của F-064 ngày 02/11/2026 + 3 của F-034 ngày 02/11/2026 (TASK-080) + 2 của F-033 (TASK-081) + 3 của F-014 (TASK-082) + 11 của F-065, F-066 ngày 03/11/2026) |
 | AC đã viết lại cho kiểm được | 25 |
-| FEATURE có story | 63 / 63 (F-001…F-043, F-045…F-064; không có F-044) |
+| FEATURE có story | 65 / 65 (F-001…F-043, F-045…F-066; không có F-044) |
 | FEATURE không có AC nào | 0 |
-| BR được tham chiếu | 101 / 101 |
+| BR được tham chiếu | 103 / 103 |
 | Màn hình `S-xx` có story | 37 / 37; thêm SCR-43 (trang chủ) và SCR-44 (404) qua US-001-3 |

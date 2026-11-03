@@ -29,3 +29,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-077-plan.md](TASK-077-plan.md) — chế độ cơ bản, hướng dẫn quầy, chính sách dữ liệu, cảnh báo QR (F-061…F-063, ADR-021).
 - [TASK-079-plan.md](TASK-079-plan.md) — báo động giá vốn (F-064, ADR-023).
 - [TASK-080-plan.md](TASK-080-plan.md) — trang Lãi / lỗ dễ hiểu (F-034).
+- [TASK-083-plan.md](TASK-083-plan.md) — vòng quay may mắn + ra món khi bạn bè tới (F-065, F-066, ADR-024).
