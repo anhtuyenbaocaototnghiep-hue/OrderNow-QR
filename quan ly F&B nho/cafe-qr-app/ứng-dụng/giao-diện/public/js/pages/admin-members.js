@@ -69,7 +69,7 @@ const EMPTY = {
   top: 'Chưa có hội viên nào khớp.',
   points: 'Chưa hội viên nào có điểm.',
   near: 'Chưa có ai sắp lên hạng (đã chi từ 80% mức hạng kế).',
-  lapsed: 'Không có hội viên nào vắng quá 30 ngày.',
+  lapsed: 'Không có hội viên nào vắng lâu.', // F-069: số ngày theo cài đặt — câu đầy đủ ở renderMembers
   birthday: 'Tháng này không có hội viên nào sinh nhật (hoặc chưa ghi ngày sinh).',
   nobirth: 'Mọi hội viên đang hoạt động đã có ngày sinh.',
 };
@@ -200,7 +200,11 @@ async function renderMembers() {
   );
   const table =
     r.items.length === 0
-      ? el('div', { class: 'empty' }, state.q ? 'Chưa có hội viên nào khớp.' : EMPTY[state.view])
+      ? el(
+          'div',
+          { class: 'empty' },
+          state.q ? 'Chưa có hội viên nào khớp.' : state.view === 'lapsed' ? `Không có hội viên nào vắng từ ${o.lapsedDays} ngày.` : EMPTY[state.view],
+        )
       : el(
           'div',
           { class: 'table-wrap' },
@@ -440,7 +444,14 @@ async function openMember(id) {
 }
 
 const PT_TYPE = { EARN: 'Tích', REDEEM: 'Đổi quà', ADJUST: 'Điều chỉnh', EXPIRE: 'Hết hạn', REFUND: 'Hoàn tiền' };
-const VOUCHER_SOURCE = { REFERRAL: 'giới thiệu bạn', CAMPAIGN: 'chiến dịch', MANUAL: 'quản lý tặng', GAME: 'vòng quay may mắn', BIRTHDAY: 'quà sinh nhật' };
+const VOUCHER_SOURCE = {
+  REFERRAL: 'giới thiệu bạn',
+  CAMPAIGN: 'chiến dịch',
+  MANUAL: 'quản lý tặng',
+  GAME: 'vòng quay may mắn',
+  BIRTHDAY: 'quà sinh nhật',
+  WINBACK: 'quà quay lại',
+};
 
 /** F-039 / F-038 / F-037 trong hồ sơ hội viên. */
 async function renderLoyalty(m, box) {

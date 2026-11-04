@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 402 test, sửa lúc 2026-11-04 07:47 UTC
-- `npm run test:e2e` (JSON): 62 test, sửa lúc 2026-11-04 07:50 UTC
+- `npm test` (JUnit): 407 test, sửa lúc 2026-11-04 08:31 UTC
+- `npm run test:e2e` (JSON): 63 test, sửa lúc 2026-11-04 08:34 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 153 |
-| Acceptance Criteria | 416 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 416 |
+| User Story | 155 |
+| Acceptance Criteria | 422 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 422 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -511,4 +511,10 @@
 | AC-068-03 | TC-068-03 | F-068 | US-068-1 | ACT-STAFF, ACT-MEMBER | UC-04, UC-10 | MOD-LOYALTY | SCR-03, SCR-05, SCR-13, SCR-14, SCR-22 | BR-105 | Integration: `birthdate-collect.test.js` › AC-068-03: quầy thấy askBirthDate; nhân viên thêm ngày sinh → tự khai, hết nhắc; đã có → 409; khách không muốn cho → hết nhắc ở quầy, Thẻ thành viên vẫn mời; chưa đăng nhập → 401 — **PASS** | **PASS** |
 | AC-068-04 | TC-068-04 | F-068 | US-068-2 | ACT-ADMIN | UC-10 | MOD-LOYALTY | SCR-26, SCR-40 | BR-105 | Integration: `birthdate-collect.test.js` › AC-068-04: quản lý lưu / đọc ngày sinh không năm, quà sinh nhật áp được; bộ lọc nobirth (ghé gần đây trước, số đếm); coverage ở tab Quà sinh nhật — **PASS** | **PASS** |
 | AC-068-05 | TC-068-05 | F-068 | US-068-1, US-068-2 | ACT-STAFF, ACT-MEMBER, ACT-ADMIN | UC-04, UC-10 | MOD-LOYALTY | SCR-03, SCR-05, SCR-13, SCR-14, SCR-22, SCR-26, SCR-40 | BR-105 | E2E: `flow.spec.js` › thu thập ngày sinh: đăng ký nhanh ở quầy có ô ngày sinh (để trống năm), quầy nhắc hội viên chưa có ngày sinh → Lưu / Khách không muốn cho, khách tự đăng ký có ô ngày sinh, tab Quà sinh nhật có Thu thập ngày sinh → Chưa có ngày sinh, thẻ QR có dòng mời (F-068, AC-068-05) — **PASS** | **PASS** |
+| AC-069-01 | TC-069-01 | F-069 | US-069-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-13, SCR-14, SCR-12 | BR-106 | Unit: `winback.test.js` › AC-069-01 (unit): số ngày vắng theo giờ quán; kiểm cài đặt (vắng 14–365, giữ 1–60, giữa hai quà ≥ số ngày vắng, quà như F-067) — **PASS** | **PASS** |
+| AC-069-02 | TC-069-02 | F-069 | US-069-1, US-069-2 | ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-13, SCR-14, SCR-12, SCR-40, SCR-26 | BR-106 | Integration: `winback.test.js` › AC-069-02: bật + vắng ≥ 45 ngày → READY kèm mã; cùng lúc không tạo quà thứ hai; tắt → OFF; vắng ít / chưa thanh toán → null; có quà trong 180 ngày → COOLDOWN — **PASS** | **PASS** |
+| AC-069-03 | TC-069-03 | F-069 | US-069-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-13, SCR-14, SCR-12 | BR-106 | Integration: `winback.test.js` › AC-069-03: thu tiền tự áp quà quay lại, hóa đơn "Quà quay lại"; skipWinback giữ quà và lần sau vẫn tự áp; đang sinh nhật → quà sinh nhật trước — **PASS** | **PASS** |
+| AC-069-04 | TC-069-04 | F-069 | US-069-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-13, SCR-14, SCR-12 | BR-106 | Integration: `winback.test.js` › AC-069-04: điện thoại khách / Thẻ thành viên thấy lời chào + quà, không có mã — **PASS** | **PASS** |
+| AC-069-05 | TC-069-05 | F-069 | US-069-2 | ACT-ADMIN | UC-10 | MOD-LOYALTY | SCR-40, SCR-26 | BR-106 | Integration: `winback.test.js` › AC-069-05: cài đặt hợp lệ / sai 400 / nhân viên 403; stats (đã tặng, đã dùng, ghé tiếp), recent; lọc "Lâu chưa quay lại" theo afterDays — **PASS** | **PASS** |
+| AC-069-06 | TC-069-06 | F-069 | US-069-1, US-069-2 | ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-13, SCR-14, SCR-12, SCR-40, SCR-26 | BR-106 | E2E: `flow.spec.js` › mừng khách quay lại: quản lý bật ở tab; quầy gắn hội viên vắng 52 ngày → dải "Khách quay lại sau 52 ngày", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong tab ghi "Đã dùng quà" (F-069, AC-069-06) — **PASS** | **PASS** |
 

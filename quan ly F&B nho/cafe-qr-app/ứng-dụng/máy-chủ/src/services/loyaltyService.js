@@ -2,11 +2,13 @@
 // Lúc thu tiền: service kiểm voucher / quà, tính số giảm bằng pricing; SP (sp_ApplyLoyalty) trừ điểm / lượt quà / đánh dấu voucher
 // trong CÙNG transaction lượt thu (hai quầy cùng dùng → một bên thắng: 409). Đổi thưởng không dùng cùng giảm tay trên một lượt thu.
 // ADR-025 (F-067): chưa chọn voucher → tự áp quà sinh nhật còn dùng được (trừ khi quầy gửi skipBirthday); voucher có món → tặng món đó.
+// ADR-027 (F-069): sau đó, vẫn chưa có voucher → tự áp quà quay lại (trừ khi quầy gửi skipWinback).
 import crypto from 'node:crypto';
 import { badRequest, conflict, notFound } from '../errors.js';
 import * as loyaltyRepo from '../repositories/loyaltyRepo.js';
 import * as membersRepo from '../repositories/membersRepo.js';
 import * as birthdayService from './birthdayService.js';
+import * as winbackService from './winbackService.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { cheapestUnit, stampsFor } from '../pricing/pricing.js';
 
@@ -32,14 +34,20 @@ export async function checkVoucher(code, member, { now = new Date() } = {}) {
  * input: { voucherCode?, reward?: { type: 'POINTS', rewardId } | { type: 'STAMP', programId } }, manual (đã chuẩn hóa).
  * → { voucher (pricing) | null, reward (pricing) | null, loyaltyJson (string | null), check(totals) — kiểm sau khi có tổng, stamps }
  */
-export async function prepare({ orders, member, voucherCode = null, reward = null, manual = null, skipBirthday = false }) {
+export async function prepare({ orders, member, voucherCode = null, reward = null, manual = null, skipBirthday = false, skipWinback = false }) {
   let voucher = null;
   let rewardCalc = null;
   let birthdayApplied = false;
+  let winbackApplied = false;
   const json = {};
   if (!voucherCode && member && !skipBirthday) {
     // D-97: tự áp quà sinh nhật; quà tặng món chỉ khi bill có món đó (không làm lỗi số xem trước)
     const gift = await birthdayService.usableGift(member);
+    if (gift && (!gift.menuItemId || cheapestUnit(orders, [gift.menuItemId]))) voucherCode = gift.code;
+  }
+  if (!voucherCode && member && !skipWinback) {
+    // F-069 D-109: quà sinh nhật được áp trước; còn trống thì tự áp quà quay lại (kể cả quà đang giữ từ lần trước)
+    const gift = await winbackService.usableGift(member);
     if (gift && (!gift.menuItemId || cheapestUnit(orders, [gift.menuItemId]))) voucherCode = gift.code;
   }
   if (voucherCode) {
@@ -55,6 +63,10 @@ export async function prepare({ orders, member, voucherCode = null, reward = nul
     if (v.source === 'BIRTHDAY') {
       birthdayApplied = true;
       voucher.label = `Quà sinh nhật${v.menuItemId ? ` — tặng 1 ${v.menuItemName ?? 'món'}` : ''}`;
+    }
+    if (v.source === 'WINBACK') {
+      winbackApplied = true;
+      voucher.label = `Quà quay lại${v.menuItemId ? ` — tặng 1 ${v.menuItemName ?? 'món'}` : ''}`;
     }
     json.voucherId = v.voucherId;
   }
@@ -94,6 +106,7 @@ export async function prepare({ orders, member, voucherCode = null, reward = nul
     reward: rewardCalc,
     loyaltyJson: Object.keys(json).length ? JSON.stringify(json) : null,
     birthdayApplied,
+    winbackApplied,
     stamps: member ? stampsFor(orders, programs, json.reward?.menuItemId ?? null) : [],
     /** Kiểm sau khi pricing có tổng: đơn tối thiểu của voucher. */
     check(totals) {
@@ -110,6 +123,7 @@ export async function summary(member, { staff = false } = {}) {
   if (!member) return null;
   // Sinh nhật trước (có thể vừa phát quà) rồi mới đọc voucher để danh sách có luôn quà
   const birthday = await birthdayService.statusFor(member, { withCode: staff });
+  const winback = await winbackService.statusFor(member, { withCode: staff }); // F-069: cũng có thể vừa phát quà
   const [cards, rewards, vouchers] = await Promise.all([
     loyaltyRepo.cards(member.memberId),
     loyaltyRepo.rewards(),
@@ -147,6 +161,7 @@ export async function summary(member, { staff = false } = {}) {
       menuItemName: v.menuItemName,
     })),
     birthday, // F-067: { inWindow, date, dateLabel, offset, status, gift } | null
+    winback, // F-069: { away, days, lastVisitAt, visitCount, status, gift, lastGiftAt } | null
     ...(staff ? { askBirthDate: await birthdayService.staffAsk(member) } : {}), // F-068 D-104: quầy nhắc hỏi ngày sinh
   };
 }
@@ -155,7 +170,14 @@ export const vouchersOf = (memberId) => loyaltyRepo.vouchersOf(memberId);
 
 // ---- F-047 Thẻ thành viên (ADR-008 D-37) + khối quyền lợi trên bill (D-38) ----
 const POINT_LABEL = { EARN: 'Tích điểm', REDEEM: 'Đổi quà', ADJUST: 'Quán điều chỉnh', EXPIRE: 'Điểm hết hạn', REFUND: 'Hoàn tiền — trả / trừ điểm' };
-const SOURCE_LABEL = { REFERRAL: 'Giới thiệu bạn', MANUAL: 'Quán tặng', CAMPAIGN: 'Chiến dịch của quán', GAME: 'Vòng quay may mắn', BIRTHDAY: 'Quà sinh nhật' };
+const SOURCE_LABEL = {
+  REFERRAL: 'Giới thiệu bạn',
+  MANUAL: 'Quán tặng',
+  CAMPAIGN: 'Chiến dịch của quán',
+  GAME: 'Vòng quay may mắn',
+  BIRTHDAY: 'Quà sinh nhật',
+  WINBACK: 'Quà quay lại',
+};
 /** Voucher cho khách xem: giá trị, điều kiện, hạn, nguồn — KHÔNG có mã (quầy chọn mã khi thu, như F-038). */
 const voucherView = (v) => ({
   percent: v.percent,
@@ -182,6 +204,7 @@ export async function memberCard(member) {
     rewards: base.rewards.map((r) => ({ ...r, missing: Math.max(0, r.pointsCost - member.points) })),
     vouchers: vouchers.map(voucherView),
     birthday: base.birthday, // F-067: lời chúc + quà (không mã)
+    winback: base.winback, // F-069: lời chào + quà quay lại (không mã)
     askBirthDate: await birthdayService.askBirthDate(member), // F-067 D-99: mời khách thêm ngày sinh
   };
 }

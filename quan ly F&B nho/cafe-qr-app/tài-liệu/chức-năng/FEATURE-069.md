@@ -36,7 +36,7 @@
 - AC-069-03: Thu tiền có hội viên vắng → quà tự áp (đúng %, có trần), hóa đơn "Quà quay lại", lần sau `winback: null`; `skipWinback` → không áp, quà giữ, lần ghé sau (không còn vắng) vẫn tự áp; hội viên đang sinh nhật → quà sinh nhật được áp, quà quay lại giữ.
 - AC-069-04: Điện thoại khách / Thẻ thành viên thấy lời chào + quà, không có mã.
 - AC-069-05: Cài đặt hợp lệ lưu được, sai → 400, nhân viên → 403; `stats` (đã tặng, đã dùng, ghé tiếp trong 30 ngày), `recent`; bộ lọc "Lâu chưa quay lại" theo `afterDays`.
-- AC-069-06: Trên trình duyệt: quản lý bật ở tab Mừng khách quay lại; quầy gắn hội viên vắng 52 ngày → dải "Khách quay lại sau 52 ngày", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong hóa đơn có "Quà quay lại".
+- AC-069-06: Trên trình duyệt: quản lý bật ở tab Mừng khách quay lại; quầy gắn hội viên vắng 52 ngày → dải "Khách quay lại sau 52 ngày", bảng tính tiền có dòng "Quà quay lại", "Không dùng quà lần này" bỏ trừ; thu xong tab quản lý ghi "Đã dùng quà".
 
 ## Bằng chứng
 

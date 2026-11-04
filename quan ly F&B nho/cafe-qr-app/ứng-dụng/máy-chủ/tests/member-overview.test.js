@@ -28,7 +28,7 @@ before(async () => {
     DECLARE @old DATETIME2(0) = DATEADD(DAY, -60, SYSUTCDATETIME());
     INSERT dbo.Members (Phone, FullName, TierCode, TotalSpent, VisitCount, Points, ConsentAt, CreatedAt, LastVisitAt, BirthDate) VALUES
       ('+84901000001', N'Khách Gần Hạng', 'MEMBER', 850000, 9, 0, @old, @old, SYSUTCDATETIME(), NULL),
-      ('+84901000002', N'Khách Vắng', 'MEMBER', 200000, 3, 0, @old, @old, DATEADD(DAY, -40, SYSUTCDATETIME()), NULL),
+      ('+84901000002', N'Khách Vắng', 'MEMBER', 200000, 3, 0, @old, @old, DATEADD(DAY, -50, SYSUTCDATETIME()), NULL), -- F-069: vắng ≥ 45 ngày (winback.after_days)
       ('+84901000003', N'Khách VIP', 'VIP', 3500000, 40, 500, @old, @old, DATEADD(DAY, -1, SYSUTCDATETIME()), '${birth}'),
       ('+84901000004', N'Khách Mới', 'MEMBER', 0, 0, 0, SYSUTCDATETIME(), SYSUTCDATETIME(), NULL, NULL);
     -- sổ điểm phải khớp số dư (bất biến POINTS_LEDGER_MISMATCH)

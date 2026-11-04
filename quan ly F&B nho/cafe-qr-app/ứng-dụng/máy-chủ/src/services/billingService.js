@@ -74,11 +74,13 @@ export async function computeTotals({ orders, memberId = null, manual = null, ro
     reward: loyalty?.reward ?? null,
     manual,
     skipBirthday: Boolean(loyalty?.skipBirthday), // F-067 D-97: quầy chọn "Không dùng quà lần này"
+    skipWinback: Boolean(loyalty?.skipWinback), // F-069 D-109
   });
   const totals = {
     ...settleTotals({ orders, member, manual, settings, voucher: prep.voucher, reward: prep.reward }),
     stampsEarned: prep.stamps,
     birthdayApplied: prep.birthdayApplied,
+    winbackApplied: prep.winbackApplied,
   };
   prep.check(totals);
   const limits = discountLimits(role, settings);
@@ -88,7 +90,12 @@ export async function computeTotals({ orders, memberId = null, manual = null, ro
 }
 
 /** Body thu tiền → đầu vào loyalty của computeTotals. */
-export const loyaltyInput = (body) => ({ voucherCode: body.voucherCode || null, reward: body.reward ?? null, skipBirthday: body.skipBirthday === true });
+export const loyaltyInput = (body) => ({
+  voucherCode: body.voucherCode || null,
+  reward: body.reward ?? null,
+  skipBirthday: body.skipBirthday === true,
+  skipWinback: body.skipWinback === true,
+});
 
 /**
  * D-14 / D-24: giảm tay vượt ngưỡng của người thao tác → cần người có quyền cao hơn xác thực lại (quản lý; hoặc trưởng ca nếu

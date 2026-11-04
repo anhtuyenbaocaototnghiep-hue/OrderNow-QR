@@ -13,10 +13,11 @@ const UPCOMING_DAYS = 14;
 const newCode = () => `SN${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 const dayMonth = (date) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 const kindOf = (g) => (g.menuItemId ? 'FREE_ITEM' : g.percent ? 'PERCENT' : 'AMOUNT');
-const giftStatus = (g) => (g.usedAt ? 'USED' : new Date(g.expiresAt) <= new Date() ? 'EXPIRED' : 'READY');
+/** Trạng thái quà (voucher): USED · EXPIRED · READY — dùng chung F-069. */
+export const giftStatus = (g) => (g.usedAt ? 'USED' : new Date(g.expiresAt) <= new Date() ? 'EXPIRED' : 'READY');
 
-/** Quà cho quầy (withCode) / khách (không mã — khách báo nhân viên, như voucher F-038). */
-const giftView = (g, withCode) => ({
+/** Quà cho quầy (withCode) / khách (không mã — khách báo nhân viên, như voucher F-038). Dùng chung F-069. */
+export const giftView = (g, withCode) => ({
   ...(withCode ? { code: g.code } : {}),
   kind: kindOf(g),
   label: giftLabel({ kind: kindOf(g), value: g.percent ?? g.amount, maxDiscount: g.maxDiscount, menuItemName: g.menuItemName }),
@@ -25,15 +26,16 @@ const giftView = (g, withCode) => ({
   usedAt: g.usedAt,
 });
 
-/** Giá trị quà theo cài đặt hiện tại → trường voucher; null khi không phát được (món tặng đã ẩn / giá 0). */
-async function giftFields(s) {
-  if (s.birthdayKind === 'FREE_ITEM') {
-    const item = s.birthdayMenuItemId ? await birthdayRepo.menuItem(s.birthdayMenuItemId) : null;
+/** Giá trị quà theo cài đặt → trường voucher; null khi không phát được (món tặng đã ẩn / giá 0). Dùng chung F-069. */
+export async function voucherFields({ kind, value, maxDiscount, menuItemId }) {
+  if (kind === 'FREE_ITEM') {
+    const item = menuItemId ? await birthdayRepo.menuItem(menuItemId) : null;
     return item && item.isActive && item.price > 0 ? { amount: item.price, menuItemId: item.menuItemId } : null;
   }
-  if (s.birthdayKind === 'AMOUNT') return { amount: s.birthdayValue };
-  return { percent: s.birthdayValue, maxDiscount: s.birthdayMaxDiscount || null };
+  if (kind === 'AMOUNT') return { amount: value };
+  return { percent: value, maxDiscount: maxDiscount || null };
 }
+const giftFields = (s) => voucherFields({ kind: s.birthdayKind, value: s.birthdayValue, maxDiscount: s.birthdayMaxDiscount, menuItemId: s.birthdayMenuItemId });
 
 /**
  * Trạng thái sinh nhật hôm nay của hội viên; phát quà nếu đủ điều kiện (D-96, D-99). null khi không có ngày sinh / ngoài tuần sinh nhật.

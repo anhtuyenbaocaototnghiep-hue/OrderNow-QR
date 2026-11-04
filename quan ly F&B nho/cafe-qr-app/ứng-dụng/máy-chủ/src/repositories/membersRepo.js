@@ -79,7 +79,7 @@ export async function create({ phone, fullName, birthDate = null, referrerId = n
 /**
  * Danh sách quản lý: q = SĐT đầy đủ (đã chuẩn hóa) hoặc một phần tên.
  * view (TASK-082): all (mới đăng ký trước) · new (đăng ký từ đầu tháng) · top (chi nhiều) · points (nhiều điểm) · near (sắp lên hạng: đã chi ≥ 80% mức hạng kế)
- *   · lapsed (lần cuối ghé / đăng ký trước 30 ngày) · birthday (sinh nhật trong tháng, giờ quán)
+ *   · lapsed (lần cuối ghé / đăng ký trước winback.after_days ngày — F-069) · birthday (sinh nhật trong tháng, giờ quán)
  *   · nobirth (F-068: chưa có ngày sinh, ghé gần đây trước — người sắp quay lại được hỏi trước). Mỗi dòng kèm hạng kế tiếp (null = hạng cao nhất).
  */
 const VIEW_SQL = {
@@ -133,12 +133,13 @@ export async function list({ phone = null, name = null, page = 1, pageSize = 30,
  * Tổng quan trang Hội viên (TASK-082). Mốc thời gian (UTC) do service tính theo giờ quán.
  * recent: các lần cộng / trừ điểm gần nhất (tích tự động khi thu tiền, đổi quà, điều chỉnh, hoàn tiền) — chỉ hội viên chưa ẩn danh.
  */
-export async function overview({ todayStart, monthStart, d7, d30, month }) {
+export async function overview({ todayStart, monthStart, d7, d30, month, lapsedBefore }) {
   const p = {
     today: [sql.DateTime2(0), todayStart],
     monthStart: [sql.DateTime2(0), monthStart],
     d7: [sql.DateTime2(0), d7],
     d30: [sql.DateTime2(0), d30],
+    lapsedBefore: [sql.DateTime2(0), lapsedBefore],
     month: [sql.Int, month],
   };
   const r = await query(
@@ -146,7 +147,7 @@ export async function overview({ todayStart, monthStart, d7, d30, month }) {
        (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL) AS Total,
        (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND CreatedAt >= @monthStart) AS NewThisMonth,
        (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND LastVisitAt >= @d30) AS Active30,
-       (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND ISNULL(LastVisitAt, CreatedAt) < @d30) AS Lapsed,
+       (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND ISNULL(LastVisitAt, CreatedAt) < @lapsedBefore) AS Lapsed,
        (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND MONTH(BirthDate) = @month) AS Birthdays,
        (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND IsActive = 1 AND BirthDate IS NULL) AS NoBirthDate,
        (SELECT COUNT(*) FROM dbo.Members m JOIN dbo.MemberTiers t ON t.TierCode = m.TierCode ${NEXT_TIER}

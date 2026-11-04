@@ -1,6 +1,7 @@
 // Khung "Hội viên · giảm giá" dùng chung cho thu tiền bàn (S-14) và bán mang đi (S-13) — ADR-005 F-014, F-022.
 // ADR-006: điểm / tem + đổi thưởng (F-039), voucher (F-038), SĐT người giới thiệu khi đăng ký nhanh (F-038).
 // ADR-025 (F-067): dải "Sinh nhật khách" — máy chủ tự áp quà sinh nhật; nhân viên chọn "Không dùng quà lần này" (skipBirthday).
+// ADR-027 (F-069): dải "Khách quay lại sau N ngày" + quà quay lại tự áp (sau quà sinh nhật); "Không dùng quà lần này" → skipWinback.
 // ADR-026 (F-068): ô ngày sinh khi đăng ký nhanh; hội viên chưa có ngày sinh → khung "Chưa có ngày sinh" + câu hỏi mẫu, Lưu / Khách không muốn cho.
 // Không tự tính tiền: trang gọi API xem trước (server dùng bộ pricing) mỗi khi lựa chọn đổi.
 import { staffApi } from './api.js';
@@ -22,9 +23,12 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
     loyalty: null,
     skipBirthday: false, // F-067
     birthdayApplied: null, // F-067: số xem trước gần nhất có trừ quà sinh nhật không
+    skipWinback: false, // F-069
+    winbackApplied: null,
   };
   const loyaltyBox = el('div', { class: 'loyalty-slot' });
   const birthdaySlot = el('div', { class: 'bday-slot' });
+  const winbackSlot = el('div', { class: 'wb-slot' }); // F-069
   const askSlot = el('div', { class: 'bday-ask-slot' }); // F-068
   const earnNote = el('div', { class: 'small muted earn-note' });
   const voucherInput = el('input', { class: 'input', maxlength: 20, placeholder: 'Mã voucher', 'aria-label': 'Mã voucher', style: { maxWidth: '10rem' } });
@@ -168,6 +172,8 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
     st.loyalty = null;
     st.skipBirthday = false;
     st.birthdayApplied = null;
+    st.skipWinback = false;
+    st.winbackApplied = null;
     renderLoyalty();
     if (!st.member) return;
     try {
@@ -198,6 +204,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
     voucherInput.value = st.voucherCode ?? '';
     clear(voucherMsg, st.voucherCode ? `Đang áp ${st.voucherCode}` : '');
     renderBirthday();
+    renderWinback();
     onChange();
   }
 
@@ -239,6 +246,54 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
         { class: 'bday-strip', role: 'status' },
         icon('gift'),
         el('div', {}, el('strong', {}, `Sinh nhật khách — ${b.dateLabel} (${when})`), el('div', { class: 'small' }, line)),
+      ),
+    );
+  }
+
+  /** F-069 (D-110): dải "Khách quay lại sau N ngày" / quà quay lại đang giữ — máy chủ quyết định có áp hay không (theo số xem trước). */
+  function renderWinback() {
+    const w = st.member ? st.loyalty?.winback : null;
+    if (!w) return clear(winbackSlot);
+    const toggle = (skip, label) =>
+      el(
+        'button',
+        {
+          class: 'btn btn-sm',
+          type: 'button',
+          onclick: () => {
+            st.skipWinback = skip;
+            renderWinback();
+            onChange();
+          },
+        },
+        label,
+      );
+    const g = w.gift;
+    let line;
+    if (w.status === 'READY') {
+      if (st.voucherCode && st.voucherCode !== g.code) line = `Quà ${g.label} giữ tới ${dateOnly(g.expiresAt)} — lượt này đang dùng voucher khác.`;
+      else if (st.skipWinback) line = [`Không dùng quà lần này (${g.label}). `, toggle(false, 'Dùng quà')];
+      else if (st.birthdayApplied) line = `Quà ${g.label} giữ tới ${dateOnly(g.expiresAt)} — lượt này đã dùng quà sinh nhật.`;
+      else if (st.winbackApplied === false || (st.winbackApplied === null && g.kind === 'FREE_ITEM'))
+        line = `Quà: ${g.label} — thêm món này vào bill là tự trừ.`;
+      else line = [`Đã tự áp quà: ${g.label}. `, toggle(true, 'Không dùng quà lần này')];
+    } else if (w.status === 'USED') line = 'Khách đã dùng quà quay lại.';
+    else if (w.status === 'EXPIRED') line = 'Quà quay lại đã hết hạn.';
+    else if (w.status === 'COOLDOWN') line = `Đã tặng quà quay lại ngày ${dateOnly(w.lastGiftAt)} — chưa tới lượt tặng tiếp.`;
+    else line = 'Nhớ chào mừng khách quay lại nhé.';
+    clear(
+      winbackSlot,
+      el(
+        'div',
+        { class: 'bday-strip wb-strip', role: 'status' },
+        icon('heart'),
+        el(
+          'div',
+          {},
+          el('strong', {}, w.away ? `Khách quay lại sau ${w.days} ngày` : `Quà quay lại còn giữ đến ${dateOnly(g.expiresAt)}`),
+          w.away ? el('div', { class: 'small muted' }, `lần cuối ghé ${dateOnly(w.lastVisitAt)} · đã ghé ${w.visitCount} lần`) : null,
+          el('div', { class: 'small' }, line),
+        ),
       ),
     );
   }
@@ -292,6 +347,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
 
   function renderLoyalty() {
     renderBirthday();
+    renderWinback();
     renderAskBirth();
     const l = st.loyalty;
     if (!st.member || !l) return clear(loyaltyBox);
@@ -338,7 +394,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
                   onclick: () => applyVoucher(st.voucherCode === v.code ? null : v.code),
                 },
                 icon('ticket'),
-                `${v.code} ${voucherValue(v)}${v.source === 'BIRTHDAY' ? ' · quà sinh nhật' : ''}`,
+                `${v.code} ${voucherValue(v)}${v.source === 'BIRTHDAY' ? ' · quà sinh nhật' : v.source === 'WINBACK' ? ' · quà quay lại' : ''}`,
               ),
             ),
           )
@@ -398,6 +454,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
       memberBox,
       msg,
       birthdaySlot,
+      winbackSlot,
       askSlot,
       loyaltyBox,
       el('label', {}, 'Voucher'),
@@ -428,9 +485,12 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
     showEarn(totals) {
       // F-067: số xem trước cho biết quà sinh nhật có được trừ không (quà tặng món chỉ trừ khi bill có món)
       const applied = totals ? Boolean(totals.birthdayApplied) : null;
-      if (applied !== st.birthdayApplied) {
+      const wbApplied = totals ? Boolean(totals.winbackApplied) : null; // F-069
+      if (applied !== st.birthdayApplied || wbApplied !== st.winbackApplied) {
         st.birthdayApplied = applied;
+        st.winbackApplied = wbApplied;
         renderBirthday();
+        renderWinback();
       }
       const stamps = (totals?.stampsEarned ?? []).reduce((s, x) => s + x.stamps, 0);
       earnNote.textContent = st.member && totals ? `Lượt này tích +${totals.pointsEarned ?? 0} điểm${stamps ? `, +${stamps} tem` : ''}` : '';
@@ -447,6 +507,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
         ...(st.voucherCode ? { voucherCode: st.voucherCode } : {}),
         ...(st.reward ? { reward: st.reward } : {}),
         ...(st.skipBirthday ? { skipBirthday: true } : {}),
+        ...(st.skipWinback ? { skipWinback: true } : {}),
       };
       return { ...(st.memberId !== undefined ? { memberId: st.memberId } : {}), ...(st.reward ? {} : manual), ...approval, ...loyalty };
     },
@@ -465,6 +526,8 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
       st.loyalty = null;
       st.skipBirthday = false;
       st.birthdayApplied = null;
+      st.skipWinback = false;
+      st.winbackApplied = null;
       voucherInput.value = '';
       clear(voucherMsg);
       earnNote.textContent = '';

@@ -1,6 +1,7 @@
 // Ô "Nhập SĐT để nhận ưu đãi" phía khách (FEATURE-014, ADR-005 D-6, D-16): tra cứu → xác nhận (tên che) hoặc đăng ký (họ tên + đồng ý).
 // Chiết khấu tính lúc thu tiền; ở đây chỉ gắn hội viên vào phiên.
 // ADR-025 (F-067): lời chúc + quà sinh nhật (không có mã) trong ô hội viên và Thẻ thành viên; khách thêm ngày sinh một lần.
+// ADR-027 (F-069): lời chào "Lâu rồi mới gặp lại bạn!" + quà quay lại (không mã).
 // ADR-026 (F-068): ô ngày sinh (năm không bắt buộc) khi đăng ký và trong Thẻ thành viên.
 import { api } from './api.js';
 import { birthDateInput, clear, dateOnly, el, errorMessage, modal, money, setBusy, toast, voucherValue } from './ui.js';
@@ -38,14 +39,31 @@ function birthdayNote(b) {
   );
 }
 
+/** F-069: lời chào khách quay lại + quà (đang vắng) hoặc quà đang giữ từ lần trước. null khi không có gì để nói. */
+function winbackNote(w) {
+  if (!w) return null;
+  const gift =
+    w.status === 'READY'
+      ? `${w.away ? 'Quán tặng bạn' : 'Bạn còn quà quay lại'}: ${w.gift.label} — tự trừ khi thanh toán, dùng đến hết ${dateOnly(w.gift.expiresAt)}.`
+      : null;
+  if (!w.away && !gift) return null;
+  return el(
+    'div',
+    { class: 'bday-note wb-note', role: 'status' },
+    icon('heart'),
+    el('div', {}, w.away ? el('strong', {}, 'Lâu rồi mới gặp lại bạn!') : null, gift ? el('div', { class: 'small' }, gift) : null),
+  );
+}
+
 /** F-039 / F-038: điểm, thẻ tem ("còn N ly nữa được tặng"), voucher (không hiện mã — báo nhân viên khi thanh toán). */
 function loyaltyLines(l) {
   if (!l) return null;
-  const others = l.vouchers.filter((v) => v.source !== 'BIRTHDAY'); // quà sinh nhật tự trừ — đã nói trong lời chúc
+  const others = l.vouchers.filter((v) => !['BIRTHDAY', 'WINBACK'].includes(v.source)); // quà sinh nhật / quay lại tự trừ — đã nói trong lời chúc
   return el(
     'div',
     { class: 'small loyalty-lines' },
     birthdayNote(l.birthday),
+    winbackNote(l.winback),
     el('div', {}, icon('award'), `${l.points} điểm`),
     l.stampCards.map((c) => el('div', {}, icon('stamp'), c.text)),
     others.length
@@ -104,6 +122,7 @@ function cardView(c, { onBirthDate } = {}) {
     ),
     el('p', { class: 'small' }, icon('star'), perk),
     birthdayNote(c.birthday),
+    winbackNote(c.winback),
     c.askBirthDate && onBirthDate ? birthDateForm(onBirthDate) : null,
     section(
       [icon('ticket'), `Voucher của bạn (${c.vouchers.length})`],

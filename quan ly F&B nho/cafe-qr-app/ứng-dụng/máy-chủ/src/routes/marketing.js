@@ -6,6 +6,7 @@ import { paramId, parse, parseRange, parseUtcRange, zBirthDate, zDate, zId, zTex
 import * as marketingService from '../services/marketingService.js';
 import * as memberService from '../services/memberService.js';
 import * as birthdayService from '../services/birthdayService.js';
+import * as winbackService from '../services/winbackService.js';
 import * as luckySpinService from '../services/luckySpinService.js';
 import * as loyaltyService from '../services/loyaltyService.js';
 import * as campaignService from '../services/campaignService.js';
@@ -54,6 +55,25 @@ marketingRouter.put('/birthday', async (req, res) => {
     req.body,
   );
   res.json(await birthdayService.adminSave(body));
+});
+// F-069 mừng khách quay lại (ADR-027): cài đặt + số đang vắng + thống kê 90 ngày + quà gần đây
+marketingRouter.get('/winback', async (_req, res) => res.json(await winbackService.adminGet()));
+marketingRouter.put('/winback', async (req, res) => {
+  const days = () => z.coerce.number().int().min(0).max(10_000);
+  const body = parse(
+    z.object({
+      enabled: z.boolean(),
+      kind: z.enum(['PERCENT', 'AMOUNT', 'FREE_ITEM']),
+      value: z.coerce.number().int().min(0).max(10_000_000).default(0),
+      maxDiscount: z.coerce.number().int().min(0).max(10_000_000).optional().nullable(),
+      menuItemId: zId().optional().nullable(),
+      afterDays: days(),
+      holdDays: days(),
+      cooldownDays: days(),
+    }),
+    req.body,
+  );
+  res.json(await winbackService.adminSave(body));
 });
 
 marketingRouter.get('/lucky-spin', async (_req, res) => res.json(await luckySpinService.adminGet()));

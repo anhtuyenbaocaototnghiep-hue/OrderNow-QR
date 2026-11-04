@@ -19,6 +19,7 @@ const TABS = [
   ['campaigns', 'Phân khúc & chiến dịch'],
   ['spin', 'Vòng quay may mắn'],
   ['birthday', 'Quà sinh nhật'],
+  ['winback', 'Mừng khách quay lại'], // F-069
 ];
 const tabs = el(
   'div',
@@ -55,6 +56,7 @@ async function load() {
     else if (state.tab === 'campaigns') await renderCampaigns();
     else if (state.tab === 'spin') await renderSpin();
     else if (state.tab === 'birthday') await renderBirthday();
+    else if (state.tab === 'winback') await renderWinback();
     else await renderRewards();
   } catch (err) {
     clear(body, el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -308,7 +310,14 @@ function editProgram(p) {
 }
 
 // ---------- Voucher (F-038) ----------
-const SOURCE = { REFERRAL: 'Giới thiệu bạn', CAMPAIGN: 'Chiến dịch', MANUAL: 'Quản lý tặng', GAME: 'Vòng quay may mắn', BIRTHDAY: 'Quà sinh nhật' };
+const SOURCE = {
+  REFERRAL: 'Giới thiệu bạn',
+  CAMPAIGN: 'Chiến dịch',
+  MANUAL: 'Quản lý tặng',
+  GAME: 'Vòng quay may mắn',
+  BIRTHDAY: 'Quà sinh nhật',
+  WINBACK: 'Quà quay lại',
+};
 async function renderVouchers() {
   const from = addDays(todayVn(), -29);
   const list = await staffApi(`/api/admin/vouchers?from=${from}&to=${todayVn()}`);
@@ -791,6 +800,130 @@ function birthCoverage(c) {
     missing > 0
       ? el('a', { class: 'btn', href: '/admin/members?view=nobirth' }, icon('users'), `Xem ai chưa có ngày sinh (${missing})`)
       : el('p', { class: 'small save' }, icon('check'), 'Mọi hội viên đang hoạt động đã có ngày sinh.'),
+  );
+}
+
+// ---------- Mừng khách quay lại (F-069, ADR-027) ----------
+const WB_STATUS = { READY: ['Chưa dùng', 'preparing'], USED: ['Đã dùng quà', 'ok'], EXPIRED: ['Hết hạn', ''] };
+
+async function renderWinback() {
+  const data = await staffApi('/api/admin/winback');
+  const st = data.stats;
+  const enabled = el('input', { type: 'checkbox', checked: data.enabled, 'aria-label': 'Bật mừng khách quay lại' });
+  const kind = el(
+    'select',
+    { class: 'input', name: 'kind', id: 'wb-kind' },
+    BDAY_KIND.map(([k, l]) => el('option', { value: k, selected: k === data.kind }, l)),
+  );
+  const num = (id, v, attrs = {}) => el('input', { class: 'input', type: 'number', min: 0, id, value: v ?? '', ...attrs });
+  const value = num('wb-value', data.kind === 'FREE_ITEM' ? '' : data.value);
+  const maxDiscount = num('wb-max', data.maxDiscount, { step: 1000, placeholder: 'không giới hạn' });
+  const item = menuSelect(data.menuItemId, { name: 'menuItemId', id: 'wb-item' });
+  const afterDays = num('wb-after', data.afterDays, { min: 14, max: 365 });
+  const holdDays = num('wb-hold', data.holdDays, { min: 1, max: 60 });
+  const cooldownDays = num('wb-cooldown', data.cooldownDays, { min: 14, max: 730 });
+  const fields = el('div', { class: 'spin-fields' });
+  const preview = el('p', { class: 'small bday-preview wb-preview', 'aria-live': 'polite' });
+
+  function draw() {
+    const f = (label, input) => el('div', { class: 'field' }, el('label', { for: input.id }, label), input);
+    const k = kind.value;
+    clear(
+      fields,
+      f('Loại quà', kind),
+      k === 'FREE_ITEM' ? f('Món được tặng', item) : f(k === 'PERCENT' ? 'Giảm (%)' : 'Giảm (đ)', value),
+      k === 'PERCENT' ? f('Giảm tối đa (đ)', maxDiscount) : null,
+      f('Vắng từ (ngày)', afterDays),
+      f('Giữ quà (ngày)', holdDays),
+      f('Giữa hai quà (ngày)', cooldownDays),
+    );
+    const gift =
+      k === 'FREE_ITEM'
+        ? `tặng 1 ${item.selectedOptions[0]?.value ? item.selectedOptions[0].textContent : '(chọn món)'}`
+        : k === 'AMOUNT'
+          ? `giảm ${money(Number(value.value) || 0)}`
+          : `giảm ${Number(value.value) || 0}%${Number(maxDiscount.value) > 0 ? ` (tối đa ${money(Number(maxDiscount.value))})` : ''}`;
+    preview.textContent = `Hội viên đã ${Number(afterDays.value) || 0} ngày trở lên chưa ghé, quay lại được ${gift} — tự trừ khi thanh toán; không dùng ngay thì giữ ${Number(holdDays.value) || 0} ngày; mỗi người tối đa 1 quà trong ${Number(cooldownDays.value) || 0} ngày.`;
+  }
+  kind.addEventListener('change', draw);
+  [value, maxDiscount, afterDays, holdDays, cooldownDays].forEach((i) => i.addEventListener('input', draw));
+  item.addEventListener('change', draw);
+  draw();
+
+  async function save(button) {
+    button.disabled = true;
+    try {
+      await staffApi('/api/admin/winback', {
+        method: 'PUT',
+        body: {
+          enabled: enabled.checked,
+          kind: kind.value,
+          value: kind.value === 'FREE_ITEM' ? 0 : Number(value.value) || 0,
+          maxDiscount: kind.value === 'PERCENT' && Number(maxDiscount.value) > 0 ? Number(maxDiscount.value) : null,
+          menuItemId: kind.value === 'FREE_ITEM' && item.value ? Number(item.value) : null,
+          afterDays: Number(afterDays.value) || 0,
+          holdDays: Number(holdDays.value) || 0,
+          cooldownDays: Number(cooldownDays.value) || 0,
+        },
+      });
+      toast(enabled.checked ? 'Đã lưu — khách vắng lâu quay lại sẽ được tặng quà' : 'Đã lưu (mừng khách quay lại đang tắt)', 'success');
+      load();
+    } catch (err) {
+      button.disabled = false;
+      toast(errorMessage(err), 'error', 6000);
+    }
+  }
+
+  clear(
+    body,
+    el(
+      'div',
+      { class: 'kpis mem-kpis' },
+      kpi('Khách quay lại (90 ngày)', String(st.issued), `${st.used} đã dùng quà`),
+      kpi('Ghé tiếp sau khi dùng quà', `${st.returnedAgain} / ${st.used}`, 'thanh toán thêm trong 30 ngày sau'),
+      kpi('Tiền quà đã trừ', money(st.giftValue), '90 ngày'),
+      kpi('Khách trả ở các lượt dùng quà', money(st.usedRevenue), '90 ngày'),
+    ),
+    el(
+      'div',
+      { class: 'card spin-admin' },
+      el('h2', {}, 'Mừng khách quay lại'),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Hội viên lâu chưa ghé quay lại: quầy thấy dải "Khách quay lại sau N ngày" để chào khách cũ, điện thoại khách hiện lời chào, quà nhỏ tự trừ khi thanh toán. Đang sinh nhật thì quà sinh nhật được trừ trước, quà quay lại giữ cho lần sau.',
+      ),
+      el('label', { class: 'row spin-switch' }, el('span', { class: 'switch' }, enabled, el('span')), 'Bật mừng khách quay lại'),
+      fields,
+      preview,
+      el(
+        'div',
+        { class: 'row wrap' },
+        el('button', { class: 'btn btn-primary', type: 'button', onclick: (e) => save(e.currentTarget) }, 'Lưu mừng khách quay lại'),
+        el('a', { class: 'btn', href: '/admin/members?view=lapsed' }, icon('users'), `Xem khách đang vắng (${data.awayNow})`),
+      ),
+    ),
+    el(
+      'div',
+      { class: 'card spin-admin' },
+      el('h2', {}, 'Quà quay lại gần đây'),
+      data.recent.length === 0
+        ? el('p', { class: 'muted small' }, 'Chưa tặng quà quay lại nào.')
+        : table(
+            ['Hội viên', 'Vắng', 'Ngày tặng', 'Quà'],
+            data.recent.map((r) => {
+              const [label, tone] = WB_STATUS[r.status] ?? [r.status, ''];
+              return el(
+                'tr',
+                {},
+                el('td', {}, el('strong', {}, r.fullName)),
+                el('td', { class: 'nowrap' }, `${r.absentDays} ngày`),
+                el('td', { class: 'nowrap' }, dateTime(r.createdAt)),
+                el('td', {}, el('span', { class: `badge ${tone}` }, label), el('div', { class: 'small muted' }, r.gift.label)),
+              );
+            }),
+          ),
+    ),
   );
 }
 

@@ -95,12 +95,19 @@ export function giftLabel({ kind, value, maxDiscount, menuItemName }) {
   return `Giảm ${value}%${maxDiscount ? ` (tối đa ${vnd(maxDiscount)})` : ''}`;
 }
 
-/** Kiểm cài đặt quản lý gửi lên → câu báo lỗi đầu tiên, hoặc null khi hợp lệ. */
-export function validateSettings(s) {
+/** Kiểm loại + giá trị quà (dùng chung quà sinh nhật / quà quay lại F-069) → câu báo lỗi, hoặc null khi hợp lệ. */
+export function validateGift(s) {
   if (!KINDS.includes(s.kind)) return 'Loại quà không hợp lệ';
   if (s.kind === 'PERCENT' && !(s.value >= 1 && s.value <= 50)) return 'Quà giảm % phải từ 1 đến 50%';
   if (s.kind === 'AMOUNT' && !(s.value >= 1000)) return 'Quà giảm tiền từ 1.000đ';
   if (s.kind === 'FREE_ITEM' && !s.menuItemId) return 'Chọn món được tặng';
+  return null;
+}
+
+/** Kiểm cài đặt quản lý gửi lên → câu báo lỗi đầu tiên, hoặc null khi hợp lệ. */
+export function validateSettings(s) {
+  const gift = validateGift(s);
+  if (gift) return gift;
   if (!(s.windowDays >= 0 && s.windowDays <= 15)) return 'Số ngày trước / sau sinh nhật từ 0 đến 15';
   return null;
 }

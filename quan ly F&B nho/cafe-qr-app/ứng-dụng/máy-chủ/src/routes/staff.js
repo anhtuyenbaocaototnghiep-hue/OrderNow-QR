@@ -47,6 +47,7 @@ const billingFields = {
     .optional()
     .nullable(),
   skipBirthday: z.boolean().optional(), // F-067: không tự áp quà sinh nhật lượt này
+  skipWinback: z.boolean().optional(), // F-069: không tự áp quà quay lại lượt này
 };
 
 // F-056 (ADR-019 D-71): cách trả của một lượt thu; chuyển khoản không cần tiền khách đưa (lưu bằng số phải thu)

@@ -2372,3 +2372,42 @@ test('thu thập ngày sinh: đăng ký nhanh ở quầy có ô ngày sinh (đ�
   await P.goto('/admin/tables/print');
   await expect(P.locator('.qr-card .qr-bday').first()).toContainText('thêm ngày sinh trong Thẻ thành viên');
 });
+
+test('mừng khách quay lại: quản lý bật ở tab; quầy gắn hội viên vắng 52 ngày → dải "Khách quay lại sau 52 ngày", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong tab ghi "Đã dùng quà" (F-069, AC-069-06)', async () => {
+  // Hội viên "Khách Lâu Không Ghé" (0907069001, lần cuối ghé 52 ngày trước) có sẵn trong dữ liệu E2E (kịch-bản/e2e-server.js)
+  await P.goto('/admin/loyalty');
+  await P.getByRole('tab', { name: 'Mừng khách quay lại' }).click();
+  const enabled = P.getByLabel('Bật mừng khách quay lại');
+  await expect(enabled).not.toBeChecked(); // mặc định tắt
+  await P.getByText('Bật mừng khách quay lại', { exact: true }).click();
+  await expect(enabled).toBeChecked();
+  await expect(P.locator('.wb-preview')).toContainText('45 ngày trở lên chưa ghé, quay lại được giảm 15% (tối đa 30.000đ)');
+  await P.getByRole('button', { name: 'Lưu mừng khách quay lại' }).click();
+  await expect(P.locator('.toast', { hasText: 'khách vắng lâu quay lại sẽ được tặng quà' })).toBeVisible();
+
+  await P.goto('/pos/takeaway');
+  await P.locator('.tile', { hasText: 'Cà phê đen' }).click();
+  await P.locator('.tile', { hasText: 'Cà phê đen' }).click();
+  const box = P.locator('details.billing');
+  await box.evaluate((d) => (d.open = true));
+  await P.fill('input[aria-label="SĐT hội viên"]', '0907069001');
+  await P.getByRole('button', { name: 'Tra cứu' }).click();
+  const strip = box.locator('.wb-strip');
+  await expect(strip).toContainText('Khách quay lại sau 52 ngày');
+  await expect(strip).toContainText('đã ghé 8 lần');
+  await expect(strip).toContainText('Đã tự áp quà: Giảm 15%');
+  const breakdown = P.locator('#breakdown');
+  await expect(breakdown).toContainText('Quà quay lại');
+  await strip.getByRole('button', { name: 'Không dùng quà lần này' }).click();
+  await expect(breakdown).not.toContainText('Quà quay lại');
+  await strip.getByRole('button', { name: 'Dùng quà' }).click();
+  await expect(breakdown).toContainText('Quà quay lại');
+  await P.fill('#received', '100000');
+  await P.click('#pay');
+  await expect(P.locator('.toast', { hasText: 'tiền thừa' })).toBeVisible();
+
+  await P.goto('/admin/loyalty');
+  await P.getByRole('tab', { name: 'Mừng khách quay lại' }).click();
+  await expect(P.locator('#content tbody tr', { hasText: 'Khách Lâu Không Ghé' })).toContainText('Đã dùng quà');
+  await expect(P.locator('.kpi', { hasText: 'Khách quay lại (90 ngày)' }).locator('.value')).toHaveText('1');
+});

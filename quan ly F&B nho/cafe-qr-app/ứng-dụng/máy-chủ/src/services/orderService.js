@@ -305,6 +305,8 @@ export const receiptLines = (items) =>
     promotionName: i.promotionName,
   }));
 
+const VOUCHER_LINE = { BIRTHDAY: 'Quà sinh nhật', WINBACK: 'Quà quay lại' }; // F-067, F-069: nhãn dòng voucher trên hóa đơn
+
 /** Dòng breakdown từ thanh toán đã ghi (bill chính thức). */
 export function paymentBreakdown(payment, fallbackTotal) {
   const subtotal = payment.subtotalAmount ?? fallbackTotal;
@@ -316,7 +318,7 @@ export function paymentBreakdown(payment, fallbackTotal) {
   if (payment.voucherDiscount > 0)
     lines.push({
       key: 'voucher',
-      label: `${payment.voucherSource === 'BIRTHDAY' ? 'Quà sinh nhật' : 'Voucher'} ${payment.voucherCode ?? ''}`.trim(),
+      label: `${VOUCHER_LINE[payment.voucherSource] ?? 'Voucher'} ${payment.voucherCode ?? ''}`.trim(),
       amount: -payment.voucherDiscount,
     });
   if (payment.rewardDiscount > 0) lines.push({ key: 'reward', label: 'Đổi thưởng', amount: -payment.rewardDiscount });

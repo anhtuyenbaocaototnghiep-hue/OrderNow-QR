@@ -8,6 +8,7 @@ import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import * as membersRepo from '../repositories/membersRepo.js';
 import * as sessionsRepo from '../repositories/sessionsRepo.js';
 import * as birthdayService from './birthdayService.js';
+import { awayBefore } from './winbackService.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { getSettings } from './settingsService.js';
 import { todayVn, vnDayStartUtc } from '../utils/time.js';
@@ -145,10 +146,13 @@ const adminView = (m) => ({ ...m, phone: maskPhone(m.phone) });
 
 export { MEMBER_VIEWS } from '../repositories/membersRepo.js';
 
-/** Mốc thời gian theo giờ quán cho danh sách / tổng quan (TASK-082). */
-function periodMarks(now = new Date()) {
+/** Mốc thời gian theo giờ quán cho danh sách / tổng quan (TASK-082). F-069: "lâu chưa quay lại" = vắng ≥ winback.after_days. */
+async function periodMarks(now = new Date()) {
   const today = todayVn();
+  const { winbackAfterDays } = await getSettings();
   return {
+    lapsedDays: winbackAfterDays,
+    lapsedBefore: awayBefore(winbackAfterDays, today),
     todayStart: vnDayStartUtc(today),
     monthStart: vnDayStartUtc(`${today.slice(0, 8)}01`),
     month: Number(today.slice(5, 7)),
@@ -160,7 +164,7 @@ function periodMarks(now = new Date()) {
 export async function adminList({ q = '', page = 1, view = 'all' }) {
   const query = String(q).trim();
   const phone = normalizePhone(query);
-  const t = periodMarks();
+  const t = await periodMarks();
   const res = await membersRepo.list({
     phone,
     name: phone || !query ? null : query,
@@ -168,13 +172,16 @@ export async function adminList({ q = '', page = 1, view = 'all' }) {
     view,
     monthStart: t.monthStart,
     month: t.month,
-    lapsedBefore: t.d30,
+    lapsedBefore: t.lapsedBefore,
   });
   return { ...res, items: res.items.map(adminView) };
 }
 
 /** Tổng quan hội viên + tích điểm gần đây (TASK-082) — chỉ quản lý. */
-export const adminOverview = () => membersRepo.overview(periodMarks());
+export async function adminOverview() {
+  const t = await periodMarks();
+  return { ...(await membersRepo.overview(t)), lapsedDays: t.lapsedDays };
+}
 
 export async function adminGet(id) {
   const m = await membersRepo.findById(id);

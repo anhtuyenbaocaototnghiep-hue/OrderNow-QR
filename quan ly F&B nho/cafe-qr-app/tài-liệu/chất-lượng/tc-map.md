@@ -644,4 +644,4 @@
 | AC-069-03 | TC-069-03 | Integration | ứng-dụng/máy-chủ/tests/winback.test.js | AC-069-03: thu tiền tự áp quà quay lại, hóa đơn "Quà quay lại"; skipWinback giữ quà và lần sau vẫn tự áp; đang sinh nhật → quà sinh nhật trước | đủ |
 | AC-069-04 | TC-069-04 | Integration | ứng-dụng/máy-chủ/tests/winback.test.js | AC-069-04: điện thoại khách / Thẻ thành viên thấy lời chào + quà, không có mã | đủ |
 | AC-069-05 | TC-069-05 | Integration | ứng-dụng/máy-chủ/tests/winback.test.js | AC-069-05: cài đặt hợp lệ / sai 400 / nhân viên 403; stats (đã tặng, đã dùng, ghé tiếp), recent; lọc "Lâu chưa quay lại" theo afterDays | đủ |
-| AC-069-06 | TC-069-06 | E2E | kiểm-thử/e2e/flow.spec.js | mừng khách quay lại: quản lý bật ở tab; quầy gắn hội viên vắng 52 ngày → dải "Khách quay lại sau 52 ngày", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong hóa đơn có "Quà quay lại" (F-069, AC-069-06) | đủ |
+| AC-069-06 | TC-069-06 | E2E | kiểm-thử/e2e/flow.spec.js | mừng khách quay lại: quản lý bật ở tab; quầy gắn hội viên vắng 52 ngày → dải "Khách quay lại sau 52 ngày", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong tab ghi "Đã dùng quà" (F-069, AC-069-06) | đủ |
