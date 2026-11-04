@@ -729,6 +729,7 @@ async function renderBirthday() {
       preview,
       el('button', { class: 'btn btn-primary', type: 'button', onclick: (e) => save(e.currentTarget) }, 'Lưu quà sinh nhật'),
     ),
+    birthCoverage(data.coverage),
     el(
       'div',
       { class: 'card spin-admin' },
@@ -749,6 +750,47 @@ async function renderBirthday() {
             }),
           ),
     ),
+  );
+}
+
+/** F-068 (ADR-026 D-106): đã có ngày sinh bao nhiêu hội viên, cách lấy thêm, mở danh sách "Chưa có ngày sinh". */
+function birthCoverage(c) {
+  const share = c.total ? Math.round((c.withBirthDate * 100) / c.total) : 0;
+  const missing = c.total - c.withBirthDate;
+  return el(
+    'section',
+    { class: 'card spin-admin bday-cover', 'aria-labelledby': 'bday-cover-title' },
+    el('h2', { id: 'bday-cover-title' }, 'Thu thập ngày sinh'),
+    el(
+      'div',
+      { class: 'mem-progress' },
+      el('strong', {}, `Đã có ngày sinh: ${c.withBirthDate} / ${c.total} hội viên (${share}%)`),
+      el('progress', { max: c.total || 1, value: c.withBirthDate, 'aria-label': 'Hội viên đã có ngày sinh' }),
+      el(
+        'div',
+        { class: 'small muted' },
+        c.recentTotal ? `Khách ghé 30 ngày qua: ${c.recentWithBirthDate} / ${c.recentTotal} đã có ngày sinh` : 'Chưa có hội viên nào ghé trong 30 ngày qua.',
+      ),
+    ),
+    el(
+      'ul',
+      { class: 'small bday-tips' },
+      el('li', {}, 'Lúc đăng ký: form có ô "Ngày sinh" không bắt buộc, năm để trống được (chỉ hiện khi quà sinh nhật đang bật).'),
+      el(
+        'li',
+        {},
+        'Ở quầy: gắn số khách chưa có ngày sinh là app nhắc, kèm câu hỏi mẫu; khách không muốn cho thì bấm "Khách không muốn cho" — một năm sau mới nhắc lại.',
+      ),
+      el('li', {}, [
+        'Trên bàn: ',
+        el('a', { href: '/admin/tables/print' }, 'in lại QR bàn'),
+        ' — mỗi thẻ có dòng mời hội viên tự thêm ngày sinh trong Thẻ thành viên.',
+      ]),
+      el('li', {}, 'Hội viên cũ: hỏi dần mỗi khi họ ghé — danh sách "Chưa có ngày sinh" xếp người ghé gần đây lên trước.'),
+    ),
+    missing > 0
+      ? el('a', { class: 'btn', href: '/admin/members?view=nobirth' }, icon('users'), `Xem ai chưa có ngày sinh (${missing})`)
+      : el('p', { class: 'small save' }, icon('check'), 'Mọi hội viên đang hoạt động đã có ngày sinh.'),
   );
 }
 

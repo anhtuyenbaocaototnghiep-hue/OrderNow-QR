@@ -1077,3 +1077,34 @@ body:has(.tour-layer) .toasts {
 .bday-note {
   margin: 0.3rem 0;
 }
+/* F-068: ô ngày sinh (ngày · tháng · năm không bắt buộc) + khung "Chưa có ngày sinh" ở quầy */
+.birth-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+.birth-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 0.9fr); /* "Tháng 12" không bị cắt ở khung quầy ~300px */
+  gap: 0.4rem;
+}
+.birth-field + .row {
+  margin-top: 0.5rem;
+}
+.birth-input .input {
+  padding-left: 0.55rem;
+  padding-right: 0.4rem;
+}
+.bday-ask {
+  padding: 0.55rem 0.7rem;
+  border: 1px dashed var(--c-accent);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+}
+.bday-ask .say {
+  margin: 0.2rem 0 0.45rem;
+  font-style: italic;
+}
+.bday-ask .row {
+  margin-top: 0.45rem;
+}

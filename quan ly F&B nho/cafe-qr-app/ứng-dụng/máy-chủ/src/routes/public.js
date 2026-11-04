@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { request, withDeadlockRetry } from '../db.js';
 import { optionalStaff, requireStaff } from '../middleware/auth.js';
 import { loginLimiter, memberLimiters, orderLimiter } from '../middleware/rateLimit.js';
-import { paramGuid, paramId, parse, zDate, zGuid, zId, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
+import { paramGuid, paramId, parse, zBirthDate, zGuid, zId, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
 import * as memberService from '../services/memberService.js';
 import * as menuService from '../services/menuService.js';
 import * as orderService from '../services/orderService.js';
@@ -65,6 +65,7 @@ publicRouter.post('/members', optionalStaff, ...memberLimiters, async (req, res)
       fullName: zText(100).min(2, 'Nhập họ tên'),
       consent: z.boolean().optional(),
       referrerPhone: z.string().trim().max(20).optional().nullable(),
+      birthDate: zBirthDate().optional().nullable(), // F-068: không bắt buộc, năm không bắt buộc
     }),
     req.body,
   );
@@ -81,7 +82,7 @@ publicRouter.post('/sessions/:id/member', optionalStaff, ...memberLimiters, asyn
 
 // F-067: khách thêm ngày sinh ở Thẻ thành viên (một lần) để nhận quà sinh nhật
 publicRouter.post('/sessions/:id/member/birthday', optionalStaff, ...memberLimiters, async (req, res) => {
-  const { birthDate } = parse(z.object({ birthDate: zDate() }), req.body);
+  const { birthDate } = parse(z.object({ birthDate: zBirthDate() }), req.body);
   res.json(await sessionService.selfBirthDate(paramGuid(req), birthDate, { user: req.user, clientToken: req.clientToken }));
 });
 

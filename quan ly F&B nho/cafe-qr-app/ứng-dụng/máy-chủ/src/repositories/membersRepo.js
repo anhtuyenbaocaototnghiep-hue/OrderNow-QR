@@ -1,10 +1,11 @@
 // Hội viên (FEATURE-014): tra cứu theo SĐT đã chuẩn hóa, đăng ký, quản lý, ẩn danh; hạng hội viên.
 import { inTransaction, query, sql, txQuery } from '../db.js';
+import { fromDbBirthDate, toDbBirthDate } from '../domain/birthday.js';
 
 const SELECT = `
   SELECT m.MemberId, m.Phone, m.FullName, m.TierCode, t.Name AS TierName, t.DiscountPercent, m.TotalSpent, m.VisitCount, m.Points,
          m.FirstOrderDiscountUsed, m.BirthDate, m.Note, m.ConsentAt, m.IsActive, m.AnonymizedAt, m.CreatedAt, m.LastVisitAt,
-         m.ReferredByMemberId, m.OptOut, m.BirthDateSelfAt
+         m.ReferredByMemberId, m.OptOut, m.BirthDateSelfAt, m.BirthDateDeclinedAt
   FROM dbo.Members m JOIN dbo.MemberTiers t ON t.TierCode = m.TierCode`;
 
 const map = (r) =>
@@ -19,7 +20,7 @@ const map = (r) =>
     visitCount: r.VisitCount,
     points: r.Points,
     firstOrderDiscount: !r.FirstOrderDiscountUsed,
-    birthDate: r.BirthDate ? r.BirthDate.toISOString().slice(0, 10) : null,
+    birthDate: fromDbBirthDate(r.BirthDate), // F-068: 'YYYY-MM-DD' | '--MM-DD' (không rõ năm)
     note: r.Note,
     consentAt: r.ConsentAt,
     isActive: Boolean(r.IsActive),
@@ -29,6 +30,7 @@ const map = (r) =>
     referredByMemberId: r.ReferredByMemberId ?? null, // F-038
     optOut: Boolean(r.OptOut), // F-037
     birthDateSelfAt: r.BirthDateSelfAt ?? null, // F-067: khách tự thêm ngày sinh lúc nào (null = quản lý nhập / đã xác minh)
+    birthDateDeclinedAt: r.BirthDateDeclinedAt ?? null, // F-068: nhân viên ghi "khách không muốn cho" lúc nào
   };
 
 export async function findByPhone(phone) {
@@ -45,7 +47,7 @@ export async function findById(id) {
  * Đăng ký. referrerId (F-038, D-28): người giới thiệu — khóa dòng người giới thiệu rồi đếm số người đã giới thiệu từ `referralSinceUtc`
  * trong cùng transaction → hai lượt đăng ký đồng thời không vượt `referralLimit`. Lỗi: 50080 (người giới thiệu không còn), 50174 REFERRAL_LIMIT.
  */
-export async function create({ phone, fullName, referrerId = null, referralSinceUtc = null, referralLimit = 5 }) {
+export async function create({ phone, fullName, birthDate = null, referrerId = null, referralSinceUtc = null, referralLimit = 5 }) {
   const r = await query(
     `SET XACT_ABORT ON;
      BEGIN TRAN;
@@ -56,14 +58,17 @@ export async function create({ phone, fullName, referrerId = null, referralSince
        IF (SELECT COUNT(*) FROM dbo.Members WHERE ReferredByMemberId = @ref AND CreatedAt >= @since) >= @lim
        BEGIN ROLLBACK; THROW 50174, 'REFERRAL_LIMIT', 1; END
      END
-     INSERT dbo.Members (Phone, FullName, TierCode, ConsentAt, ReferredByMemberId)
+     -- F-068 (ADR-026 D-103): ngày sinh ghi lúc đăng ký = tự khai (BirthDateSelfAt)
+     INSERT dbo.Members (Phone, FullName, TierCode, ConsentAt, ReferredByMemberId, BirthDate, BirthDateSelfAt)
      OUTPUT inserted.MemberId
-     SELECT @p, @n, (SELECT TOP 1 TierCode FROM dbo.MemberTiers ORDER BY MinSpent, SortOrder), SYSUTCDATETIME(), @ref;
+     SELECT @p, @n, (SELECT TOP 1 TierCode FROM dbo.MemberTiers ORDER BY MinSpent, SortOrder), SYSUTCDATETIME(), @ref,
+            @b, CASE WHEN @b IS NULL THEN NULL ELSE SYSUTCDATETIME() END;
      COMMIT;`,
     {
       p: [sql.VarChar(80), phone],
       n: [sql.NVarChar(100), fullName],
       ref: [sql.Int, referrerId],
+      b: [sql.Date, toDbBirthDate(birthDate)],
       since: [sql.DateTime2(0), referralSinceUtc ?? new Date(0)],
       lim: [sql.Int, referralLimit],
     },
@@ -74,7 +79,8 @@ export async function create({ phone, fullName, referrerId = null, referralSince
 /**
  * Danh sách quản lý: q = SĐT đầy đủ (đã chuẩn hóa) hoặc một phần tên.
  * view (TASK-082): all (mới đăng ký trước) · new (đăng ký từ đầu tháng) · top (chi nhiều) · points (nhiều điểm) · near (sắp lên hạng: đã chi ≥ 80% mức hạng kế)
- *   · lapsed (lần cuối ghé / đăng ký trước 30 ngày) · birthday (sinh nhật trong tháng, giờ quán). Mỗi dòng kèm hạng kế tiếp (null = hạng cao nhất).
+ *   · lapsed (lần cuối ghé / đăng ký trước 30 ngày) · birthday (sinh nhật trong tháng, giờ quán)
+ *   · nobirth (F-068: chưa có ngày sinh, ghé gần đây trước — người sắp quay lại được hỏi trước). Mỗi dòng kèm hạng kế tiếp (null = hạng cao nhất).
  */
 const VIEW_SQL = {
   all: { where: '', order: 'm.CreatedAt DESC, m.MemberId DESC' },
@@ -84,6 +90,7 @@ const VIEW_SQL = {
   near: { where: 'AND nt.MinSpent IS NOT NULL AND m.TotalSpent >= nt.MinSpent * 0.8', order: 'nt.MinSpent - m.TotalSpent, m.MemberId' },
   lapsed: { where: 'AND ISNULL(m.LastVisitAt, m.CreatedAt) < @lapsedBefore', order: 'ISNULL(m.LastVisitAt, m.CreatedAt), m.MemberId' },
   birthday: { where: 'AND MONTH(m.BirthDate) = @month', order: 'DAY(m.BirthDate), m.MemberId' },
+  nobirth: { where: 'AND m.BirthDate IS NULL AND m.IsActive = 1', order: 'ISNULL(m.LastVisitAt, m.CreatedAt) DESC, m.MemberId DESC' },
 };
 export const MEMBER_VIEWS = Object.keys(VIEW_SQL);
 const NEXT_TIER = `OUTER APPLY (SELECT TOP 1 x.Name, x.MinSpent FROM dbo.MemberTiers x WHERE x.MinSpent > t.MinSpent ORDER BY x.MinSpent) nt`;
@@ -141,6 +148,7 @@ export async function overview({ todayStart, monthStart, d7, d30, month }) {
        (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND LastVisitAt >= @d30) AS Active30,
        (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND ISNULL(LastVisitAt, CreatedAt) < @d30) AS Lapsed,
        (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND MONTH(BirthDate) = @month) AS Birthdays,
+       (SELECT COUNT(*) FROM dbo.Members WHERE AnonymizedAt IS NULL AND IsActive = 1 AND BirthDate IS NULL) AS NoBirthDate,
        (SELECT COUNT(*) FROM dbo.Members m JOIN dbo.MemberTiers t ON t.TierCode = m.TierCode ${NEXT_TIER}
          WHERE m.AnonymizedAt IS NULL AND nt.MinSpent IS NOT NULL AND m.TotalSpent >= nt.MinSpent * 0.8) AS NearTier,
        (SELECT ISNULL(SUM(Points), 0) FROM dbo.Members WHERE AnonymizedAt IS NULL) AS PointsHeld,
@@ -164,6 +172,7 @@ export async function overview({ todayStart, monthStart, d7, d30, month }) {
     active30: x.Active30,
     lapsed: x.Lapsed,
     birthdays: x.Birthdays,
+    noBirthDate: x.NoBirthDate, // F-068
     nearTier: x.NearTier,
     pointsHeld: Number(x.PointsHeld),
     earnToday: Number(x.EarnToday),
@@ -195,7 +204,7 @@ export async function update(id, { fullName, tierCode, note, birthDate, isActive
       n: [sql.NVarChar(100), fullName],
       t: [sql.VarChar(20), tierCode],
       note: [sql.NVarChar(200), note || null],
-      b: [sql.Date, birthDate || null],
+      b: [sql.Date, toDbBirthDate(birthDate || null)],
       a: [sql.Bit, isActive],
     },
   );
@@ -207,7 +216,7 @@ export async function anonymize(id, phoneHash) {
   return inTransaction(async (tx) => {
     const r = await txQuery(
       tx,
-      `UPDATE dbo.Members SET FullName = N'(đã ẩn danh)', Phone = @h, Note = NULL, BirthDate = NULL, BirthDateSelfAt = NULL, IsActive = 0, AnonymizedAt = SYSUTCDATETIME()
+      `UPDATE dbo.Members SET FullName = N'(đã ẩn danh)', Phone = @h, Note = NULL, BirthDate = NULL, BirthDateSelfAt = NULL, BirthDateDeclinedAt = NULL, IsActive = 0, AnonymizedAt = SYSUTCDATETIME()
        WHERE MemberId = @id AND AnonymizedAt IS NULL`,
       { id: [sql.Int, id], h: [sql.VarChar(80), phoneHash] },
     );

@@ -1,8 +1,9 @@
 // Ô "Nhập SĐT để nhận ưu đãi" phía khách (FEATURE-014, ADR-005 D-6, D-16): tra cứu → xác nhận (tên che) hoặc đăng ký (họ tên + đồng ý).
 // Chiết khấu tính lúc thu tiền; ở đây chỉ gắn hội viên vào phiên.
 // ADR-025 (F-067): lời chúc + quà sinh nhật (không có mã) trong ô hội viên và Thẻ thành viên; khách thêm ngày sinh một lần.
+// ADR-026 (F-068): ô ngày sinh (năm không bắt buộc) khi đăng ký và trong Thẻ thành viên.
 import { api } from './api.js';
-import { clear, dateOnly, el, errorMessage, modal, money, setBusy, toast, voucherValue } from './ui.js';
+import { birthDateInput, clear, dateOnly, el, errorMessage, modal, money, setBusy, toast, voucherValue } from './ui.js';
 import { icon } from './icons.js';
 
 const percentText = (m) =>
@@ -55,17 +56,18 @@ function loyaltyLines(l) {
 
 /** F-067 (D-99): ô "Thêm ngày sinh" — một lần; ngày sinh tự thêm tính quà khi thêm trước ≥ 30 ngày. */
 function birthDateForm(onSave) {
-  const input = el('input', { class: 'input', type: 'date', id: 'self-birth-date', max: new Date().toISOString().slice(0, 10), min: '1900-01-01' });
+  const birth = birthDateInput({ id: 'self-birth', label: 'Ngày sinh của bạn (năm không bắt buộc; chỉ lưu một lần, sai thì nhờ quán sửa)' });
   const save = el(
     'button',
     {
       class: 'btn btn-sm btn-primary nowrap',
       type: 'button',
       onclick: async () => {
-        if (!input.value) return toast('Chọn ngày sinh của bạn', 'warning');
+        const { value, error } = birth.read();
+        if (error || !value) return toast(error ?? 'Chọn ngày và tháng sinh của bạn', 'warning');
         setBusy(save, true);
         try {
-          await onSave(input.value);
+          await onSave(value);
         } catch (err) {
           setBusy(save, false);
           toast(errorMessage(err), 'error');
@@ -78,8 +80,8 @@ function birthDateForm(onSave) {
     'section',
     { class: 'card-section' },
     el('h3', {}, icon('gift'), 'Nhận quà sinh nhật'),
-    el('label', { class: 'small', for: 'self-birth-date' }, 'Ngày sinh của bạn (chỉ lưu một lần, sai thì nhờ quán sửa)'),
-    el('div', { class: 'row' }, input, save),
+    birth.node,
+    el('div', { class: 'row' }, save),
     el('p', { class: 'small muted' }, 'Quán tặng quà trong tuần sinh nhật — ngày sinh cần lưu trước sinh nhật ít nhất 30 ngày.'),
   );
 }
@@ -277,7 +279,7 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
       try {
         const r = await api('/api/members/lookup', { method: 'POST', body: { phone: phone.value } });
         if (r.found) showFound(r.member);
-        else showRegister();
+        else showRegister(r.askBirthDate);
       } catch (err) {
         clear(msg, el('div', { class: 'field-error' }, errorMessage(err)));
       } finally {
@@ -308,10 +310,12 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
       );
     }
 
-    function showRegister() {
+    /** askBirth (F-068 D-101): quà sinh nhật đang bật → ô ngày sinh không bắt buộc. */
+    function showRegister(askBirth) {
       lookupBtn.hidden = true;
       phone.disabled = true;
       const name = el('input', { class: 'input', autocomplete: 'name', maxlength: 100, placeholder: 'Ví dụ: Nguyễn Văn An', 'aria-label': 'Họ tên' });
+      const birth = askBirth ? birthDateInput({ id: 'reg-birth', label: 'Ngày sinh (để quán tặng quà — không bắt buộc, năm để trống được)' }) : null;
       const consent = el('input', { type: 'checkbox' });
       const referrer = el('input', {
         class: 'input',
@@ -325,11 +329,13 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
       ok.addEventListener('click', async () => {
         clear(msg);
         if (!consent.checked) return clear(msg, el('div', { class: 'field-error' }, 'Vui lòng tick đồng ý để đăng ký'));
+        const bd = birth?.read() ?? { value: '' };
+        if (bd.error) return clear(msg, el('div', { class: 'field-error' }, bd.error));
         setBusy(ok, true);
         try {
           const member = await api('/api/members', {
             method: 'POST',
-            body: { phone: phone.value, fullName: name.value, consent: true, referrerPhone: referrer.value.trim() || null },
+            body: { phone: phone.value, fullName: name.value, consent: true, referrerPhone: referrer.value.trim() || null, birthDate: bd.value || null },
           });
           await attach(phone.value);
           toast(member.firstOrderPercent ? `Đăng ký thành công! Đơn đầu tiên giảm ${member.firstOrderPercent}%` : 'Đăng ký thành công!', 'success', 5000);
@@ -344,6 +350,7 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
         el('div', { class: 'alert info' }, 'Số này chưa là hội viên. Đăng ký miễn phí:'),
         el('label', {}, 'Họ tên'),
         name,
+        birth?.node,
         el('label', {}, 'SĐT người giới thiệu (không bắt buộc)'),
         referrer,
         el('p', { class: 'small muted' }, 'Thanh toán lần đầu từ 30.000đ: bạn và người giới thiệu mỗi người nhận voucher giảm 10%.'),
@@ -351,7 +358,9 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
           'label',
           { class: 'check' },
           consent,
-          'Tôi đồng ý cho quán lưu số điện thoại và tên để tích lũy ưu đãi (không dùng cho mục đích khác; có thể yêu cầu xóa bất cứ lúc nào).',
+          askBirth
+            ? 'Tôi đồng ý cho quán lưu số điện thoại, tên và ngày sinh (nếu có) để tích lũy ưu đãi, tặng quà sinh nhật (không dùng cho mục đích khác; có thể yêu cầu xóa bất cứ lúc nào).'
+            : 'Tôi đồng ý cho quán lưu số điện thoại và tên để tích lũy ưu đãi (không dùng cho mục đích khác; có thể yêu cầu xóa bất cứ lúc nào).',
         ),
         el('a', { class: 'policy-link small', href: '/chinh-sach-du-lieu', target: '_blank', rel: 'noopener' }, 'Xem chính sách dữ liệu'), // F-062: quán lưu gì, xin xóa thế nào (tab mới — không mất chữ đang nhập)
         ok,

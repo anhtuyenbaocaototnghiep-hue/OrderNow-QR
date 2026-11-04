@@ -1,9 +1,10 @@
 // Khung "Hội viên · giảm giá" dùng chung cho thu tiền bàn (S-14) và bán mang đi (S-13) — ADR-005 F-014, F-022.
 // ADR-006: điểm / tem + đổi thưởng (F-039), voucher (F-038), SĐT người giới thiệu khi đăng ký nhanh (F-038).
 // ADR-025 (F-067): dải "Sinh nhật khách" — máy chủ tự áp quà sinh nhật; nhân viên chọn "Không dùng quà lần này" (skipBirthday).
+// ADR-026 (F-068): ô ngày sinh khi đăng ký nhanh; hội viên chưa có ngày sinh → khung "Chưa có ngày sinh" + câu hỏi mẫu, Lưu / Khách không muốn cho.
 // Không tự tính tiền: trang gọi API xem trước (server dùng bộ pricing) mỗi khi lựa chọn đổi.
 import { staffApi } from './api.js';
-import { clear, dateOnly, el, errorMessage, toast, voucherValue } from './ui.js';
+import { birthDateInput, clear, dateOnly, el, errorMessage, setBusy, toast, voucherValue } from './ui.js';
 import { icon } from './icons.js';
 
 /**
@@ -24,6 +25,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
   };
   const loyaltyBox = el('div', { class: 'loyalty-slot' });
   const birthdaySlot = el('div', { class: 'bday-slot' });
+  const askSlot = el('div', { class: 'bday-ask-slot' }); // F-068
   const earnNote = el('div', { class: 'small muted earn-note' });
   const voucherInput = el('input', { class: 'input', maxlength: 20, placeholder: 'Mã voucher', 'aria-label': 'Mã voucher', style: { maxWidth: '10rem' } });
   const voucherMsg = el('span', { class: 'small' });
@@ -83,6 +85,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
         'aria-label': 'SĐT người giới thiệu',
       });
       const consent = el('input', { type: 'checkbox' });
+      const birth = r.askBirthDate ? birthDateInput({ id: 'pos-reg-birth', label: 'Ngày sinh (để quán tặng quà — không bắt buộc, năm để trống được)' }) : null;
       clear(
         msg,
         el(
@@ -90,8 +93,14 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
           { class: 'alert info stack' },
           el('div', {}, 'Số này chưa là hội viên. Đăng ký nhanh:'),
           name,
+          birth?.node,
           referrer,
-          el('label', { class: 'check' }, consent, 'Khách đồng ý cho quán lưu SĐT + tên để tích lũy ưu đãi'),
+          el(
+            'label',
+            { class: 'check' },
+            consent,
+            birth ? 'Khách đồng ý cho quán lưu SĐT, tên, ngày sinh (nếu có) để tích lũy ưu đãi' : 'Khách đồng ý cho quán lưu SĐT + tên để tích lũy ưu đãi',
+          ),
           el('a', { class: 'policy-link small', href: '/chinh-sach-du-lieu', target: '_blank', rel: 'noopener' }, 'Chính sách dữ liệu (mở cho khách xem)'), // F-062
           el(
             'button',
@@ -100,10 +109,18 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
               type: 'button',
               onclick: async () => {
                 if (!consent.checked) return toast('Cần khách đồng ý trước khi đăng ký', 'warning');
+                const bd = birth?.read() ?? { value: '' };
+                if (bd.error) return toast(bd.error, 'warning');
                 try {
                   const m = await staffApi('/api/members', {
                     method: 'POST',
-                    body: { phone: phone.value, fullName: name.value, consent: true, referrerPhone: referrer.value.trim() || null },
+                    body: {
+                      phone: phone.value,
+                      fullName: name.value,
+                      consent: true,
+                      referrerPhone: referrer.value.trim() || null,
+                      birthDate: bd.value || null,
+                    },
                   });
                   clear(msg);
                   await setMember({ ...m, fullName: name.value.trim() });
@@ -226,8 +243,56 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
     );
   }
 
+  /** F-068 (D-104): hội viên chưa có ngày sinh → nhắc hỏi khách; Lưu (tự khai, chỉ khi còn trống) / Khách không muốn cho. */
+  function renderAskBirth() {
+    if (!st.member || !st.loyalty?.askBirthDate) return clear(askSlot);
+    const birth = birthDateInput({ id: 'pos-ask-birth', label: 'Ngày sinh khách (năm không bắt buộc)' });
+    const send = async (button, path, body) => {
+      setBusy(button, true);
+      try {
+        st.loyalty = await staffApi(`/api/members/${st.member.memberId}/${path}`, { method: 'POST', body });
+        renderLoyalty();
+        return true;
+      } catch (err) {
+        setBusy(button, false);
+        toast(errorMessage(err), 'error');
+        return false;
+      }
+    };
+    const save = el(
+      'button',
+      {
+        class: 'btn btn-sm btn-primary',
+        type: 'button',
+        onclick: async (e) => {
+          const { value, error } = birth.read();
+          if (error || !value) return toast(error ?? 'Chọn ngày và tháng sinh của khách', 'warning');
+          if (await send(e.currentTarget, 'birth-date', { birthDate: value })) toast('Đã lưu ngày sinh — quán sẽ tặng quà tuần sinh nhật', 'success');
+        },
+      },
+      'Lưu ngày sinh',
+    );
+    const decline = el(
+      'button',
+      { class: 'btn btn-sm btn-ghost', type: 'button', onclick: (e) => send(e.currentTarget, 'birth-date/decline', {}) },
+      'Khách không muốn cho',
+    );
+    clear(
+      askSlot,
+      el(
+        'div',
+        { class: 'bday-ask', role: 'status' },
+        el('strong', {}, icon('gift'), 'Chưa có ngày sinh — hỏi khách:'),
+        el('p', { class: 'small say' }, '"Anh/chị cho em xin ngày sinh để quán tặng quà tuần sinh nhật nhé?"'),
+        birth.node,
+        el('div', { class: 'row wrap' }, save, decline),
+      ),
+    );
+  }
+
   function renderLoyalty() {
     renderBirthday();
+    renderAskBirth();
     const l = st.loyalty;
     if (!st.member || !l) return clear(loyaltyBox);
     const options = [
@@ -333,6 +398,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
       memberBox,
       msg,
       birthdaySlot,
+      askSlot,
       loyaltyBox,
       el('label', {}, 'Voucher'),
       el('div', { class: 'row' }, voucherInput, el('button', { class: 'btn btn-sm', type: 'button', onclick: checkVoucher }, 'Áp mã'), voucherMsg),

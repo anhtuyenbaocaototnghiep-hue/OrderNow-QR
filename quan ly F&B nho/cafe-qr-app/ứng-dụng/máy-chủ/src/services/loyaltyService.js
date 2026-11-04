@@ -147,6 +147,7 @@ export async function summary(member, { staff = false } = {}) {
       menuItemName: v.menuItemName,
     })),
     birthday, // F-067: { inWindow, date, dateLabel, offset, status, gift } | null
+    ...(staff ? { askBirthDate: await birthdayService.staffAsk(member) } : {}), // F-068 D-104: quầy nhắc hỏi ngày sinh
   };
 }
 

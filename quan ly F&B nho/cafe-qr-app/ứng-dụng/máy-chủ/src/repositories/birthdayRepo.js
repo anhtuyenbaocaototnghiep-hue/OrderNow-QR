@@ -1,6 +1,8 @@
 // F-067 quà sinh nhật (ADR-025): quà của hội viên theo năm, phát quà (voucher BIRTHDAY + dòng BirthdayGifts trong một transaction),
 // hội viên có ngày sinh (danh sách sắp tới), thống kê, khách tự thêm ngày sinh.
+// F-068 (ADR-026): ngày sinh không năm (năm 1904 trong CSDL ↔ '--MM-DD'), "khách không muốn cho", độ phủ ngày sinh.
 import { inTransaction, query, sql, sqlErrorNumber, txQuery } from '../db.js';
+import { fromDbBirthDate, toDbBirthDate } from '../domain/birthday.js';
 
 const mapGift = (r) =>
   r && {
@@ -94,7 +96,7 @@ export async function membersWithBirthDate() {
       fullName: x.FullName,
       phone: x.Phone,
       tierName: x.TierName,
-      birthDate: x.BirthDate.toISOString().slice(0, 10),
+      birthDate: fromDbBirthDate(x.BirthDate),
       birthDateSelfAt: x.BirthDateSelfAt,
     })),
     withoutBirthDate: r.recordsets[1][0].N,
@@ -115,12 +117,35 @@ export async function stats(year) {
   return { issued: x.Issued, used: x.Used ?? 0, usedRevenue: Number(x.UsedRevenue), giftValue: Number(x.GiftValue) };
 }
 
-/** D-99: khách tự thêm ngày sinh — chỉ khi còn trống (một lần). → true nếu ghi được */
+/** D-99 / F-068 D-103: ngày sinh tự khai (khách tự thêm, nhân viên ghi hộ) — chỉ khi còn trống (một lần). → true nếu ghi được */
 export async function setSelfBirthDate(memberId, birthDate) {
   const r = await query(
     `UPDATE dbo.Members SET BirthDate = @b, BirthDateSelfAt = SYSUTCDATETIME()
      WHERE MemberId = @m AND BirthDate IS NULL AND AnonymizedAt IS NULL AND IsActive = 1`,
-    { m: [sql.Int, memberId], b: [sql.Date, birthDate] },
+    { m: [sql.Int, memberId], b: [sql.Date, toDbBirthDate(birthDate)] },
   );
   return r.rowsAffected[0] === 1;
+}
+
+/** F-068 D-104: nhân viên ghi "khách không muốn cho" (chỉ khi chưa có ngày sinh). → true nếu ghi được */
+export async function declineBirthDate(memberId) {
+  const r = await query(
+    `UPDATE dbo.Members SET BirthDateDeclinedAt = SYSUTCDATETIME()
+     WHERE MemberId = @m AND BirthDate IS NULL AND AnonymizedAt IS NULL AND IsActive = 1`,
+    { m: [sql.Int, memberId] },
+  );
+  return r.rowsAffected[0] === 1;
+}
+
+/** F-068 D-106: hội viên đang hoạt động đã có ngày sinh / tổng — tất cả và riêng khách ghé từ `since`. */
+export async function coverage(since) {
+  const r = await query(
+    `SELECT COUNT(*) AS Total, SUM(CASE WHEN BirthDate IS NOT NULL THEN 1 ELSE 0 END) AS WithBirthDate,
+            SUM(CASE WHEN LastVisitAt >= @since THEN 1 ELSE 0 END) AS RecentTotal,
+            SUM(CASE WHEN LastVisitAt >= @since AND BirthDate IS NOT NULL THEN 1 ELSE 0 END) AS RecentWith
+     FROM dbo.Members WHERE IsActive = 1 AND AnonymizedAt IS NULL`,
+    { since: [sql.DateTime2(0), since] },
+  );
+  const x = r.recordset[0];
+  return { total: x.Total, withBirthDate: x.WithBirthDate ?? 0, recentTotal: x.RecentTotal ?? 0, recentWithBirthDate: x.RecentWith ?? 0 };
 }

@@ -2271,3 +2271,104 @@ test('quà sinh nhật: quản lý bật ở tab Quà sinh nhật; điện tho�
     await phone.close();
   }
 });
+
+test('thu thập ngày sinh: đăng ký nhanh ở quầy có ô ngày sinh (để trống năm), quầy nhắc hội viên chưa có ngày sinh → Lưu / Khách không muốn cho, khách tự đăng ký có ô ngày sinh, tab Quà sinh nhật có Thu thập ngày sinh → Chưa có ngày sinh, thẻ QR có dòng mời (F-068, AC-068-05)', async ({
+  request,
+}) => {
+  const cur = await apiAs(request, 'get', '/api/admin/birthday');
+  const { kind, value, maxDiscount, menuItemId, windowDays } = cur;
+  if (!cur.enabled) await apiAs(request, 'put', '/api/admin/birthday', { enabled: true, kind, value, maxDiscount, menuItemId, windowDays });
+  const birthOf = async (phone) => {
+    const { member } = await apiAs(request, 'post', '/api/members/lookup', { phone });
+    return (await apiAs(request, 'get', `/api/admin/members/${member.memberId}`)).member.birthDate;
+  };
+  await apiAs(request, 'post', '/api/members', { phone: '0907068001', fullName: 'Khách Quen Chưa Ngày Sinh', consent: true });
+  await apiAs(request, 'post', '/api/members', { phone: '0907068002', fullName: 'Khách Không Muốn Cho', consent: true });
+
+  // Quầy đăng ký nhanh: chọn ngày + tháng sinh, để trống năm
+  await P.goto('/pos/takeaway');
+  const box = P.locator('details.billing');
+  await box.evaluate((d) => (d.open = true));
+  const lookup = async (phone) => {
+    await P.fill('input[aria-label="SĐT hội viên"]', phone);
+    await P.getByRole('button', { name: 'Tra cứu' }).click();
+  };
+  await lookup('0907068003');
+  await P.fill('input[aria-label="Họ tên khách"]', 'Khách Mới Có Ngày Sinh');
+  await expect(box.getByRole('group', { name: /Ngày sinh \(để quán tặng quà/ })).toBeVisible();
+  await box.locator('#pos-reg-birth-day').selectOption('15');
+  await box.locator('#pos-reg-birth-month').selectOption('08');
+  await box.locator('.alert input[type="checkbox"]').check();
+  await box.getByRole('button', { name: 'Đăng ký', exact: true }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã đăng ký hội viên' })).toBeVisible();
+  await expect(box.locator('.member-on')).toContainText('Khách Mới Có Ngày Sinh');
+  await expect(box.locator('.bday-ask')).toHaveCount(0); // đã có ngày sinh → không nhắc
+  expect(await birthOf('0907068003')).toBe('--08-15');
+
+  // Khách quen chưa có ngày sinh → quầy nhắc hỏi, kèm câu mẫu
+  await box.locator('.member-on').getByRole('button', { name: 'Gỡ' }).click();
+  await lookup('0907068001');
+  const ask = box.locator('.bday-ask');
+  await expect(ask).toContainText('Chưa có ngày sinh — hỏi khách');
+  await expect(ask).toContainText('Anh/chị cho em xin ngày sinh để quán tặng quà tuần sinh nhật nhé?');
+  await ask.getByRole('button', { name: 'Lưu ngày sinh' }).click();
+  await expect(P.locator('.toast', { hasText: 'Chọn ngày và tháng sinh của khách' })).toBeVisible();
+  await ask.locator('#pos-ask-birth-day').selectOption('02');
+  await ask.locator('#pos-ask-birth-month').selectOption('09');
+  await ask.locator('#pos-ask-birth-year').fill('1990');
+  await ask.getByRole('button', { name: 'Lưu ngày sinh' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu ngày sinh' })).toBeVisible();
+  await expect(ask).toHaveCount(0);
+  expect(await birthOf('0907068001')).toBe('1990-09-02');
+
+  // Khách không muốn cho → thôi nhắc
+  await box.locator('.member-on').getByRole('button', { name: 'Gỡ' }).click();
+  await lookup('0907068002');
+  await ask.getByRole('button', { name: 'Khách không muốn cho' }).click();
+  await expect(ask).toHaveCount(0);
+  await box.locator('.member-on').getByRole('button', { name: 'Gỡ' }).click();
+
+  // Khách tự đăng ký trên điện thoại: ô ngày sinh không bắt buộc, 29/02 không năm
+  const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'NS1', name: 'Bàn NS1' });
+  const phone = await browser.newContext(phoneOpts);
+  const G = await phone.newPage();
+  watch(G, 'birthdate');
+  try {
+    await G.goto(`/t/${t.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .c-item', { hasText: 'Bánh croissant' }).locator('.add-btn').click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .member-box').click();
+    await G.locator('input[type="tel"]').fill('0907068004');
+    await G.getByRole('button', { name: 'Tiếp tục' }).click();
+    await G.getByPlaceholder('Ví dụ: Nguyễn Văn An').fill('Lê Ngọc Mai');
+    await expect(G.getByRole('group', { name: /Ngày sinh \(để quán tặng quà/ })).toBeVisible();
+    await G.locator('#reg-birth-day').selectOption('29');
+    await G.locator('#reg-birth-month').selectOption('02');
+    await expect(G.locator('.sheet label.check')).toContainText('ngày sinh (nếu có)');
+    await G.locator('.sheet label.check input[type="checkbox"]').check();
+    expect(await G.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+    await G.getByRole('button', { name: 'Đăng ký & nhận ưu đãi' }).click();
+    await expect(G.locator('.sheet .member-box.on')).toContainText('Bạn đang nhận ưu đãi');
+    expect(await birthOf('0907068004')).toBe('--02-29');
+  } finally {
+    await phone.close();
+  }
+
+  // Quản lý: độ phủ ngày sinh → danh sách "Chưa có ngày sinh"
+  await P.goto('/admin/loyalty');
+  await P.getByRole('tab', { name: 'Quà sinh nhật' }).click();
+  const cover = P.locator('.bday-cover');
+  await expect(cover).toContainText('Đã có ngày sinh:');
+  await expect(cover).toContainText('Khách không muốn cho');
+  await cover.getByRole('link', { name: /Xem ai chưa có ngày sinh/ }).click();
+  await expect(P).toHaveURL(/\/admin\/members\?view=nobirth$/);
+  await expect(P.getByRole('button', { name: /^Chưa có ngày sinh/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(P.locator('#content tbody tr', { hasText: 'Khách Không Muốn Cho' })).toContainText('khách không muốn cho');
+  await expect(P.locator('#content tbody tr', { hasText: 'Khách Quen Chưa Ngày Sinh' })).toHaveCount(0);
+  await expect(P.locator('#content tbody tr', { hasText: 'Lê Ngọc Mai' })).toHaveCount(0);
+
+  // Thẻ QR in có dòng mời thêm ngày sinh
+  await P.goto('/admin/tables/print');
+  await expect(P.locator('.qr-card .qr-bday').first()).toContainText('thêm ngày sinh trong Thẻ thành viên');
+});

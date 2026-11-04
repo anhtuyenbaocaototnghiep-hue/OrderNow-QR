@@ -2,7 +2,7 @@
 // khuyến mãi (F-016), gợi ý & ghim (F-017), báo cáo marketing.
 import express from 'express';
 import { z } from 'zod';
-import { paramId, parse, parseRange, parseUtcRange, zDate, zId, zText, zTime } from '../middleware/validate.js';
+import { paramId, parse, parseRange, parseUtcRange, zBirthDate, zDate, zId, zText, zTime } from '../middleware/validate.js';
 import * as marketingService from '../services/marketingService.js';
 import * as memberService from '../services/memberService.js';
 import * as birthdayService from '../services/birthdayService.js';
@@ -92,7 +92,7 @@ marketingRouter.put('/members/:id', async (req, res) => {
       fullName: zText(100).min(2, 'Nhập họ tên'),
       tierCode: z.string().max(20),
       note: zText(200).optional().nullable(),
-      birthDate: zDate().optional().nullable(),
+      birthDate: zBirthDate().optional().nullable(), // F-068: '--MM-DD' = không rõ năm
       isActive: z.boolean().default(true),
     }),
     req.body,

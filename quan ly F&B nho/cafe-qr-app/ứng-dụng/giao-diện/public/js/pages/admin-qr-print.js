@@ -1,4 +1,5 @@
 // Trang in lưới QR để dán lên bàn (FEATURE-010). F-059: có Wi-Fi cho khách trong Cài đặt → mỗi thẻ in thêm QR Wi-Fi (bước ①).
+// F-068 (ADR-026 D-105): quà sinh nhật bật → mỗi thẻ in thêm dòng mời hội viên thêm ngày sinh.
 import { staffApi, staffBlobUrl } from '../api.js';
 import { mountAdminShell, refreshQrBanner } from '../admin-shell.js';
 import { current } from '../auth.js';
@@ -79,6 +80,9 @@ try {
         img,
         el('strong', {}, 'Quét mã để xem thực đơn & gọi món'),
         el('div', { class: 'small muted' }, 'Thanh toán tiền mặt hoặc chuyển khoản — bấm "Gọi thanh toán" khi xong'),
+        settings.birthdayEnabled
+          ? el('div', { class: 'qr-bday small' }, icon('gift'), 'Hội viên: thêm ngày sinh trong Thẻ thành viên — quán tặng quà tuần sinh nhật')
+          : null,
       );
     }),
   );

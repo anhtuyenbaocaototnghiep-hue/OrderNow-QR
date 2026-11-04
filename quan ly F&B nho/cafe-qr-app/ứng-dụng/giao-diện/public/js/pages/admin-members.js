@@ -3,9 +3,10 @@
 // ADR-006: sổ điểm + điều chỉnh có lý do, thẻ tem, voucher, người đã giới thiệu (F-039, F-038); từ chối nhận tin chiến dịch (F-037).
 // TASK-082 (dễ theo dõi): ô tổng quan (tích điểm hôm nay, lượt thu có hội viên, khách quay lại…), lọc nhanh (sắp lên hạng, lâu chưa quay lại,
 // sinh nhật…), tiến độ lên hạng, "Tích điểm gần đây"; hồ sơ hội viên: điểm / hạng / đã chi nổi bật, sửa thông tin thu gọn, nút điểm nhanh.
+// F-068 (ADR-026): lọc "Chưa có ngày sinh" (mở thẳng bằng ?view=nobirth), ngày sinh năm không bắt buộc.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
-import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, showFieldErrors, toast } from '../ui.js';
+import { $, birthDateInput, birthLabel, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, showFieldErrors, toast } from '../ui.js';
 import { icon } from '../icons.js';
 
 await mountAdminShell('members');
@@ -58,7 +59,10 @@ const VIEWS = [
   ['near', 'Sắp lên hạng', 'nearTier'],
   ['lapsed', 'Lâu chưa quay lại', 'lapsed'],
   ['birthday', 'Sinh nhật tháng này', 'birthdays'],
+  ['nobirth', 'Chưa có ngày sinh', 'noBirthDate'], // F-068: ghé gần đây trước — nhắc nhân viên hỏi khi khách quay lại
 ];
+const urlView = new URLSearchParams(location.search).get('view');
+if (VIEWS.some(([key]) => key === urlView)) state.view = urlView;
 const EMPTY = {
   all: 'Chưa có hội viên nào khớp.',
   new: 'Tháng này chưa có hội viên mới.',
@@ -67,6 +71,7 @@ const EMPTY = {
   near: 'Chưa có ai sắp lên hạng (đã chi từ 80% mức hạng kế).',
   lapsed: 'Không có hội viên nào vắng quá 30 ngày.',
   birthday: 'Tháng này không có hội viên nào sinh nhật (hoặc chưa ghi ngày sinh).',
+  nobirth: 'Mọi hội viên đang hoạt động đã có ngày sinh.',
 };
 const pct = (a, b) => (b ? Math.round((a * 100) / b) : 0);
 /** "hôm nay" / "hôm qua" / "5 ngày trước" — theo ngày giờ quán. */
@@ -235,7 +240,10 @@ async function renderMembers() {
                     { class: 'nowrap' },
                     ago(m.lastVisitAt),
                     m.birthDate && state.view === 'birthday'
-                      ? el('div', { class: 'small muted' }, `sinh nhật ${m.birthDate.slice(8, 10)}/${m.birthDate.slice(5, 7)}`)
+                      ? el('div', { class: 'small muted' }, `sinh nhật ${birthLabel(m.birthDate, { withYear: false })}`)
+                      : null,
+                    state.view === 'nobirth' && m.birthDateDeclinedAt
+                      ? el('div', { class: 'small muted' }, `khách không muốn cho (${dateTime(m.birthDateDeclinedAt)})`)
                       : null,
                   ),
                   el('td', {}, el('button', { class: 'btn btn-sm', type: 'button', 'aria-label': `Xem ${m.fullName}` }, 'Xem')),
@@ -309,6 +317,7 @@ async function openMember(id) {
   }
   const { member: m, history } = data;
   const loyaltyBox = el('div', {}, el('p', { class: 'muted small' }, 'Đang tải điểm / tem…'));
+  const birth = birthDateInput({ id: 'mem-birth', label: 'Ngày sinh (năm không bắt buộc)', value: m.birthDate }); // F-068
   const form = el(
     'form',
     { class: 'form-grid' },
@@ -323,7 +332,7 @@ async function openMember(id) {
         state.tiers.map((t) => el('option', { value: t.tierCode, selected: t.tierCode === m.tierCode }, `${t.name} (${t.discountPercent}%)`)),
       ),
     ),
-    el('div', { class: 'field' }, el('label', {}, 'Ngày sinh'), el('input', { class: 'input', type: 'date', name: 'birthDate', value: m.birthDate ?? '' })),
+    el('div', { class: 'field span-all' }, birth.node),
     el('div', { class: 'field' }, el('label', {}, 'Ghi chú'), el('input', { class: 'input', name: 'note', value: m.note ?? '', maxlength: 200 })),
     el('label', { class: 'check' }, el('input', { type: 'checkbox', name: 'isActive', checked: m.isActive }), 'Đang hoạt động'),
   );
@@ -348,7 +357,7 @@ async function openMember(id) {
       el(
         'p',
         { class: 'small muted' },
-        `SĐT ${m.phone} · đăng ký ${dateTime(m.createdAt)} (đồng ý lưu thông tin lúc ${dateTime(m.consentAt)})${m.birthDate ? ` · sinh nhật ${m.birthDate.slice(8, 10)}/${m.birthDate.slice(5, 7)}` : ''}`,
+        `SĐT ${m.phone} · đăng ký ${dateTime(m.createdAt)} (đồng ý lưu thông tin lúc ${dateTime(m.consentAt)})${m.birthDate ? ` · sinh nhật ${birthLabel(m.birthDate)}${m.birthDateSelfAt ? ' (khách tự khai)' : ''}` : ''}`,
       ),
       m.anonymizedAt
         ? el('div', { class: 'alert warning' }, `Đã ẩn danh lúc ${dateTime(m.anonymizedAt)}`)
@@ -401,6 +410,11 @@ async function openMember(id) {
             class: 'btn-primary',
             onClick: async () => {
               const f = (n) => form.elements.namedItem(n);
+              const bd = birth.read();
+              if (bd.error) {
+                toast(bd.error, 'warning');
+                return false;
+              }
               try {
                 await staffApi(`/api/admin/members/${m.memberId}`, {
                   method: 'PUT',
@@ -408,7 +422,7 @@ async function openMember(id) {
                     fullName: f('fullName').value,
                     tierCode: f('tierCode').value,
                     note: f('note').value || null,
-                    birthDate: f('birthDate').value || null,
+                    birthDate: bd.value || null,
                     isActive: f('isActive').checked,
                   },
                 });

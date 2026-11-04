@@ -17,6 +17,7 @@ Nguồn chính là tài liệu trong repo; skill này tóm tắt và chỉ chỗ
 | Task, kế hoạch | `tài-liệu/công-việc/TASK-084.md`, `tài-liệu/kế-hoạch/TASK-084-plan.md` |
 | API, dữ liệu, màn hình | `api-contract.md`, `data-model.md`, `screens-flows.md` — mục "F-067" |
 | Nền | F-014 hội viên, F-038 voucher (mã, một lần, khung thu tiền), F-047 Thẻ thành viên, F-062 Chính sách dữ liệu — skill `extend-features`, `advanced-features` |
+| Lấy ngày sinh | F-068 (TASK-085): hỏi lúc đăng ký, năm không bắt buộc (`--MM-DD`), quầy nhắc hỏi — skill `thu-thap-ngay-sinh` |
 
 # Khi dùng
 

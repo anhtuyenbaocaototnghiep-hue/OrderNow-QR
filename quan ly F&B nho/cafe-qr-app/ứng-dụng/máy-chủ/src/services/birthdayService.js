@@ -1,11 +1,12 @@
 // F-067 quà sinh nhật hội viên (ADR-025 D-95…D-100).
 // Quà phát lúc hội viên xuất hiện trong tuần sinh nhật (quầy tra cứu / gắn bàn, điện thoại khách, tính tiền) — không cần job.
 // Mỗi hội viên một quà mỗi năm (khóa chính BirthdayGifts); thu tiền tự áp quà ở loyaltyService.prepare.
+// F-068 (ADR-026 D-101…D-106): kiểm ngày sinh có / không năm, nhân viên ghi hộ / "khách không muốn cho", độ phủ ngày sinh.
 import crypto from 'node:crypto';
-import { currentWindow, giftLabel, nextBirthday, selfDateCounts, validateSettings } from '../domain/birthday.js';
+import { currentWindow, giftLabel, nextBirthday, parseBirthDate, selfDateCounts, staffShouldAsk, validateSettings } from '../domain/birthday.js';
 import { badRequest, conflict } from '../errors.js';
 import * as birthdayRepo from '../repositories/birthdayRepo.js';
-import { addDays, isValidDate, todayVn, vnDayStartUtc } from '../utils/time.js';
+import { addDays, todayVn, vnDayStartUtc } from '../utils/time.js';
 import { getSettings, updateSettings } from './settingsService.js';
 
 const UPCOMING_DAYS = 14;
@@ -73,12 +74,29 @@ export async function usableGift(member) {
 /** Thẻ thành viên: mời khách thêm ngày sinh khi tính năng bật và hội viên chưa có ngày sinh. */
 export const askBirthDate = async (member) => !member.birthDate && (await getSettings()).birthdayEnabled;
 
-/** D-99: khách tự thêm ngày sinh — một lần, khi còn trống. */
+/** F-068 D-101: form đăng ký hiện ô ngày sinh khi quà sinh nhật đang bật. */
+export const askOnSignup = async () => (await getSettings()).birthdayEnabled;
+
+/** F-068 D-104: quầy nhắc hỏi — chưa có ngày sinh, tính năng bật, không có "khách không muốn cho" trong 365 ngày. */
+export const staffAsk = async (member) => staffShouldAsk(member) && (await getSettings()).birthdayEnabled;
+
+/** F-068 D-102: ngày sinh gửi lên → 'YYYY-MM-DD' | '--MM-DD'; sai → 400 (một câu báo cho mọi form). */
+export function requireBirthDate(input) {
+  const date = parseBirthDate(input, todayVn());
+  if (!date) throw badRequest('VALIDATION_ERROR', 'Ngày sinh không hợp lệ', { fields: [{ path: 'birthDate', message: 'Ngày sinh không hợp lệ' }] });
+  return date;
+}
+
+/** D-99 / F-068 D-103: ngày sinh tự khai (khách tự thêm, nhân viên ghi hộ) — một lần, khi còn trống. */
 export async function selfSet(member, birthDate) {
-  if (!isValidDate(birthDate) || birthDate > todayVn() || birthDate < '1900-01-01') throw badRequest('VALIDATION_ERROR', 'Ngày sinh không hợp lệ');
-  if (!(await birthdayRepo.setSelfBirthDate(member.memberId, birthDate))) {
+  if (!(await birthdayRepo.setSelfBirthDate(member.memberId, requireBirthDate(birthDate)))) {
     throw conflict('BIRTHDATE_SET', 'Ngày sinh đã có — nhờ quán sửa nếu bị sai');
   }
+}
+
+/** F-068 D-104: nhân viên ghi "khách không muốn cho" — quầy thôi nhắc khách này 365 ngày. */
+export async function decline(member) {
+  if (!(await birthdayRepo.declineBirthDate(member.memberId))) throw conflict('BIRTHDATE_SET', 'Hội viên đã có ngày sinh');
 }
 
 // ---------- Quản lý ----------
@@ -95,10 +113,11 @@ const settingsView = (s) => ({
 export async function adminGet({ today = todayVn() } = {}) {
   const s = await getSettings();
   const year = Number(today.slice(0, 4));
-  const [{ members, withoutBirthDate }, gifts, stats] = await Promise.all([
+  const [{ members, withoutBirthDate }, gifts, stats, coverage] = await Promise.all([
     birthdayRepo.membersWithBirthDate(),
     birthdayRepo.giftsForYears([year - 1, year, year + 1]),
     birthdayRepo.stats(year),
+    birthdayRepo.coverage(new Date(Date.now() - 30 * 86_400_000)), // F-068 D-106: khách ghé 30 ngày qua
   ]);
   const upcoming = members
     .map((m) => {
@@ -120,7 +139,7 @@ export async function adminGet({ today = todayVn() } = {}) {
     })
     .filter(Boolean)
     .sort((a, b) => a.daysUntil - b.daysUntil || a.fullName.localeCompare(b.fullName, 'vi'));
-  return { ...settingsView(s), upcoming, stats: { ...stats, withoutBirthDate } };
+  return { ...settingsView(s), upcoming, stats: { ...stats, withoutBirthDate }, coverage };
 }
 
 export async function adminSave(body) {

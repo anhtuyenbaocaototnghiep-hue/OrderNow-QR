@@ -408,6 +408,16 @@ body.admin .chip {
 .qr-card .qr-wifi strong {
   white-space: pre-wrap;
 }
+/* F-068: dòng mời hội viên thêm ngày sinh */
+.qr-card .qr-bday {
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed #b9a796;
+}
+.qr-card .qr-bday .ic {
+  margin-right: 0.25rem;
+  vertical-align: -0.15em;
+}
 .bom-row {
   display: grid;
   grid-template-columns: 1fr 160px 70px auto;
@@ -1329,6 +1339,25 @@ ul.mem-feed {
 .spin-switch {
   margin: 0.75rem 0;
   font-weight: 600;
+}
+/* F-068 khối "Thu thập ngày sinh"; các khung trong tab vòng quay / quà sinh nhật không dính nhau */
+.spin-admin + .spin-admin {
+  margin-top: 0.75rem;
+}
+.form-grid .field.span-all {
+  grid-column: 1 / -1;
+}
+.bday-cover .mem-progress progress {
+  display: block;
+  max-width: 24rem;
+  margin: 0.35rem 0 0.2rem;
+}
+ul.bday-tips {
+  margin: 0.75rem 0;
+  padding-left: 1.1rem;
+}
+.bday-tips li + li {
+  margin-top: 0.3rem;
 }
 .spin-fields {
   display: grid;

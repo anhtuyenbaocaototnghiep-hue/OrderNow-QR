@@ -1,11 +1,13 @@
 // FEATURE-014 Hội viên (ADR-005 D-5, D-6, D-16): SĐT + họ tên, không OTP. Khách chỉ thấy tên che; quầy thấy tên đầy đủ.
 // Không ghi SĐT/tên ra log.
 // ADR-006 F-038 (D-28): đăng ký kèm SĐT người giới thiệu (tùy chọn) — tồn tại, khác chính mình, ≤ 5 lượt / tháng / người giới thiệu.
+// F-068 (ADR-026): đăng ký kèm ngày sinh (tùy chọn, năm không bắt buộc) — tự khai; quản lý sửa = đã xác minh.
 import crypto from 'node:crypto';
 import { sqlErrorNumber } from '../db.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import * as membersRepo from '../repositories/membersRepo.js';
 import * as sessionsRepo from '../repositories/sessionsRepo.js';
+import * as birthdayService from './birthdayService.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { getSettings } from './settingsService.js';
 import { todayVn, vnDayStartUtc } from '../utils/time.js';
@@ -62,13 +64,15 @@ export async function publicMember(m, { staff }) {
 
 export async function lookup(phoneInput, { staff = false } = {}) {
   const m = await membersRepo.findByPhone(requirePhone(phoneInput));
-  if (!m || !m.isActive) return { found: false, member: null };
+  // F-068 D-101: số chưa là hội viên → form đăng ký hiện ô ngày sinh khi quà sinh nhật bật
+  if (!m || !m.isActive) return { found: false, member: null, askBirthDate: await birthdayService.askOnSignup() };
   return { found: true, member: await publicMember(m, { staff }) };
 }
 
-export async function register({ phone: phoneInput, fullName, consent, referrerPhone = null }, { staff = false } = {}) {
+export async function register({ phone: phoneInput, fullName, consent, referrerPhone = null, birthDate = null }, { staff = false } = {}) {
   const phone = requirePhone(phoneInput);
   if (consent !== true) throw badRequest('CONSENT_REQUIRED', 'Vui lòng đồng ý cho quán lưu số điện thoại và tên để tích lũy ưu đãi');
+  const birth = birthDate ? birthdayService.requireBirthDate(birthDate) : null; // F-068: kiểm trước khi tạo hội viên
   let referrerId = null;
   if (referrerPhone && String(referrerPhone).trim()) {
     const refPhone = normalizePhone(referrerPhone);
@@ -86,6 +90,7 @@ export async function register({ phone: phoneInput, fullName, consent, referrerP
     m = await membersRepo.create({
       phone,
       fullName,
+      birthDate: birth,
       referrerId,
       referralSinceUtc: vnDayStartUtc(`${todayVn().slice(0, 8)}01`), // đầu tháng (giờ VN)
       referralLimit: settings.referralMonthlyLimit,
@@ -180,7 +185,7 @@ export async function adminGet(id) {
 export async function adminUpdate(id, body) {
   const tiers = await membersRepo.tiers();
   if (!tiers.some((t) => t.tierCode === body.tierCode)) throw badRequest('VALIDATION_ERROR', 'Hạng không tồn tại');
-  const m = await membersRepo.update(id, body);
+  const m = await membersRepo.update(id, { ...body, birthDate: body.birthDate ? birthdayService.requireBirthDate(body.birthDate) : null });
   if (!m) throw notFound('Không tìm thấy hội viên (hoặc đã ẩn danh)', 'MEMBER_NOT_FOUND');
   return adminView(m);
 }

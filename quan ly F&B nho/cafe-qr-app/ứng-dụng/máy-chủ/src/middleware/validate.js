@@ -23,6 +23,8 @@ export const zQrToken = () => z.string().regex(/^[0-9a-f]{32}$/i, 'Mã bàn khô
 export const zMoney = () => z.coerce.number().int().min(0).max(1_000_000_000);
 export const zDate = () => z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày phải có dạng YYYY-MM-DD');
 export const zText = (max) => z.string().trim().max(max);
+/** F-068 (ADR-026 D-102): ngày sinh 'YYYY-MM-DD' hoặc '--MM-DD' (không rõ năm); ngày có thật / không sau hôm nay kiểm ở service. */
+export const zBirthDate = () => z.string().regex(/^(\d{4}|-)-\d{2}-\d{2}$/, 'Ngày sinh không hợp lệ');
 
 /** Một dòng giỏ hàng (BR-015: 1..50; ghi chú ≤ 200; tùy chọn món F-013). */
 export const zOrderItems = () =>

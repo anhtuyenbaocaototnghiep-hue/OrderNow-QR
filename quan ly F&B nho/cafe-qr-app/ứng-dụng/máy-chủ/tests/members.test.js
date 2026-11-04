@@ -44,7 +44,7 @@ describe('Hội viên (F-014)', () => {
     A = await app.customer();
     assert.equal((await A.post('/api/members/lookup', { phone: '12345' })).body.code, 'INVALID_PHONE');
     const none = await A.post('/api/members/lookup', { phone: '0912 345 678' });
-    assert.deepEqual(none.body, { found: false, member: null });
+    assert.deepEqual(none.body, { found: false, member: null, askBirthDate: false }); // F-068: quà sinh nhật mặc định tắt → form không hỏi ngày sinh
     const noConsent = await A.post('/api/members', { phone: '0912345678', fullName: 'Nguyễn Văn An' });
     assert.equal(noConsent.status, 400);
     assert.equal(noConsent.body.code, 'CONSENT_REQUIRED');

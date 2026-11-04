@@ -301,3 +301,59 @@ export const moneyValue = (input) => {
 export function setMoney(input, value) {
   input.value = value === null || value === undefined ? '' : Number(value).toLocaleString('vi-VN');
 }
+
+/** F-068: ngày sinh 'YYYY-MM-DD' → "05/11/1998"; '--MM-DD' (không rõ năm) → "05/11". withYear=false → luôn "05/11". */
+export function birthLabel(s, { withYear = true } = {}) {
+  if (!s) return '';
+  if (s.startsWith('--')) return `${s.slice(5, 7)}/${s.slice(2, 4)}`;
+  return withYear ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : `${s.slice(8, 10)}/${s.slice(5, 7)}`;
+}
+
+/**
+ * F-068 (ADR-026 D-102): ô ngày sinh — chọn ngày, chọn tháng, gõ năm (không bắt buộc). value: 'YYYY-MM-DD' | '--MM-DD' | null.
+ * read() → { value: '' (bỏ trống) | 'YYYY-MM-DD' | '--MM-DD', error: câu báo | null } — máy chủ kiểm lại.
+ */
+export function birthDateInput({ id, label, value = null }) {
+  const [y, m, d] = value ? (value.startsWith('--') ? ['', value.slice(2, 4), value.slice(5, 7)] : value.split('-')) : ['', '', ''];
+  const pad = (n) => String(n).padStart(2, '0');
+  const options = (first, count, text) => [
+    el('option', { value: '' }, first),
+    ...Array.from({ length: count }, (_, i) => el('option', { value: pad(i + 1) }, text(i + 1))),
+  ];
+  const day = el('select', { class: 'input', id: `${id}-day`, 'aria-label': 'Ngày sinh' }, options('Ngày', 31, String));
+  const month = el(
+    'select',
+    { class: 'input', id: `${id}-month`, 'aria-label': 'Tháng sinh' },
+    options('Tháng', 12, (n) => `Tháng ${n}`),
+  );
+  const year = el('input', {
+    class: 'input',
+    id: `${id}-year`,
+    inputmode: 'numeric',
+    maxlength: 4,
+    placeholder: 'Năm',
+    autocomplete: 'bday-year',
+    'aria-label': 'Năm sinh (không bắt buộc)',
+  });
+  day.value = d;
+  month.value = m;
+  year.value = y;
+  const node = el(
+    'div',
+    { class: 'birth-field', role: 'group', 'aria-labelledby': `${id}-label` },
+    el('div', { class: 'birth-label', id: `${id}-label` }, label),
+    el('div', { class: 'birth-input' }, day, month, year),
+  );
+  function read() {
+    const [dd, mm, yy] = [day.value, month.value, year.value.trim()];
+    if (!dd && !mm && !yy) return { value: '', error: null };
+    if (!dd || !mm) return { value: '', error: 'Chọn đủ ngày và tháng sinh' };
+    if (yy && !/^\d{4}$/.test(yy)) return { value: '', error: 'Năm sinh gồm 4 chữ số (hoặc để trống)' };
+    const probe = new Date(Date.UTC(yy ? Number(yy) : 2000, Number(mm) - 1, Number(dd))); // 2000 nhuận: 29/02 không năm hợp lệ
+    if (probe.getUTCDate() !== Number(dd)) return { value: '', error: 'Ngày sinh không có thật' };
+    const v = yy ? `${yy}-${mm}-${dd}` : `--${mm}-${dd}`;
+    if (yy && (Number(yy) < 1910 || v > todayVn())) return { value: '', error: 'Năm sinh không hợp lệ' };
+    return { value: v, error: null };
+  }
+  return { node, read, focus: () => day.focus() };
+}

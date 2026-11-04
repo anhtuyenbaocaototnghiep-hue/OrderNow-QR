@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 398 test, sửa lúc 2026-11-03 08:12 UTC
-- `npm run test:e2e` (JSON): 61 test, sửa lúc 2026-11-03 08:20 UTC
+- `npm test` (JUnit): 402 test, sửa lúc 2026-11-04 07:47 UTC
+- `npm run test:e2e` (JSON): 62 test, sửa lúc 2026-11-04 07:50 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 151 |
-| Acceptance Criteria | 411 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 411 |
+| User Story | 153 |
+| Acceptance Criteria | 416 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 416 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -506,4 +506,9 @@
 | AC-067-05 | TC-067-05 | F-067 | US-067-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12 | BR-104 | Integration: `birthday.test.js` › AC-067-05: điện thoại khách thấy lời chúc + quà (không mã); tự thêm ngày sinh một lần; thêm sát ngày → WAITING; quản lý lưu hồ sơ → có quà — **PASS** | **PASS** |
 | AC-067-06 | TC-067-06 | F-067 | US-067-2 | ACT-ADMIN | UC-10 | MOD-LOYALTY | SCR-40 | BR-104 | Integration: `birthday.test.js` › AC-067-06: cài đặt — hợp lệ lưu được, sai → 400, nhân viên → 403; danh sách sinh nhật 14 ngày tới kèm trạng thái quà; thống kê năm nay — **PASS** | **PASS** |
 | AC-067-07 | TC-067-07 | F-067 | US-067-1, US-067-2 | ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12, SCR-40 | BR-104 | E2E: `flow.spec.js` › quà sinh nhật: quản lý bật ở tab Quà sinh nhật; điện thoại khách đang sinh nhật thấy lời chúc; quầy thấy dải "Sinh nhật khách", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong hóa đơn có "Quà sinh nhật" (F-067, AC-067-07) — **PASS** | **PASS** |
+| AC-068-01 | TC-068-01 | F-068 | US-068-1 | ACT-STAFF, ACT-MEMBER | UC-04, UC-10 | MOD-LOYALTY | SCR-03, SCR-05, SCR-13, SCR-14, SCR-22 | BR-105 | Unit: `birthdate-collect.test.js` › AC-068-01 (unit): đọc ngày sinh có năm / không năm (29/02, 31/04, ngày mai, trước 1910), đổi dạng CSDL năm 1904, tuần sinh nhật với ngày sinh không năm, nhắc lại sau 365 ngày — **PASS** | **PASS** |
+| AC-068-02 | TC-068-02 | F-068 | US-068-1 | ACT-STAFF, ACT-MEMBER | UC-04, UC-10 | MOD-LOYALTY | SCR-03, SCR-05, SCR-13, SCR-14, SCR-22 | BR-105 | Integration: `birthdate-collect.test.js` › AC-068-02: tra cứu trả askBirthDate theo bật / tắt; đăng ký (khách, quầy) kèm ngày sinh có / không năm → lưu tự khai (WAITING); không gửi → bình thường; sai → 400, không tạo hội viên — **PASS** | **PASS** |
+| AC-068-03 | TC-068-03 | F-068 | US-068-1 | ACT-STAFF, ACT-MEMBER | UC-04, UC-10 | MOD-LOYALTY | SCR-03, SCR-05, SCR-13, SCR-14, SCR-22 | BR-105 | Integration: `birthdate-collect.test.js` › AC-068-03: quầy thấy askBirthDate; nhân viên thêm ngày sinh → tự khai, hết nhắc; đã có → 409; khách không muốn cho → hết nhắc ở quầy, Thẻ thành viên vẫn mời; chưa đăng nhập → 401 — **PASS** | **PASS** |
+| AC-068-04 | TC-068-04 | F-068 | US-068-2 | ACT-ADMIN | UC-10 | MOD-LOYALTY | SCR-26, SCR-40 | BR-105 | Integration: `birthdate-collect.test.js` › AC-068-04: quản lý lưu / đọc ngày sinh không năm, quà sinh nhật áp được; bộ lọc nobirth (ghé gần đây trước, số đếm); coverage ở tab Quà sinh nhật — **PASS** | **PASS** |
+| AC-068-05 | TC-068-05 | F-068 | US-068-1, US-068-2 | ACT-STAFF, ACT-MEMBER, ACT-ADMIN | UC-04, UC-10 | MOD-LOYALTY | SCR-03, SCR-05, SCR-13, SCR-14, SCR-22, SCR-26, SCR-40 | BR-105 | E2E: `flow.spec.js` › thu thập ngày sinh: đăng ký nhanh ở quầy có ô ngày sinh (để trống năm), quầy nhắc hội viên chưa có ngày sinh → Lưu / Khách không muốn cho, khách tự đăng ký có ô ngày sinh, tab Quà sinh nhật có Thu thập ngày sinh → Chưa có ngày sinh, thẻ QR có dòng mời (F-068, AC-068-05) — **PASS** | **PASS** |
 
