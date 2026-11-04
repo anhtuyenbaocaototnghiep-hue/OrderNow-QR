@@ -31,6 +31,7 @@ Mỗi câu hỏi Q-xxx khi được chốt sẽ thành một ADR ngắn. Sau đ�
 | [ADR-024](ADR-024-vong-quay-hen-gio-ra-mon.md) | (yêu cầu chủ dự án 03/11/2026) | Vòng quay may mắn: máy chủ chọn ô, ngân sách lượt trúng mỗi ngày, voucher nguồn GAME; ra món khi bạn tới: đơn giữ vẫn PENDING, giữ kho, tối đa 45 phút, không kêu chuông tới khi hết giữ (D-89…D-94) | ACCEPTED |
 | [ADR-025](ADR-025-qua-sinh-nhat.md) | (yêu cầu chủ dự án 03/11/2026) | Quà sinh nhật: voucher BIRTHDAY mỗi năm một lần, phát khi hội viên ghé trong tuần sinh nhật, tự áp khi thu tiền, ngày sinh khách tự thêm phải trước 30 ngày, mặc định tắt (D-95…D-100) | ACCEPTED |
 | [ADR-026](ADR-026-thu-thap-ngay-sinh.md) | (yêu cầu chủ dự án 04/11/2026) | Thu thập ngày sinh: hỏi lúc đăng ký (không bắt buộc), năm không bắt buộc (`--MM-DD`, CSDL năm 1904), ngày sinh không do quản lý nhập là tự khai, quầy nhắc hỏi + "khách không muốn cho" (nhắc lại sau 365 ngày), dòng trên thẻ QR, khối "Thu thập ngày sinh" + bộ lọc "Chưa có ngày sinh" (D-101…D-106) | ACCEPTED |
+| [ADR-027](ADR-027-mung-khach-quay-lai.md) | (yêu cầu chủ dự án 04/11/2026) | Mừng khách quay lại: vắng ≥ `winback.after_days` (45) → voucher WINBACK một lần mỗi đợt vắng, tối đa một quà / 180 ngày, tự áp sau quà sinh nhật, giữ 14 ngày nếu không dùng; dải ở quầy kể cả khi tắt; bộ lọc "Lâu chưa quay lại" dùng chung số ngày (D-107…D-111) | ACCEPTED |
 
 Còn mở: **Q-000** (người ký chốt). Q-008 (hosting) đã chốt bằng ADR-016. Mỗi khi nhóm đổi một quyết định trong ADR-003, tạo ADR mới (ADR-005…) ghi rõ "thay thế mục Q-xxx của ADR-003".
 

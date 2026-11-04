@@ -405,3 +405,11 @@ flowchart LR
 - **S-40 tab Quà sinh nhật:** khối **"Thu thập ngày sinh"**: thanh "Đã có ngày sinh X / Y hội viên (Z%)", dòng "Khách ghé 30 ngày qua: A / B", 3 cách lấy ngày sinh, nút **Xem ai chưa có ngày sinh**.
 - **S-22 In QR:** quà sinh nhật bật → mỗi thẻ thêm dòng "Hội viên: thêm ngày sinh trong Thẻ thành viên — quán tặng quà tuần sinh nhật".
 - **SCR-48 Chính sách dữ liệu:** dòng ngày sinh ghi thêm "lúc đăng ký", "năm sinh không bắt buộc".
+
+## F-069 — Mừng khách quay lại (TASK-086, ADR-027, 04/11/2026)
+
+- **S-13 / S-14 khung Hội viên:** hội viên đang vắng → dải **"Khách quay lại sau 52 ngày"** + "lần cuối ghé 13/09 · đã ghé 8 lần" (`role=status`); dòng trạng thái quà: "Đã tự áp quà: Giảm 15% (tối đa 30.000đ)" + **Không dùng quà lần này** / **Dùng quà**, "Quà … giữ tới dd/mm — lượt này đã dùng quà sinh nhật", "Đã tặng quà quay lại ngày dd/mm — chưa tới lượt tặng tiếp", "Nhớ chào mừng khách quay lại nhé" (tính năng tắt). Quà đang giữ từ lần trước: dải "Quà quay lại còn giữ đến dd/mm".
+- **S-03 / S-05 ô hội viên + Thẻ thành viên:** "Lâu rồi mới gặp lại bạn!" + "Quán tặng bạn: … — tự trừ khi thanh toán, dùng đến hết dd/mm"; quà đang giữ: "Bạn còn quà quay lại: …".
+- **S-12 Hóa đơn:** dòng "Quà quay lại {mã}".
+- **S-40 tab Mừng khách quay lại:** 4 ô số (90 ngày: khách quay lại + đã dùng quà, ghé tiếp sau khi dùng quà, tiền quà đã trừ, khách trả); công tắc; loại quà + ô theo loại; vắng từ / giữ quà / giữa hai quà (ngày); câu xem trước luật; nút **Xem khách đang vắng (N)** → `/admin/members?view=lapsed`; bảng **Quà quay lại gần đây**.
+- **S-26 Hội viên:** nút lọc "Lâu chưa quay lại" và câu khi rỗng theo `lapsedDays`.

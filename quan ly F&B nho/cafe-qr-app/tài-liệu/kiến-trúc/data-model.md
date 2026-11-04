@@ -1254,3 +1254,11 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Migration `0045_thu_thap_ngay_sinh.sql` | `Members.BirthDateDeclinedAt DATETIME2(0) NULL` — lần gần nhất nhân viên ghi "khách không muốn cho"; quầy nhắc lại sau 365 ngày; ẩn danh → NULL |
 | Ngày sinh không năm | `Members.BirthDate` năm **1904** (năm nhuận, 29/02 hợp lệ) = không rõ năm. `membersRepo` / `birthdayRepo` đổi `1904-MM-DD` ↔ `--MM-DD`; `MONTH()` / `DAY()` trong SQL (bộ lọc tháng, chiến dịch) không đổi |
 | Tự khai | `BirthDateSelfAt` ghi cả khi đăng ký kèm ngày sinh và khi nhân viên ghi hộ (`UPDATE … WHERE BirthDate IS NULL`) |
+
+## Mừng khách quay lại (FEATURE-069, ADR-027, 04/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0046_mung_khach_quay_lai.sql` | `CK_Vouchers_Source` thêm `WINBACK`. Bảng `WinbackGifts (GiftId PK, MemberId FK, LastVisitBefore DATETIME2 — LastVisitAt lúc phát, AbsentDays INT, VoucherId FK UNIQUE, CreatedAt)`; `UNIQUE (MemberId, LastVisitBefore)` = một quà mỗi đợt vắng; `IX (MemberId, CreatedAt)` |
+| Phát quà | `winbackRepo.issue`: INSERT voucher `WINBACK` + INSERT `WinbackGifts` trong một transaction; trùng khóa (hai yêu cầu cùng lúc) → hủy cả voucher, đọc lại quà đã có |
+| Cài đặt | `winback.enabled` (false), `winback.after_days` (45), `winback.kind` (PERCENT), `winback.value` (15), `winback.max_discount` (30000), `winback.menu_item_id`, `winback.hold_days` (14), `winback.cooldown_days` (180) |

@@ -613,3 +613,16 @@ Chi tiết: [FEATURE-068](../chức-năng/FEATURE-068.md), BR-105. Mọi chỗ n
 - `GET /api/members/{id}/loyalty` (quầy): thêm `askBirthDate` — chưa có ngày sinh, quà sinh nhật bật, không có "khách không muốn cho" trong 365 ngày.
 - `GET /api/admin/members?view=nobirth`: hội viên chưa có ngày sinh, ghé gần đây trước; dòng hội viên thêm `birthDateDeclinedAt`. `GET /api/admin/members/overview` thêm `noBirthDate`.
 - `GET /api/admin/birthday`: thêm `coverage: { total, withBirthDate, recentTotal, recentWithBirthDate }` (hội viên đang hoạt động; "recent" = ghé trong 30 ngày).
+
+## Bổ sung F-069 — mừng khách quay lại (ADR-027, 04/11/2026)
+
+Chi tiết: [FEATURE-069](../chức-năng/FEATURE-069.md), BR-106.
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `GET /api/admin/winback` | ADMIN | `{ enabled, kind, value, maxDiscount, menuItemId, afterDays, holdDays, cooldownDays, awayNow, stats: { issued, used, returnedAgain, giftValue, usedRevenue }, recent: [{ memberId, fullName, absentDays, createdAt, status, gift, usedAt }] }` — `stats` trong 90 ngày; `returnedAgain` = số người dùng quà rồi thanh toán thêm ít nhất một lần trong 30 ngày sau |
+| `PUT /api/admin/winback` | ADMIN | Body như trên (không `awayNow`, `stats`, `recent`); quà như `PUT /api/admin/birthday`; `afterDays` 14–365, `holdDays` 1–60, `cooldownDays` ≥ `afterDays` và ≤ 730 → sai `400 VALIDATION_ERROR` |
+
+- `GET /api/members/{id}/loyalty`, `member.loyalty` của phiên, `GET /api/sessions/{id}/member-card`: thêm `winback: { away, days, lastVisitAt, visitCount, status: READY \| USED \| EXPIRED \| COOLDOWN \| OFF, gift: { code (chỉ quầy), kind, label, menuItemId, expiresAt, usedAt } \| null, lastGiftAt } \| null` (`away = false` + `READY` = quà đang giữ từ lần trước).
+- Xem trước / thu tiền (bàn, chia bill, mang đi): body thêm `skipWinback`; `totals.winbackApplied`; dòng breakdown voucher "Quà quay lại". Voucher nguồn `WINBACK`.
+- `GET /api/admin/members/overview` thêm `lapsedDays`; `view=lapsed` dùng `winback.after_days`.
