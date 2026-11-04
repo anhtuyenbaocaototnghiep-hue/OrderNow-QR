@@ -1262,3 +1262,12 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Migration `0046_mung_khach_quay_lai.sql` | `CK_Vouchers_Source` thêm `WINBACK`. Bảng `WinbackGifts (GiftId PK, MemberId FK, LastVisitBefore DATETIME2 — LastVisitAt lúc phát, AbsentDays INT, VoucherId FK UNIQUE, CreatedAt)`; `UNIQUE (MemberId, LastVisitBefore)` = một quà mỗi đợt vắng; `IX (MemberId, CreatedAt)` |
 | Phát quà | `winbackRepo.issue`: INSERT voucher `WINBACK` + INSERT `WinbackGifts` trong một transaction; trùng khóa (hai yêu cầu cùng lúc) → hủy cả voucher, đọc lại quà đã có |
 | Cài đặt | `winback.enabled` (false), `winback.after_days` (45), `winback.kind` (PERCENT), `winback.value` (15), `winback.max_discount` (30000), `winback.menu_item_id`, `winback.hold_days` (14), `winback.cooldown_days` (180) |
+
+## Ly treo — mua tặng bạn một ly (FEATURE-070, ADR-028, 04/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0047_ly_treo.sql` | `CK_Vouchers_Source` thêm `GIFT`. Bảng `GiftDrinks (GiftId PK, Token CHAR(32) UNIQUE, VoucherId FK UNIQUE, MenuItemId FK, Amount > 0, Method CASH / TRANSFER, ShiftId FK, CashTxnId FK NULL, GiverName, Message, CreatedBy, CreatedAt, CancelledAt, CancelledBy, RefundCashTxnId)`. Danh mục sổ quỹ hệ thống `Bán ly tặng` (IN) / `Hoàn ly tặng` (OUT), `IsActive = 0` (ẩn khỏi ô chọn tay), `IsExpense = 0` |
+| Bán | `giftDrinkRepo.sell`: một transaction — khóa ca đang mở (`HOLDLOCK`, như `sp_CreateCashTxn`), voucher `GIFT`, sổ quỹ thu đã duyệt (tiền mặt), dòng `GiftDrinks` |
+| Hủy | `giftDrinkRepo.cancel`: voucher `ExpiresAt` = bây giờ, sổ quỹ chi "Hoàn ly tặng" (tiền mặt, ca đang mở), `CancelledAt`; voucher đã dùng → hủy không được |
+| Cài đặt | `gift.enabled` (false), `gift.valid_days` (30) |

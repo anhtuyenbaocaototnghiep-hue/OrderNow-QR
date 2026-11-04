@@ -102,6 +102,7 @@
 | [TASK-084](TASK-084.md) | Quà sinh nhật hội viên (F-067), ADR-025 | FEATURE-067 | TASK-083 | Agent | — | chủ dự án 03/11 | READY_FOR_REVIEW |
 | [TASK-085](TASK-085.md) | Thu thập ngày sinh hội viên (F-068), ADR-026 | FEATURE-068 | TASK-084 | Agent | — | chủ dự án 04/11 | READY_FOR_REVIEW |
 | [TASK-086](TASK-086.md) | Mừng khách quay lại (F-069), ADR-027 | FEATURE-069 | TASK-085 | Agent | — | chủ dự án 04/11 | READY_FOR_REVIEW |
+| [TASK-087](TASK-087.md) | Ly treo — mua tặng bạn một ly (F-070), ADR-028 | FEATURE-070 | TASK-086 | Agent | — | chủ dự án 04/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

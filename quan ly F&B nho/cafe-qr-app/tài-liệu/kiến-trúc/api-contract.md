@@ -626,3 +626,21 @@ Chi tiết: [FEATURE-069](../chức-năng/FEATURE-069.md), BR-106.
 - `GET /api/members/{id}/loyalty`, `member.loyalty` của phiên, `GET /api/sessions/{id}/member-card`: thêm `winback: { away, days, lastVisitAt, visitCount, status: READY \| USED \| EXPIRED \| COOLDOWN \| OFF, gift: { code (chỉ quầy), kind, label, menuItemId, expiresAt, usedAt } \| null, lastGiftAt } \| null` (`away = false` + `READY` = quà đang giữ từ lần trước).
 - Xem trước / thu tiền (bàn, chia bill, mang đi): body thêm `skipWinback`; `totals.winbackApplied`; dòng breakdown voucher "Quà quay lại". Voucher nguồn `WINBACK`.
 - `GET /api/admin/members/overview` thêm `lapsedDays`; `view=lapsed` dùng `winback.after_days`.
+
+## Bổ sung F-070 — ly treo, mua tặng bạn một ly (ADR-028, 04/11/2026)
+
+Chi tiết: [FEATURE-070](../chức-năng/FEATURE-070.md), BR-107.
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `GET /api/gift-drinks/config` | Nhân viên | `{ enabled, validDays, items: [{ menuItemId, name, price }] }` (món đơn đang bán, giá > 0) |
+| `POST /api/gift-drinks` | Nhân viên | Body `{ menuItemId, giverName? (≤ 60), message? (≤ 150), method: CASH | TRANSFER }` → `201 { giftId, code, token, url, qr (data URL), amount, menuItemName, giverName, message, expiresAt, method }`; tắt → `409 GIFT_DISABLED`; chưa mở ca → `409 NO_OPEN_SHIFT`; món không bán được → `400 VALIDATION_ERROR` |
+| `GET /api/gifts/{token}` | Công khai | `{ shopName, giverName, message, menuItemName, amount, expiresAt, status: READY | USED | EXPIRED | CANCELLED, usedAt, code }` — `code` chỉ khi `READY`; token sai → 404 |
+| `GET /api/admin/gift-drinks` | ADMIN | `{ enabled, validDays, stats: { sold, soldAmount, used, newCustomers }, outstanding: { count, amount }, items: [{ giftId, code, menuItemName, amount, method, giverName, createdAt, expiresAt, status, usedAt }] }` — `stats` 30 ngày |
+| `PUT /api/admin/gift-drinks` | ADMIN | `{ enabled, validDays (1–365) }` |
+| `POST /api/admin/gift-drinks/{id}/extend` | ADMIN | Gia hạn thêm `validDays` (từ hạn cũ, hoặc từ hôm nay nếu đã hết hạn); đã dùng / đã hủy → 409 |
+| `POST /api/admin/gift-drinks/{id}/cancel` | ADMIN | Hủy & hoàn tiền; đã dùng → `409 GIFT_USED`; tiền mặt cần ca đang mở → sổ quỹ chi "Hoàn ly tặng" |
+
+- `POST /api/vouchers/validate`: ly tặng → `voucher.source = 'GIFT'`, thêm `gift: { giverName, menuItemName }`; hết hạn → "Ly tặng đã hết hạn — nhờ quản lý gia hạn".
+- Xem trước / thu tiền: voucher `GIFT` → dòng breakdown "Ly tặng — 1 …"; số trừ có trần max(đã trả, giá hiện tại); hóa đơn ghi "Ly tặng {mã}".
+- `GET /api/admin/pnl`: phải thu cộng phần ly tặng đã dùng; thêm `giftsOutstanding: { count, amount }`.

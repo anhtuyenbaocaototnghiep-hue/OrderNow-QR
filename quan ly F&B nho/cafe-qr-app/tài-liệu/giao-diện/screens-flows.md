@@ -413,3 +413,11 @@ flowchart LR
 - **S-12 Hóa đơn:** dòng "Quà quay lại {mã}".
 - **S-40 tab Mừng khách quay lại:** 4 ô số (90 ngày: khách quay lại + đã dùng quà, ghé tiếp sau khi dùng quà, tiền quà đã trừ, khách trả); công tắc; loại quà + ô theo loại; vắng từ / giữ quà / giữa hai quà (ngày); câu xem trước luật; nút **Xem khách đang vắng (N)** → `/admin/members?view=lapsed`; bảng **Quà quay lại gần đây**.
 - **S-26 Hội viên:** nút lọc "Lâu chưa quay lại" và câu khi rỗng theo `lapsedDays`.
+
+## F-070 — Ly treo, mua tặng bạn một ly (TASK-087, ADR-028, 04/11/2026)
+
+- **S-13 Bán mang đi:** đầu giỏ có nút **"Bán ly tặng"** (khi bật) → hộp: Món, Người tặng (không bắt buộc), Lời nhắn (không bắt buộc), Tiền mặt / Chuyển khoản, nút **"Thu 29.000đ & tạo mã"** → màn kết quả: mã lớn, QR trang quà ("Khách quét để mở thẻ quà và gửi cho bạn qua Zalo"), **In phiếu**, **Xong**.
+- **S-13 / S-14 ô Mã voucher:** mã ly tặng → "Ly tặng của Lan: 1 Cà phê sữa"; bill chưa gắn hội viên → nhắc "Khách được tặng ly — mời đăng ký hội viên".
+- **SCR-50 Trang quà `/qua/{token}`** (công khai, 390 px): tên quán, "Lan tặng bạn 1 Cà phê sữa", lời nhắn, mã lớn, "Dùng đến hết dd/mm/yyyy · đọc mã ở quầy"; nút **Gửi cho bạn** (chia sẻ của điện thoại; không hỗ trợ → chép link) và **Chép lời nhắn**; đã dùng / hết hạn / đã hủy → báo trạng thái, không hiện mã. `?in=1` → in phiếu.
+- **S-40 tab Ly tặng:** 4 ô số (30 ngày: đã bán + tiền, đã dùng, đang giữ, người nhận là khách mới); công tắc + số ngày dùng được; bảng ly tặng gần đây (mã, món, người tặng, ngày bán, hạn, trạng thái) với **Gia hạn**, **Hủy & hoàn tiền**.
+- **Lãi/lỗ:** gợi ý "Đã bán N ly tặng chưa dùng (X đ): tiền đã thu, doanh thu tính khi người nhận dùng".
