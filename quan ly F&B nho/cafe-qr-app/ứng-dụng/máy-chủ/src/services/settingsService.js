@@ -50,6 +50,9 @@ function toSettings(map) {
     winbackMenuItemId: num(map.get('winback.menu_item_id'), null) || null,
     winbackHoldDays: num(map.get('winback.hold_days'), 14),
     winbackCooldownDays: num(map.get('winback.cooldown_days'), 180),
+    // F-070 ly treo (ADR-028) — mặc định tắt
+    giftEnabled: map.get('gift.enabled') === 'true',
+    giftValidDays: num(map.get('gift.valid_days'), 30),
     staffMaxAmount: num(map.get('discount.staff_max_amount'), 20000),
     // F-025 thời gian chờ (D-18)
     etaBaseSeconds: num(map.get('kitchen.base_seconds'), 120),
@@ -143,6 +146,8 @@ const KEYS = {
   winbackMenuItemId: 'winback.menu_item_id',
   winbackHoldDays: 'winback.hold_days',
   winbackCooldownDays: 'winback.cooldown_days',
+  giftEnabled: 'gift.enabled',
+  giftValidDays: 'gift.valid_days',
   staffMaxAmount: 'discount.staff_max_amount',
   etaBaseSeconds: 'kitchen.base_seconds',
   kitchenParallelism: 'kitchen.parallelism',

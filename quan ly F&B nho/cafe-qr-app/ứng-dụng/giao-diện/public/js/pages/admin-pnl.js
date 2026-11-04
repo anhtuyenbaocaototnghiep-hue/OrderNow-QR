@@ -254,6 +254,12 @@ function hints(r, costs) {
       `Sổ quỹ có chi ${list(goods)}. Nếu đó là tiền mua hàng đã nhập kho thì đang bị trừ hai lần (đã tính trong Nguyên liệu).`,
       ['/admin/cash', 'Mở Sổ quỹ'],
     ]);
+  if (r.giftsOutstanding?.count)
+    // F-070: ly tặng đã thu tiền, chưa dùng
+    out.push([
+      `Đã bán ${r.giftsOutstanding.count} ly tặng chưa dùng (${money(r.giftsOutstanding.amount)}): tiền đã thu, doanh thu tính khi người nhận dùng ly.`,
+      ['/admin/loyalty?tab=gift', 'Xem ly tặng'],
+    ]);
   if (r.lossValue > 0) out.push([`Hàng hao hụt, đổ bỏ, lệch kiểm kê khoảng ${money(r.lossValue)} — chưa trừ vào lãi ở trên.`, ['/admin/stock', 'Xem kho']]);
   if (r.estimatedCogsRows) out.push([`${r.estimatedCogsRows} món chưa có giá vốn chốt lúc bán, app tạm tính theo giá nguyên liệu hiện tại.`, null]);
   return out;

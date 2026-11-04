@@ -1,6 +1,7 @@
 // Khung "Hội viên · giảm giá" dùng chung cho thu tiền bàn (S-14) và bán mang đi (S-13) — ADR-005 F-014, F-022.
 // ADR-006: điểm / tem + đổi thưởng (F-039), voucher (F-038), SĐT người giới thiệu khi đăng ký nhanh (F-038).
 // ADR-025 (F-067): dải "Sinh nhật khách" — máy chủ tự áp quà sinh nhật; nhân viên chọn "Không dùng quà lần này" (skipBirthday).
+// ADR-028 (F-070): mã ly tặng ở ô Mã voucher → "Ly tặng của …: 1 …"; chưa gắn hội viên → nhắc mời đăng ký.
 // ADR-027 (F-069): dải "Khách quay lại sau N ngày" + quà quay lại tự áp (sau quà sinh nhật); "Không dùng quà lần này" → skipWinback.
 // ADR-026 (F-068): ô ngày sinh khi đăng ký nhanh; hội viên chưa có ngày sinh → khung "Chưa có ngày sinh" + câu hỏi mẫu, Lưu / Khách không muốn cho.
 // Không tự tính tiền: trang gọi API xem trước (server dùng bộ pricing) mỗi khi lựa chọn đổi.
@@ -32,7 +33,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
   const askSlot = el('div', { class: 'bday-ask-slot' }); // F-068
   const earnNote = el('div', { class: 'small muted earn-note' });
   const voucherInput = el('input', { class: 'input', maxlength: 20, placeholder: 'Mã voucher', 'aria-label': 'Mã voucher', style: { maxWidth: '10rem' } });
-  const voucherMsg = el('span', { class: 'small' });
+  const voucherMsg = el('span', { class: 'small voucher-msg' });
   const phone = el('input', { class: 'input', type: 'tel', inputmode: 'tel', placeholder: 'SĐT hội viên', maxlength: 15, 'aria-label': 'SĐT hội viên' });
   const memberBox = el('div', { class: 'member-slot' });
   const msg = el('div');
@@ -394,7 +395,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
                   onclick: () => applyVoucher(st.voucherCode === v.code ? null : v.code),
                 },
                 icon('ticket'),
-                `${v.code} ${voucherValue(v)}${v.source === 'BIRTHDAY' ? ' · quà sinh nhật' : v.source === 'WINBACK' ? ' · quà quay lại' : ''}`,
+                `${v.code} ${voucherValue(v)}${v.source === 'BIRTHDAY' ? ' · quà sinh nhật' : v.source === 'WINBACK' ? ' · quà quay lại' : v.source === 'GIFT' ? ' · ly tặng' : ''}`,
               ),
             ),
           )
@@ -409,6 +410,13 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
       const r = await staffApi('/api/vouchers/validate', { method: 'POST', body: { code, memberId: st.member?.memberId ?? null } });
       if (!r.valid) return clear(voucherMsg, el('span', { class: 'field-error' }, r.message));
       applyVoucher(code);
+      if (r.gift) {
+        clear(
+          voucherMsg,
+          `Ly tặng của ${r.gift.giverName || 'một người bạn'}: 1 ${r.gift.menuItemName}`,
+          st.member ? null : el('span', { class: 'gift-invite' }, ' — khách được tặng ly, mời đăng ký hội viên (nhập SĐT ở trên)'),
+        );
+      }
     } catch (err) {
       clear(voucherMsg, el('span', { class: 'field-error' }, errorMessage(err)));
     }
@@ -458,7 +466,7 @@ export function billingControls({ onChange, sessionId = null, onMember = null })
       askSlot,
       loyaltyBox,
       el('label', {}, 'Voucher'),
-      el('div', { class: 'row' }, voucherInput, el('button', { class: 'btn btn-sm', type: 'button', onclick: checkVoucher }, 'Áp mã'), voucherMsg),
+      el('div', { class: 'row wrap' }, voucherInput, el('button', { class: 'btn btn-sm', type: 'button', onclick: checkVoucher }, 'Áp mã'), voucherMsg),
       el('label', {}, 'Giảm giá tay'),
       manualRow,
       approvalBox,

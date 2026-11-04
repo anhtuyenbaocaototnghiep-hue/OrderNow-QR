@@ -1108,3 +1108,70 @@ body:has(.tour-layer) .toasts {
 .bday-ask .row {
   margin-top: 0.45rem;
 }
+
+/* F-070 ly treo: hộp bán ở quầy, trang quà /qua/{token} */
+.gift-code {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  margin: 0.2rem 0 0.4rem;
+}
+.gift-sell [aria-pressed='true'] {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
+/* ô Mã voucher: lời báo (vd. "Ly tặng của …") xuống dòng riêng, không bóp hẹp ô nhập */
+.voucher-msg:not(:empty) {
+  flex-basis: 100%;
+}
+.gift-result {
+  text-align: center;
+}
+.gift-qr {
+  display: block;
+  margin: 0.4rem auto;
+}
+.gift-page {
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+.gift-card {
+  text-align: center;
+  padding: 1.4rem 1.1rem;
+  border: 1px solid var(--c-accent);
+  border-radius: var(--radius);
+  background: var(--c-accent-100);
+}
+.gift-card.off {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+}
+.gift-card h1 {
+  font-size: 1.35rem;
+  margin: 0.4rem 0 0.6rem;
+}
+.gift-icon .ic {
+  width: 2.2rem;
+  height: 2.2rem;
+  color: var(--c-accent-600);
+}
+.gift-msg {
+  margin: 0 0 0.9rem;
+  font-style: italic;
+}
+.gift-actions {
+  margin-top: 1rem;
+}
+@media print {
+  .no-print,
+  .c-header {
+    display: none !important;
+  }
+  .gift-card {
+    border-color: #999;
+    background: #fff;
+  }
+}

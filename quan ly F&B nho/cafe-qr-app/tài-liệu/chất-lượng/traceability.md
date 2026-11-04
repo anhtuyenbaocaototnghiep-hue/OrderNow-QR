@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 407 test, sửa lúc 2026-11-04 08:31 UTC
-- `npm run test:e2e` (JSON): 63 test, sửa lúc 2026-11-04 08:34 UTC
+- `npm test` (JUnit): 412 test, sửa lúc 2026-11-04 09:03 UTC
+- `npm run test:e2e` (JSON): 64 test, sửa lúc 2026-11-04 09:13 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 155 |
-| Acceptance Criteria | 422 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 422 |
+| User Story | 158 |
+| Acceptance Criteria | 428 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 428 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -517,4 +517,10 @@
 | AC-069-04 | TC-069-04 | F-069 | US-069-1 | ACT-MEMBER, ACT-STAFF | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-13, SCR-14, SCR-12 | BR-106 | Integration: `winback.test.js` › AC-069-04: điện thoại khách / Thẻ thành viên thấy lời chào + quà, không có mã — **PASS** | **PASS** |
 | AC-069-05 | TC-069-05 | F-069 | US-069-2 | ACT-ADMIN | UC-10 | MOD-LOYALTY | SCR-40, SCR-26 | BR-106 | Integration: `winback.test.js` › AC-069-05: cài đặt hợp lệ / sai 400 / nhân viên 403; stats (đã tặng, đã dùng, ghé tiếp), recent; lọc "Lâu chưa quay lại" theo afterDays — **PASS** | **PASS** |
 | AC-069-06 | TC-069-06 | F-069 | US-069-1, US-069-2 | ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-13, SCR-14, SCR-12, SCR-40, SCR-26 | BR-106 | E2E: `flow.spec.js` › mừng khách quay lại: quản lý bật ở tab; quầy gắn hội viên vắng 52 ngày → dải "Khách quay lại sau 52 ngày", tổng đã trừ quà, "Không dùng quà lần này" bỏ trừ; thu xong tab ghi "Đã dùng quà" (F-069, AC-069-06) — **PASS** | **PASS** |
+| AC-070-01 | TC-070-01 | F-070 | US-070-1, US-070-2 | ACT-GUEST, ACT-STAFF | UC-10, UC-04 | MOD-LOYALTY, MOD-BILLING, MOD-FINANCE | SCR-13, SCR-50, SCR-14 | BR-107 | Unit: `gift-drinks.test.js` › AC-070-01 (unit): mã ly tặng 8 ký tự không có ký tự dễ nhầm; số trừ = min(đơn giá, max(đã trả, giá hiện tại)) — **PASS** | **PASS** |
+| AC-070-02 | TC-070-02 | F-070 | US-070-1, US-070-2 | ACT-GUEST, ACT-STAFF | UC-10, UC-04 | MOD-LOYALTY, MOD-BILLING, MOD-FINANCE | SCR-13, SCR-50, SCR-14 | BR-107 | Integration: `gift-drinks.test.js` › AC-070-02: bán — tắt 409, chưa mở ca 409, combo / ngừng bán 400; voucher GIFT + token; tiền mặt vào sổ quỹ và chốt ca, chuyển khoản không; không lượt thu, không trừ kho — **PASS** | **PASS** |
+| AC-070-03 | TC-070-03 | F-070 | US-070-2, US-070-3 | ACT-STAFF, ACT-ADMIN | UC-04, UC-10 | MOD-BILLING, MOD-FINANCE, MOD-LOYALTY | SCR-13, SCR-14, SCR-40 | BR-107 | Integration: `gift-drinks.test.js` › AC-070-03: nhận — kiểm mã trả gift; trừ đúng 1 ly; thiếu món 409; dùng rồi 409; hóa đơn "Ly tặng"; Lãi/lỗ cộng vào doanh thu, không vào giảm giá — **PASS** | **PASS** |
+| AC-070-04 | TC-070-04 | F-070 | US-070-1 | ACT-GUEST | UC-10 | MOD-LOYALTY | SCR-13, SCR-50 | BR-107 | Integration: `gift-drinks.test.js` › AC-070-04: trang quà công khai — READY có mã; đã dùng / hết hạn / đã hủy không có mã; token sai 404 — **PASS** | **PASS** |
+| AC-070-05 | TC-070-05 | F-070 | US-070-3 | ACT-ADMIN | UC-10 | MOD-LOYALTY, MOD-FINANCE | SCR-40 | BR-107 | Integration: `gift-drinks.test.js` › AC-070-05: quản lý — cài đặt sai 400, nhân viên 403; số liệu; gia hạn; hủy & hoàn tiền (sổ quỹ chi), đã dùng không hủy được — **PASS** | **PASS** |
+| AC-070-06 | TC-070-06 | F-070 | US-070-1, US-070-2, US-070-3 | ACT-GUEST, ACT-STAFF, ACT-ADMIN | UC-10, UC-04 | MOD-LOYALTY, MOD-BILLING, MOD-FINANCE | SCR-13, SCR-50, SCR-14, SCR-40 | BR-107 | E2E: `flow.spec.js` › ly treo: quản lý bật tab Ly tặng; quầy "Bán ly tặng" → mã + QR; điện thoại mở trang quà thấy lời nhắn + mã + "Gửi cho bạn"; quầy nhập mã cho bill có món → dòng "Ly tặng", nhắc mời đăng ký; tab ghi "Đã dùng" (F-070, AC-070-06) — **PASS** | **PASS** |
 

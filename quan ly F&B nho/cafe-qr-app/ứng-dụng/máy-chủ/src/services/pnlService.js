@@ -6,6 +6,7 @@
 //   lossValue (TASK-080): hàng mất ròng trong kỳ (điều chỉnh / hao hụt / lệch kiểm kê) — chỉ để nhắc, không trừ vào lợi nhuận
 import { badRequest, notFound } from '../errors.js';
 import * as pnlRepo from '../repositories/pnlRepo.js';
+import * as giftDrinkRepo from '../repositories/giftDrinkRepo.js';
 import { addDays, eachDay, vnDayStartUtc } from '../utils/time.js';
 
 const daysInMonth = (date) => new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)), 0)).getUTCDate();
@@ -41,7 +42,11 @@ export function finalize(b) {
 export async function report(from, to, groupBy = 'day') {
   if (to < from) throw badRequest('INVALID_RANGE', 'Khoảng thời gian không hợp lệ');
   if (eachDay(from, to).length > 400) throw badRequest('INVALID_RANGE', 'Chọn tối đa khoảng 13 tháng');
-  const [data, costs] = await Promise.all([pnlRepo.daily(vnDayStartUtc(from), vnDayStartUtc(addDays(to, 1))), pnlRepo.fixedCosts()]);
+  const [data, costs, giftsOutstanding] = await Promise.all([
+    pnlRepo.daily(vnDayStartUtc(from), vnDayStartUtc(addDays(to, 1))),
+    pnlRepo.fixedCosts(),
+    giftDrinkRepo.outstanding(), // F-070: ly tặng đã thu tiền, chưa dùng (chưa là doanh thu)
+  ]);
   const days = new Map(eachDay(from, to).map((d) => [d, EMPTY()]));
   const add = (date, fn) => days.has(date) && fn(days.get(date));
   for (const p of data.payments) {
@@ -91,6 +96,7 @@ export async function report(from, to, groupBy = 'day') {
     breakEvenPerDay: totals.grossMargin > 0 && totals.revenueNet > 0 ? Math.round((fixedPerDay * totals.revenueNet) / totals.grossMargin) : null,
     expensesByCategory: [...byCategory.values()].sort((a, b) => b.amount - a.amount),
     lossValue: data.lossValue,
+    giftsOutstanding,
     series: [...groups].map(([period, g]) => ({ period, ...finalize(g) })),
   };
 }

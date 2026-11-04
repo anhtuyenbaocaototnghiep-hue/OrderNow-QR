@@ -39,7 +39,7 @@
 
 - AC-070-01: (unit) mã ly tặng 8 ký tự không có ký tự dễ nhầm; số trừ khi nhận = min(đơn giá, max(đã trả, giá hiện tại)).
 - AC-070-02: Bán: tắt → 409; chưa mở ca → 409; combo / món ngừng bán → 400; hợp lệ → voucher `GIFT` không gắn hội viên + token; tiền mặt → sổ quỹ thu "Bán ly tặng" đã duyệt, chốt ca tính vào tiền két; chuyển khoản → không ghi sổ quỹ; không tạo lượt thu, không trừ kho.
-- AC-070-03: Nhận: kiểm mã trả `gift`; bill có món → trừ đúng (giá tăng vẫn trừ đủ, size lớn hơn chỉ trừ phần đã trả); bill chưa có món → 409; dùng rồi → 409; hóa đơn ghi "Ly tặng"; Lãi/lỗ cộng phần đã dùng vào doanh thu, không vào giảm giá.
+- AC-070-03: Nhận: kiểm mã trả `gift`; bill có món → trừ đúng 1 ly (trần số trừ khi giá tăng / lên size: AC-070-01); bill chưa có món → 409; dùng rồi → 409; hóa đơn ghi "Ly tặng"; Lãi/lỗ cộng phần đã dùng vào doanh thu, không vào giảm giá.
 - AC-070-04: Trang quà công khai: READY có mã; đã dùng / hết hạn / đã hủy không có mã; token sai → 404.
 - AC-070-05: Quản lý: cài đặt (số ngày 1–365) sai → 400, nhân viên → 403; số liệu (đã bán, đã dùng, đang giữ, khách mới); gia hạn; hủy & hoàn tiền (tiền mặt → sổ quỹ chi), ly đã dùng không hủy được.
 - AC-070-06: Trên trình duyệt: quản lý bật tab Ly tặng; quầy "Bán ly tặng" → mã + QR; điện thoại mở trang quà thấy lời nhắn + mã + nút "Gửi cho bạn"; quầy nhập mã cho bill có món → dòng "Ly tặng", nhắc mời đăng ký hội viên; tab ghi "Đã dùng".

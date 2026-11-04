@@ -305,7 +305,7 @@ export const receiptLines = (items) =>
     promotionName: i.promotionName,
   }));
 
-const VOUCHER_LINE = { BIRTHDAY: 'Quà sinh nhật', WINBACK: 'Quà quay lại' }; // F-067, F-069: nhãn dòng voucher trên hóa đơn
+const VOUCHER_LINE = { BIRTHDAY: 'Quà sinh nhật', WINBACK: 'Quà quay lại', GIFT: 'Ly tặng' }; // F-067, F-069, F-070: nhãn dòng voucher trên hóa đơn
 
 /** Dòng breakdown từ thanh toán đã ghi (bill chính thức). */
 export function paymentBreakdown(payment, fallbackTotal) {

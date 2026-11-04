@@ -12,8 +12,11 @@ export async function daily(fromUtc, toUtc) {
   const p = { f: [sql.DateTime2(0), fromUtc], t: [sql.DateTime2(0), toUtc] };
   const [pay, ref, cogs, cash, loss] = await Promise.all([
     query(
-      `SELECT ${VN_DAY('PaidAt')} AS D, SUM(ISNULL(SubtotalAmount, AmountDue)) AS Gross, SUM(AmountDue) AS Due, COUNT(*) AS N
-       FROM dbo.Payments WHERE PaidAt >= @f AND PaidAt < @t GROUP BY ${VN_DAY('PaidAt')}`,
+      // F-070 D-116: phần trả bằng ly tặng (voucher GIFT — tiền đã thu lúc bán) tính là phải thu, không phải giảm giá
+      `SELECT ${VN_DAY('p.PaidAt')} AS D, SUM(ISNULL(p.SubtotalAmount, p.AmountDue)) AS Gross, SUM(p.AmountDue + ISNULL(g.Paid, 0)) AS Due, COUNT(*) AS N
+       FROM dbo.Payments p
+       OUTER APPLY (SELECT TOP 1 p.VoucherDiscount AS Paid FROM dbo.Vouchers v WHERE v.UsedPaymentId = p.PaymentId AND v.Source = 'GIFT') g
+       WHERE p.PaidAt >= @f AND p.PaidAt < @t GROUP BY ${VN_DAY('p.PaidAt')}`,
       p,
     ),
     query(

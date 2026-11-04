@@ -7,6 +7,7 @@ import * as marketingService from '../services/marketingService.js';
 import * as memberService from '../services/memberService.js';
 import * as birthdayService from '../services/birthdayService.js';
 import * as winbackService from '../services/winbackService.js';
+import * as giftDrinkService from '../services/giftDrinkService.js';
 import * as luckySpinService from '../services/luckySpinService.js';
 import * as loyaltyService from '../services/loyaltyService.js';
 import * as campaignService from '../services/campaignService.js';
@@ -75,6 +76,14 @@ marketingRouter.put('/winback', async (req, res) => {
   );
   res.json(await winbackService.adminSave(body));
 });
+// F-070 ly treo (ADR-028): cài đặt + số liệu 30 ngày + ly đang giữ + danh sách; gia hạn; hủy & hoàn tiền
+marketingRouter.get('/gift-drinks', async (_req, res) => res.json(await giftDrinkService.adminGet()));
+marketingRouter.put('/gift-drinks', async (req, res) => {
+  const body = parse(z.object({ enabled: z.boolean(), validDays: z.coerce.number().int().min(0).max(10_000) }), req.body);
+  res.json(await giftDrinkService.adminSave(body));
+});
+marketingRouter.post('/gift-drinks/:id/extend', async (req, res) => res.json(await giftDrinkService.extend(paramId(req))));
+marketingRouter.post('/gift-drinks/:id/cancel', async (req, res) => res.json(await giftDrinkService.cancel(paramId(req), req.user)));
 
 marketingRouter.get('/lucky-spin', async (_req, res) => res.json(await luckySpinService.adminGet()));
 marketingRouter.put('/lucky-spin', async (req, res) => {

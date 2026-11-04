@@ -4,7 +4,7 @@
 // ADR-025: quà sinh nhật hội viên (F-067) — bật/tắt, loại quà, số ngày quanh sinh nhật, sinh nhật 14 ngày tới, quà năm nay.
 import { staffApi, staffBlobUrl } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
-import { $, clear, dateTime, el, errorMessage, modal, money, showFieldErrors, toast, todayVn } from '../ui.js';
+import { $, clear, confirmDialog, dateOnly, dateTime, el, errorMessage, modal, money, showFieldErrors, toast, todayVn } from '../ui.js';
 import { icon } from '../icons.js';
 
 await mountAdminShell('loyalty');
@@ -20,7 +20,10 @@ const TABS = [
   ['spin', 'Vòng quay may mắn'],
   ['birthday', 'Quà sinh nhật'],
   ['winback', 'Mừng khách quay lại'], // F-069
+  ['gift', 'Ly tặng'], // F-070
 ];
+const urlTab = new URLSearchParams(location.search).get('tab'); // mở thẳng một tab (vd. từ Lãi/lỗ: ?tab=gift)
+if (TABS.some(([key]) => key === urlTab)) state.tab = urlTab;
 const tabs = el(
   'div',
   { class: 'tabs', role: 'tablist' },
@@ -57,6 +60,7 @@ async function load() {
     else if (state.tab === 'spin') await renderSpin();
     else if (state.tab === 'birthday') await renderBirthday();
     else if (state.tab === 'winback') await renderWinback();
+    else if (state.tab === 'gift') await renderGift();
     else await renderRewards();
   } catch (err) {
     clear(body, el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -317,6 +321,7 @@ const SOURCE = {
   GAME: 'Vòng quay may mắn',
   BIRTHDAY: 'Quà sinh nhật',
   WINBACK: 'Quà quay lại',
+  GIFT: 'Ly tặng',
 };
 async function renderVouchers() {
   const from = addDays(todayVn(), -29);
@@ -920,6 +925,108 @@ async function renderWinback() {
                 el('td', { class: 'nowrap' }, `${r.absentDays} ngày`),
                 el('td', { class: 'nowrap' }, dateTime(r.createdAt)),
                 el('td', {}, el('span', { class: `badge ${tone}` }, label), el('div', { class: 'small muted' }, r.gift.label)),
+              );
+            }),
+          ),
+    ),
+  );
+}
+
+// ---------- Ly tặng — mua tặng bạn một ly (F-070, ADR-028) ----------
+const GIFT_STATUS = { READY: ['Chưa dùng', 'preparing'], USED: ['Đã dùng', 'ok'], EXPIRED: ['Hết hạn', 'pending'], CANCELLED: ['Đã hủy', ''] };
+
+async function renderGift() {
+  const data = await staffApi('/api/admin/gift-drinks');
+  const st = data.stats;
+  const enabled = el('input', { type: 'checkbox', checked: data.enabled, 'aria-label': 'Bật ly tặng' });
+  const validDays = el('input', { class: 'input', type: 'number', min: 1, max: 365, id: 'gift-days', value: data.validDays, style: { maxWidth: '10rem' } });
+
+  async function save(button) {
+    button.disabled = true;
+    try {
+      await staffApi('/api/admin/gift-drinks', { method: 'PUT', body: { enabled: enabled.checked, validDays: Number(validDays.value) || 0 } });
+      toast(enabled.checked ? 'Đã lưu — quầy có nút "Bán ly tặng" ở Bán mang đi' : 'Đã lưu (ly tặng đang tắt)', 'success');
+      load();
+    } catch (err) {
+      button.disabled = false;
+      toast(errorMessage(err), 'error', 6000);
+    }
+  }
+  async function act(g, kind) {
+    const text =
+      kind === 'extend'
+        ? [`Gia hạn ly tặng ${g.code}?`, `Thêm ${data.validDays} ngày dùng được.`]
+        : [
+            `Hủy ly tặng ${g.code}?`,
+            g.method === 'CASH'
+              ? `Hoàn ${money(g.amount)} tiền mặt từ két — app ghi Sổ quỹ chi "Hoàn ly tặng". Mã hết hiệu lực ngay.`
+              : `Mã hết hiệu lực ngay. Bạn tự chuyển khoản hoàn ${money(g.amount)} cho khách.`,
+          ];
+    if (!(await confirmDialog(text[0], text[1], { okLabel: kind === 'extend' ? 'Gia hạn' : 'Hủy & hoàn tiền', danger: kind === 'cancel' }))) return;
+    try {
+      await staffApi(`/api/admin/gift-drinks/${g.giftId}/${kind}`, { method: 'POST', body: {} });
+      toast(kind === 'extend' ? 'Đã gia hạn' : 'Đã hủy & hoàn tiền', 'success');
+      load();
+    } catch (err) {
+      toast(errorMessage(err), 'error', 6000);
+    }
+  }
+
+  clear(
+    body,
+    el(
+      'div',
+      { class: 'kpis mem-kpis' },
+      kpi('Ly tặng đã bán (30 ngày)', String(st.sold), money(st.soldAmount)),
+      kpi('Đã dùng (30 ngày)', String(st.used), 'người nhận đã tới quán'),
+      kpi('Người nhận là khách mới', String(st.newCustomers), 'trong các ly đã dùng'),
+      kpi('Đang giữ (chưa dùng)', `${data.outstanding.count} ly`, `${money(data.outstanding.amount)} — tiền đã thu, chưa tính doanh thu`),
+    ),
+    el(
+      'div',
+      { class: 'card spin-admin' },
+      el('h2', {}, 'Ly tặng — mua tặng bạn một ly'),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Quầy → Bán mang đi → "Bán ly tặng": khách trả trước 1 ly, quầy tạo mã + QR để khách gửi cho bạn qua Zalo (không tốn phí). Bạn tới quán đọc mã, nhân viên nhập ở ô Mã voucher. Tiền mặt tự ghi Sổ quỹ; doanh thu tính lúc người nhận dùng ly.',
+      ),
+      el('label', { class: 'row spin-switch' }, el('span', { class: 'switch' }, enabled, el('span')), 'Bật ly tặng'),
+      el('div', { class: 'field' }, el('label', { for: 'gift-days' }, 'Số ngày dùng được'), validDays),
+      el('button', { class: 'btn btn-primary', type: 'button', onclick: (e) => save(e.currentTarget) }, 'Lưu ly tặng'),
+    ),
+    el(
+      'div',
+      { class: 'card spin-admin' },
+      el('h2', {}, 'Ly tặng gần đây'),
+      data.items.length === 0
+        ? el('p', { class: 'muted small' }, 'Chưa bán ly tặng nào.')
+        : table(
+            ['Mã', 'Món', 'Người tặng', 'Ngày bán', 'Hạn', 'Trạng thái', ''],
+            data.items.map((g) => {
+              const [label, tone] = GIFT_STATUS[g.status] ?? [g.status, ''];
+              const open = g.status === 'READY' || g.status === 'EXPIRED';
+              return el(
+                'tr',
+                {},
+                el('td', { class: 'mono' }, g.code),
+                el('td', {}, g.menuItemName, el('div', { class: 'small muted' }, `${money(g.amount)} · ${g.method === 'CASH' ? 'tiền mặt' : 'chuyển khoản'}`)),
+                el('td', {}, g.giverName ?? '—'),
+                el('td', { class: 'nowrap' }, dateTime(g.createdAt)),
+                el('td', { class: 'nowrap' }, dateOnly(g.expiresAt)),
+                el('td', {}, el('span', { class: `badge ${tone}` }, label), g.usedAt ? el('div', { class: 'small muted' }, dateTime(g.usedAt)) : null),
+                el(
+                  'td',
+                  {},
+                  open
+                    ? el(
+                        'div',
+                        { class: 'row wrap' },
+                        el('button', { class: 'btn btn-sm', type: 'button', onclick: () => act(g, 'extend') }, 'Gia hạn'),
+                        el('button', { class: 'btn btn-sm btn-danger', type: 'button', onclick: () => act(g, 'cancel') }, 'Hủy & hoàn tiền'),
+                      )
+                    : null,
+                ),
               );
             }),
           ),

@@ -3,12 +3,16 @@
 // trong CÙNG transaction lượt thu (hai quầy cùng dùng → một bên thắng: 409). Đổi thưởng không dùng cùng giảm tay trên một lượt thu.
 // ADR-025 (F-067): chưa chọn voucher → tự áp quà sinh nhật còn dùng được (trừ khi quầy gửi skipBirthday); voucher có món → tặng món đó.
 // ADR-027 (F-069): sau đó, vẫn chưa có voucher → tự áp quà quay lại (trừ khi quầy gửi skipWinback).
+// ADR-028 (F-070): voucher GIFT (ly tặng) — số trừ có trần max(tiền đã trả, giá món hiện tại); kiểm mã trả người tặng + món.
 import crypto from 'node:crypto';
 import { badRequest, conflict, notFound } from '../errors.js';
 import * as loyaltyRepo from '../repositories/loyaltyRepo.js';
 import * as membersRepo from '../repositories/membersRepo.js';
 import * as birthdayService from './birthdayService.js';
 import * as winbackService from './winbackService.js';
+import * as giftDrinkService from './giftDrinkService.js';
+import * as birthdayRepo from '../repositories/birthdayRepo.js';
+import { giftDiscount } from '../domain/giftDrink.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { cheapestUnit, stampsFor } from '../pricing/pricing.js';
 
@@ -22,7 +26,9 @@ export async function checkVoucher(code, member, { now = new Date() } = {}) {
   const v = await loyaltyRepo.voucherByCode(normCode(code));
   if (!v) throw notFound('Không tìm thấy mã voucher', 'VOUCHER_NOT_FOUND');
   if (v.usedAt) throw conflict('VOUCHER_USED', 'Voucher này đã được dùng');
-  if (new Date(v.expiresAt) <= now) throw conflict('VOUCHER_EXPIRED', 'Voucher đã hết hạn');
+  if (new Date(v.expiresAt) <= now) {
+    throw conflict('VOUCHER_EXPIRED', v.source === 'GIFT' ? 'Ly tặng đã hết hạn hoặc đã hủy — nhờ quản lý gia hạn' : 'Voucher đã hết hạn');
+  }
   if (v.memberId && v.memberId !== member?.memberId) {
     throw conflict('VOUCHER_NOT_OWNER', 'Voucher này thuộc hội viên khác — hãy gắn đúng hội viên trước khi dùng');
   }
@@ -58,12 +64,16 @@ export async function prepare({ orders, member, voucherCode = null, reward = nul
       // F-067: voucher "tặng 1 món" — giảm đúng đơn giá món đó trên bill (giá lúc thu, không phải lúc tặng)
       const hit = cheapestUnit(orders, [v.menuItemId]);
       if (!hit) throw conflict('VOUCHER_ITEM_NOT_IN_BILL', `Bill chưa có món "${v.menuItemName ?? 'được tặng'}" — thêm món rồi mới dùng quà`);
-      Object.assign(voucher, { percent: null, amount: hit.unit, maxDiscount: null });
+      // F-070 D-115: ly tặng — không quá max(tiền đã trả, giá món hiện tại); lên size / topping thì khách trả phần chênh
+      const amount =
+        v.source === 'GIFT' ? giftDiscount({ unit: hit.unit, paid: v.amount, currentPrice: (await birthdayRepo.menuItem(v.menuItemId))?.price }) : hit.unit;
+      Object.assign(voucher, { percent: null, amount, maxDiscount: null });
     }
     if (v.source === 'BIRTHDAY') {
       birthdayApplied = true;
       voucher.label = `Quà sinh nhật${v.menuItemId ? ` — tặng 1 ${v.menuItemName ?? 'món'}` : ''}`;
     }
+    if (v.source === 'GIFT') voucher.label = `Ly tặng — 1 ${v.menuItemName ?? 'món'}`;
     if (v.source === 'WINBACK') {
       winbackApplied = true;
       voucher.label = `Quà quay lại${v.menuItemId ? ` — tặng 1 ${v.menuItemName ?? 'món'}` : ''}`;
@@ -177,6 +187,7 @@ const SOURCE_LABEL = {
   GAME: 'Vòng quay may mắn',
   BIRTHDAY: 'Quà sinh nhật',
   WINBACK: 'Quà quay lại',
+  GIFT: 'Ly tặng',
 };
 /** Voucher cho khách xem: giá trị, điều kiện, hạn, nguồn — KHÔNG có mã (quầy chọn mã khi thu, như F-038). */
 const voucherView = (v) => ({
@@ -224,7 +235,17 @@ export async function validate(code, member) {
     const v = await checkVoucher(code, member);
     return {
       valid: true,
-      voucher: { code: v.code, percent: v.percent, amount: v.amount, minOrderAmount: v.minOrderAmount, expiresAt: v.expiresAt, memberId: v.memberId },
+      voucher: {
+        code: v.code,
+        percent: v.percent,
+        amount: v.amount,
+        minOrderAmount: v.minOrderAmount,
+        expiresAt: v.expiresAt,
+        memberId: v.memberId,
+        source: v.source,
+        menuItemName: v.menuItemName,
+      },
+      ...(v.source === 'GIFT' ? { gift: await giftDrinkService.infoForVoucher(v.voucherId) } : {}), // F-070: "Ly tặng của …"
     };
   } catch (err) {
     if (err.status && err.status < 500) return { valid: false, code: err.code, message: err.message };

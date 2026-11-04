@@ -4,6 +4,7 @@
 // ADR-006: tra SĐT hội viên → "Lần trước: … — Gọi lại" (F-045); món ngoài lịch thực đơn có nhãn (F-040).
 import { staffApi } from '../api.js';
 import { billingControls } from '../billing-controls.js';
+import { mountGiftSell } from '../gift-sell.js';
 import { addItem, cartTotal, clearCart, itemQuantity, lineKey, loadCart, MAX_QTY, saveCart, setQuantity, syncWithMenu, toOrderItems } from '../cart.js';
 import { getToken } from '../auth.js';
 import { defaultChoice, groupsOf, pickOptions } from '../options.js';
@@ -13,6 +14,15 @@ import { connectRealtime } from '../socket.js';
 import { $, breakdownRows, clear, el, errorMessage, money, moneyInput, moneyValue, num, setBusy, setMoney, statusBadge, time, toast } from '../ui.js';
 
 const shell = await mountPosShell('takeaway');
+// F-070: nút "Bán ly tặng" cạnh tiêu đề giỏ (chỉ hiện khi quản lý bật)
+{
+  const title = $('.cart-panel > h2');
+  const giftSlot = el('div');
+  const head = el('div', { class: 'row between cart-head' });
+  title.replaceWith(head);
+  head.append(title, giftSlot);
+  mountGiftSell(giftSlot);
+}
 const SCOPE = 'takeaway';
 const COMBO_TAB = 'combo';
 const state = { menu: null, itemsById: new Map(), activeCat: null, cart: loadCart(SCOPE), quote: null };

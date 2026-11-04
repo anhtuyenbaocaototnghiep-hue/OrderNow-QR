@@ -335,6 +335,16 @@ test('khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn 
   ).json();
   const spinUrl = (await (await request.get(`/api/orders/${ta.order.orderId}/receipt`, { headers: auth })).json()).luckySpin?.url;
   expect(spinUrl).toBeTruthy();
+  // F-070: một ly tặng (chuyển khoản — không đổi tiền két) cho trang quà SCR-50
+  const giftCfg = await (await request.get('/api/admin/gift-drinks', { headers: auth })).json();
+  if (!giftCfg.enabled) await request.put('/api/admin/gift-drinks', { headers: auth, data: { enabled: true, validDays: giftCfg.validDays } });
+  const gift = await (
+    await request.post('/api/gift-drinks', {
+      headers: auth,
+      data: { menuItemId: coffee.menuItemId, giverName: 'Lan', message: 'Chúc mừng sinh nhật!', method: 'TRANSFER' },
+    })
+  ).json();
+  expect(gift.url).toBeTruthy();
   if (!before) {
     const sh = (await (await request.get('/api/shifts/current', { headers: auth })).json()).shift;
     await request.post(`/api/shifts/${sh.shiftId}/close`, { headers: auth, data: { countedCash: sh.expectedCash } });
@@ -352,6 +362,10 @@ test('khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn 
   await D.goto('/chinh-sach-du-lieu');
   await expect(D.getByRole('heading', { name: 'Quyền của bạn' })).toBeVisible();
   await check(D, 'khach-chinh-sach-du-lieu', { narrow: true });
+  // F-070: trang quà ly tặng (SCR-50)
+  await D.goto(new URL(gift.url).pathname);
+  await expect(D.getByRole('button', { name: 'Gửi cho bạn' })).toBeVisible();
+  await check(D, 'khach-trang-qua', { narrow: true });
   await Promise.all([ctx.close(), ctx2.close()]);
 });
 
@@ -473,6 +487,13 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
   await A.getByRole('tab', { name: 'Quà sinh nhật' }).click();
   await expect(A.getByRole('button', { name: 'Lưu quà sinh nhật' })).toBeVisible();
   await check(A, 'quan-ly-loyalty-qua-sinh-nhat', { narrow: true });
+  // F-069, F-070: tab Mừng khách quay lại, Ly tặng
+  await A.getByRole('tab', { name: 'Mừng khách quay lại' }).click();
+  await expect(A.getByRole('button', { name: 'Lưu mừng khách quay lại' })).toBeVisible();
+  await check(A, 'quan-ly-loyalty-mung-khach-quay-lai', { narrow: true });
+  await A.getByRole('tab', { name: 'Ly tặng' }).click();
+  await expect(A.getByRole('button', { name: 'Lưu ly tặng' })).toBeVisible();
+  await check(A, 'quan-ly-loyalty-ly-tang', { narrow: true });
   await A.setViewportSize(desk.viewport);
   // DEF-014: Phân tích, Lãi / lỗ không cuộn ngang ở 320 / 390 px (WCAG 1.4.10) — trước đây 441 / 638 px
   // F-064: Cảnh báo có bảng món tụt lãi — flow để lại một cảnh báo giá vốn

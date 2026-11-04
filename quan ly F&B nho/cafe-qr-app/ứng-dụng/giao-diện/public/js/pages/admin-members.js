@@ -451,6 +451,7 @@ const VOUCHER_SOURCE = {
   GAME: 'vòng quay may mắn',
   BIRTHDAY: 'quà sinh nhật',
   WINBACK: 'quà quay lại',
+  GIFT: 'ly tặng',
 };
 
 /** F-039 / F-038 / F-037 trong hồ sơ hội viên. */

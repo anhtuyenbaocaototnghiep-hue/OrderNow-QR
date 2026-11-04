@@ -2411,3 +2411,62 @@ test('mừng khách quay lại: quản lý bật ở tab; quầy gắn hội vi�
   await expect(P.locator('#content tbody tr', { hasText: 'Khách Lâu Không Ghé' })).toContainText('Đã dùng quà');
   await expect(P.locator('.kpi', { hasText: 'Khách quay lại (90 ngày)' }).locator('.value')).toHaveText('1');
 });
+
+test('ly treo: quản lý bật tab Ly tặng; quầy "Bán ly tặng" → mã + QR; điện thoại mở trang quà thấy lời nhắn + mã + "Gửi cho bạn"; quầy nhập mã cho bill có món → dòng "Ly tặng", nhắc mời đăng ký; tab ghi "Đã dùng" (F-070, AC-070-06)', async () => {
+  await P.goto('/admin/loyalty?tab=gift');
+  const enabled = P.getByLabel('Bật ly tặng');
+  await expect(enabled).not.toBeChecked(); // mặc định tắt
+  await P.getByText('Bật ly tặng', { exact: true }).click();
+  await P.getByRole('button', { name: 'Lưu ly tặng' }).click();
+  await expect(P.locator('.toast', { hasText: 'quầy có nút "Bán ly tặng"' })).toBeVisible();
+
+  // Khách A mua tặng bạn 1 Cà phê đen ở quầy (món "Cà phê sữa" đã bị test trước tắt bán)
+  await P.goto('/pos/takeaway');
+  await P.getByRole('button', { name: 'Bán ly tặng' }).click();
+  const dlg = P.locator('.modal');
+  // Giá món có thể đã đổi ở các test trước (giá vốn / giá gợi ý) — chọn theo tên, đọc giá trên nhãn
+  const option = dlg.locator('#gift-item option', { hasText: 'Cà phê đen' });
+  const priceText = (await option.textContent()).split(' — ')[1];
+  await dlg.locator('#gift-item').selectOption(await option.getAttribute('value'));
+  await dlg.locator('#gift-giver').fill('Lan');
+  await dlg.locator('#gift-message').fill('Chúc mừng sinh nhật!');
+  await dlg.getByRole('button', { name: `Thu ${priceText} & tạo mã` }).click();
+  await expect(dlg.locator('.alert')).toContainText('tiền mặt, đã ghi Sổ quỹ');
+  const code = (await dlg.locator('#gift-code').textContent()).trim();
+  expect(code).toMatch(/^TB[A-HJKMNP-Z2-9]{6}$/);
+  await expect(dlg.locator('img.gift-qr')).toBeVisible();
+  const link = (await dlg.getByRole('link', { name: 'In phiếu' }).getAttribute('href')).split('?')[0];
+  await dlg.getByRole('button', { name: 'Xong' }).click();
+
+  // Bạn B mở link trên điện thoại
+  const phone = await browser.newContext(phoneOpts);
+  const G = await phone.newPage();
+  watch(G, 'gift');
+  try {
+    await G.goto(link);
+    await expect(G.locator('.gift-card h1')).toHaveText('Lan tặng bạn 1 Cà phê đen');
+    await expect(G.locator('.gift-msg')).toContainText('Chúc mừng sinh nhật!');
+    await expect(G.locator('#gift-code')).toHaveText(code);
+    await expect(G.getByRole('button', { name: 'Gửi cho bạn' })).toBeVisible();
+    expect(await G.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
+  } finally {
+    await phone.close();
+  }
+
+  // B tới quán: gọi Cà phê đen, đọc mã
+  await P.locator('.tile', { hasText: 'Cà phê đen' }).click();
+  const box = P.locator('details.billing');
+  await box.evaluate((d) => (d.open = true));
+  await box.locator('input[aria-label="Mã voucher"]').fill(code);
+  await box.getByRole('button', { name: 'Áp mã' }).click();
+  await expect(box).toContainText('Ly tặng của Lan: 1 Cà phê đen');
+  await expect(box.locator('.gift-invite')).toContainText('mời đăng ký hội viên');
+  await expect(P.locator('#breakdown')).toContainText('Ly tặng — 1 Cà phê đen');
+  await expect(P.locator('#total')).toHaveText('0đ');
+  await P.fill('#received', '0');
+  await P.click('#pay');
+  await expect(P.locator('.toast', { hasText: 'tiền thừa 0đ' })).toBeVisible();
+
+  await P.goto('/admin/loyalty?tab=gift');
+  await expect(P.locator('#content tbody tr', { hasText: code })).toContainText('Đã dùng');
+});
