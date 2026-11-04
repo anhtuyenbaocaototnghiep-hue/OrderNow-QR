@@ -395,3 +395,13 @@ flowchart LR
 - **S-12 Hóa đơn:** dòng "Quà sinh nhật {mã}".
 - **S-40 Tích điểm & voucher → tab Quà sinh nhật:** 4 ô số (sinh nhật 14 ngày tới + số hội viên chưa có ngày sinh, quà đã tặng / đã dùng năm nay, tiền quà đã trừ, khách trả ở các lượt dùng quà); công tắc bật; loại quà (Giảm % · Giảm số tiền · Tặng 1 món) với ô theo loại; số ngày trước / sau; câu xem trước luật bằng lời; bảng **Sinh nhật sắp tới** (hội viên, ngày + "Hôm nay / Còn N ngày / N ngày trước", trạng thái quà). Tab Voucher ghi nguồn "Quà sinh nhật", giá trị "Tặng 1 …".
 - **SCR-48 Chính sách dữ liệu:** thêm dòng ngày sinh (không bắt buộc, dùng để tặng quà sinh nhật).
+
+## F-068 — Thu thập ngày sinh hội viên (TASK-085, ADR-026, 04/11/2026)
+
+- **Ô ngày sinh dùng chung:** chọn **Ngày**, chọn **Tháng**, ô **Năm (không bắt buộc)**; ngày không có thật / sau hôm nay báo ngay dưới ô. Dùng ở đăng ký khách, đăng ký nhanh ở quầy, Thẻ thành viên, dòng nhắc ở quầy, hồ sơ hội viên.
+- **S-03 / S-05 đăng ký hội viên:** quà sinh nhật bật → thêm ô **"Ngày sinh (để quán tặng quà)"** sau Họ tên; câu đồng ý ghi "số điện thoại, tên và ngày sinh (nếu có)".
+- **S-13 / S-14 khung Hội viên:** "Đăng ký nhanh" có ô ngày sinh. Hội viên đã gắn chưa có ngày sinh → khung **"Chưa có ngày sinh"** (`role=status`) + câu mẫu *"Anh/chị cho em xin ngày sinh để quán tặng quà tuần sinh nhật nhé?"* + ô ngày sinh + **Lưu** + **Khách không muốn cho**.
+- **S-26 Hội viên:** bộ lọc **"Chưa có ngày sinh (N)"** (ghé gần đây trước, nhãn "không muốn cho" nếu đã từ chối); mở thẳng bằng `/admin/members?view=nobirth`. Sinh nhật hiển thị "dd/mm" (không năm) hoặc "dd/mm/yyyy".
+- **S-40 tab Quà sinh nhật:** khối **"Thu thập ngày sinh"**: thanh "Đã có ngày sinh X / Y hội viên (Z%)", dòng "Khách ghé 30 ngày qua: A / B", 3 cách lấy ngày sinh, nút **Xem ai chưa có ngày sinh**.
+- **S-22 In QR:** quà sinh nhật bật → mỗi thẻ thêm dòng "Hội viên: thêm ngày sinh trong Thẻ thành viên — quán tặng quà tuần sinh nhật".
+- **SCR-48 Chính sách dữ liệu:** dòng ngày sinh ghi thêm "lúc đăng ký", "năm sinh không bắt buộc".

@@ -1246,3 +1246,11 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Phát quà | `birthdayRepo.issue`: INSERT voucher + INSERT `BirthdayGifts` trong một transaction; trùng khóa chính (hai yêu cầu cùng lúc) → hủy cả voucher, đọc lại quà đã có. `GiftYear` = năm của ngày sinh nhật (tuần sinh nhật có thể vắt qua năm) |
 | Dùng quà | Không đổi SP: `sp_Loyalty` đánh dấu voucher đã dùng như mọi voucher (`UsedPaymentId`); `sp_Loyalty` không so số giảm với `DiscountAmount` nên giá món đổi sau khi tặng vẫn đúng |
 | Cài đặt | `birthday.enabled` (false), `birthday.kind` (PERCENT), `birthday.value` (20), `birthday.max_discount` (50000), `birthday.menu_item_id`, `birthday.window_days` (3): mặc định trong code |
+
+## Thu thập ngày sinh hội viên (FEATURE-068, ADR-026, 04/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0045_thu_thap_ngay_sinh.sql` | `Members.BirthDateDeclinedAt DATETIME2(0) NULL` — lần gần nhất nhân viên ghi "khách không muốn cho"; quầy nhắc lại sau 365 ngày; ẩn danh → NULL |
+| Ngày sinh không năm | `Members.BirthDate` năm **1904** (năm nhuận, 29/02 hợp lệ) = không rõ năm. `membersRepo` / `birthdayRepo` đổi `1904-MM-DD` ↔ `--MM-DD`; `MONTH()` / `DAY()` trong SQL (bộ lọc tháng, chiến dịch) không đổi |
+| Tự khai | `BirthDateSelfAt` ghi cả khi đăng ký kèm ngày sinh và khi nhân viên ghi hộ (`UPDATE … WHERE BirthDate IS NULL`) |

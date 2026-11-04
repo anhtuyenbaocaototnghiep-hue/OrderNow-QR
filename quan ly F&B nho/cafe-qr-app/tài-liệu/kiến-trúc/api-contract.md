@@ -598,3 +598,18 @@ Chi tiết: [FEATURE-067](../chức-năng/FEATURE-067.md), BR-104.
 - `GET /api/members/{id}/loyalty`, `member.loyalty` của phiên, `GET /api/sessions/{id}/member-card`: thêm `birthday: { inWindow, date, dateLabel, offset, status: READY \| USED \| EXPIRED \| WAITING \| OFF, gift: { code (chỉ quầy), kind, label, menuItemId, expiresAt, usedAt } \| null } \| null`. Thẻ thành viên thêm `askBirthDate`. Voucher thêm `menuItemName`, `maxDiscount`, nguồn `BIRTHDAY` / `GAME`.
 - Xem trước / thu tiền (`/api/sessions/{id}/settle[/preview]`, `/api/splits/{id}/settle[/preview]`, `/api/orders/takeaway[/quote]`): body thêm `skipBirthday` (boolean); `totals.birthdayApplied`; dòng breakdown `voucher` có nhãn "Quà sinh nhật" / "Quà sinh nhật — tặng 1 …". Chọn tay voucher tặng món khi bill chưa có món → `409 VOUCHER_ITEM_NOT_IN_BILL`.
 - Hóa đơn: dòng voucher của quà ghi "Quà sinh nhật {mã}".
+
+## Bổ sung F-068 — thu thập ngày sinh hội viên (ADR-026, 04/11/2026)
+
+Chi tiết: [FEATURE-068](../chức-năng/FEATURE-068.md), BR-105. Mọi chỗ nhận / trả ngày sinh (`birthDate`) dùng `YYYY-MM-DD` hoặc `--MM-DD` (không rõ năm).
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `POST /api/members/lookup` | như cũ | Không tìm thấy → `{ found: false, member: null, askBirthDate }` (`askBirthDate` = quà sinh nhật đang bật — form đăng ký hiện ô ngày sinh) |
+| `POST /api/members` | như cũ | Body thêm `birthDate` (không bắt buộc); sai (ngày không có thật, sau hôm nay, năm trước 1910) → `400 VALIDATION_ERROR`, không tạo hội viên. Ngày sinh lưu là tự khai (`BirthDateSelfAt`) |
+| `POST /api/members/{id}/birth-date` | Nhân viên | Body `{ birthDate }` → như `GET /api/members/{id}/loyalty`; hội viên đã có ngày sinh → `409 BIRTHDATE_SET`; không tìm thấy / đã khóa → 404 |
+| `POST /api/members/{id}/birth-date/decline` | Nhân viên | Ghi "khách không muốn cho" (`BirthDateDeclinedAt`) → như `GET …/loyalty` (`askBirthDate: false`) |
+
+- `GET /api/members/{id}/loyalty` (quầy): thêm `askBirthDate` — chưa có ngày sinh, quà sinh nhật bật, không có "khách không muốn cho" trong 365 ngày.
+- `GET /api/admin/members?view=nobirth`: hội viên chưa có ngày sinh, ghé gần đây trước; dòng hội viên thêm `birthDateDeclinedAt`. `GET /api/admin/members/overview` thêm `noBirthDate`.
+- `GET /api/admin/birthday`: thêm `coverage: { total, withBirthDate, recentTotal, recentWithBirthDate }` (hội viên đang hoạt động; "recent" = ghé trong 30 ngày).

@@ -185,6 +185,8 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-066-1 | Should | ACT-GUEST, ACT-STAFF | Là khách tới trước, tôi muốn gọi món cho cả nhóm và hẹn quán làm khi bạn tới (hoặc sau 10 / 20 phút), để đồ uống không bị nguội / tan đá trước khi bạn tới. | AC-066-01, AC-066-02, AC-066-03, AC-066-04 | BR-103 | UC-02, UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-03, SCR-05, SCR-10 | F-066 | DONE |
 | US-067-1 | Should | ACT-MEMBER, ACT-STAFF | Là hội viên, tôi muốn được quán chúc mừng và tặng quà trong tuần sinh nhật mà không phải tự nhắc, để thấy mình được quán nhớ tới. | AC-067-01, AC-067-02, AC-067-03, AC-067-04, AC-067-05, AC-067-07 | BR-104 | UC-04, UC-10 | MOD-LOYALTY, MOD-BILLING | SCR-03, SCR-05, SCR-14, SCR-12 | F-067 | DONE |
 | US-067-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn chọn quà sinh nhật và biết ai sắp sinh nhật, quà đã tặng / đã dùng, để chăm khách quen mà kiểm soát được chi phí. | AC-067-02, AC-067-06, AC-067-07 | BR-104 | UC-10 | MOD-LOYALTY | SCR-40 | F-067 | DONE |
+| US-068-1 | Should | ACT-STAFF, ACT-MEMBER | Là nhân viên hoặc khách, tôi muốn ghi ngày sinh ngay lúc đăng ký hoặc khi khách ghé, năm sinh không bắt buộc, để khách quen nhận được quà sinh nhật. | AC-068-01, AC-068-02, AC-068-03, AC-068-05 | BR-105 | UC-04, UC-10 | MOD-LOYALTY | SCR-03, SCR-05, SCR-13, SCR-14, SCR-22 | F-068 | DONE |
+| US-068-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn biết bao nhiêu hội viên đã có ngày sinh và ai còn thiếu, để nhắc nhân viên hỏi dần. | AC-068-04, AC-068-05 | BR-105 | UC-10 | MOD-LOYALTY | SCR-26, SCR-40 | F-068 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 
@@ -302,13 +304,13 @@ Bốn chỗ ghi cũ mâu thuẫn với quyết định sau đã được sửa t
 
 | Chỉ số | Giá trị |
 | --- | --- |
-| Tổng số story | 151 |
+| Tổng số story | 153 |
 | Must | 54 (F-001…F-012: 28 — gồm US-001-3 cho trang chủ / 404; F-046, F-047: 6; F-048: 4; F-049: 2; F-050: 2; F-051: 4; F-052: 2; F-053: 1; F-054: 1; F-055: 2; F-056: 2) |
-| Should | 96 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4; F-064: 2; F-065, F-066: 3; F-067: 2) |
+| Should | 98 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4; F-064: 2; F-065, F-066: 3; F-067: 2; F-068: 2) |
 | Could | 1 (US-037-4) |
-| AC đã ánh xạ / tổng AC trong FEATURE | 411 / 411 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026 + 10 của F-064 ngày 02/11/2026 + 3 của F-034 ngày 02/11/2026 (TASK-080) + 2 của F-033 (TASK-081) + 3 của F-014 (TASK-082) + 11 của F-065, F-066 ngày 03/11/2026 + 7 của F-067 ngày 03/11/2026) |
+| AC đã ánh xạ / tổng AC trong FEATURE | 416 / 416 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026 + 10 của F-064 ngày 02/11/2026 + 3 của F-034 ngày 02/11/2026 (TASK-080) + 2 của F-033 (TASK-081) + 3 của F-014 (TASK-082) + 11 của F-065, F-066 ngày 03/11/2026 + 7 của F-067 ngày 03/11/2026 + 5 của F-068 ngày 04/11/2026) |
 | AC đã viết lại cho kiểm được | 25 |
-| FEATURE có story | 66 / 66 (F-001…F-043, F-045…F-067; không có F-044) |
+| FEATURE có story | 67 / 67 (F-001…F-043, F-045…F-068; không có F-044) |
 | FEATURE không có AC nào | 0 |
-| BR được tham chiếu | 104 / 104 |
+| BR được tham chiếu | 105 / 105 |
 | Màn hình `S-xx` có story | 37 / 37; thêm SCR-43 (trang chủ) và SCR-44 (404) qua US-001-3 |
