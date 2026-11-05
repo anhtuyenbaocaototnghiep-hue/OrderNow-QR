@@ -3,6 +3,8 @@ Quản lý F&amp;B đặt bàn bằng QR
 
 **Phiên bản hiện tại:** `v1.0.0-rc.3` (ứng viên phát hành, 29/10/2026) — chức năng F-001…F-063; nhật ký phát hành ở `quan ly F&B nho/cafe-qr-app/tài-liệu/vận-hành/release-plan.md` §7.
 
+**Cập nhật 05/11/2026 (chưa gắn phiên bản, chờ duyệt):** thêm F-064…F-073 — báo động giá vốn, Lãi/lỗ dễ hiểu, sổ quỹ, theo dõi hội viên, vòng quay may mắn + hẹn giờ ra món, quà sinh nhật, thu thập ngày sinh, mừng khách quay lại, ly treo (mua tặng bạn một ly), chống sửa / xóa dữ liệu trái phép, chấm công nhiều người bằng PIN + tính lương (VietQR trả lương). Danh sách ở `quan ly F&B nho/cafe-qr-app/tài-liệu/chức-năng/README.md`.
+
 ## Nội dung
 
 - [Mã nguồn web-app `cafe-qr-app`](quan%20ly%20F%26B%20nho/cafe-qr-app/): HTML/CSS/JS thuần, Node.js + Express, SQL Server, Socket.io. Cách cài và chạy xem README trong thư mục này.
