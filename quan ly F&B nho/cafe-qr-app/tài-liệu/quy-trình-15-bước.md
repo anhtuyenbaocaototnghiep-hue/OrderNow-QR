@@ -15,8 +15,8 @@ ACT (Actor) · AF (chức năng theo Actor) · US · AC · BR · UC · MOD · SC
 | 01 Idea / Problem | Project Brief, mục tiêu, nhóm người dùng, MVP, ngoài phạm vi, giả định, rủi ro | [project-brief.md](sản-phẩm/project-brief.md), [overview.md](sản-phẩm/overview.md) | Đạt — chờ ký G1 |
 | 02 Actor | Actor Register (ID, mô tả, mục tiêu, quyền, liên hệ) | [actors.md](nghiệp-vụ/actors.md) §Actor Register | Đạt |
 | 03 Actor Functions | Actor Function Matrix (Actor → hành động → dữ liệu → quyền → ưu tiên) | [actors.md](nghiệp-vụ/actors.md) §AF (127 AF) | Đạt |
-| 04 User Story | Backlog có ID, Actor, mục tiêu, lý do, ưu tiên, ràng buộc / giả định | [user-stories.md](nghiệp-vụ/user-stories.md) (160 US) | Đạt |
-| 05 AC & BR | AC kiểm thử được; BR có ID, phạm vi, ngoại lệ | `chức-năng/FEATURE-*.md` (433 AC), [business-rules.md](nghiệp-vụ/business-rules.md) (BR-001…108), kiểm tra AC mơ hồ ở user-stories §4 | Đạt — 9 BR PROPOSED chờ G1 |
+| 04 User Story | Backlog có ID, Actor, mục tiêu, lý do, ưu tiên, ràng buộc / giả định | [user-stories.md](nghiệp-vụ/user-stories.md) (166 US) | Đạt |
+| 05 AC & BR | AC kiểm thử được; BR có ID, phạm vi, ngoại lệ | `chức-năng/FEATURE-*.md` (449 AC), [business-rules.md](nghiệp-vụ/business-rules.md) (BR-001…110), kiểm tra AC mơ hồ ở user-stories §4 | Đạt — 9 BR PROPOSED chờ G1 |
 | 06 Use Case & User Flow | Use Case Spec + User Flow + trạng thái | [use-cases.md](nghiệp-vụ/use-cases.md) (UC-01…19), [workflows-states.md](nghiệp-vụ/workflows-states.md) | Đạt — **Gate G1** |
 | 07 Modules | Module Map, Module Spec, Permission Matrix, Story → Module | [module-map.md](kiến-trúc/module-map.md), [roles-permissions.md](nghiệp-vụ/roles-permissions.md) | Đạt |
 | 08 NFR | Security, Performance, Availability, Privacy, Accessibility, Maintainability, Compatibility — có cách đo + ngưỡng | [nfr.md](sản-phẩm/nfr.md) (60 NFR) | Đạt — 28 ngưỡng PROPOSED chờ G2 / G5 |
@@ -36,7 +36,7 @@ ACT (Actor) · AF (chức năng theo Actor) · US · AC · BR · UC · MOD · SC
 | Ranh giới — Module ownership, quyền, UI Spec, ERD, API Contract | module-map, roles-permissions, sitemap / screens-flows, data-model, api-contract | [x] tài liệu · [ ] duyệt G2 |
 | Tài liệu AI — AGENTS.md, Task Packet, chuẩn review, danh mục lệnh test | AGENTS.md, `.agent/rules.md`, TASK-xxx, DoD | [x] |
 | An toàn — giới hạn quyền Agent, không lộ secret / dữ liệu thật | `.agent/rules.md` (việc phải xin duyệt, cấm PII), `.gitignore`, security-check | [x] |
-| Nghiệm thu — Traceability, TC, DoD, người duyệt & bằng chứng đạt | traceability (433 / 433 AC PASS), tc-map, dod, defect-log; **UAT + ký G4 chờ người thật** | [x] máy · [ ] UAT / duyệt |
+| Nghiệm thu — Traceability, TC, DoD, người duyệt & bằng chứng đạt | traceability (449 / 449 AC PASS), tc-map, dod, defect-log; **UAT + ký G4 chờ người thật** | [x] máy · [ ] UAT / duyệt |
 | Triển khai — Release, backup / restore, rollback, monitoring, người trực | release-plan (phát hành + quay lui), backup-restore (diễn tập máy dev ĐẠT), monitoring, incident-runbook (người trực chờ điền), secrets-register | [x] tài liệu + công cụ · [ ] cài máy quán / ký G5 |
 
 **Người xác nhận:** …………………… **Ngày:** …………………… **Phiên bản tài liệu:** quy trình áp dụng lần 1 (20/10/2026)

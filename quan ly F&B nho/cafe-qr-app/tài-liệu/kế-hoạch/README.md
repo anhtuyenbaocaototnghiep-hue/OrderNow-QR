@@ -35,3 +35,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-086-plan.md](TASK-086-plan.md) — mừng khách quay lại (F-069, ADR-027).
 - [TASK-087-plan.md](TASK-087-plan.md) — ly treo, mua tặng bạn một ly (F-070, ADR-028).
 - [TASK-088-plan.md](TASK-088-plan.md) — chống sửa / xóa dữ liệu trái phép (F-071, ADR-029).
+- [TASK-089-plan.md](TASK-089-plan.md) — chấm công nhiều người + tính lương (F-072, F-073, ADR-030).

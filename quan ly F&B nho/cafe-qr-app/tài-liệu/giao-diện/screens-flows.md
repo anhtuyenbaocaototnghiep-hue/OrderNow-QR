@@ -427,3 +427,14 @@ flowchart LR
 - **S-15 Ca — Chấm công hôm nay:** trưởng ca không thấy nút **Sửa** trên dòng của chính mình; ô chọn người khi **Thêm chấm công** không có tên mình (quản lý thấy đủ).
 - **S-09 Đăng nhập / hộp "tài khoản duyệt":** sai nhiều lần → báo "Nhập sai … quá nhiều lần — tạm khóa 15 phút".
 - **SCR-47 Cảnh báo bất thường:** loại **"Sai mật khẩu nhiều lần"** — "Tài khoản duyệt ở quầy "lead1": sai 5 lần trong 15 phút — tạm khóa", "Người đứng quầy nhập: …" (đăng nhập: "Máy gửi: …").
+
+## F-072 / F-073 — Chấm công nhiều người, tính lương (TASK-089, ADR-030, 05/11/2026)
+
+- **Máy quầy (mọi trang):** thanh trên thêm **Chấm công** (chế độ màn chung) và **Đổi người**; mục điều hướng **Giờ công**. Chưa đặt PIN → dải "Bạn chưa đặt PIN" + **Đặt PIN** (mật khẩu đăng nhập, PIN mới, nhập lại).
+- **SCR-53 Hộp Chấm công:** ô từng người (tên, vai, "Đang làm từ 16:58" / "Chưa vào ca" / "Chưa đặt PIN", lịch hôm nay) → **bàn phím PIN** (6 chấm, 12 nút, số đổi chỗ mỗi lần, gõ bằng bàn phím máy được) → **Vào ca / Ra ca**. **Đổi người** dùng cùng ô + bàn phím.
+- **Thao tác tiền:** máy chủ trả `PIN_REQUIRED` → bàn phím "Nhập PIN của …" hiện đè lên hộp đang làm; sai báo "PIN không đúng" và nhập lại; Hủy → thao tác chưa làm.
+- **S-15 Ca → Đóng ca:** mục **Chấm công trong ca** (người khác: giờ, "Chấm ra lúc đóng ca", Có mặt / Không có mặt; dòng của mình: "quản lý xác nhận").
+- **Sổ quỹ → Chi tiền → Lương tạm ứng:** ô **Người nhận tạm ứng**; bảng sổ quỹ ghi "Lương tạm ứng cho …".
+- **SCR-52 Giờ công của tôi** `/pos/me`: chọn tháng; thẻ **Lương tạm tính** / **Phiếu lương** (nút **Đã xem**); bảng chấm công (ngày, vào – ra, lịch, được tính, ghi chú: đi trễ / việc chờ / quyết định / ai sửa vì sao, **Báo sai**); danh sách báo sai đã gửi; **Đặt / Đổi PIN**.
+- **SCR-51 Lương** `/admin/payroll` (nhóm "Thu chi & nhân sự"): tháng, Nháp / Đã chốt, **Chốt lương** / **Mở lại**; 4 ô số; **Việc chờ xử lý** với nút quyết định; **Bảng lương** (giờ, lương, ca tối, lễ, chuyên cần, cộng / trừ, tạm ứng, thực nhận, **Phiếu**, **Trả lương** → VietQR + tên chủ tài khoản cần đối chiếu, "Đã chuyển khoản" / "Đã trả tiền mặt"); **Thưởng / khấu trừ** + **Chia thưởng chung theo ca**; **Hồ sơ lương** (hộp: cách trả, mức, phụ cấp tối, giờ bắt đầu ca tối, hệ số lễ, chuyên cần, ngân hàng, số tài khoản, tên chủ tài khoản); **Ngày lễ** theo năm.
+- **S-37 Nhân sự:** thẻ **Cách chấm công** (màn chung / theo đăng nhập, PIN cho thao tác tiền); tab **Báo cáo tuần**. **Tài khoản:** nút **Xóa PIN**. **Lãi/lỗ:** dòng "Lương nhân viên — theo chấm công" + nhắc xóa lương ở Chi phí cố định.

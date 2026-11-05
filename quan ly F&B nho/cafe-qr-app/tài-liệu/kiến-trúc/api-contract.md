@@ -657,3 +657,45 @@ Chi tiết: [FEATURE-071](../chức-năng/FEATURE-071.md), BR-108.
 | `GET /api/admin/alerts` | Loại mới `AUTH_LOCK` (mức `HIGH`): `detail: { kind: LOGIN | APPROVAL, username, count, windowMinutes, actor, ip }` |
 
 Mã lỗi CSDL (không trả ra API — app không có luồng xóa): `50250 HISTORY_NO_DELETE`, `50251 AUDIT_NO_DELETE`.
+
+## Bổ sung F-072 / F-073 — chấm công nhiều người, tính lương (ADR-030, 05/11/2026)
+
+Chi tiết: [FEATURE-072](../chức-năng/FEATURE-072.md), [FEATURE-073](../chức-năng/FEATURE-073.md), BR-109, BR-110.
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `POST /api/auth/pin` | Nhân viên | `{ password, pin }` → `{ hasPin: true }`; mật khẩu sai `403 PASSWORD_INVALID`; PIN yếu `400 PIN_WEAK` |
+| `POST /api/auth/switch` | Nhân viên | `{ userId, pin }` → `{ accessToken, user }` (nhân viên / trưởng ca); PIN sai `403 PIN_INVALID`; chưa đặt `403 PIN_NOT_SET`; khóa `429 PIN_LOCKED` |
+| `GET /api/attendance/board` | Nhân viên | `{ mode, people: [{ userId, fullName, role, hasPin, workingSince, roster }] }` (không có quản lý) |
+| `POST /api/attendance/punch` | Nhân viên | `{ userId, pin, action: IN | OUT }` → bản ghi; `409 ALREADY_IN` / `NOT_IN` / `KIOSK_OFF` |
+| `GET /api/attendance/shift/{id}` | Nhân viên | `{ mode, rows }` — lần chấm công giao với ca, `self` = của người đang xem |
+| `GET /api/me/attendance` | Nhân viên | `?month=YYYY-MM` → `{ month, records: [{ attId, clockIn, clockOut, paidMinutes, actualMinutes, late, roster, issues, decision, decidedBy, edits, openDispute }], pay, disputes, payslipMonths }` — chỉ của mình |
+| `POST /api/me/attendance/{id}/dispute` | Nhân viên | `{ note }` → `201 { disputeId }`; đang chờ `409 DISPUTE_OPEN`; tháng đã chốt `409 PAYROLL_LOCKED` |
+| `POST /api/me/payslips/{month}/ack` | Nhân viên | "Đã xem" phiếu lương |
+| `GET /api/admin/attendance-settings` | ADMIN | `{ attendanceMode, moneyPin }` |
+| `PUT /api/admin/attendance-settings` | ADMIN | `{ attendanceMode: KIOSK | LOGIN, moneyPin }` |
+| `POST /api/admin/users/{id}/pin-reset` | ADMIN | `{ hasPin: false }` |
+| `GET /api/admin/payroll` | ADMIN | `?month=` → `{ month, status, run, monthEnded, lines, pending: [{ code, label, attId, user }], totals, adjustments }` |
+| `POST /api/admin/payroll/{month}/lock` | ADMIN | Chốt; `409 PAYROLL_PENDING` / `MONTH_NOT_ENDED` / `PAYROLL_LOCKED` |
+| `POST /api/admin/payroll/{month}/reopen` | ADMIN | `{ reason }`; chưa chốt `409 PAYROLL_NOT_LOCKED` |
+| `POST /api/admin/payroll/{month}/adjustments` | ADMIN | `{ userId, amount (≠ 0), reason }` → `201 { adjId }` |
+| `DELETE /api/admin/payroll/adjustments/{id}` | ADMIN | Xóa khoản (tháng chưa chốt) |
+| `POST /api/admin/payroll/team-bonus` | ADMIN | `{ shiftId, amount, reason }` → `201 { month, shares }` |
+| `GET /api/admin/payroll/{month}/lines/{userId}/qr` | ADMIN | `{ amount, bankName, bankAccount, accountName, content, payload, qr }`; `409 NO_BANK_ACCOUNT` / `NOTHING_TO_PAY` |
+| `POST /api/admin/payroll/{month}/lines/{userId}/paid` | ADMIN | `{ method: CASH | TRANSFER }`; `409 PAY_NOT_ALLOWED` |
+| `GET /api/admin/payroll-week` | ADMIN | `?from=YYYY-MM-DD` → `{ from, to, people, edits, shifts }` |
+| `GET /api/admin/pay-profiles` | ADMIN | `{ profiles, banks }` |
+| `PUT /api/admin/pay-profiles/{id}` | ADMIN | `{ payType, hourlyRate, monthlySalary, nightAllowance, nightStart, holidayMultiplier, attendanceBonus, bankBin, bankAccount, bankAccountName }` |
+| `GET /api/admin/holidays` | ADMIN | `?year=` → `[{ date, name }]` |
+| `PUT /api/admin/holidays/{date}` | ADMIN | `{ name }` |
+| `DELETE /api/admin/holidays/{date}` | ADMIN | Xóa ngày lễ |
+| `POST /api/admin/attendance/{id}/decision` | ADMIN | `{ decision: ACTUAL | SCHEDULE | NONE | null, note }` |
+| `GET /api/admin/attendance-disputes` | ADMIN | `?month=` → báo sai của tháng |
+| `POST /api/admin/attendance-disputes/{id}/resolve` | ADMIN | `{ resolution }` |
+
+- `GET /api/auth/me`: thêm `attendance: { mode, moneyPin }`; `user.hasPin`.
+- Thao tác tiền (giảm giá tay khi thu tiền, `POST /api/payments/{id}/refunds`, `POST /api/order-items/{id}/void` / `orders/{id}/void` khi cần duyệt, `POST /api/cash-transactions` khoản chi, `…/void`, `…/approve` tự duyệt): header `X-Actor-Pin` khi `security.money_pin` bật — thiếu `403 PIN_REQUIRED`, sai `403 PIN_INVALID`, khóa `429 PIN_LOCKED` (quản lý miễn).
+- `POST /api/shifts/{id}/close`: thêm `attendance: { clockOut: [attId], present: [attId], absent: [attId] }` → kết quả thêm `attendance: { closed, checked, disputed }`.
+- `POST /api/cash-transactions`: thêm `employeeId` (bắt buộc với "Lương tạm ứng"); khoản trả về thêm `employee`, `category.systemCode`.
+- `PUT` / `POST /api/attendance`: tháng đã chốt lương → `409 PAYROLL_LOCKED`.
+- `GET /api/admin/reports/pnl`: thêm `laborCosts`, `payrollActive`; `operatingProfit` trừ `laborCosts`.
