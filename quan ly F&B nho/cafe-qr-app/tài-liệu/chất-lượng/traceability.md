@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 412 test, sửa lúc 2026-11-04 09:03 UTC
-- `npm run test:e2e` (JSON): 64 test, sửa lúc 2026-11-04 09:13 UTC
+- `npm test` (JUnit): 416 test, sửa lúc 2026-11-05 08:19 UTC
+- `npm run test:e2e` (JSON): 64 test, sửa lúc 2026-11-05 08:23 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 158 |
-| Acceptance Criteria | 428 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 428 |
+| User Story | 160 |
+| Acceptance Criteria | 433 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 433 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -523,4 +523,9 @@
 | AC-070-04 | TC-070-04 | F-070 | US-070-1 | ACT-GUEST | UC-10 | MOD-LOYALTY | SCR-13, SCR-50 | BR-107 | Integration: `gift-drinks.test.js` › AC-070-04: trang quà công khai — READY có mã; đã dùng / hết hạn / đã hủy không có mã; token sai 404 — **PASS** | **PASS** |
 | AC-070-05 | TC-070-05 | F-070 | US-070-3 | ACT-ADMIN | UC-10 | MOD-LOYALTY, MOD-FINANCE | SCR-40 | BR-107 | Integration: `gift-drinks.test.js` › AC-070-05: quản lý — cài đặt sai 400, nhân viên 403; số liệu; gia hạn; hủy & hoàn tiền (sổ quỹ chi), đã dùng không hủy được — **PASS** | **PASS** |
 | AC-070-06 | TC-070-06 | F-070 | US-070-1, US-070-2, US-070-3 | ACT-GUEST, ACT-STAFF, ACT-ADMIN | UC-10, UC-04 | MOD-LOYALTY, MOD-BILLING, MOD-FINANCE | SCR-13, SCR-50, SCR-14, SCR-40 | BR-107 | E2E: `flow.spec.js` › ly treo: quản lý bật tab Ly tặng; quầy "Bán ly tặng" → mã + QR; điện thoại mở trang quà thấy lời nhắn + mã + "Gửi cho bạn"; quầy nhập mã cho bill có món → dòng "Ly tặng", nhắc mời đăng ký; tab ghi "Đã dùng" (F-070, AC-070-06) — **PASS** | **PASS** |
+| AC-071-01 | TC-071-01 | F-071 | US-071-1 | ACT-ADMIN, ACT-LEAD | UC-12, UC-17 | MOD-AUTH, MOD-SHIFT | SCR-09, SCR-15, SCR-47 | BR-108 | Integration: `tamper-guard.test.js` › AC-071-01: trưởng ca không tự sửa / tự thêm chấm công của mình (403 ATTENDANCE_SELF_EDIT); sửa của người khác được; quản lý sửa được của trưởng ca và của mình — **PASS** | **PASS** |
+| AC-071-02 | TC-071-02 | F-071 | US-071-1 | ACT-ADMIN, ACT-LEAD | UC-12, UC-17 | MOD-AUTH, MOD-SHIFT | SCR-09, SCR-15, SCR-47 | BR-108 | Integration: `tamper-guard.test.js` › AC-071-02: tài khoản duyệt ở quầy sai 5 lần → lần 6 bị 429 APPROVAL_LOCKED kể cả gõ đúng; người đứng quầy khác vẫn nhờ duyệt được; đúng mật khẩu mà không đủ quyền không bị tính; cảnh báo AUTH_LOCK một lần; không lưu mật khẩu — **PASS** | **PASS** |
+| AC-071-03 | TC-071-03 | F-071 | US-071-1 | ACT-ADMIN, ACT-LEAD | UC-12, UC-17 | MOD-AUTH, MOD-SHIFT | SCR-09, SCR-15, SCR-47 | BR-108 | Integration: `tamper-guard.test.js` › AC-071-03: đăng nhập sai 10 lần cùng tên + cùng máy → lần 11 bị 429 LOGIN_LOCKED kể cả gõ đúng; tên khác, máy khác không bị khóa; cảnh báo AUTH_LOCK — **PASS** | **PASS** |
+| AC-071-04 | TC-071-04 | F-071 | US-071-2 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-38 | BR-108 | Integration: `tamper-guard.test.js` › AC-071-04: CSDL chặn xóa cứng lịch sử tiền / ca / chấm công / cảnh báo (HISTORY_NO_DELETE); nhật ký thao tác không sửa, không xóa được (trừ dòng quá 12 tháng của job giữ 12 tháng) — **PASS** | **PASS** |
+| AC-071-05 | TC-071-05 | F-071 | US-071-1 | ACT-ADMIN, ACT-LEAD | UC-12, UC-17 | MOD-AUTH, MOD-SHIFT | SCR-09, SCR-15, SCR-47 | BR-108 | E2E: `flow.spec.js` › trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt khoản chi lớn ở màn Ca, thấy tab Kiểm kê; quản lý xem sổ quỹ, kéo ca trong lịch tuần, lãi/lỗ ước tính, nhật ký (F-036, F-033, F-035, F-034) — **PASS** | **PASS** |
 

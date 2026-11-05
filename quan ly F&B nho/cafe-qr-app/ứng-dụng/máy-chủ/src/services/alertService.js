@@ -1,12 +1,13 @@
 // F-060 (ADR-020 D-75…D-78): phát hiện bất thường → cảnh báo trong app (bảng Alerts, phòng realtime `admin`) + email qua hàng đợi.
 //  - Đóng ca: lệch két, % chuyển khoản, món đã pha bị hủy, số lượt hoàn tiền, số lượt giảm giá tay → một email "báo cáo ca".
-//  - Tức thì: hoàn tiền lớn, hủy / sửa khoản sổ quỹ đã duyệt.
+//  - Tức thì: hoàn tiền lớn, hủy / sửa khoản sổ quỹ đã duyệt, nhập sai mật khẩu tới mức khóa tạm (F-071).
 //  - Đổi cài đặt cảnh báo (email nhận, loại email, giờ, ngưỡng) → thư báo tới cả địa chỉ cũ lẫn mới.
 //  - Tổng kết ngày: 24 giờ tính tới giờ gửi đã cài (gửi bù hôm trước nếu lỡ).
 // Gọi SAU khi transaction nghiệp vụ đã commit; nơi gọi bắt lỗi — phát hiện / email lỗi không làm hỏng đóng ca / hoàn tiền.
 // Chạy lại an toàn (DedupeKey) → bị chọn làm nạn nhân deadlock thì chạy lại cả lượt (withDeadlockRetry).
 // Email không chứa thông tin khách: chữ nhân viên gõ (lý do) được che số điện thoại.
 // F-064 (ADR-023): nhập hàng giá cao hơn → báo món tụt lãi + giá gợi ý; cùng trang Cảnh báo, cùng hàng đợi email.
+import { createHash } from 'node:crypto';
 import { config } from '../config.js';
 import { withDeadlockRetry } from '../db.js';
 import { classifyLines, menuImpact, referencePrice, unconfirmedPrices } from '../domain/costImpact.js';
@@ -272,6 +273,33 @@ async function checkCashVoid(voided, replacement, user) {
     ['Người ghi khoản', voided.createdBy?.fullName ?? '', false],
     ['Người hủy / sửa', `${user?.fullName ?? ''}${voided.voidedBy ? ` · duyệt: ${voided.voidedBy.fullName}` : ''}`, false],
     ['Lý do', maskPhones(voided.voidReason), false],
+  ];
+  return { alert, email: await enqueueImmediate(s, alert, rows) };
+}
+
+/** F-071: nhập sai mật khẩu chạm ngưỡng khóa tạm (đăng nhập / tài khoản duyệt ở quầy) → cảnh báo tức thì, một lần mỗi lần khóa. */
+export const onAuthLock = (info) => withDeadlockRetry(() => checkAuthLock(info));
+
+async function checkAuthLock({ kind, username, actor, ip, count, windowMinutes }) {
+  const s = await getSettings();
+  const what = kind === 'LOGIN' ? 'Đăng nhập' : 'Tài khoản duyệt ở quầy';
+  const who = actor?.userId ?? ip;
+  const bucket = Math.floor(Date.now() / (windowMinutes * 60_000));
+  const alert = await immediateAlert({
+    kind: 'AUTH_LOCK',
+    severity: 'HIGH',
+    shiftId: null,
+    userId: actor?.userId ?? null,
+    title: `${what}: nhập sai mật khẩu "${username}" ${count} lần — tạm khóa ${windowMinutes} phút`,
+    detail: { kind, username, count, windowMinutes, actor: actor?.fullName ?? null, ip: kind === 'LOGIN' ? ip : null },
+    dedupeKey: `AUTHLOCK:${kind}:${bucket}:${createHash('sha1').update(`${username}|${who}`).digest('hex').slice(0, 24)}`,
+  });
+  if (!alert) return { alert: null, email: null };
+  const rows = [
+    ['Loại', what, false],
+    ['Tài khoản bị thử', username, true],
+    kind === 'LOGIN' ? ['Máy gửi', ip ?? '', false] : ['Người đứng quầy nhập', actor?.fullName ?? '', true],
+    ['Số lần sai', `${count} lần trong ${windowMinutes} phút`, false],
   ];
   return { alert, email: await enqueueImmediate(s, alert, rows) };
 }

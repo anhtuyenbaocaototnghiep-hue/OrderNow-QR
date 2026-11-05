@@ -631,6 +631,10 @@ test('trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt kho�
   await expect(L.locator('.toast', { hasText: 'Đã duyệt khoản chi' })).toBeVisible();
   await expect(L.locator('table.cash-book tr', { hasText: 'Tạm ứng lương E2E' })).toContainText('Đã duyệt');
   await expect(L.locator('.card', { hasText: 'Chấm công hôm nay' })).toContainText('Trưởng ca E2E');
+  // F-071 (AC-071-05): trưởng ca không có nút Sửa trên dòng chấm công của chính mình; dòng của người khác vẫn sửa được
+  const attendance = L.locator('.card', { hasText: 'Chấm công hôm nay' });
+  await expect(attendance.locator('tr', { hasText: 'Trưởng ca E2E' }).getByRole('button', { name: 'Sửa' })).toHaveCount(0);
+  await expect(attendance.locator('tbody tr', { hasNotText: 'Trưởng ca E2E' }).getByRole('button', { name: 'Sửa' }).first()).toBeVisible();
 
   // Trưởng ca có tab Kiểm kê ở Kho; không vào được trang quản lý
   await L.goto('/pos/stock');

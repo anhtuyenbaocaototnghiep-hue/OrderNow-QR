@@ -6,15 +6,21 @@ import { signToken } from '../middleware/auth.js';
 import * as usersRepo from '../repositories/usersRepo.js';
 import { config } from '../config.js';
 import { onLogin } from './attendanceService.js';
+import * as authGuard from './authGuardService.js';
 
 const BCRYPT_COST = 10;
 // Hash giả để so sánh khi không có user → thời gian phản hồi như nhau (không lộ username tồn tại hay không)
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', BCRYPT_COST);
 
-export async function login(username, password) {
+export async function login(username, password, { ip = null } = {}) {
+  const who = { username, ip };
+  await authGuard.assertNotLocked('LOGIN', who); // F-071: đang khóa → 429 kể cả khi gõ đúng
   const user = await usersRepo.findByUsernameWithHash(username);
   const ok = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !ok) throw unauthorized('Sai tên đăng nhập hoặc mật khẩu');
+  if (!user || !ok) {
+    await authGuard.recordFailure('LOGIN', who);
+    throw unauthorized('Sai tên đăng nhập hoặc mật khẩu');
+  }
   if (!user.isActive) throw forbidden('Tài khoản đã bị khóa', 'ACCOUNT_LOCKED');
   const { passwordHash: _omit, ...publicUser } = user;
   // F-035: đăng nhập → chấm công vào (không chặn đăng nhập nếu ghi chấm công lỗi)
@@ -62,15 +68,19 @@ export async function setActive(id, isActive, actor) {
  * Xác thực lại cho thao tác vượt quyền (giảm giá tay vượt ngưỡng — D-14/D-24, hoàn tiền — D-15, duyệt chi quỹ — D-23).
  * Người thao tác là ADMIN → tự duyệt; là MANAGER và `allowManager` → tự duyệt. Không thì kiểm tên + mật khẩu tài khoản
  * quản lý (hoặc trưởng ca khi `allowManager`) đang hoạt động — không dùng token của người đang đứng quầy.
+ * F-071: 5 lần sai / 15 phút cùng tên duyệt + cùng người đứng quầy → 429 APPROVAL_LOCKED (chặn dò mật khẩu quản lý).
  */
 export async function resolveApproval(user, { adminUsername, adminPassword } = {}, what = 'thao tác này', { allowManager = false } = {}) {
   if (user.role === 'ADMIN' || (allowManager && user.role === 'MANAGER')) return user;
   const who = allowManager ? 'trưởng ca / quản lý' : 'quản lý';
   if (!adminUsername || !adminPassword) throw forbidden(`Cần tài khoản ${who} duyệt ${what}`, 'ADMIN_APPROVAL_REQUIRED');
+  const attempt = { username: adminUsername, actor: user };
+  await authGuard.assertNotLocked('APPROVAL', attempt);
   const admin = await usersRepo.findByUsernameWithHash(adminUsername);
   const ok = await bcrypt.compare(adminPassword, admin?.passwordHash ?? DUMMY_HASH);
   const roleOk = admin && (admin.role === 'ADMIN' || (allowManager && admin.role === 'MANAGER'));
   if (!admin || !ok || !roleOk || !admin.isActive) {
+    if (!admin || !ok) await authGuard.recordFailure('APPROVAL', attempt); // chỉ đếm sai tên / mật khẩu — đúng mật khẩu mà không đủ quyền không phải dò
     throw forbidden(`Tài khoản ${who} hoặc mật khẩu không đúng`, 'ADMIN_APPROVAL_INVALID');
   }
   const { passwordHash: _omit, ...approver } = admin;

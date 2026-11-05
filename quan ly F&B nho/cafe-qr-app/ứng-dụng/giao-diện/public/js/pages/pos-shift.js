@@ -304,15 +304,18 @@ function attendanceCard(rows) {
           type: 'button',
           onclick: async () => {
             const users = await staffApi('/api/attendance/users').catch((err) => toast(errorMessage(err), 'error'));
-            if (users && (await attendanceDialog(null, { users }))) load();
+            if (users && (await attendanceDialog(null, { users: users.filter(notSelf) }))) load();
           },
         },
         'Thêm chấm công',
       ),
     ),
-    attendanceTable(rows, { editable: () => true, onChange: load }),
+    attendanceTable(rows, { editable: (a) => notSelf(a.user), onChange: load }),
   );
 }
+
+/** F-071: trưởng ca không tự sửa / tự thêm chấm công của chính mình (máy chủ cũng chặn) — quản lý thì được. */
+const notSelf = (u) => shell.user.role === 'ADMIN' || u.userId !== shell.user.userId;
 
 async function closeShift(shift) {
   const counted = moneyInput({ id: 'counted', 'aria-label': 'Tiền đếm thực tế' });

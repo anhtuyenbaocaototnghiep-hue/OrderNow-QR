@@ -1,6 +1,7 @@
 // FEATURE-035 Chấm công, lịch làm, năng suất (ADR-006 D-25).
 // Tự động: đăng nhập → vào ca (nhân viên, trưởng ca); đăng xuất / đóng ca (sp_CloseShift) / token hết hạn (job) → ra ca.
-// Sửa tay: bắt buộc lý do; trưởng ca chỉ sửa bản ghi TRONG NGÀY (giờ VN), quản lý sửa mọi ngày; mọi lần sửa có nhật ký thao tác.
+// Sửa tay: bắt buộc lý do; trưởng ca chỉ sửa bản ghi TRONG NGÀY (giờ VN) và không sửa của chính mình (F-071), quản lý sửa mọi ngày;
+// mọi lần sửa có nhật ký thao tác.
 import { config } from '../config.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import * as attendanceRepo from '../repositories/attendanceRepo.js';
@@ -41,6 +42,13 @@ function assertCanEdit(user, clockIns) {
   }
 }
 
+/** F-071 (ADR-029 D-119): không ai tự sửa / tự thêm chấm công của chính mình — trưởng ca nhờ quản lý (quản lý chủ quán thì được). */
+function assertNotSelf(user, userId) {
+  if (user.role !== 'ADMIN' && userId === user.userId) {
+    throw forbidden('Không tự sửa chấm công của chính mình — nhờ quản lý sửa giúp', 'ATTENDANCE_SELF_EDIT');
+  }
+}
+
 function assertTimes(clockIn, clockOut) {
   if (clockIn > new Date(Date.now() + 60_000)) throw badRequest('VALIDATION_ERROR', 'Giờ vào không được ở tương lai');
   if (clockOut && clockOut < clockIn) throw badRequest('VALIDATION_ERROR', 'Giờ ra phải sau giờ vào');
@@ -51,6 +59,7 @@ function assertTimes(clockIn, clockOut) {
 export async function update(id, { clockIn, clockOut, reason }, user) {
   const att = await attendanceRepo.getById(id);
   if (!att) throw notFound('Không tìm thấy bản ghi chấm công');
+  assertNotSelf(user, att.user.userId);
   assertTimes(clockIn, clockOut);
   assertCanEdit(user, [att.clockIn, clockIn]);
   if (await attendanceRepo.overlaps(att.user.userId, clockIn, clockOut, id)) {
@@ -62,6 +71,7 @@ export async function update(id, { clockIn, clockOut, reason }, user) {
 export async function createManual({ userId, clockIn, clockOut, reason }, user) {
   const target = await usersRepo.findById(userId);
   if (!target) throw notFound('Không tìm thấy tài khoản');
+  assertNotSelf(user, userId);
   assertTimes(clockIn, clockOut);
   assertCanEdit(user, [clockIn]);
   if (await attendanceRepo.overlaps(userId, clockIn, clockOut)) {
