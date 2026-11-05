@@ -9,6 +9,7 @@ import { errorHandler, notFoundApi } from './middleware/errorHandler.js';
 import { adminRouter } from './routes/admin.js';
 import { engagementRouter } from './routes/engagement.js';
 import { financeRouter } from './routes/finance.js';
+import { payrollRouter } from './routes/payroll.js';
 import { loyaltyRouter } from './routes/loyalty.js';
 import { luckySpinRouter } from './routes/luckySpin.js';
 import { giftDrinksRouter } from './routes/giftDrinks.js';
@@ -53,6 +54,7 @@ export function createApp() {
     ['', loyaltyRouter], // ADR-006: điểm / tem / voucher (quầy)
     ['', luckySpinRouter], // F-065: vòng quay may mắn (khách theo mã, màn cảm ơn của phiên)
     ['', giftDrinksRouter], // F-070: ly treo — quầy bán ly tặng, trang quà công khai
+    ['', payrollRouter], // F-072 / F-073: PIN, đổi người, màn chấm công, giờ công của tôi
     ['', dashboardRouter], // ADR-006 F-043: dashboard chủ quán (quản lý + trưởng ca)
     ['', staffRouter],
   ];

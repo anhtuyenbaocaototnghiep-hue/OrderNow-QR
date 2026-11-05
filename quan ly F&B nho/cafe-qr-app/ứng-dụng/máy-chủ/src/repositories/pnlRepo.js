@@ -8,8 +8,9 @@ const VN_DAY = (col) => `CONVERT(CHAR(10), DATEADD(HOUR, 7, ${col}), 23)`;
  * + lossValue (TASK-080): giá trị hàng mất ròng cả kỳ — điều chỉnh tồn tay, ghi hao hụt, lệch kiểm kê (InventoryTransactions.Type = 'ADJUST';
  *   kiểm kê thừa / điều chỉnh tăng bù trừ). Chỉ để nhắc trên trang, KHÔNG trừ vào lợi nhuận (công thức D-31 giữ nguyên).
  */
-export async function daily(fromUtc, toUtc) {
-  const p = { f: [sql.DateTime2(0), fromUtc], t: [sql.DateTime2(0), toUtc] };
+export async function daily(fromUtc, toUtc, { excludeAdvances = false } = {}) {
+  // F-073: đã tính lương theo chấm công → tạm ứng lương là trả trước tiền lương, không cộng thêm vào chi phí
+  const p = { f: [sql.DateTime2(0), fromUtc], t: [sql.DateTime2(0), toUtc], xa: [sql.Bit, excludeAdvances] };
   const [pay, ref, cogs, cash, loss] = await Promise.all([
     query(
       // F-070 D-116: phần trả bằng ly tặng (voucher GIFT — tiền đã thu lúc bán) tính là phải thu, không phải giảm giá
@@ -43,6 +44,7 @@ export async function daily(fromUtc, toUtc) {
       `SELECT ${VN_DAY('c.CreatedAt')} AS D, cc.CategoryId, cc.Name, SUM(c.Amount) AS Amount
        FROM dbo.CashTransactions c JOIN dbo.CashCategories cc ON cc.CategoryId = c.CategoryId
        WHERE c.Status = 'APPROVED' AND c.Direction = 'OUT' AND cc.IsExpense = 1 AND c.CreatedAt >= @f AND c.CreatedAt < @t
+         AND (@xa = 0 OR ISNULL(cc.SystemCode, '') <> 'SALARY_ADVANCE')
        GROUP BY ${VN_DAY('c.CreatedAt')}, cc.CategoryId, cc.Name`,
       p,
     ),

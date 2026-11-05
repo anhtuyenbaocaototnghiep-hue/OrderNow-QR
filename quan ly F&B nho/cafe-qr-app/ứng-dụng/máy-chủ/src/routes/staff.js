@@ -7,6 +7,7 @@ import express from 'express';
 import { z } from 'zod';
 import { requireStaff } from '../middleware/auth.js';
 import { paramGuid, paramId, parse, zGuid, zId, zManualDiscount, zMoney, zOrderItems, zText } from '../middleware/validate.js';
+import * as attendanceService from '../services/attendanceService.js';
 import * as orderService from '../services/orderService.js';
 import * as refundService from '../services/refundService.js';
 import * as reviewService from '../services/reviewService.js';
@@ -222,8 +223,18 @@ staffRouter.post('/shifts/open', async (req, res) => {
 });
 
 staffRouter.post('/shifts/:id/close', async (req, res) => {
-  const body = parse(z.object({ countedCash: zMoney(), note: zText(200).optional().nullable() }), req.body);
-  res.json(await shiftService.close(paramId(req), body, req.user));
+  const ids = () => z.array(zId()).max(100).default([]);
+  const body = parse(
+    z.object({
+      countedCash: zMoney(),
+      note: zText(200).optional().nullable(),
+      // F-072: người đóng ca chấm ra hộ người quên, đánh dấu có mặt / báo không có mặt (chế độ màn chấm công chung)
+      attendance: z.object({ clockOut: ids(), present: ids(), absent: ids() }).optional(),
+    }),
+    req.body,
+  );
+  const closed = await shiftService.close(paramId(req), body, req.user);
+  res.json({ ...closed, attendance: await attendanceService.applyShiftClose(body.attendance, req.user) });
 });
 
 staffRouter.get('/shifts/:id/report', async (req, res) => res.json(await shiftService.report(paramId(req))));

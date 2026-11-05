@@ -10,7 +10,28 @@ export class ApiError extends Error {
   }
 }
 
-async function call(path, { method = 'GET', body, headers = {}, staff = false } = {}) {
+// F-072: thao tác tiền cần PIN → máy chủ trả 403 PIN_REQUIRED; trang quầy đăng ký hộp nhập PIN, gửi lại kèm header X-Actor-Pin
+let pinPrompter = null;
+export const setPinPrompter = (fn) => {
+  pinPrompter = fn;
+};
+
+async function call(path, opts = {}) {
+  try {
+    return await send(path, opts);
+  } catch (err) {
+    if (!(opts.staff && err.code === 'PIN_REQUIRED' && pinPrompter)) throw err;
+    let data = null;
+    const done = await pinPrompter(err.message, async (pin) => {
+      data = await send(path, { ...opts, headers: { ...(opts.headers ?? {}), 'X-Actor-Pin': pin } });
+      return true;
+    });
+    if (!done) throw new ApiError(0, { code: 'PIN_CANCELLED', message: 'Chưa nhập PIN — thao tác chưa được thực hiện' });
+    return data;
+  }
+}
+
+async function send(path, { method = 'GET', body, headers = {}, staff = false } = {}) {
   const h = { Accept: 'application/json', ...headers };
   if (body !== undefined) h['Content-Type'] = 'application/json';
   if (staff) {

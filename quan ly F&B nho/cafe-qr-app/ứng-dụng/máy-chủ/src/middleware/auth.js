@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
 import { forbidden, unauthorized } from '../errors.js';
 import * as usersRepo from '../repositories/usersRepo.js';
+import { withActorPin } from '../auth/actorPin.js';
 
 export function signToken(user) {
   return jwt.sign({ sub: String(user.userId), role: user.role }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
@@ -31,14 +32,14 @@ const bearer = (req) => {
 
 /** Gắn req.user nếu có Bearer token (không bắt buộc). Dùng cho endpoint cả khách và nhân viên đều gọi được. */
 export async function optionalStaff(req, _res, next) {
-  req.user = await userFromToken(bearer(req));
+  req.user = withActorPin(req, await userFromToken(bearer(req)));
   next();
 }
 
 export async function requireStaff(req, _res, next) {
   const user = await userFromToken(bearer(req));
   if (!user) throw unauthorized();
-  req.user = user;
+  req.user = withActorPin(req, user);
   next();
 }
 
@@ -46,6 +47,6 @@ export async function requireAdmin(req, _res, next) {
   const user = await userFromToken(bearer(req));
   if (!user) throw unauthorized();
   if (user.role !== 'ADMIN') throw forbidden('Chỉ quản lý được truy cập chức năng này');
-  req.user = user;
+  req.user = withActorPin(req, user);
   next();
 }

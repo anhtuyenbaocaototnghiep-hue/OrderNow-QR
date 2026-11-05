@@ -8,15 +8,16 @@ import * as authGuardRepo from '../repositories/authGuardRepo.js';
 import { onAuthLock } from './alertService.js';
 
 export const WINDOW_MINUTES = 15;
-export const LIMITS = { LOGIN: 10, APPROVAL: 5 };
+export const LIMITS = { LOGIN: 10, APPROVAL: 5, PIN: 5 }; // PIN: F-072
 const LOCKED = {
   LOGIN: ['LOGIN_LOCKED', `Nhập sai mật khẩu quá nhiều lần — tài khoản này tạm khóa trên máy này ${WINDOW_MINUTES} phút`],
   APPROVAL: ['APPROVAL_LOCKED', `Nhập sai tài khoản duyệt quá nhiều lần — tạm khóa ${WINDOW_MINUTES} phút, chủ quán đã được báo`],
+  PIN: ['PIN_LOCKED', `Nhập sai PIN quá nhiều lần — tạm khóa ${WINDOW_MINUTES} phút, chủ quán đã được báo`],
 };
 
 const since = () => new Date(Date.now() - WINDOW_MINUTES * 60_000);
 
-/** who: { username, ip } (LOGIN) | { username, actor } (APPROVAL — actor = người đang đứng quầy). */
+/** who: { username, ip } (LOGIN) | { username, actor } (APPROVAL / PIN — actor = người đang đứng quầy). */
 function keyOf(kind, { username, actor, ip }) {
   const name = String(username ?? '')
     .trim()

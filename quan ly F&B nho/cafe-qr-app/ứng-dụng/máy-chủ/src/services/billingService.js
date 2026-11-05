@@ -6,6 +6,7 @@ import { discountLimits } from '../auth/permissions.js';
 import * as loyaltyService from './loyaltyService.js';
 import { memberForPricing, publicMember } from './memberService.js';
 import { getSettings } from './settingsService.js';
+import { assertActorPin } from './pinService.js';
 import { resolveApproval } from './userService.js';
 
 /** Đơn đã lưu (ordersRepo) → đầu vào settleTotals. */
@@ -103,6 +104,7 @@ export const loyaltyInput = (body) => ({
  */
 export async function approvalFor(user, { totals, needsApproval, settings }, creds) {
   if (totals.manualDiscount <= 0) return null;
+  await assertActorPin(user); // F-072: giảm giá tay cần PIN của người thu
   if (!needsApproval) return user.role === 'STAFF' ? null : user.userId;
   const base = totals.ordersTotal - totals.memberDiscount;
   const managerOk = !manualNeedsApproval(totals.manualDiscount, base, discountLimits('MANAGER', settings));

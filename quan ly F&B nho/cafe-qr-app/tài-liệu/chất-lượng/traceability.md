@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 416 test, sửa lúc 2026-11-05 08:19 UTC
-- `npm run test:e2e` (JSON): 64 test, sửa lúc 2026-11-05 08:23 UTC
+- `npm test` (JUnit): 430 test, sửa lúc 2026-11-05 09:05 UTC
+- `npm run test:e2e` (JSON): 65 test, sửa lúc 2026-11-05 09:17 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 160 |
-| Acceptance Criteria | 433 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 433 |
+| User Story | 166 |
+| Acceptance Criteria | 449 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 449 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -528,4 +528,20 @@
 | AC-071-03 | TC-071-03 | F-071 | US-071-1 | ACT-ADMIN, ACT-LEAD | UC-12, UC-17 | MOD-AUTH, MOD-SHIFT | SCR-09, SCR-15, SCR-47 | BR-108 | Integration: `tamper-guard.test.js` › AC-071-03: đăng nhập sai 10 lần cùng tên + cùng máy → lần 11 bị 429 LOGIN_LOCKED kể cả gõ đúng; tên khác, máy khác không bị khóa; cảnh báo AUTH_LOCK — **PASS** | **PASS** |
 | AC-071-04 | TC-071-04 | F-071 | US-071-2 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-38 | BR-108 | Integration: `tamper-guard.test.js` › AC-071-04: CSDL chặn xóa cứng lịch sử tiền / ca / chấm công / cảnh báo (HISTORY_NO_DELETE); nhật ký thao tác không sửa, không xóa được (trừ dòng quá 12 tháng của job giữ 12 tháng) — **PASS** | **PASS** |
 | AC-071-05 | TC-071-05 | F-071 | US-071-1 | ACT-ADMIN, ACT-LEAD | UC-12, UC-17 | MOD-AUTH, MOD-SHIFT | SCR-09, SCR-15, SCR-47 | BR-108 | E2E: `flow.spec.js` › trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt khoản chi lớn ở màn Ca, thấy tab Kiểm kê; quản lý xem sổ quỹ, kéo ca trong lịch tuần, lãi/lỗ ước tính, nhật ký (F-036, F-033, F-035, F-034) — **PASS** | **PASS** |
+| AC-072-01 | TC-072-01 | F-072 | US-072-1 | ACT-STAFF, ACT-LEAD | UC-12 | MOD-SHIFT, MOD-AUTH | SCR-10, SCR-53 | BR-109 | Unit: `attendance-kiosk.test.js` › AC-072-01 (unit): PIN 4–6 số không dễ đoán; luật tính giờ (theo lịch, đến sớm / về muộn, làm thêm chờ duyệt, ngoài lịch, quyết định, đi trễ); chia thưởng theo phút — **PASS** | **PASS** |
+| AC-072-02 | TC-072-02 | F-072 | US-072-1 | ACT-STAFF, ACT-LEAD | UC-12 | MOD-SHIFT, MOD-AUTH | SCR-10, SCR-53 | BR-109 | Integration: `attendance-kiosk.test.js` › AC-072-02: tự đặt PIN (cần mật khẩu, không dễ đoán); /auth/me báo cách chấm công + đã có PIN; quản lý chỉ xóa được PIN — **PASS** | **PASS** |
+| AC-072-03 | TC-072-03 | F-072 | US-072-1 | ACT-STAFF, ACT-LEAD | UC-12 | MOD-SHIFT, MOD-AUTH | SCR-10, SCR-53 | BR-109 | Integration: `attendance-kiosk.test.js` › AC-072-03: màn chấm công — danh sách người (không có quản lý); vào / ra bằng PIN riêng; vào hai lần 409; đăng xuất không chấm ra; sai PIN 5 lần → 429 PIN_LOCKED + cảnh báo (người đứng quầy khác vẫn chấm được); chế độ đăng nhập → 409 KIOSK_OFF — **PASS** | **PASS** |
+| AC-072-04 | TC-072-04 | F-072 | US-072-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-BILLING, MOD-FINANCE | SCR-14, SCR-15 | BR-109 | Integration: `attendance-kiosk.test.js` › AC-072-04: Đổi người — PIN đúng → phiên mới đứng tên người đó (thao tác ghi đúng người, không tạo chấm công); PIN sai 403; quản lý không đổi sang được — **PASS** | **PASS** |
+| AC-072-05 | TC-072-05 | F-072 | US-072-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-BILLING, MOD-FINANCE | SCR-14, SCR-15 | BR-109 | Integration: `attendance-kiosk.test.js` › AC-072-05: PIN cho thao tác tiền — giảm giá tay, hoàn tiền, chi sổ quỹ, hủy khoản sổ quỹ: thiếu PIN 403 PIN_REQUIRED, sai 403 PIN_INVALID, đúng thì làm; thu thêm không cần; quản lý miễn; tắt cài đặt thì không hỏi — **PASS** | **PASS** |
+| AC-072-06 | TC-072-06 | F-072 | US-072-3 | ACT-ADMIN, ACT-LEAD | UC-11, UC-12 | MOD-SHIFT | SCR-15, SCR-37 | BR-109 | Integration: `attendance-kiosk.test.js` › AC-072-06: đóng ca — chấm ra hộ người quên (cần quản lý xem lại), báo không có mặt; không đánh dấu được bản ghi của chính người đóng ca; mở quá 14 giờ → tự đóng ở 8 giờ, cần xem lại — **PASS** | **PASS** |
+| AC-072-07 | TC-072-07 | F-072 | US-072-1, US-072-2, US-073-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-12, UC-17 | MOD-SHIFT, MOD-AUTH, MOD-BILLING, MOD-FINANCE | SCR-10, SCR-53, SCR-14, SCR-15, SCR-52 | BR-109, BR-110 | E2E: `flow.spec.js` › chấm công nhiều người + lương: nhân viên tự đặt PIN; màn Chấm công vào ca bằng PIN; chi tiền hỏi PIN người đứng máy; Đổi người; Giờ công của tôi; quản lý nhập hồ sơ lương ở trang Lương (F-072, F-073, AC-072-07, AC-073-09) — **PASS** | **PASS** |
+| AC-073-01 | TC-073-01 | F-073 | US-073-1 | ACT-ADMIN | UC-12 | MOD-FINANCE | SCR-51 | BR-110 | Unit: `payroll.test.js` › AC-073-01 (unit): VietQR đúng chuẩn (trường, CRC-16), nội dung chuyển khoản không dấu ≤ 25 ký tự; tiền công đêm / lễ; dòng lương theo giờ / theo tháng — **PASS** | **PASS** |
+| AC-073-02 | TC-073-02 | F-073 | US-073-1 | ACT-ADMIN | UC-12 | MOD-FINANCE | SCR-51 | BR-110 | Integration: `payroll.test.js` › AC-073-02: hồ sơ lương (kiểm số liệu, ngân hàng trong danh sách), ngày lễ; nhân viên / trưởng ca không vào được bảng lương — **PASS** | **PASS** |
+| AC-073-03 | TC-073-03 | F-073 | US-073-1 | ACT-ADMIN | UC-12 | MOD-FINANCE | SCR-51 | BR-110 | Integration: `payroll.test.js` › AC-073-03: bảng lương nháp — theo lịch, đến sớm không tính, đi trễ, làm thêm / ngoài lịch chờ quản lý, vắng; quyết định của quản lý; chưa xử lý hết thì không chốt (409) — **PASS** | **PASS** |
+| AC-073-04 | TC-073-04 | F-073 | US-073-2 | ACT-STAFF, ACT-LEAD | UC-12 | MOD-SHIFT, MOD-FINANCE | SCR-52 | BR-110 | Integration: `payroll.test.js` › AC-073-04: nhân viên tự xem giờ công của mình (giờ được tính, ai sửa vì sao, quyết định), báo sai → việc chờ của quản lý → xử lý; không xem được của người khác — **PASS** | **PASS** |
+| AC-073-05 | TC-073-05 | F-073 | US-073-1, US-073-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-12 | MOD-FINANCE, MOD-SHIFT | SCR-51, SCR-52 | BR-110 | Integration: `payroll.test.js` › AC-073-05: chốt lương → lưu từng dòng, khóa sửa giờ công / quyết định / cộng trừ của tháng (409 PAYROLL_LOCKED); nhân viên bấm "Đã xem"; mở lại phải có lý do; chốt lại giữ trạng thái đã trả — **PASS** | **PASS** |
+| AC-073-06 | TC-073-06 | F-073 | US-073-3 | ACT-ADMIN | UC-11, UC-16 | MOD-FINANCE | SCR-51, SCR-33 | BR-110 | Integration: `payroll.test.js` › AC-073-06: trả lương bằng VietQR tới tài khoản người nhận (thiếu tài khoản 409); đánh dấu đã chuyển khoản — **PASS** | **PASS** |
+| AC-073-07 | TC-073-07 | F-073 | US-073-3 | ACT-ADMIN | UC-11, UC-16 | MOD-FINANCE | SCR-51, SCR-33 | BR-110 | Integration: `payroll.test.js` › AC-073-07: tạm ứng lương ở sổ quỹ — phải chọn người nhận, luôn chờ duyệt, không ai tự duyệt khoản ứng của mình; đã duyệt thì trừ vào bảng lương tháng đó — **PASS** | **PASS** |
+| AC-073-08 | TC-073-08 | F-073 | US-072-3, US-073-3 | ACT-ADMIN, ACT-LEAD | UC-11, UC-12, UC-16 | MOD-SHIFT, MOD-FINANCE | SCR-15, SCR-37, SCR-51, SCR-33 | BR-109, BR-110 | Integration: `payroll.test.js` › AC-073-08: chia thưởng chung theo phút trong ca; báo cáo tuần (lịch vs giờ được tính, sửa tay, % lương / doanh thu theo ca); Lãi/lỗ trừ lương theo chấm công, không tính tạm ứng thêm lần nữa — **PASS** | **PASS** |
+| AC-073-09 | TC-073-09 | F-073 | US-073-1 | ACT-ADMIN | UC-12 | MOD-FINANCE | SCR-51 | BR-110 | E2E: `flow.spec.js` › chấm công nhiều người + lương: nhân viên tự đặt PIN; màn Chấm công vào ca bằng PIN; chi tiền hỏi PIN người đứng máy; Đổi người; Giờ công của tôi; quản lý nhập hồ sơ lương ở trang Lương (F-072, F-073, AC-072-07, AC-073-09) — **PASS** | **PASS** |
 

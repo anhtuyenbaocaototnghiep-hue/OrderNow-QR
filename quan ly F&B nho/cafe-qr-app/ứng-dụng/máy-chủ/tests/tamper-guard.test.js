@@ -23,7 +23,10 @@ async function createUser(username, role) {
   ok(await call(admin, 'post', '/api/admin/users', { username, password: 'Pass@123', fullName: `TK ${username}`, role }), 201);
 }
 const bigCash = async () =>
-  ok(await call(staff, 'post', '/api/cash-transactions', { categoryId: cats['Lương tạm ứng'], amount: 800_000, reason: 'tạm ứng' }), 201);
+  ok(
+    await call(staff, 'post', '/api/cash-transactions', { categoryId: cats['Lương tạm ứng'], amount: 800_000, reason: 'tạm ứng', employeeId: users.staff8 }),
+    201,
+  );
 
 before(async () => {
   app = await startApp();

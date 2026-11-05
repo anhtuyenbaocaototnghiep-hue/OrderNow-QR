@@ -105,7 +105,7 @@ function answerCard(r, prev) {
   const name = PRESETS.find(([k]) => k === state.preset)?.[1];
   const p = r.operatingProfit;
   const empty = !r.payments && !r.cogs;
-  const costs = r.cashExpenses + r.fixedCostsAllocated;
+  const costs = r.cashExpenses + r.fixedCostsAllocated + (r.laborCosts ?? 0);
   const diff = prev ? p - prev.operatingProfit : 0;
   return el(
     'section',
@@ -155,8 +155,21 @@ function flowCard(r) {
       r.fixedCostsPerDay ? `Mặt bằng, lương… khoảng ${money(r.fixedCostsPerDay)} mỗi ngày` : 'Chưa khai — xem mục Chi phí cố định',
       'pnl-cost',
     ],
+    // F-073: đã có hồ sơ lương → lương thật theo giờ chấm công
+    ...(r.payrollActive
+      ? [
+          [
+            '−',
+            'Lương nhân viên',
+            'theo chấm công',
+            r.laborCosts,
+            'Giờ được tính lương × lương giờ, phụ cấp đêm / lễ; lương tháng chia đều theo ngày',
+            'pnl-cost',
+          ],
+        ]
+      : []),
   ];
-  const max = Math.max(1, r.revenueNet, r.cogs + r.cashExpenses + r.fixedCostsAllocated, Math.abs(p));
+  const max = Math.max(1, r.revenueNet, r.cogs + r.cashExpenses + r.fixedCostsAllocated + (r.laborCosts ?? 0), Math.abs(p));
   const bar = (amount, cls) =>
     el(
       'td',
@@ -242,8 +255,11 @@ function hints(r, costs) {
   const named = (re) => r.expensesByCategory.filter((c) => re.test(c.name) && c.amount > 0);
   const list = (cats) => `"${cats.map((c) => c.name).join('", "')}" ${money(cats.reduce((s, c) => s + c.amount, 0))}`;
   if (!r.fixedCostsAllocated) out.push(['Chưa khai chi phí cố định (mặt bằng, lương…), nên lãi ở trên đang cao hơn thực tế.', null]);
+  if (r.payrollActive && active.some((c) => /lương/i.test(c.name)))
+    // F-073: lương đã tính theo chấm công — khoản lương khai cố định làm trừ hai lần
+    out.push(['Lương đã tính theo chấm công (dòng "Lương nhân viên"), nhưng Chi phí cố định vẫn còn khoản lương — xóa khoản đó để không trừ hai lần.', null]);
   const salary = named(/lương/i);
-  if (salary.length && active.some((c) => /lương/i.test(c.name)))
+  if (!r.payrollActive && salary.length && active.some((c) => /lương/i.test(c.name)))
     out.push([
       `Sổ quỹ có chi ${list(salary)} và chi phí cố định cũng có khoản lương. Nếu tiền tạm ứng nằm trong lương cố định thì lương đang bị trừ hai lần.`,
       ['/admin/cash', 'Mở Sổ quỹ'],
@@ -301,7 +317,7 @@ const periodFull = (p) =>
   p.length === 10 ? `${p.slice(8, 10)}/${p.slice(5, 7)}/${p.slice(0, 4)}` : p.length === 7 ? `Tháng ${p.slice(5, 7)}/${p.slice(0, 4)}` : p;
 
 function pnlChart(series, breakEven) {
-  const pts = series.map((s) => ({ ...s, costs: s.cashExpenses + s.fixedCostsAllocated }));
+  const pts = series.map((s) => ({ ...s, costs: s.cashExpenses + s.fixedCostsAllocated + (s.laborCosts ?? 0) }));
   // Bề rộng có trần: kỳ dài không làm chữ / cột co lại mức không đọc được (review G3 TASK-069)
   const W = Math.min(1100, Math.max(640, pts.length * 34));
   const H = 280;

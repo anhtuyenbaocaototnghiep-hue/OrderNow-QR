@@ -65,6 +65,33 @@ async function load() {
                   { class: 'row wrap' },
                   el('button', { class: 'btn btn-sm', type: 'button', onclick: () => editUser(u) }, 'Sửa'),
                   el('button', { class: 'btn btn-sm', type: 'button', onclick: () => resetPassword(u) }, 'Đặt lại mật khẩu'),
+                  // F-072: quên PIN / nghi bị lộ → xóa để người đó đăng nhập bằng mật khẩu và đặt lại (quản lý không biết PIN của ai)
+                  u.hasPin
+                    ? el(
+                        'button',
+                        {
+                          class: 'btn btn-sm',
+                          type: 'button',
+                          'aria-label': `Xóa PIN của ${u.username}`,
+                          onclick: async () => {
+                            if (
+                              !(await confirmDialog('Xóa PIN', `Xóa PIN của ${u.fullName}? Người đó sẽ đăng nhập bằng mật khẩu để đặt PIN mới.`, {
+                                okLabel: 'Xóa PIN',
+                              }))
+                            )
+                              return;
+                            try {
+                              await staffApi(`/api/admin/users/${u.userId}/pin-reset`, { method: 'POST' });
+                              toast(`Đã xóa PIN của ${u.fullName}`, 'success');
+                              load();
+                            } catch (err) {
+                              toast(errorMessage(err), 'error');
+                            }
+                          },
+                        },
+                        'Xóa PIN',
+                      )
+                    : null,
                   u.userId === me.userId
                     ? null
                     : el(

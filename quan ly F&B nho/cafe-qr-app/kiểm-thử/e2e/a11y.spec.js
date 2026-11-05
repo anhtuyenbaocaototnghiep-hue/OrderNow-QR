@@ -414,6 +414,7 @@ test('quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộ
     ['/pos/takeaway', 'quay-ban-mang-di'],
     ['/pos/shift', 'quay-ca-hoan-tien'],
     ['/pos/stock', 'quay-kho-so-che'],
+    ['/pos/me', 'quay-gio-cong-cua-toi'], // F-072 / F-073
   ]) {
     await P.goto(route);
     await check(P, key);
@@ -467,6 +468,7 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     'cash',
     'reviews',
     'staff',
+    'payroll', // F-073
     'users',
     'audit',
     'settings',

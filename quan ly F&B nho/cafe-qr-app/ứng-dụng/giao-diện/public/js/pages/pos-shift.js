@@ -317,6 +317,63 @@ function attendanceCard(rows) {
 /** F-071: trưởng ca không tự sửa / tự thêm chấm công của chính mình (máy chủ cũng chặn) — quản lý thì được. */
 const notSelf = (u) => shell.user.role === 'ADMIN' || u.userId !== shell.user.userId;
 
+/**
+ * F-072 (ADR-030 D-128): chế độ màn chấm công chung — người đóng ca xem ai làm trong ca: ai quên chấm ra thì chấm ra hộ (quản lý xem lại),
+ * đánh dấu có mặt / không có mặt cho người khác (dòng của chính mình do quản lý xác nhận). → { node, read() } | null
+ */
+async function attendanceCheck(shift) {
+  let board;
+  try {
+    board = await staffApi(`/api/attendance/shift/${shift.shiftId}`);
+  } catch {
+    return null;
+  }
+  if (board.mode !== 'KIOSK' || !board.rows.length) return null;
+  const others = board.rows.filter((a) => !a.self);
+  const picks = others.map((a) => {
+    const out = !a.clockOut ? el('input', { type: 'checkbox', checked: true, id: `att-out-${a.attId}` }) : null;
+    const present = el('select', { class: 'input', id: `att-present-${a.attId}`, 'aria-label': `${a.user.fullName} có mặt không` }, [
+      el('option', { value: 'OK' }, 'Có mặt'),
+      el('option', { value: 'NO' }, 'Không có mặt'),
+    ]);
+    const row = el(
+      'li',
+      { class: 'att-row' },
+      el(
+        'div',
+        {},
+        el('strong', {}, a.user.fullName),
+        el('div', { class: 'small muted' }, `${time(a.clockIn)} – ${a.clockOut ? time(a.clockOut) : 'đang làm'}`),
+      ),
+      el('div', { class: 'att-ctrls' }, out ? el('label', { class: 'row', for: `att-out-${a.attId}` }, out, 'Chấm ra lúc đóng ca') : null, present),
+    );
+    return { a, out, present, row };
+  });
+  const mine = board.rows.filter((a) => a.self);
+  const node = el(
+    'div',
+    { class: 'stack att-check' },
+    el('h3', {}, 'Chấm công trong ca'),
+    others.length
+      ? el(
+          'ul',
+          { class: 'att-list' },
+          picks.map((p) => p.row),
+        )
+      : null,
+    mine.length ? el('p', { class: 'small muted' }, 'Giờ công của chính bạn do quản lý xác nhận (không tự xác nhận cho mình).') : null,
+    el('p', { class: 'small muted' }, 'Người được chấm ra hộ hoặc bị báo không có mặt sẽ chờ quản lý xem lại trước khi tính lương.'),
+  );
+  return {
+    node,
+    read: () => ({
+      clockOut: picks.filter((p) => p.out?.checked).map((p) => p.a.attId),
+      present: picks.filter((p) => p.present.value === 'OK').map((p) => p.a.attId),
+      absent: picks.filter((p) => p.present.value === 'NO').map((p) => p.a.attId),
+    }),
+  };
+}
+
 async function closeShift(shift) {
   const counted = moneyInput({ id: 'counted', 'aria-label': 'Tiền đếm thực tế' });
   const note = el('input', { class: 'input', maxlength: 200, placeholder: 'Ghi chú (không bắt buộc)' });
@@ -331,6 +388,7 @@ async function closeShift(shift) {
   };
   counted.addEventListener('input', update);
   update();
+  const check = await attendanceCheck(shift);
   await modal({
     title: `Đóng ca #${shift.shiftId}`,
     body: el(
@@ -342,6 +400,7 @@ async function closeShift(shift) {
       counted,
       diff,
       note,
+      check?.node ?? null,
       msg,
     ),
     actions: [
@@ -357,7 +416,10 @@ async function closeShift(shift) {
           }
           closingSelf = true;
           try {
-            closedReport = await staffApi(`/api/shifts/${shift.shiftId}/close`, { method: 'POST', body: { countedCash: v, note: note.value.trim() || null } });
+            closedReport = await staffApi(`/api/shifts/${shift.shiftId}/close`, {
+              method: 'POST',
+              body: { countedCash: v, note: note.value.trim() || null, ...(check ? { attendance: check.read() } : {}) },
+            });
             shell.setShift(null);
             toast(`Đã đóng ca #${shift.shiftId}`, 'success');
             close(true);

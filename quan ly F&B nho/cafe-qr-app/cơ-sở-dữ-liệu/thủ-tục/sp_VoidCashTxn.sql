@@ -40,9 +40,12 @@ BEGIN
     SELECT @Dir = Direction, @Needs = RequiresApproval FROM dbo.CashCategories WHERE CategoryId = @NewCategoryId AND IsActive = 1;
     IF @Dir IS NULL BEGIN ROLLBACK; THROW 50140, 'CASH_CATEGORY_INVALID', 1; END
     SET @NewStatus = CASE WHEN @Dir = 'OUT' AND (@NewAmount > @Threshold OR @Needs = 1) THEN 'PENDING' ELSE 'APPROVED' END;
-    INSERT dbo.CashTransactions (ShiftId, CategoryId, Direction, Amount, Reason, Status, CreatedBy, ReplacesId)
+    INSERT dbo.CashTransactions (ShiftId, CategoryId, Direction, Amount, Reason, Status, CreatedBy, ReplacesId, EmployeeId)
     VALUES (@Shift, @NewCategoryId, @Dir, @NewAmount,
-            LEFT(LTRIM(RTRIM(@NewReason)) + N' (thay khoản #' + CAST(@CashTxnId AS NVARCHAR(10)) + N')', 200), @NewStatus, @ActorId, @CashTxnId);
+            LEFT(LTRIM(RTRIM(@NewReason)) + N' (thay khoản #' + CAST(@CashTxnId AS NVARCHAR(10)) + N')', 200), @NewStatus, @ActorId, @CashTxnId,
+            -- F-073: sửa khoản tạm ứng lương vẫn giữ người nhận
+            CASE WHEN EXISTS (SELECT 1 FROM dbo.CashCategories WHERE CategoryId = @NewCategoryId AND SystemCode = 'SALARY_ADVANCE')
+                 THEN (SELECT EmployeeId FROM dbo.CashTransactions WHERE CashTxnId = @CashTxnId) END);
     SET @NewTxnId = SCOPE_IDENTITY();
   END
 

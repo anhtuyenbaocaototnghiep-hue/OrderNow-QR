@@ -150,7 +150,7 @@ function facts(a) {
   else if (a.kind === 'BIG_REFUND') lines.push(`Số tiền: ${money(d.amount)} · mức lớn từ ${money(d.fixed)} · lượt thu #${d.paymentId}`);
   else if (a.kind === 'AUTH_LOCK')
     lines.push(
-      `${d.kind === 'LOGIN' ? 'Đăng nhập' : 'Tài khoản duyệt ở quầy'} "${d.username}": sai ${d.count} lần trong ${d.windowMinutes} phút — tạm khóa`,
+      `${{ LOGIN: 'Đăng nhập', APPROVAL: 'Tài khoản duyệt ở quầy', PIN: 'PIN ở quầy' }[d.kind]} "${d.username}": sai ${d.count} lần trong ${d.windowMinutes} phút — tạm khóa`,
       d.kind === 'LOGIN' ? `Máy gửi: ${d.ip ?? '?'}` : `Người đứng quầy nhập: ${d.actor ?? '?'}`,
     );
   else if (a.kind === 'CASH_VOID')

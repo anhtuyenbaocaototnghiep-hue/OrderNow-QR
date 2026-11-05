@@ -94,11 +94,29 @@ export async function cashEntryDialog(direction) {
   );
   const reason = el('input', { class: 'input', id: 'cash-reason', maxlength: 200 });
   const reasonLabel = el('label', { for: 'cash-reason' });
+  // F-073: tạm ứng lương ghi người nhận (cuối tháng tự trừ vào lương; không ai tự duyệt khoản ứng của mình)
+  const employee = el('select', { class: 'input', id: 'cash-employee' }, el('option', { value: '' }, 'Chọn người nhận…'));
+  const employeeField = el('div', { class: 'stack', hidden: true }, el('label', { for: 'cash-employee' }, 'Người nhận tạm ứng'), employee);
+  let employeesLoaded = false;
+  const isAdvance = () => chosen?.systemCode === 'SALARY_ADVANCE';
+  const loadEmployees = async () => {
+    if (employeesLoaded) return;
+    employeesLoaded = true;
+    try {
+      const { people } = await staffApi('/api/attendance/board');
+      employee.append(...people.map((p) => el('option', { value: p.userId }, p.fullName)));
+    } catch (err) {
+      employeesLoaded = false;
+      toast(errorMessage(err), 'error');
+    }
+  };
   const file = fileField();
   const note = el('p', { class: 'small cash-note', 'aria-live': 'polite' });
   const msg = el('div');
   const willWait = () => direction === 'OUT' && (chosen.requiresApproval || (threshold !== null && (moneyValue(amount) ?? 0) > threshold));
   function refresh() {
+    employeeField.hidden = !isAdvance();
+    if (isAdvance()) loadEmployees();
     clear(reasonLabel, chosen.requiresApproval ? 'Nội dung (bắt buộc với danh mục này)' : 'Nội dung (không bắt buộc)');
     reason.placeholder = chosen.requiresApproval ? 'Ghi rõ chi cho việc gì' : `Để trống sẽ ghi "${chosen.name}"`;
     clear(
@@ -124,6 +142,7 @@ export async function cashEntryDialog(direction) {
       el('label', { for: 'cash-amount' }, 'Số tiền'),
       amount,
       quick,
+      employeeField,
       reasonLabel,
       reason,
       direction === 'OUT' ? [el('label', {}, 'Ảnh hóa đơn (không bắt buộc, ≤ 2 MB — máy có camera thì chụp luôn)'), file] : null,
@@ -146,6 +165,10 @@ export async function cashEntryDialog(direction) {
             clear(msg, el('div', { class: 'field-error' }, `Danh mục "${chosen.name}" cần ghi rõ nội dung`));
             return false;
           }
+          if (isAdvance() && !employee.value) {
+            clear(msg, el('div', { class: 'field-error' }, 'Chọn người nhận tạm ứng'));
+            return false;
+          }
           const f = file.files?.[0];
           if (f && f.size > MAX_IMAGE) {
             clear(msg, el('div', { class: 'field-error' }, 'Ảnh hóa đơn tối đa 2 MB'));
@@ -154,7 +177,7 @@ export async function cashEntryDialog(direction) {
           try {
             let txn = await staffApi('/api/cash-transactions', {
               method: 'POST',
-              body: { categoryId: chosen.categoryId, amount: v, reason: text },
+              body: { categoryId: chosen.categoryId, amount: v, reason: text, ...(isAdvance() ? { employeeId: Number(employee.value) } : {}) },
             });
             if (f) {
               try {
@@ -420,6 +443,7 @@ export function cashBookTable(rows, { user, editable = false, onChange, showDate
               'td',
               {},
               el('strong', {}, t.category.name),
+              t.employee ? ` cho ${t.employee.fullName}` : null, // F-073: người nhận tạm ứng lương
               t.reason !== t.category.name ? ` — ${t.reason}` : null,
               el(
                 'div',

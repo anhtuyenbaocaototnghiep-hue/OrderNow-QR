@@ -8,6 +8,7 @@ import * as refundsRepo from '../repositories/refundsRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { refreshAvailability } from './menuService.js';
 import { requireOpenShift } from './shiftService.js';
+import { assertActorPin } from './pinService.js';
 import { resolveApproval } from './userService.js';
 import { getSettings } from './settingsService.js';
 import * as alertService from './alertService.js';
@@ -21,6 +22,7 @@ export async function paymentDetail(paymentId) {
 }
 
 export async function refund(paymentId, body, user) {
+  await assertActorPin(user); // F-072: hoàn tiền cần PIN của người thao tác
   const payment = await ordersRepo.paymentById(paymentId);
   if (!payment) throw notFound('Không tìm thấy lượt thu tiền');
   const shift = await requireOpenShift();

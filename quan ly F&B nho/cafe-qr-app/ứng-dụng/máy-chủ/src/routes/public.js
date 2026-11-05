@@ -34,9 +34,11 @@ publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
 });
 
 // F-053: tên / địa chỉ quán đọc từ Cài đặt (chưa lưu → .env). F-061: nhóm menu nâng cao đang bật (`modules`), `user.tourSeenAt`
-publicRouter.get('/auth/me', requireStaff, async (req, res) =>
-  res.json({ user: req.user, shop: await settingsService.shopInfo(), modules: (await settingsService.getSettings()).uiModules }),
-);
+// F-072: `attendance` — chấm công bằng màn chung (KIOSK) hay theo đăng nhập; có cần PIN cho thao tác tiền không
+publicRouter.get('/auth/me', requireStaff, async (req, res) => {
+  const s = await settingsService.getSettings();
+  res.json({ user: req.user, shop: await settingsService.shopInfo(), modules: s.uiModules, attendance: { mode: s.attendanceMode, moneyPin: s.moneyPin } });
+});
 // F-061 (ADR-021 D-80): xem xong / bỏ qua hướng dẫn 5 bước ở màn quầy — lưu theo tài khoản
 publicRouter.post('/auth/tour-seen', requireStaff, async (req, res) => res.json({ tourSeenAt: await usersRepo.markTourSeen(req.user.userId) }));
 // F-062 (D-81): tên + địa chỉ quán cho trang Chính sách dữ liệu (công khai, chỉ 2 trường này)

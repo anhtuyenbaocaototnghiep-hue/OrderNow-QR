@@ -9,9 +9,10 @@ const map = (r) =>
     isActive: Boolean(r.IsActive),
     createdAt: r.CreatedAt,
     tourSeenAt: r.TourSeenAt ?? null, // F-061: đã xem hướng dẫn 5 bước ở màn quầy
+    hasPin: Boolean(r.HasPin), // F-072: đã đặt PIN chấm công / xác nhận thao tác tiền (không bao giờ trả mã băm)
   };
 
-const COLS = 'UserId, Username, FullName, Role, IsActive, CreatedAt, TourSeenAt';
+const COLS = 'UserId, Username, FullName, Role, IsActive, CreatedAt, TourSeenAt, CAST(CASE WHEN PinHash IS NULL THEN 0 ELSE 1 END AS BIT) AS HasPin';
 
 export async function findById(id) {
   const r = await query(`SELECT ${COLS} FROM dbo.Users WHERE UserId = @id AND DeletedAt IS NULL`, { id: [sql.Int, id] });
@@ -100,4 +101,18 @@ export async function remove(id, actorId) {
     .output('Result', sql.VarChar(10))
     .execute('dbo.sp_DeleteUser');
   return r.output.Result;
+}
+
+// ---- F-072 (ADR-030 D-125): PIN riêng từng người (bcrypt) ----
+export async function pinHash(id) {
+  const r = await query('SELECT PinHash FROM dbo.Users WHERE UserId = @id AND DeletedAt IS NULL', { id: [sql.Int, id] });
+  return r.recordset[0]?.PinHash ?? null;
+}
+
+export async function setPin(id, hash) {
+  const r = await query('UPDATE dbo.Users SET PinHash = @h, PinSetAt = CASE WHEN @h IS NULL THEN NULL ELSE SYSUTCDATETIME() END WHERE UserId = @id', {
+    id: [sql.Int, id],
+    h: [sql.NVarChar(100), hash],
+  });
+  return r.rowsAffected[0] === 1;
 }

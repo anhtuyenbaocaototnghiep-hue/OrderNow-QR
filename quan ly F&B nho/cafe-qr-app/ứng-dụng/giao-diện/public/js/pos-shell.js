@@ -4,10 +4,12 @@ import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, moneyValue, playSound, time, toast, unlockAudio } from './ui.js';
 import { brandMark, icon } from './icons.js';
+import { kioskDialog, registerPinPrompter, setPinDialog, switchUserDialog } from './staff-pin.js';
 
 export async function mountPosShell(active) {
   const user = await requireStaffPage();
   const { shop } = current;
+  registerPinPrompter(); // F-072: thao tác tiền cần PIN → hỏi PIN rồi gửi lại
   // Chưa kết nối xong: trạng thái trung tính, không đỏ (đỏ chỉ khi mất kết nối thật — DEF-011)
   const conn = el('span', { class: 'conn connecting', id: 'conn' }, 'Đang kết nối…');
   const soundBtn = el(
@@ -48,6 +50,7 @@ export async function mountPosShell(active) {
     // F-061 (ADR-021 D-79): "Kho & sơ chế" theo nhóm Kho hàng (ẩn mục, trang vẫn mở được bằng đường dẫn)
     ...(current.modules.includes('inventory') ? [['stock', '/pos/stock', 'Kho & sơ chế', 'package']] : []),
     ['shift', '/pos/shift', 'Ca & hoàn tiền', 'wallet'],
+    ['me', '/pos/me', 'Giờ công', 'timer'], // F-072 / F-073: giờ công, lương tạm tính, phiếu lương của chính mình
   ];
   if (user.role === 'MANAGER') nav.push(['today', '/admin/today', 'Hôm nay', 'chart-column']); // F-043 bản rút gọn
   if (user.role === 'ADMIN') nav.push(['admin', '/admin', 'Quản lý', 'settings']);
@@ -72,6 +75,13 @@ export async function mountPosShell(active) {
         'div',
         { class: 'pos-user' },
         el('span', { class: 'user-name' }, user.fullName, user.role === 'MANAGER' ? el('span', { class: 'badge ok' }, 'Trưởng ca') : null),
+        // F-072: màn chấm công chung (PIN riêng) + đổi người đứng máy
+        current.attendance.mode === 'KIOSK'
+          ? el('button', { class: 'btn btn-sm', type: 'button', id: 'kiosk-btn', onclick: () => kioskDialog() }, icon('clock'), 'Chấm công')
+          : null,
+        user.role !== 'ADMIN'
+          ? el('button', { class: 'btn btn-sm', type: 'button', id: 'switch-btn', onclick: () => switchUserDialog() }, icon('users'), 'Đổi người')
+          : null,
         // F-061 (ADR-021 D-80): xem lại hướng dẫn 5 bước — ở trang Đơn hàng mở ngay, trang khác chuyển về Đơn hàng
         el(
           'button',
@@ -96,12 +106,24 @@ export async function mountPosShell(active) {
     'Chưa mở ca — chưa nhận, xử lý đơn và thu tiền được. ',
     el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => openShiftDialog() }, 'Mở ca'),
   );
+  // F-072: chưa đặt PIN (cần cho chấm công / thao tác tiền) → dải nhắc đặt PIN
+  const noPin =
+    user.role !== 'ADMIN' && !user.hasPin && (current.attendance.mode === 'KIOSK' || current.attendance.moneyPin)
+      ? el(
+          'div',
+          { class: 'banner no-pin', id: 'no-pin', role: 'status' },
+          icon('triangle-alert'),
+          'Bạn chưa đặt PIN — cần để chấm công và xác nhận thao tác tiền. ',
+          el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => setPinDialog() }, 'Đặt PIN'),
+        )
+      : null;
   // Trang có vùng "Cần xử lý ngay" (màn Đơn hàng) thì dải chưa mở ca đứng đầu vùng đó
   const alerts = $('#pos-alerts');
   if (alerts) {
     document.body.prepend(header);
     alerts.prepend(noShift);
-  } else document.body.prepend(header, noShift);
+    if (noPin) alerts.prepend(noPin);
+  } else document.body.prepend(header, ...(noPin ? [noPin] : []), noShift);
   // Thanh trên một hàng khi đủ chỗ; không thì đưa điều hướng xuống hàng hai (không để nút xuống dòng lộn xộn)
   const fitHeader = () => {
     header.classList.remove('stacked');

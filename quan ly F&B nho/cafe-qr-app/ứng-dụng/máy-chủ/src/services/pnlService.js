@@ -4,9 +4,12 @@
 //   chi phí cố định/ngày = Σ (số tiền tháng ÷ số ngày của tháng) các khoản đang hiệu lực ngày đó
 //   hòa vốn/ngày = chi phí cố định bình quân/ngày ÷ biên lãi gộp % (doanh thu thuần cần đạt mỗi ngày)
 //   lossValue (TASK-080): hàng mất ròng trong kỳ (điều chỉnh / hao hụt / lệch kiểm kê) — chỉ để nhắc, không trừ vào lợi nhuận
+//   F-073: đã có hồ sơ lương → trừ thêm "lương theo chấm công" từng ngày (giờ được trả × lương giờ + phụ cấp đêm / lễ; lương tháng chia đều
+//   theo ngày); tạm ứng lương không còn tính là chi phí (đã nằm trong lương). Lương khai ở Chi phí cố định thì xóa đi để không tính hai lần.
 import { badRequest, notFound } from '../errors.js';
 import * as pnlRepo from '../repositories/pnlRepo.js';
 import * as giftDrinkRepo from '../repositories/giftDrinkRepo.js';
+import { laborByDay } from './payrollService.js';
 import { addDays, eachDay, vnDayStartUtc } from '../utils/time.js';
 
 const daysInMonth = (date) => new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)), 0)).getUTCDate();
@@ -16,11 +19,12 @@ export function fixedForDay(costs, date) {
   return costs.filter((c) => c.effectiveFrom <= date && (!c.effectiveTo || c.effectiveTo >= date)).reduce((s, c) => s + c.monthlyAmount / daysInMonth(date), 0);
 }
 
-const EMPTY = () => ({ revenueGross: 0, revenueDue: 0, refunds: 0, cogs: 0, cashExpenses: 0, fixed: 0, estimatedCogsRows: 0, payments: 0 });
+const EMPTY = () => ({ revenueGross: 0, revenueDue: 0, refunds: 0, cogs: 0, cashExpenses: 0, fixed: 0, labor: 0, estimatedCogsRows: 0, payments: 0 });
 
 /** Tính chỉ tiêu từ các khoản cộng dồn (tiền làm tròn đồng). */
 export function finalize(b) {
   const fixedCostsAllocated = Math.round(b.fixed);
+  const laborCosts = Math.round(b.labor ?? 0);
   const revenueNet = b.revenueDue - b.refunds;
   const grossMargin = revenueNet - b.cogs;
   return {
@@ -33,7 +37,8 @@ export function finalize(b) {
     grossMarginPct: revenueNet > 0 ? Math.round((grossMargin / revenueNet) * 10000) / 100 : null,
     cashExpenses: b.cashExpenses,
     fixedCostsAllocated,
-    operatingProfit: grossMargin - b.cashExpenses - fixedCostsAllocated,
+    laborCosts,
+    operatingProfit: grossMargin - b.cashExpenses - fixedCostsAllocated - laborCosts,
     estimatedCogsRows: b.estimatedCogsRows,
     payments: b.payments,
   };
@@ -42,8 +47,9 @@ export function finalize(b) {
 export async function report(from, to, groupBy = 'day') {
   if (to < from) throw badRequest('INVALID_RANGE', 'Khoảng thời gian không hợp lệ');
   if (eachDay(from, to).length > 400) throw badRequest('INVALID_RANGE', 'Chọn tối đa khoảng 13 tháng');
+  const labor = await laborByDay(from, to); // F-073: null khi chưa có hồ sơ lương nào
   const [data, costs, giftsOutstanding] = await Promise.all([
-    pnlRepo.daily(vnDayStartUtc(from), vnDayStartUtc(addDays(to, 1))),
+    pnlRepo.daily(vnDayStartUtc(from), vnDayStartUtc(addDays(to, 1)), { excludeAdvances: Boolean(labor) }),
     pnlRepo.fixedCosts(),
     giftDrinkRepo.outstanding(), // F-070: ly tặng đã thu tiền, chưa dùng (chưa là doanh thu)
   ]);
@@ -64,7 +70,10 @@ export async function report(from, to, groupBy = 'day') {
     });
   }
   for (const e of data.expenses) add(e.date, (b) => (b.cashExpenses += e.amount));
-  for (const [d, b] of days) b.fixed = fixedForDay(costs, d);
+  for (const [d, b] of days) {
+    b.fixed = fixedForDay(costs, d);
+    b.labor = labor?.get(d) ?? 0;
+  }
 
   const keyOf = (d) => (groupBy === 'month' ? d.slice(0, 7) : d);
   const groups = new Map();
@@ -97,6 +106,7 @@ export async function report(from, to, groupBy = 'day') {
     expensesByCategory: [...byCategory.values()].sort((a, b) => b.amount - a.amount),
     lossValue: data.lossValue,
     giftsOutstanding,
+    payrollActive: Boolean(labor),
     series: [...groups].map(([period, g]) => ({ period, ...finalize(g) })),
   };
 }

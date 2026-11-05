@@ -34,6 +34,7 @@ financeRouter.post('/cash-transactions', requirePermission('cash.create'), async
       categoryId: zId(),
       amount: zMoney().min(1, 'Số tiền phải lớn hơn 0'),
       reason: zText(200).min(1, 'Nhập lý do / nội dung thu chi'),
+      employeeId: zId().optional().nullable(), // F-073: người nhận khi danh mục là "Lương tạm ứng"
     }),
     req.body,
   );

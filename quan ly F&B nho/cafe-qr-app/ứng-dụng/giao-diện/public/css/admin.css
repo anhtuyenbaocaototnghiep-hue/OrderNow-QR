@@ -1382,3 +1382,18 @@ ul.bday-tips {
   gap: 0.4rem;
   white-space: nowrap;
 }
+
+/* F-073 trang Lương: hàng nhập gọn (thưởng / khấu trừ, chia thưởng theo ca, ngày lễ) — xuống dòng trên màn hẹp */
+.inline-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+.inline-form .btn {
+  justify-self: start;
+}
+.inline-form + h3 {
+  margin-top: 1.25rem;
+}

@@ -7,6 +7,7 @@ import * as usersRepo from '../repositories/usersRepo.js';
 import { config } from '../config.js';
 import { onLogin } from './attendanceService.js';
 import * as authGuard from './authGuardService.js';
+import { verifyPin } from './pinService.js';
 
 const BCRYPT_COST = 10;
 // Hash giả để so sánh khi không có user → thời gian phản hồi như nhau (không lộ username tồn tại hay không)
@@ -28,6 +29,20 @@ export async function login(username, password, { ip = null } = {}) {
     if (config.env !== 'test') console.error('[attendance] không ghi được giờ vào', err.message);
   });
   return { accessToken: signToken(publicUser), user: publicUser };
+}
+
+/**
+ * F-072 (ADR-030 D-126) "Đổi người" ở máy quầy: người sắp đứng máy nhập PIN của mình → phiên mới đứng tên người đó
+ * (mọi thao tác sau đó ghi đúng người). Chỉ nhân viên / trưởng ca; quản lý đăng nhập bằng mật khẩu.
+ */
+export async function switchTo(userId, pin, actor) {
+  const target = await usersRepo.findById(userId);
+  if (!target || !target.isActive || target.role === 'ADMIN') throw notFound('Không tìm thấy nhân viên');
+  await verifyPin(target, pin, actor);
+  await onLogin(target).catch((err) => {
+    if (config.env !== 'test') console.error('[attendance] không ghi được giờ vào', err.message);
+  });
+  return { accessToken: signToken(target), user: target };
 }
 
 export const list = () => usersRepo.list();

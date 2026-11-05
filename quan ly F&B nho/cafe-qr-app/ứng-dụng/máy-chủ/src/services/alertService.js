@@ -282,7 +282,7 @@ export const onAuthLock = (info) => withDeadlockRetry(() => checkAuthLock(info))
 
 async function checkAuthLock({ kind, username, actor, ip, count, windowMinutes }) {
   const s = await getSettings();
-  const what = kind === 'LOGIN' ? 'Đăng nhập' : 'Tài khoản duyệt ở quầy';
+  const what = { LOGIN: 'Đăng nhập', APPROVAL: 'Tài khoản duyệt ở quầy', PIN: 'PIN ở quầy' }[kind];
   const who = actor?.userId ?? ip;
   const bucket = Math.floor(Date.now() / (windowMinutes * 60_000));
   const alert = await immediateAlert({

@@ -25,8 +25,8 @@ async function createUser(username, role, password = 'Pass@123') {
 }
 const login = (u, p = 'Pass@123') => app.login(u, p);
 const currentShift = async () => (await call(staff, 'get', '/api/shifts/current')).body.shift;
-const cashCreate = async (token, catName, amount, reason = 'test') => {
-  const r = await call(token, 'post', '/api/cash-transactions', { categoryId: cats[catName], amount, reason });
+const cashCreate = async (token, catName, amount, reason = 'test', extra = {}) => {
+  const r = await call(token, 'post', '/api/cash-transactions', { categoryId: cats[catName], amount, reason, ...extra });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   return r.body;
 };
@@ -220,7 +220,7 @@ describe('Sổ quỹ (F-033)', () => {
 
   test('chi 800k → chờ duyệt (két chưa trừ); đóng ca → 409 CASH_PENDING; nhân viên duyệt → 403; trưởng ca duyệt → trừ két', async () => {
     const before = await currentShift();
-    const t = await cashCreate(staff, 'Lương tạm ứng', 800_000, 'tạm ứng lương');
+    const t = await cashCreate(staff, 'Lương tạm ứng', 800_000, 'tạm ứng lương', { employeeId: users.staff9 }); // F-073: tạm ứng ghi người nhận
     assert.equal(t.status, 'PENDING');
     assert.equal((await currentShift()).expectedCash, before.expectedCash);
     const close = await call(staff, 'post', `/api/shifts/${before.shiftId}/close`, { countedCash: before.expectedCash });

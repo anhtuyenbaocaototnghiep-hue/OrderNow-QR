@@ -10,6 +10,7 @@ const mapCategory = (r) => ({
   requiresApproval: Boolean(r.RequiresApproval),
   isActive: Boolean(r.IsActive),
   sortOrder: r.SortOrder,
+  systemCode: r.SystemCode ?? null, // GIFT_SALE / GIFT_REFUND (ẩn), SALARY_ADVANCE (F-073: cần chọn người nhận)
 });
 
 export async function categories({ all = false } = {}) {
@@ -42,7 +43,8 @@ export async function saveCategory(id, { name, direction, isExpense, requiresApp
 }
 
 const SELECT = `
-  SELECT c.CashTxnId, c.ShiftId, c.CategoryId, cc.Name AS CategoryName, cc.IsExpense, c.Direction, c.Amount, c.Reason,
+  SELECT c.CashTxnId, c.ShiftId, c.CategoryId, cc.Name AS CategoryName, cc.IsExpense, cc.SystemCode, c.EmployeeId, eu.FullName AS EmployeeName,
+         c.Direction, c.Amount, c.Reason,
          c.ReceiptImagePath, c.Status, c.CreatedBy, cu.FullName AS CreatedByName, c.CreatedAt,
          c.ApprovedBy, au.FullName AS ApprovedByName, c.ApprovedAt, c.RejectReason,
          c.VoidedBy, vu.FullName AS VoidedByName, c.VoidedAt, c.VoidReason, c.ReplacedById, c.ReplacesId,
@@ -52,12 +54,14 @@ const SELECT = `
   JOIN dbo.Users cu ON cu.UserId = c.CreatedBy
   JOIN dbo.Shifts sh ON sh.ShiftId = c.ShiftId
   LEFT JOIN dbo.Users au ON au.UserId = c.ApprovedBy
-  LEFT JOIN dbo.Users vu ON vu.UserId = c.VoidedBy`;
+  LEFT JOIN dbo.Users vu ON vu.UserId = c.VoidedBy
+  LEFT JOIN dbo.Users eu ON eu.UserId = c.EmployeeId`;
 
 const map = (r) => ({
   cashTxnId: r.CashTxnId,
   shiftId: r.ShiftId,
-  category: { categoryId: r.CategoryId, name: r.CategoryName, isExpense: Boolean(r.IsExpense) },
+  category: { categoryId: r.CategoryId, name: r.CategoryName, isExpense: Boolean(r.IsExpense), systemCode: r.SystemCode ?? null },
+  employee: r.EmployeeId ? { userId: r.EmployeeId, fullName: r.EmployeeName } : null, // F-073: người nhận tạm ứng lương
   direction: r.Direction.trim(), // CHAR(3): 'IN ' → 'IN'
   amount: Number(r.Amount),
   reason: r.Reason,
@@ -95,7 +99,7 @@ export async function setReceipt(id, relPath) {
   });
 }
 
-export async function create({ shiftId, categoryId, amount, reason, userId, threshold }) {
+export async function create({ shiftId, categoryId, amount, reason, userId, threshold, employeeId = null }) {
   const r = await (
     await request()
   )
@@ -105,6 +109,7 @@ export async function create({ shiftId, categoryId, amount, reason, userId, thre
     .input('Reason', sql.NVarChar(200), reason)
     .input('UserId', sql.Int, userId)
     .input('Threshold', sql.Decimal(12, 0), threshold)
+    .input('EmployeeId', sql.Int, employeeId)
     .output('CashTxnId', sql.Int)
     .output('Status', sql.VarChar(10))
     .execute('dbo.sp_CreateCashTxn');

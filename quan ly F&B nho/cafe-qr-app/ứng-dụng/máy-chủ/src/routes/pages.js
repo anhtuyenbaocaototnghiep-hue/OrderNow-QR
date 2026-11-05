@@ -22,6 +22,7 @@ const PAGES = {
   '/pos/sessions/:id/receipt': 'pos/receipt.html',
   '/pos/orders/:id/receipt': 'pos/receipt.html',
   '/pos/shift': 'pos/shift.html', // S-15 ca + hoàn tiền (F-018, F-019)
+  '/pos/me': 'pos/me.html', // SCR-52 giờ công của tôi (F-072, F-073)
   // Quản lý (S-20 … S-25)
   '/admin/reports': 'admin/reports.html',
   '/admin/menu': 'admin/menu.html',
@@ -50,6 +51,7 @@ const PAGES = {
   '/admin/reviews': 'admin/reviews.html', // F-051
   '/admin/alerts': 'admin/alerts.html', // F-060
   '/admin/staff': 'admin/staff.html',
+  '/admin/payroll': 'admin/payroll.html', // SCR-51 lương (F-073)
   '/admin/audit': 'admin/audit.html',
   '/admin/pnl': 'admin/pnl.html',
   // Giai đoạn 7 — CRM

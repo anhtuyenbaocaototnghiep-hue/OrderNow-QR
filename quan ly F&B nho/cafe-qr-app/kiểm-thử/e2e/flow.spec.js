@@ -621,7 +621,13 @@ test('trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt kho�
   const categories = await apiAs(request, 'get', '/api/cash-categories');
   const catId = (name) => categories.find((c) => c.name === name).categoryId;
   await apiAs(request, 'post', '/api/cash-transactions', { categoryId: catId('Bổ sung tiền lẻ'), amount: 1000000, reason: 'Bổ sung két E2E' });
-  const big = await apiAs(request, 'post', '/api/cash-transactions', { categoryId: catId('Lương tạm ứng'), amount: 800000, reason: 'Tạm ứng lương E2E' });
+  const staff1Id = (await apiAs(request, 'get', '/api/admin/users')).find((u) => u.username === 'staff1').userId; // F-073: tạm ứng ghi người nhận
+  const big = await apiAs(request, 'post', '/api/cash-transactions', {
+    categoryId: catId('Lương tạm ứng'),
+    amount: 800000,
+    reason: 'Tạm ứng lương E2E',
+    employeeId: staff1Id,
+  });
   expect(big.status).toBe('PENDING');
   await L.reload();
   const row = L.locator('table.cash-book tr', { hasText: 'Tạm ứng lương E2E' });
@@ -2473,4 +2479,93 @@ test('ly treo: quản lý bật tab Ly tặng; quầy "Bán ly tặng" → mã +
 
   await P.goto('/admin/loyalty?tab=gift');
   await expect(P.locator('#content tbody tr', { hasText: code })).toContainText('Đã dùng');
+});
+
+test('chấm công nhiều người + lương: nhân viên tự đặt PIN; màn Chấm công vào ca bằng PIN; chi tiền hỏi PIN người đứng máy; Đổi người; Giờ công của tôi; quản lý nhập hồ sơ lương ở trang Lương (F-072, F-073, AC-072-07, AC-073-09)', async ({
+  request,
+}) => {
+  await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'KIOSK', moneyPin: true });
+  await apiAs(request, 'post', '/api/admin/users', { username: 'e2e-ha', password: 'Pass@123', fullName: 'Hà E2E', role: 'STAFF' });
+  await apiAs(request, 'post', '/api/admin/users', { username: 'e2e-bao', password: 'Pass@123', fullName: 'Bảo E2E', role: 'STAFF' });
+  const bao = await (await request.post('/api/auth/login', { data: { username: 'e2e-bao', password: 'Pass@123' } })).json();
+  const pinRes = await request.post('/api/auth/pin', { headers: { Authorization: `Bearer ${bao.accessToken}` }, data: { password: 'Pass@123', pin: '1397' } });
+  expect(pinRes.ok()).toBeTruthy();
+
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  const Q = await ctx.newPage();
+  watch(Q, 'kiosk');
+  try {
+    await Q.goto('/pos/login');
+    await Q.fill('#username', 'e2e-ha');
+    await Q.fill('#password', 'Pass@123');
+    await Q.click('#submit');
+    await expect(Q).toHaveURL(/\/pos$/);
+    await Q.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click(); // F-061: tài khoản mới → hướng dẫn lần đầu
+
+    // Chưa có PIN → dải nhắc; tự đặt PIN bằng mật khẩu đăng nhập
+    await Q.locator('#no-pin').getByRole('button', { name: 'Đặt PIN' }).click();
+    await Q.fill('#pin-pw', 'Pass@123');
+    await Q.fill('#pin-new', '2580');
+    await Q.fill('#pin-again', '2580');
+    await Q.getByRole('button', { name: 'Lưu PIN' }).click();
+    await expect(Q.locator('.toast', { hasText: 'Đã lưu PIN' })).toBeVisible();
+    await expect(Q.locator('#no-pin')).toHaveCount(0);
+
+    // Màn chấm công chung: Bảo chạm tên mình, nhập PIN (bàn phím số đổi chỗ — gõ bằng bàn phím máy)
+    await Q.locator('#kiosk-btn').click();
+    const kiosk = Q.locator('.modal', { hasText: 'Chạm vào tên mình' });
+    await kiosk.locator('.person-tile', { hasText: 'Bảo E2E' }).click();
+    const pad = Q.locator('.modal', { hasText: 'Vào ca — Bảo E2E' });
+    await expect(pad.locator('.pin-key')).toHaveCount(12);
+    await Q.keyboard.type('1397');
+    await pad.getByRole('button', { name: 'Vào ca' }).click();
+    await expect(Q.locator('.toast', { hasText: 'Bảo E2E vào ca lúc' })).toBeVisible();
+    await expect(kiosk.locator('.person-tile', { hasText: 'Bảo E2E' })).toContainText('Đang làm từ');
+    await kiosk.getByRole('button', { name: 'Xong' }).click();
+
+    // Chi tiền từ két → hỏi PIN của người đang đứng máy
+    await Q.goto('/pos/shift');
+    await Q.locator('.card', { hasText: 'Sổ quỹ trong ca' }).getByRole('button', { name: 'Chi tiền' }).click();
+    await Q.locator('.modal').getByRole('button', { name: 'Mua đá', exact: true }).click();
+    await Q.fill('#cash-amount', '20000');
+    await Q.fill('#cash-reason', 'Đá E2E chấm công');
+    await Q.locator('.modal').getByRole('button', { name: 'Ghi khoản chi' }).click();
+    const ask = Q.locator('.modal', { hasText: 'Nhập PIN của Hà E2E' });
+    await expect(ask).toBeVisible();
+    await Q.keyboard.type('9999');
+    await ask.getByRole('button', { name: 'Xác nhận' }).click();
+    await expect(ask.locator('.pin-msg')).toHaveText('PIN không đúng');
+    await Q.keyboard.type('2580');
+    await ask.getByRole('button', { name: 'Xác nhận' }).click();
+    await expect(Q.locator('.toast', { hasText: 'Đã ghi 20.000đ' })).toBeVisible();
+    await expect(Q.locator('table.cash-book')).toContainText('Đá E2E chấm công');
+
+    // Đổi người: Bảo đứng máy → tên trên thanh trên đổi
+    await Q.locator('#switch-btn').click();
+    await Q.locator('.modal', { hasText: 'Đổi người đứng máy' }).locator('.person-tile', { hasText: 'Bảo E2E' }).click();
+    await Q.keyboard.type('1397');
+    await Q.locator('.modal', { hasText: 'Đổi sang Bảo E2E' }).getByRole('button', { name: 'Đổi người' }).click();
+    await expect(Q.locator('.pos-top .user-name')).toContainText('Bảo E2E');
+
+    // Giờ công của tôi: chỉ của Bảo, đang làm
+    await Q.goto('/pos/me');
+    await expect(Q.getByRole('heading', { name: 'Giờ công của tôi' })).toBeVisible();
+    await expect(Q.locator('ul.me-att > li')).toHaveCount(1);
+    await expect(Q.locator('ul.me-att')).toContainText('đang làm');
+    await expect(Q.locator('.card', { hasText: 'Lương' }).first()).toContainText('chưa nhập hồ sơ lương');
+  } finally {
+    await ctx.close();
+  }
+
+  // Quản lý: tháng này Bảo có chấm công nhưng chưa có hồ sơ lương → nhập ở trang Lương
+  await P.goto('/admin/payroll');
+  const month = await P.locator('#pay-month option').first().getAttribute('value');
+  await P.locator('#pay-month').selectOption(month);
+  const todo = P.locator('.pending-list li', { hasText: 'Bảo E2E' }).filter({ hasText: 'Chưa có hồ sơ lương' });
+  await todo.getByRole('button', { name: 'Nhập hồ sơ lương' }).click();
+  await P.fill('#pf-hourly', '25000');
+  await P.locator('.modal').getByRole('button', { name: 'Lưu' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu hồ sơ lương' })).toBeVisible();
+  await expect(P.locator('table.pay-table')).toContainText('Bảo E2E');
+  await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'LOGIN', moneyPin: false }); // trả lại cho các test sau
 });

@@ -9,7 +9,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_CreateCashTxn
   @UserId     INT,
   @Threshold  DECIMAL(12,0),
   @CashTxnId  INT OUTPUT,
-  @Status     VARCHAR(10) OUTPUT
+  @Status     VARCHAR(10) OUTPUT,
+  @EmployeeId INT = NULL               -- F-073: người nhận tạm ứng lương (danh mục SALARY_ADVANCE)
 AS
 BEGIN
   SET NOCOUNT ON; SET XACT_ABORT ON;
@@ -23,8 +24,8 @@ BEGIN
   IF @Dir IS NULL BEGIN ROLLBACK; THROW 50140, 'CASH_CATEGORY_INVALID', 1; END
 
   SET @Status = CASE WHEN @Dir = 'OUT' AND (@Amount > @Threshold OR @Needs = 1) THEN 'PENDING' ELSE 'APPROVED' END;
-  INSERT dbo.CashTransactions (ShiftId, CategoryId, Direction, Amount, Reason, Status, CreatedBy)
-  VALUES (@ShiftId, @CategoryId, @Dir, @Amount, LTRIM(RTRIM(@Reason)), @Status, @UserId);
+  INSERT dbo.CashTransactions (ShiftId, CategoryId, Direction, Amount, Reason, Status, CreatedBy, EmployeeId)
+  VALUES (@ShiftId, @CategoryId, @Dir, @Amount, LTRIM(RTRIM(@Reason)), @Status, @UserId, @EmployeeId);
   SET @CashTxnId = SCOPE_IDENTITY();
   COMMIT;
 END

@@ -1,9 +1,11 @@
 // S-37 Nhân sự (FEATURE-035, ADR-006 D-25): chấm công (sửa / thêm tay, bắt buộc lý do), lịch làm theo tuần (kéo thả ca sang ô khác,
 // cảnh báo đi muộn > 15 phút / vắng), năng suất theo người (tiền thu, đơn hoàn tất, giờ làm).
+// F-072 (ADR-030): cách chấm công (màn chung + PIN / theo đăng nhập), PIN cho thao tác tiền; tab Báo cáo tuần (lịch vs giờ được tính,
+// ai sửa tay nhiều, % tiền lương trên doanh thu theo ca).
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { attendanceDialog, attendanceTable, hoursText, ROLE_LABEL } from '../attendance.js';
-import { $, clear, confirmDialog, el, errorMessage, modal, money, time, toast, todayVn } from '../ui.js';
+import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, time, toast, todayVn } from '../ui.js';
 
 await mountAdminShell('staff');
 
@@ -19,6 +21,7 @@ const tabs = el(
     ['attendance', 'Chấm công'],
     ['roster', 'Lịch làm tuần'],
     ['productivity', 'Năng suất'],
+    ['week', 'Báo cáo tuần'],
   ].map(([key, label]) =>
     el(
       'button',
@@ -44,6 +47,7 @@ async function load() {
     state.users = (await staffApi('/api/admin/users')).filter((u) => u.isActive);
     if (state.tab === 'roster') await renderRoster();
     else if (state.tab === 'productivity') await renderProductivity();
+    else if (state.tab === 'week') await renderWeek();
     else await renderAttendance();
   } catch (err) {
     clear(body, el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -85,6 +89,7 @@ async function renderAttendance() {
   }
   clear(
     body,
+    await settingsCard(),
     rangeFilters([
       el('div', { class: 'field' }, el('label', {}, 'Nhân viên'), userSel),
       el(
@@ -389,3 +394,151 @@ async function renderProductivity() {
 }
 
 await load();
+
+// ---- F-072: cách chấm công + PIN cho thao tác tiền ----
+async function settingsCard() {
+  const cur = await staffApi('/api/admin/attendance-settings');
+  const mode = el(
+    'select',
+    { class: 'input', id: 'att-mode' },
+    el('option', { value: 'KIOSK', selected: cur.attendanceMode === 'KIOSK' }, 'Màn chấm công chung, mỗi người PIN riêng'),
+    el('option', { value: 'LOGIN', selected: cur.attendanceMode === 'LOGIN' }, 'Theo đăng nhập máy quầy (quán một người / quầy)'),
+  );
+  const pin = el('input', { type: 'checkbox', id: 'money-pin', checked: cur.moneyPin });
+  const save = async () => {
+    try {
+      await staffApi('/api/admin/attendance-settings', { method: 'PUT', body: { attendanceMode: mode.value, moneyPin: pin.checked } });
+      toast('Đã lưu cách chấm công', 'success');
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    }
+  };
+  mode.addEventListener('change', save);
+  pin.addEventListener('change', save);
+  return el(
+    'section',
+    { class: 'card' },
+    el('h2', {}, 'Cách chấm công'),
+    el('div', { class: 'field' }, el('label', { for: 'att-mode' }, 'Chấm công bằng'), mode),
+    el('label', { class: 'row', for: 'money-pin' }, pin, 'Hoàn tiền, giảm giá tay, xóa món đã pha, chi / hủy sổ quỹ phải nhập PIN của người làm'),
+    el('p', { class: 'small muted' }, 'Mỗi người tự đặt PIN sau khi đăng nhập bằng mật khẩu. Quên PIN: vào Tài khoản → Xóa PIN để người đó đặt lại.'),
+  );
+}
+
+// ---- F-072: báo cáo tuần ----
+async function renderWeek() {
+  const r = await staffApi(`/api/admin/payroll-week?from=${state.week}`);
+  const h = (m) => `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}`;
+  const nav = (n) =>
+    el(
+      'button',
+      {
+        class: 'btn btn-sm',
+        type: 'button',
+        onclick: () => {
+          state.week = addDays(state.week, n * 7);
+          load();
+        },
+      },
+      n < 0 ? '← Tuần trước' : 'Tuần sau →',
+    );
+  clear(
+    body,
+    el('div', { class: 'row wrap' }, nav(-1), el('strong', {}, `${r.from.split('-').reverse().join('/')} – ${r.to.split('-').reverse().join('/')}`), nav(1)),
+    el(
+      'section',
+      { class: 'card' },
+      el('h2', {}, 'Lịch làm và giờ được tính lương'),
+      r.people.length
+        ? el(
+            'div',
+            { class: 'table-wrap' },
+            el(
+              'table',
+              { class: 'table' },
+              el(
+                'thead',
+                {},
+                el(
+                  'tr',
+                  {},
+                  ['Người', 'Theo lịch', 'Chấm công', 'Được tính', 'Đi trễ', 'Vắng', 'Chờ xử lý'].map((x) => el('th', {}, x)),
+                ),
+              ),
+              el(
+                'tbody',
+                {},
+                r.people.map((p) =>
+                  el(
+                    'tr',
+                    {},
+                    el('td', {}, p.fullName),
+                    el('td', {}, h(p.scheduledMinutes)),
+                    el('td', {}, h(p.actualMinutes)),
+                    el('td', {}, h(p.paidMinutes)),
+                    el('td', {}, String(p.lateCount)),
+                    el('td', {}, String(p.absentCount)),
+                    el('td', {}, p.pending ? el('a', { href: '/admin/payroll' }, String(p.pending)) : '0'),
+                  ),
+                ),
+              ),
+            ),
+          )
+        : el('p', { class: 'muted' }, 'Tuần này chưa có lịch hay chấm công.'),
+    ),
+    el(
+      'section',
+      { class: 'card' },
+      el('h2', {}, 'Sửa / thêm chấm công bằng tay'),
+      r.edits.length
+        ? el(
+            'ul',
+            { class: 'plain-list' },
+            r.edits.map((e) => el('li', {}, `${e.fullName}: ${e.count} lần`)),
+          )
+        : el('p', { class: 'muted small' }, 'Không có lần sửa tay nào.'),
+      el('p', { class: 'small muted' }, 'Một người sửa nhiều bất thường thì mở Nhật ký thao tác xem chi tiết.'),
+    ),
+    el(
+      'section',
+      { class: 'card' },
+      el('h2', {}, 'Tiền lương trên doanh thu theo ca'),
+      el('p', { class: 'small muted' }, 'Ước tính theo giờ được tính lương × lương giờ (cần hồ sơ lương). Ca có tỉ lệ cao là đang thừa người.'),
+      r.shifts.length
+        ? el(
+            'div',
+            { class: 'table-wrap' },
+            el(
+              'table',
+              { class: 'table' },
+              el(
+                'thead',
+                {},
+                el(
+                  'tr',
+                  {},
+                  ['Ca', 'Mở – đóng', 'Doanh thu', 'Số người', 'Tiền lương', '% doanh thu'].map((x) => el('th', {}, x)),
+                ),
+              ),
+              el(
+                'tbody',
+                {},
+                r.shifts.map((s) =>
+                  el(
+                    'tr',
+                    {},
+                    el('td', {}, `#${s.shiftId}`),
+                    el('td', {}, `${dateTime(s.openedAt)} – ${s.closedAt ? time(s.closedAt) : 'đang mở'}`),
+                    el('td', {}, money(s.revenue)),
+                    el('td', {}, String(s.staff)),
+                    el('td', {}, money(s.laborCost)),
+                    el('td', {}, s.laborPct === null ? '—' : `${s.laborPct}%`),
+                  ),
+                ),
+              ),
+            ),
+          )
+        : el('p', { class: 'muted small' }, 'Tuần này chưa có ca thu ngân.'),
+    ),
+  );
+}

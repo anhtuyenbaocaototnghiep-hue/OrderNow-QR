@@ -10,6 +10,7 @@ import * as voidRepo from '../repositories/voidRepo.js';
 import { publish, publishOrderEvent, ROOMS } from '../realtime/publisher.js';
 import { refreshAvailability } from './menuService.js';
 import { invalidateQueue } from './etaService.js';
+import { assertActorPin } from './pinService.js';
 import { resolveApproval } from './userService.js';
 import { assertShiftOpen } from './shiftService.js';
 
@@ -17,6 +18,7 @@ const LIVE = ['PENDING', 'PREPARING', 'COMPLETED'];
 
 /** Người duyệt: trưởng ca / quản lý tự duyệt; nhân viên nhập tài khoản khi cần (hoặc tự nguyện nhập trước). null = không cần. */
 async function approverFor(user, body, needed) {
+  if (needed) await assertActorPin(user); // F-072: xóa món đã tiếp nhận / đã pha cần PIN của người thao tác
   if (user.role !== 'STAFF') return user.userId;
   if (!needed && !body.adminUsername) return null;
   const a = await resolveApproval(user, body, 'việc xóa món đã tiếp nhận / đã pha', { allowManager: true });

@@ -53,6 +53,9 @@ function toSettings(map) {
     // F-070 ly treo (ADR-028) — mặc định tắt
     giftEnabled: map.get('gift.enabled') === 'true',
     giftValidDays: num(map.get('gift.valid_days'), 30),
+    // F-072 (ADR-030 D-124, D-127): chấm công bằng màn chung + PIN (mặc định) hoặc theo đăng nhập; PIN cho thao tác tiền (mặc định bật)
+    attendanceMode: map.get('attendance.mode') === 'LOGIN' ? 'LOGIN' : 'KIOSK',
+    moneyPin: map.get('security.money_pin') !== 'false',
     staffMaxAmount: num(map.get('discount.staff_max_amount'), 20000),
     // F-025 thời gian chờ (D-18)
     etaBaseSeconds: num(map.get('kitchen.base_seconds'), 120),
@@ -148,6 +151,8 @@ const KEYS = {
   winbackCooldownDays: 'winback.cooldown_days',
   giftEnabled: 'gift.enabled',
   giftValidDays: 'gift.valid_days',
+  attendanceMode: 'attendance.mode',
+  moneyPin: 'security.money_pin',
   staffMaxAmount: 'discount.staff_max_amount',
   etaBaseSeconds: 'kitchen.base_seconds',
   kitchenParallelism: 'kitchen.parallelism',

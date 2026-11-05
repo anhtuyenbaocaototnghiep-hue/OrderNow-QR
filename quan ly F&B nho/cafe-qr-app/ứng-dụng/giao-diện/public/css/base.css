@@ -1175,3 +1175,149 @@ body:has(.tour-layer) .toasts {
     background: #fff;
   }
 }
+
+/* F-072 (ADR-030): bàn phím PIN (số đổi chỗ mỗi lần mở), ô chọn người ở màn chấm công / đổi người */
+.pin-pad {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+}
+.pin-dots {
+  display: flex;
+  gap: 0.6rem;
+  min-height: 1.25rem;
+}
+.pin-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  border: 2px solid var(--c-border-strong, #8a7f72);
+}
+.pin-dot.opt {
+  border-style: dashed;
+}
+.pin-dot.on {
+  background: var(--c-text);
+  border-color: var(--c-text);
+  border-style: solid;
+}
+.pin-msg {
+  min-height: 1.25rem;
+  color: var(--c-danger, #b42318);
+  font-weight: 600;
+  text-align: center;
+}
+.pin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 4.25rem);
+  gap: 0.6rem;
+}
+.pin-key {
+  min-height: 3.25rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  justify-content: center;
+}
+.pin-fn {
+  font-size: 1rem;
+}
+.pin-pad .btn-block {
+  width: 100%;
+  max-width: 14rem;
+}
+.person-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 0.6rem;
+}
+.person-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-height: 4.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius, 10px);
+  background: var(--c-surface);
+  color: var(--c-text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.person-tile:hover:not(:disabled),
+.person-tile:focus-visible {
+  border-color: var(--c-primary);
+}
+.person-tile:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.att-check h3 {
+  margin: 0.5rem 0 0;
+}
+.pending-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.pending-list li {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.pay-qr {
+  justify-items: center;
+  text-align: center;
+}
+.pay-qr img {
+  max-width: 100%;
+  height: auto;
+}
+@media print {
+  body.print-payslip > :not(.overlay),
+  body.print-payslip .modal-head button,
+  body.print-payslip .modal-foot {
+    display: none !important;
+  }
+  body.print-payslip .overlay {
+    position: static;
+    background: none;
+  }
+}
+.att-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.att-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.att-ctrls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+.att-ctrls select {
+  min-width: 9.5rem;
+}
+/* F-072 Giờ công của tôi: mỗi lần chấm công một khối (đọc được trên điện thoại, không cuộn ngang) */
+.me-att {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.me-att li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--c-border);
+}

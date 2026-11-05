@@ -2,6 +2,7 @@
 // STAFF < MANAGER (Trưởng ca) < ADMIN (Quản lý). Lệch docs F-018: STAFF vẫn mở/đóng ca (Q-022).
 import { forbidden, unauthorized } from '../errors.js';
 import { userFromToken } from '../middleware/auth.js';
+import { withActorPin } from './actorPin.js';
 
 export const ROLES = ['STAFF', 'MANAGER', 'ADMIN'];
 
@@ -36,7 +37,7 @@ export function requirePermission(permission) {
     const user = req.user ?? (await userFromToken(bearer(req)));
     if (!user) throw unauthorized();
     if (!can(user, permission)) throw forbidden('Tài khoản của bạn không có quyền thực hiện thao tác này');
-    req.user = user;
+    req.user = withActorPin(req, user);
     next();
   };
   middleware.permission = permission;

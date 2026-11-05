@@ -11,10 +11,12 @@ import { config } from '../config.js';
 import { withDeadlockRetry } from '../db.js';
 import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import * as cashRepo from '../repositories/cashRepo.js';
+import * as usersRepo from '../repositories/usersRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { getSettings } from './settingsService.js';
 import { requireOpenShift } from './shiftService.js';
 import * as alertService from './alertService.js';
+import { assertActorPin } from './pinService.js';
 import { resolveApproval } from './userService.js';
 
 export const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
@@ -46,11 +48,18 @@ export async function removeCategory(id) {
   return 'DELETED';
 }
 
-export async function create({ categoryId, amount, reason }, user) {
+export async function create({ categoryId, amount, reason, employeeId = null }, user) {
   const shift = await requireOpenShift();
   const settings = await getSettings();
+  const cat = (await cashRepo.categories()).find((c) => c.categoryId === categoryId);
+  // F-073: tạm ứng lương phải chọn người nhận (luôn chờ duyệt — danh mục cần duyệt); danh mục khác không ghi người nhận
+  if (cat?.systemCode === 'SALARY_ADVANCE') {
+    const emp = employeeId ? await usersRepo.findById(employeeId) : null;
+    if (!emp || !emp.isActive) throw badRequest('VALIDATION_ERROR', 'Chọn người nhận tạm ứng lương');
+  } else employeeId = null;
+  if (cat?.direction === 'OUT') await assertActorPin(user); // F-072: chi tiền cần PIN của người ghi
   const { cashTxnId } = await withDeadlockRetry(() =>
-    cashRepo.create({ shiftId: shift.shiftId, categoryId, amount, reason, userId: user.userId, threshold: settings.cashApproveThreshold }),
+    cashRepo.create({ shiftId: shift.shiftId, categoryId, amount, reason, userId: user.userId, threshold: settings.cashApproveThreshold, employeeId }),
   );
   const txn = await cashRepo.getById(cashTxnId);
   publish([ROOMS.staff], 'cash.created', { txn });
@@ -78,6 +87,11 @@ export async function review(id, approve, body, user) {
   if (approver.userId === txn.createdBy.userId && approver.role !== 'ADMIN') {
     throw forbidden('Không tự duyệt khoản chi do chính mình tạo — nhờ trưởng ca / quản lý khác', 'SELF_APPROVAL');
   }
+  // F-073 (D-133): không ai tự duyệt khoản tạm ứng lương của chính mình (kể cả khi người khác ghi hộ)
+  if (approve && txn.employee?.userId === approver.userId && approver.role !== 'ADMIN') {
+    throw forbidden('Không tự duyệt khoản tạm ứng lương của chính mình — nhờ trưởng ca / quản lý khác', 'SELF_APPROVAL');
+  }
+  if (approve && approver.userId === user.userId) await assertActorPin(user); // F-072: tự duyệt bằng phiên của mình → PIN
   await withDeadlockRetry(() => cashRepo.review(id, approve, approver.userId, approve ? null : body.rejectReason));
   const updated = await cashRepo.getById(id);
   publish([ROOMS.staff], 'cash.reviewed', { txn: updated });
@@ -93,6 +107,7 @@ export async function voidTxn(id, body, user) {
   if (txn.status !== 'APPROVED') throw conflict('CASH_NOT_APPROVED', 'Chỉ hủy / sửa được khoản đã duyệt — khoản chờ duyệt dùng Từ chối');
   const settings = await getSettings();
   const allowManager = txn.amount <= settings.managerCashApproveMax;
+  await assertActorPin(user); // F-072: hủy / sửa khoản sổ quỹ cần PIN của người thao tác
   const actor = body.adminUsername ? { ...user, role: 'STAFF' } : user;
   const approver = await resolveApproval(actor, body, body.replacement ? 'việc sửa khoản sổ quỹ' : 'việc hủy khoản sổ quỹ', { allowManager });
   if (approver.userId === txn.createdBy.userId && approver.role !== 'ADMIN') {
