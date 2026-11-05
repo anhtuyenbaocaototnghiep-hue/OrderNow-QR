@@ -1271,3 +1271,10 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Bán | `giftDrinkRepo.sell`: một transaction — khóa ca đang mở (`HOLDLOCK`, như `sp_CreateCashTxn`), voucher `GIFT`, sổ quỹ thu đã duyệt (tiền mặt), dòng `GiftDrinks` |
 | Hủy | `giftDrinkRepo.cancel`: voucher `ExpiresAt` = bây giờ, sổ quỹ chi "Hoàn ly tặng" (tiền mặt, ca đang mở), `CancelledAt`; voucher đã dùng → hủy không được |
 | Cài đặt | `gift.enabled` (false), `gift.valid_days` (30) |
+
+## Chống sửa / xóa dữ liệu trái phép (FEATURE-071, ADR-029, 05/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0048_chong_sua_du_lieu.sql` | Bảng `AuthFailures (FailId PK, Kind LOGIN / APPROVAL, Username, ActorUserId NULL, Ip NULL, At)` + chỉ mục `(Kind, Username, At)`, `(At)` — không có cột mật khẩu; dòng quá 1 ngày bị dọn khi ghi lần sai mới. `CK_Alerts_Kind` thêm `AUTH_LOCK` |
+| Trigger | `TR_AuditLogs_NoDelete` (`AFTER DELETE`, `THROW 50251 AUDIT_NO_DELETE` nếu có dòng trong 12 tháng) bổ sung `TR_AuditLogs_ReadOnly` (0027). `TR_{Payments, Refunds, CashTransactions, Shifts, Attendance, OrderItemVoids, GiftDrinks, Alerts}_NoDelete` (`AFTER DELETE`, `THROW 50250 HISTORY_NO_DELETE`) |

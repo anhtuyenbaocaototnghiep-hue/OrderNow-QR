@@ -34,3 +34,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-085-plan.md](TASK-085-plan.md) — thu thập ngày sinh hội viên (F-068, ADR-026).
 - [TASK-086-plan.md](TASK-086-plan.md) — mừng khách quay lại (F-069, ADR-027).
 - [TASK-087-plan.md](TASK-087-plan.md) — ly treo, mua tặng bạn một ly (F-070, ADR-028).
+- [TASK-088-plan.md](TASK-088-plan.md) — chống sửa / xóa dữ liệu trái phép (F-071, ADR-029).

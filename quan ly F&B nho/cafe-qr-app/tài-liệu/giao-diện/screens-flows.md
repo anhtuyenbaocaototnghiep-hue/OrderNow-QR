@@ -421,3 +421,9 @@ flowchart LR
 - **SCR-50 Trang quà `/qua/{token}`** (công khai, 390 px): tên quán, "Lan tặng bạn 1 Cà phê sữa", lời nhắn, mã lớn, "Dùng đến hết dd/mm/yyyy · đọc mã ở quầy"; nút **Gửi cho bạn** (chia sẻ của điện thoại; không hỗ trợ → chép link) và **Chép lời nhắn**; đã dùng / hết hạn / đã hủy → báo trạng thái, không hiện mã. `?in=1` → in phiếu.
 - **S-40 tab Ly tặng:** 4 ô số (30 ngày: đã bán + tiền, đã dùng, đang giữ, người nhận là khách mới); công tắc + số ngày dùng được; bảng ly tặng gần đây (mã, món, người tặng, ngày bán, hạn, trạng thái) với **Gia hạn**, **Hủy & hoàn tiền**.
 - **Lãi/lỗ:** gợi ý "Đã bán N ly tặng chưa dùng (X đ): tiền đã thu, doanh thu tính khi người nhận dùng".
+
+## F-071 — Chống sửa / xóa dữ liệu trái phép (TASK-088, ADR-029, 05/11/2026)
+
+- **S-15 Ca — Chấm công hôm nay:** trưởng ca không thấy nút **Sửa** trên dòng của chính mình; ô chọn người khi **Thêm chấm công** không có tên mình (quản lý thấy đủ).
+- **S-09 Đăng nhập / hộp "tài khoản duyệt":** sai nhiều lần → báo "Nhập sai … quá nhiều lần — tạm khóa 15 phút".
+- **SCR-47 Cảnh báo bất thường:** loại **"Sai mật khẩu nhiều lần"** — "Tài khoản duyệt ở quầy "lead1": sai 5 lần trong 15 phút — tạm khóa", "Người đứng quầy nhập: …" (đăng nhập: "Máy gửi: …").

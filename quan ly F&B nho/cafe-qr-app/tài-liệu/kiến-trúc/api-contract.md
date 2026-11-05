@@ -644,3 +644,16 @@ Chi tiết: [FEATURE-070](../chức-năng/FEATURE-070.md), BR-107.
 - `POST /api/vouchers/validate`: ly tặng → `voucher.source = 'GIFT'`, thêm `gift: { giverName, menuItemName }`; hết hạn → "Ly tặng đã hết hạn — nhờ quản lý gia hạn".
 - Xem trước / thu tiền: voucher `GIFT` → dòng breakdown "Ly tặng — 1 …"; số trừ có trần max(đã trả, giá hiện tại); hóa đơn ghi "Ly tặng {mã}".
 - `GET /api/admin/pnl`: phải thu cộng phần ly tặng đã dùng; thêm `giftsOutstanding: { count, amount }`.
+
+## Bổ sung F-071 — chống sửa / xóa dữ liệu trái phép (ADR-029, 05/11/2026)
+
+Chi tiết: [FEATURE-071](../chức-năng/FEATURE-071.md), BR-108.
+
+| Method & path | Thay đổi |
+| --- | --- |
+| `POST /api/auth/login` | Sai 10 lần / 15 phút cùng tên + cùng máy → `429 LOGIN_LOCKED` "Nhập sai mật khẩu quá nhiều lần — tài khoản này tạm khóa trên máy này 15 phút" (kể cả lần gõ đúng) |
+| Mọi API nhận `adminUsername` / `adminPassword` (thu tiền có giảm giá tay vượt ngưỡng, hoàn tiền, xóa món đã pha, duyệt / hủy / sửa sổ quỹ…) | Sai tên / mật khẩu 5 lần / 15 phút cùng tên duyệt + cùng người đứng quầy → `429 APPROVAL_LOCKED` (đúng mật khẩu mà không đủ quyền vẫn là `403 ADMIN_APPROVAL_INVALID`, không tính) |
+| `POST /api/attendance` · `PUT /api/attendance/{id}` | Trưởng ca thêm / sửa chấm công của chính mình → `403 ATTENDANCE_SELF_EDIT` |
+| `GET /api/admin/alerts` | Loại mới `AUTH_LOCK` (mức `HIGH`): `detail: { kind: LOGIN | APPROVAL, username, count, windowMinutes, actor, ip }` |
+
+Mã lỗi CSDL (không trả ra API — app không có luồng xóa): `50250 HISTORY_NO_DELETE`, `50251 AUDIT_NO_DELETE`.

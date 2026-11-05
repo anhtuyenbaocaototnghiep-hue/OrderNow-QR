@@ -192,6 +192,8 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-070-1 | Should | ACT-GUEST | Là khách, tôi muốn mua trước một ly tặng bạn và gửi qua Zalo, để bạn tới quán nhận mà không phải trả tiền. | AC-070-01, AC-070-02, AC-070-04, AC-070-06 | BR-107 | UC-10 | MOD-LOYALTY | SCR-13, SCR-50 | F-070 | DONE |
 | US-070-2 | Should | ACT-STAFF | Là nhân viên, tôi muốn bán ly tặng và nhận mã ly tặng nhanh ở quầy, tiền mặt khớp két khi chốt ca. | AC-070-01, AC-070-02, AC-070-03, AC-070-06 | BR-107 | UC-04 | MOD-BILLING, MOD-FINANCE | SCR-13, SCR-14 | F-070 | DONE |
 | US-070-3 | Should | ACT-ADMIN | Là chủ quán, tôi muốn biết bao nhiêu ly tặng đã bán / đã dùng / còn nợ khách và mang được bao nhiêu khách mới, gia hạn hoặc hoàn tiền khi cần. | AC-070-03, AC-070-05, AC-070-06 | BR-107 | UC-10 | MOD-LOYALTY, MOD-FINANCE | SCR-40 | F-070 | DONE |
+| US-071-1 | Should | ACT-ADMIN, ACT-LEAD | Là chủ quán, tôi muốn không ai tự sửa giờ công của chính mình hay dò được mật khẩu quản lý ở quầy, và được báo ngay khi có người thử, để giờ công và các khoản duyệt không bị lợi dụng. | AC-071-01, AC-071-02, AC-071-03, AC-071-05 | BR-108 | UC-12, UC-17 | MOD-AUTH, MOD-SHIFT | SCR-09, SCR-15, SCR-47 | F-071 | DONE |
+| US-071-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn lịch sử tiền, ca, chấm công, cảnh báo và nhật ký thao tác không xóa được kể cả khi có người vào thẳng cơ sở dữ liệu, để dấu vết sai phạm luôn còn. | AC-071-04 | BR-108 | UC-17 | MOD-ADMIN | SCR-38 | F-071 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 
@@ -309,13 +311,13 @@ Bốn chỗ ghi cũ mâu thuẫn với quyết định sau đã được sửa t
 
 | Chỉ số | Giá trị |
 | --- | --- |
-| Tổng số story | 158 |
+| Tổng số story | 160 |
 | Must | 54 (F-001…F-012: 28 — gồm US-001-3 cho trang chủ / 404; F-046, F-047: 6; F-048: 4; F-049: 2; F-050: 2; F-051: 4; F-052: 2; F-053: 1; F-054: 1; F-055: 2; F-056: 2) |
-| Should | 103 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4; F-064: 2; F-065, F-066: 3; F-067: 2; F-068: 2; F-069: 2; F-070: 3) |
+| Should | 105 (thêm US-033-3 cho màn S-36, US-038-3 voucher tay; F-057, F-058, F-059: 3; F-060: 2; F-061…F-063: 4; F-064: 2; F-065, F-066: 3; F-067: 2; F-068: 2; F-069: 2; F-070: 3; F-071: 2) |
 | Could | 1 (US-037-4) |
-| AC đã ánh xạ / tổng AC trong FEATURE | 428 / 428 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026 + 10 của F-064 ngày 02/11/2026 + 3 của F-034 ngày 02/11/2026 (TASK-080) + 2 của F-033 (TASK-081) + 3 của F-014 (TASK-082) + 11 của F-065, F-066 ngày 03/11/2026 + 7 của F-067 ngày 03/11/2026 + 5 của F-068 ngày 04/11/2026 + 6 của F-069 ngày 04/11/2026 + 6 của F-070 ngày 04/11/2026) |
+| AC đã ánh xạ / tổng AC trong FEATURE | 433 / 433 (216 có từ trước + 73 bổ sung 20/10/2026 + 11 của F-048, 5 của F-049, 5 của F-050, 6 của F-051 ngày 21/10/2026 + 5 của F-052, 5 của F-053, 4 của F-054, 5 của F-055 ngày 23/10/2026 + 14 của F-056…F-058 ngày 24/10/2026 + 4 của F-059 ngày 26/10/2026 + 10 của F-060 ngày 27/10/2026 + 12 của F-061…F-063 ngày 29/10/2026 + 10 của F-064 ngày 02/11/2026 + 3 của F-034 ngày 02/11/2026 (TASK-080) + 2 của F-033 (TASK-081) + 3 của F-014 (TASK-082) + 11 của F-065, F-066 ngày 03/11/2026 + 7 của F-067 ngày 03/11/2026 + 5 của F-068 ngày 04/11/2026 + 6 của F-069 ngày 04/11/2026 + 6 của F-070 ngày 04/11/2026 + 5 của F-071 ngày 05/11/2026) |
 | AC đã viết lại cho kiểm được | 25 |
-| FEATURE có story | 69 / 69 (F-001…F-043, F-045…F-070; không có F-044) |
+| FEATURE có story | 70 / 70 (F-001…F-043, F-045…F-071; không có F-044) |
 | FEATURE không có AC nào | 0 |
-| BR được tham chiếu | 107 / 107 |
+| BR được tham chiếu | 108 / 108 |
 | Màn hình `S-xx` có story | 37 / 37; thêm SCR-43 (trang chủ) và SCR-44 (404) qua US-001-3 |
