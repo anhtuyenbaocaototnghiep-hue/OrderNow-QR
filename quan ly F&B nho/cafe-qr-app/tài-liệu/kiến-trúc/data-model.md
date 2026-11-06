@@ -1286,3 +1286,11 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Migration `0049_cham_cong_tinh_luong.sql` | `Users.PinHash`, `PinSetAt`. `Attendance`: nguồn `KIOSK`; `NeedsReview`, `ClosedBy`, `CheckResult (OK / DISPUTED)`, `CheckedBy`, `CheckedAt`, `PayDecision (ACTUAL / SCHEDULE / NONE)`, `DecidedBy`, `DecidedAt`, `DecisionNote`. `AuthFailures.Kind` thêm `PIN`. Bảng `PayProfiles (UserId PK, PayType HOURLY / MONTHLY, HourlyRate, MonthlySalary, NightAllowance, NightStart, HolidayMultiplier 1–5, AttendanceBonus, BankBin, BankAccount, BankAccountName)`, `Holidays (HolidayDate PK, Name)`, `PayrollAdjustments (Month, UserId, Amount ≠ 0, Reason)`, `PayrollRuns (Month PK, Status LOCKED / REOPENED, Locked…, Reopened…, ReopenReason)`, `PayrollLines (Month, UserId PK, phút / tiền từng khoản, DetailJson, PaidAt, PaidBy, PaidMethod, AckAt)`, `AttendanceDisputes (AttId, UserId, Note, Resolved…)`. `CashTransactions.EmployeeId`; danh mục `SALARY_ADVANCE` ("Lương tạm ứng", luôn chờ duyệt). Trigger chặn xóa `PayrollRuns`, `AttendanceDisputes` |
 | Thủ tục | `sp_CreateCashTxn` thêm `@EmployeeId`; `sp_VoidCashTxn` giữ người nhận khi sửa khoản tạm ứng |
 | Cài đặt | `attendance.mode` (`KIOSK` mặc định / `LOGIN`), `security.money_pin` (mặc định bật) |
+
+### Bổ sung: báo quên chấm công (ADR-031, TASK-090, 06/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0050_bao_quen_cham_cong.sql` | Bảng `MissedPunches (RequestId PK, UserId, ClockIn, ClockOut (> ClockIn), Note, CreatedAt, Status PENDING / APPROVED / REJECTED, ResolvedBy, ResolvedAt, Resolution, AttId → Attendance)`; chỉ mục `(UserId, ClockIn)`, `(ClockIn) WHERE Status = 'PENDING'`. Trigger `TR_MissedPunches_NoDelete` (`THROW 50250 HISTORY_NO_DELETE`) |
+| Duyệt | Một giao dịch: `UPDATE MissedPunches … WHERE Status = 'PENDING'` (giữ phiếu) → `INSERT Attendance (Source 'MANUAL', EditedBy = người duyệt, EditReason 'Báo quên chấm công: …')` → gắn `AttId` |
+| Khóa PIN | `AuthFailures` dòng `Kind = 'PIN'` của người đó bị xóa khi đặt PIN mới / quản lý xóa PIN; sai mật khẩu ở `POST /api/auth/pin/kiosk` ghi `Kind = 'LOGIN'` (tên + IP) |

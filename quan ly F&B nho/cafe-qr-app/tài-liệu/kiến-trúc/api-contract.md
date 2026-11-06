@@ -699,3 +699,19 @@ Chi tiết: [FEATURE-072](../chức-năng/FEATURE-072.md), [FEATURE-073](../ch�
 - `POST /api/cash-transactions`: thêm `employeeId` (bắt buộc với "Lương tạm ứng"); khoản trả về thêm `employee`, `category.systemCode`.
 - `PUT` / `POST /api/attendance`: tháng đã chốt lương → `409 PAYROLL_LOCKED`.
 - `GET /api/admin/reports/pnl`: thêm `laborCosts`, `payrollActive`; `operatingProfit` trừ `laborCosts`.
+
+## Bổ sung F-072 — quên PIN, nhắc và báo quên chấm công (ADR-031, TASK-090, 06/11/2026)
+
+Chi tiết: [FEATURE-072](../chức-năng/FEATURE-072.md) AC-072-08…12, BR-111.
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `POST /api/auth/pin/kiosk` | Nhân viên | `{ userId, password, pin }` → `{ hasPin: true }` — đặt PIN ở màn chung bằng mật khẩu đăng nhập của người đó; sai `403 PASSWORD_INVALID` (tính như đăng nhập sai, khóa `429 LOGIN_LOCKED`); PIN yếu `400 PIN_WEAK`; quản lý / không có / nghỉ việc `404`. Xóa lần sai PIN cũ |
+| `GET /api/attendance/reminders` | Nhân viên | `{ items: [{ kind: NOT_IN, userId, fullName, rosterStart, rosterEnd } \| { kind: NOT_OUT, userId, fullName, rosterEnd, since }] }`; chế độ đăng nhập → `[]` |
+| `POST /api/me/missed-punches` | Nhân viên | `{ clockIn, clockOut, note (≥ 3) }` → `201 { requestId, user, clockIn, clockOut, note, createdAt, status: PENDING, … }`; `400 MISSED_PUNCH_TOO_OLD` (quá 7 ngày) / `VALIDATION_ERROR`; `409 ATTENDANCE_OVERLAP` / `MISSED_PUNCH_OPEN` / `PAYROLL_LOCKED`; quản lý `403 MISSED_PUNCH_ADMIN` |
+| `POST /api/admin/missed-punches/{id}/approve` | ADMIN | `{ clockIn?, clockOut?, note? }` → `{ status: APPROVED, attendance }` (lần chấm công `MANUAL`, `editedBy` = người duyệt, `editReason` "Báo quên chấm công: …"); không còn chờ `404`; trùng `409 ATTENDANCE_OVERLAP`; tháng đã chốt `409 PAYROLL_LOCKED` |
+| `POST /api/admin/missed-punches/{id}/reject` | ADMIN | `{ reason (≥ 3) }` → `{ status: REJECTED }` |
+
+- `GET /api/me/attendance`: thêm `missingDays: [{ workDate, startTime, endTime, reported, canReport }]` (lịch đã qua không có chấm công), `missedPunches: [{ requestId, clockIn, clockOut, note, status, resolvedBy, resolvedAt, resolution, attId }]`, `missedPunchDays` (7).
+- `GET /api/admin/payroll`: `pending` có thêm mục `{ code: MISSED_PUNCH, requestId, clockIn, clockOut, note, user }` — chặn chốt (`409 PAYROLL_PENDING`). `GET /api/admin/payroll-week`: `people[].pending` cộng báo quên đang chờ.
+- `POST /api/admin/users/{id}/pin-reset`, `POST /api/auth/pin`: xóa lần sai PIN cũ của người đó. `403 PIN_NOT_SET` nay chỉ cách đặt PIN ở màn Chấm công.
