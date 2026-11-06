@@ -4,6 +4,7 @@
 //  - Chốt (chỉ tháng đã hết): lưu ảnh chụp từng dòng, khóa sửa giờ công tháng đó; mở lại phải có lý do (nhật ký thao tác).
 //  - Tạm ứng = khoản sổ quỹ "Lương tạm ứng" đã duyệt, ghi người nhận; khoản cộng / trừ khác do quản lý nhập.
 //  - Trả lương: VietQR tới tài khoản từng người (app ngân hàng hiện tên chủ tài khoản để đối chiếu) hoặc tiền mặt; đánh dấu đã trả.
+//  - ADR-031 D-137: báo quên chấm công đang chờ (theo tháng của giờ vào) cũng là việc chờ — chưa duyệt / từ chối thì chưa chốt được.
 import QRCode from 'qrcode';
 import { evaluate, hourlyEquivalent, intervalPay, ISSUE_LABEL, payLine, pickRoster, rosterWindow, splitByMinutes, vnDate } from '../domain/payroll.js';
 import { bankName, vietQrPayload } from '../domain/vietqr.js';
@@ -13,6 +14,7 @@ import * as payrollRepo from '../repositories/payrollRepo.js';
 import * as shiftsRepo from '../repositories/shiftsRepo.js';
 import * as usersRepo from '../repositories/usersRepo.js';
 import { addDays, eachDay, todayVn, vnDayStartUtc } from '../utils/time.js';
+import { MISSED_PUNCH_DAYS } from './attendanceService.js';
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 export const currentMonth = () => todayVn().slice(0, 7);
@@ -50,7 +52,7 @@ async function load(from, to) {
 const evalRecord = (a, rosters) => ({ att: a, ev: evaluate(a, pickRoster({ ...a, userId: a.user.userId }, rosters)) });
 
 /** Lịch đã qua (kết thúc trước bây giờ) trong tháng mà không có lần chấm công nào giao với lịch → vắng. */
-function absences(userId, rosters, records, from, to) {
+function absentRosters(userId, rosters, records, from, to) {
   const now = Date.now();
   return rosters.filter((r) => {
     if (r.userId !== userId || r.workDate < from || r.workDate > to) return false;
@@ -59,14 +61,32 @@ function absences(userId, rosters, records, from, to) {
     return !records.some(
       (a) => a.user.userId === userId && new Date(a.clockIn).getTime() < w.end && (a.clockOut ? new Date(a.clockOut).getTime() : now) > w.start,
     );
-  }).length;
+  });
 }
+const absences = (...args) => absentRosters(...args).length;
+
+const missedRows = (list) =>
+  list.map((m) => ({
+    code: 'MISSED_PUNCH',
+    label: ISSUE_LABEL.MISSED_PUNCH,
+    attId: null,
+    requestId: m.requestId,
+    clockIn: m.clockIn,
+    clockOut: m.clockOut,
+    note: m.note,
+    user: m.user,
+  }));
 
 /** Bảng lương nháp của tháng (tính trực tiếp). */
 export async function compute(month) {
   const { from, to, fromUtc, toUtc } = monthRange(month);
   const data = await load(from, to);
-  const [advances, adjustments, users] = await Promise.all([payrollRepo.advances(fromUtc, toUtc), payrollRepo.adjustments(month), usersRepo.list()]);
+  const [advances, adjustments, users, missed] = await Promise.all([
+    payrollRepo.advances(fromUtc, toUtc),
+    payrollRepo.adjustments(month),
+    usersRepo.list(),
+    attendanceRepo.missedIn({ fromUtc, toUtc, pendingOnly: true }),
+  ]);
   const ids = new Set([
     ...data.profiles.keys(),
     ...data.records.map((a) => a.user.userId),
@@ -74,7 +94,7 @@ export async function compute(month) {
     ...adjustments.map((a) => a.userId),
   ]);
   const lines = [];
-  const pending = [];
+  const pending = missedRows(missed);
   for (const userId of ids) {
     const user = users.find((u) => u.userId === userId) ?? { userId, fullName: `#${userId}`, role: '' };
     const evs = data.records.filter((a) => a.user.userId === userId).map((a) => evalRecord(a, data.rosters));
@@ -281,7 +301,26 @@ export async function mine(user, month = currentMonth()) {
     pay,
     disputes: await attendanceRepo.disputes({ userId: user.userId }),
     payslipMonths: await payrollRepo.lockedMonthsFor(user.userId),
+    ...(await missedFor(user, data, from, to, records, run)),
   };
+}
+
+/** ADR-031 D-136: ngày có lịch đã qua mà không chấm công (kèm có còn báo quên được không) + các lần đã báo quên của tháng. */
+async function missedFor(user, data, from, to, records, run) {
+  const missedPunches = await attendanceRepo.missedIn({ fromUtc: data.fromUtc, toUtc: data.toUtc, userId: user.userId });
+  const oldest = Date.now() - MISSED_PUNCH_DAYS * 86400e3;
+  const missingDays = absentRosters(user.userId, data.rosters, records, from, to).map((r) => {
+    const w = rosterWindow(r);
+    const reported = missedPunches.some((m) => m.status !== 'REJECTED' && new Date(m.clockIn).getTime() < w.end && new Date(m.clockOut).getTime() > w.start);
+    return {
+      workDate: r.workDate,
+      startTime: r.startTime,
+      endTime: r.endTime,
+      reported,
+      canReport: !reported && run?.status !== 'LOCKED' && w.start >= oldest,
+    };
+  });
+  return { missedPunches, missingDays, missedPunchDays: MISSED_PUNCH_DAYS };
 }
 
 /** Lý do trong nhật ký thao tác: AfterJson = { input: thân request, result } — sửa giờ có `reason`, quyết định của quản lý có `note`. */
@@ -310,10 +349,11 @@ export async function disputesForMonth(month) {
 export async function weekReport(from) {
   const to = addDays(from, 6);
   const data = await load(from, to);
-  const [users, edits, shifts] = await Promise.all([
+  const [users, edits, shifts, missed] = await Promise.all([
     usersRepo.list(),
     payrollRepo.manualEdits(data.fromUtc, data.toUtc),
     payrollRepo.shiftsWithRevenue(data.fromUtc, data.toUtc),
+    attendanceRepo.missedIn({ fromUtc: data.fromUtc, toUtc: data.toUtc, pendingOnly: true }),
   ]);
   const evs = data.records.map((a) => evalRecord(a, data.rosters));
   const people = users
@@ -331,7 +371,7 @@ export async function weekReport(from) {
         actualMinutes: mine.reduce((s, e) => s + e.ev.actualMinutes, 0),
         lateCount: mine.filter((e) => e.ev.late).length,
         absentCount: absences(u.userId, data.rosters, data.records, from, to),
-        pending: mine.reduce((s, e) => s + e.ev.issues.length, 0),
+        pending: mine.reduce((s, e) => s + e.ev.issues.length, 0) + missed.filter((m) => m.user.userId === u.userId).length,
       };
     });
   const shiftRows = shifts.map((s) => {

@@ -1500,3 +1500,8 @@ body.pos .tc-main .btn {
 .line-edit > .ic {
   margin: 0;
 }
+/* ADR-031 D-136: nhắc chấm công trong vùng "Cần xử lý ngay" */
+.pos-alerts > .banner.att-remind {
+  border-color: #efd5a6;
+  flex-wrap: wrap;
+}

@@ -39,6 +39,7 @@ const SNAP = {
   StampProgram: ['StampPrograms', 'ProgramId'],
   Segment: ['Segments', 'SegmentId'],
   Campaign: ['Campaigns', 'CampaignId'],
+  MissedPunch: ['MissedPunches', 'RequestId'], // ADR-031
 };
 
 // Đoạn đường dẫn /admin/<đoạn>/… → thực thể
@@ -72,6 +73,7 @@ const ADMIN_ENTITY = {
   vouchers: 'Voucher',
   segments: 'Segment',
   campaigns: 'Campaign',
+  'missed-punches': 'MissedPunch',
 };
 
 // Route quầy (đường dẫn sau /api): [method, regex (nhóm 1 = id), action, entity]

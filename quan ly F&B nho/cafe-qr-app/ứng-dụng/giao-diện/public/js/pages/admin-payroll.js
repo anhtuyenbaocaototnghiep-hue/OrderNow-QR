@@ -1,6 +1,7 @@
 // SCR-51 Lương (F-073, ADR-030 D-130…D-134): bảng lương tháng tính từ chấm công; việc chờ xử lý (làm thêm, ngoài lịch, quên chấm ra,
 // bị báo vắng, nhân viên báo sai, chưa có hồ sơ) — xử lý hết mới chốt; chốt / mở lại (lý do); thưởng / khấu trừ, chia thưởng chung theo ca;
 // trả lương: VietQR tới tài khoản từng người (đối chiếu tên chủ tài khoản) hoặc tiền mặt; phiếu lương in được; hồ sơ lương; ngày lễ.
+// ADR-031 D-137: việc chờ "Nhân viên báo quên chấm công" — Duyệt (sửa giờ được) tạo lần chấm công ghi tên bạn; Từ chối cần lý do.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { $, clear, confirmDialog, dateOnly, dateTime, el, errorMessage, modal, money, reasonDialog, time, toast, todayVn } from '../ui.js';
@@ -141,6 +142,70 @@ const DECISIONS = {
   ],
 };
 
+/** Giờ UTC → [ngày 'YYYY-MM-DD', 'HH:MM'] theo giờ quán. */
+const vnParts = (iso) => {
+  const t = new Date(new Date(iso).getTime() + 7 * 3600e3).toISOString();
+  return [t.slice(0, 10), t.slice(11, 16)];
+};
+
+/** Duyệt báo quên chấm công: giờ nhân viên ghi, sửa được trước khi duyệt. */
+async function approveMissedDialog(p) {
+  const [d0, in0] = vnParts(p.clockIn);
+  const [, out0] = vnParts(p.clockOut);
+  const date = el('input', { class: 'input', type: 'date', id: 'mpa-date', value: d0 });
+  const tin = el('input', { class: 'input', type: 'time', id: 'mpa-in', value: in0 });
+  const tout = el('input', { class: 'input', type: 'time', id: 'mpa-out', value: out0 });
+  const note = el('input', { class: 'input', id: 'mpa-note', maxlength: 200, placeholder: 'Không bắt buộc — ví dụ: trưởng ca xác nhận có mặt' });
+  const msg = el('div');
+  await modal({
+    title: `Duyệt báo quên — ${p.user.fullName}`,
+    body: el(
+      'div',
+      { class: 'stack' },
+      el('p', { class: 'small' }, `Lý do nhân viên ghi: "${p.note}"`),
+      el('label', { for: 'mpa-date' }, 'Ngày'),
+      date,
+      el(
+        'div',
+        { class: 'time-pair' },
+        el('div', { class: 'stack' }, el('label', { for: 'mpa-in' }, 'Giờ vào'), tin),
+        el('div', { class: 'stack' }, el('label', { for: 'mpa-out' }, 'Giờ ra'), tout),
+      ),
+      el('label', { for: 'mpa-note' }, 'Ghi chú cho nhân viên'),
+      note,
+      msg,
+    ),
+    actions: [
+      { label: 'Hủy', value: false },
+      {
+        label: 'Duyệt — thêm chấm công',
+        class: 'btn-primary',
+        onClick: async () => {
+          if (!date.value || !tin.value || !tout.value) {
+            clear(msg, el('div', { class: 'field-error' }, 'Nhập ngày, giờ vào và giờ ra'));
+            return false;
+          }
+          const clockIn = new Date(`${date.value}T${tin.value}:00+07:00`);
+          let clockOut = new Date(`${date.value}T${tout.value}:00+07:00`);
+          if (clockOut <= clockIn) clockOut = new Date(clockOut.getTime() + 86400e3); // ca qua đêm
+          try {
+            await staffApi(`/api/admin/missed-punches/${p.requestId}/approve`, {
+              method: 'POST',
+              body: { clockIn: clockIn.toISOString(), clockOut: clockOut.toISOString(), note: note.value.trim() || null },
+            });
+            toast('Đã duyệt — đã thêm lần chấm công', 'success');
+            load();
+            return true;
+          } catch (err) {
+            clear(msg, el('div', { class: 'field-error' }, errorMessage(err)));
+            return false;
+          }
+        },
+      },
+    ],
+  }).result;
+}
+
 function pendingCard() {
   const d = state.data;
   if (!d.pending.length) return null;
@@ -166,7 +231,7 @@ function pendingCard() {
             el('strong', {}, p.user.fullName),
             rec ? ` · ${dateOnly(rec.clockIn)} ${time(rec.clockIn)}–${rec.clockOut ? time(rec.clockOut) : '…'}` : null,
           ),
-          el('div', { class: 'small' }, p.label, dispute ? `: "${dispute.note}"` : null),
+          el('div', { class: 'small' }, p.label, dispute ? `: "${dispute.note}"` : null, p.code === 'MISSED_PUNCH' ? `: "${p.note}"` : null),
           el(
             'div',
             { class: 'row wrap' },
@@ -196,6 +261,26 @@ function pendingCard() {
             p.code === 'NO_PROFILE'
               ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => profileDialog(p.user.userId) }, 'Nhập hồ sơ lương')
               : null,
+            ...(p.code === 'MISSED_PUNCH'
+              ? [
+                  el('button', { class: 'btn btn-sm', type: 'button', onclick: () => approveMissedDialog(p) }, 'Duyệt…'),
+                  el(
+                    'button',
+                    {
+                      class: 'btn btn-sm',
+                      type: 'button',
+                      onclick: async () => {
+                        const reason = await reasonDialog('Không duyệt báo quên', 'Ghi lý do — nhân viên thấy dòng này ở trang Giờ công.', {
+                          okLabel: 'Không duyệt',
+                        });
+                        if (reason)
+                          run(() => staffApi(`/api/admin/missed-punches/${p.requestId}/reject`, { method: 'POST', body: { reason } }), 'Đã ghi không duyệt');
+                      },
+                    },
+                    'Không duyệt',
+                  ),
+                ]
+              : []),
             ['OPEN', 'AUTO_CLOSED', 'EMPLOYEE_DISPUTE'].includes(p.code) ? el('a', { class: 'btn btn-sm', href: '/admin/staff' }, 'Sửa giờ ở Nhân sự') : null,
           ),
         );

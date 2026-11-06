@@ -1,6 +1,7 @@
-// F-072 chấm công nhiều người + F-073 tính lương (ADR-030).
-//  - payrollRouter (gắn thẳng /api, nhân viên): PIN của mình, Đổi người, màn chấm công, danh sách đóng ca, Giờ công của tôi.
-//  - payrollAdminRouter (gắn dưới /api/admin, chỉ quản lý): cách chấm công, bảng lương, hồ sơ lương, ngày lễ, quyết định, báo sai, báo cáo tuần.
+// F-072 chấm công nhiều người + F-073 tính lương (ADR-030); nhắc chấm công, báo quên chấm công, đặt PIN ở màn chung (ADR-031).
+//  - payrollRouter (gắn thẳng /api, nhân viên): PIN của mình, Đổi người, màn chấm công, nhắc chấm công, danh sách đóng ca, Giờ công của tôi.
+//  - payrollAdminRouter (gắn dưới /api/admin, chỉ quản lý): cách chấm công, bảng lương, hồ sơ lương, ngày lễ, quyết định, báo sai,
+//    báo quên chấm công, báo cáo tuần.
 import express from 'express';
 import { z } from 'zod';
 import { BANKS } from '../domain/vietqr.js';
@@ -23,11 +24,18 @@ const zIsoDate = () =>
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày phải có dạng YYYY-MM-DD')
     .refine(isValidDate, 'Ngày không hợp lệ');
 const monthParam = (req) => parse(z.object({ month: zMonth() }), req.params).month;
+const zInstant = () => z.iso.datetime({ offset: true }).transform((s) => new Date(s));
+const zPassword = () => z.string().min(1, 'Nhập mật khẩu đăng nhập').max(100);
 
 // ---- Nhân viên ----
 payrollRouter.post('/auth/pin', requireStaff, async (req, res) => {
-  const body = parse(z.object({ password: z.string().min(1, 'Nhập mật khẩu đăng nhập').max(100), pin: z.string().max(10) }), req.body);
+  const body = parse(z.object({ password: zPassword(), pin: z.string().max(10) }), req.body);
   res.json(await pinService.setOwnPin(req.user, body));
+});
+// ADR-031 D-135: ở màn chấm công chung — người chưa có / quên PIN đặt PIN bằng mật khẩu đăng nhập của mình
+payrollRouter.post('/auth/pin/kiosk', requireStaff, async (req, res) => {
+  const { userId, ...body } = parse(z.object({ userId: zId(), password: zPassword(), pin: z.string().max(10) }), req.body);
+  res.json(await pinService.setPinAtKiosk(userId, body, { ip: req.ip }));
 });
 payrollRouter.post('/auth/switch', requireStaff, async (req, res) => {
   const body = parse(z.object({ userId: zId(), pin: z.string().max(10) }), req.body);
@@ -41,6 +49,7 @@ payrollRouter.post('/attendance/punch', requireStaff, async (req, res) => {
   res.json(await attendanceService.punch(body, req.user));
 });
 payrollRouter.get('/attendance/shift/:id', requireStaff, async (req, res) => res.json(await attendanceService.shiftBoard(paramId(req), req.user)));
+payrollRouter.get('/attendance/reminders', requireStaff, async (_req, res) => res.json({ items: await attendanceService.reminders() }));
 
 payrollRouter.get('/me/attendance', requireStaff, async (req, res) => {
   const { month } = parse(z.object({ month: zMonth().optional() }), req.query);
@@ -49,6 +58,17 @@ payrollRouter.get('/me/attendance', requireStaff, async (req, res) => {
 payrollRouter.post('/me/attendance/:id/dispute', requireStaff, async (req, res) => {
   const { note } = parse(z.object({ note: zText(300).min(3, 'Ghi rõ sai ở đâu (giờ vào / giờ ra đúng là mấy giờ)') }), req.body);
   res.status(201).json(await attendanceService.dispute(paramId(req), note, req.user));
+});
+payrollRouter.post('/me/missed-punches', requireStaff, async (req, res) => {
+  const body = parse(
+    z.object({
+      clockIn: zInstant(),
+      clockOut: zInstant(),
+      note: zText(300).min(3, 'Ghi lý do quên (ví dụ: vào ca vội, quên bấm Chấm công)'),
+    }),
+    req.body,
+  );
+  res.status(201).json(await attendanceService.reportMissed(body, req.user));
 });
 payrollRouter.post('/me/payslips/:month/ack', requireStaff, async (req, res) => res.json(await payrollService.ackPayslip(req.user, monthParam(req))));
 
@@ -164,4 +184,14 @@ payrollAdminRouter.get('/attendance-disputes', async (req, res) => {
 payrollAdminRouter.post('/attendance-disputes/:id/resolve', async (req, res) => {
   const { resolution } = parse(z.object({ resolution: zText(200).min(3, 'Ghi cách xử lý') }), req.body);
   res.json(await attendanceService.resolveDispute(paramId(req), resolution, req.user));
+});
+
+// ADR-031 D-137: duyệt (có thể sửa giờ) → tạo lần chấm công ghi người duyệt; từ chối phải có lý do
+payrollAdminRouter.post('/missed-punches/:id/approve', async (req, res) => {
+  const body = parse(z.object({ clockIn: zInstant().optional(), clockOut: zInstant().optional(), note: zText(200).optional().nullable() }), req.body ?? {});
+  res.json(await attendanceService.resolveMissed(paramId(req), { approve: true, ...body }, req.user));
+});
+payrollAdminRouter.post('/missed-punches/:id/reject', async (req, res) => {
+  const { reason } = parse(z.object({ reason: zText(200).min(3, 'Ghi lý do từ chối — nhân viên thấy dòng này') }), req.body);
+  res.json(await attendanceService.resolveMissed(paramId(req), { approve: false, note: reason }, req.user));
 });

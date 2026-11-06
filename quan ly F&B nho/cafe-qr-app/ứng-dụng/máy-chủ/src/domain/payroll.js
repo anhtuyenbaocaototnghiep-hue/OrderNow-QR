@@ -172,4 +172,5 @@ export const ISSUE_LABEL = {
   AUTO_CLOSED: 'Quên chấm ra (máy tự đóng / người khác chấm ra hộ)',
   DISPUTED: 'Người đóng ca báo không có mặt',
   EMPLOYEE_DISPUTE: 'Nhân viên báo sai giờ',
+  MISSED_PUNCH: 'Nhân viên báo quên chấm công — duyệt thì thêm lần chấm công này', // ADR-031 D-137
 };

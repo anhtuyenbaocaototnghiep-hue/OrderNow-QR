@@ -2573,3 +2573,103 @@ test('chấm công nhiều người + lương: nhân viên tự đặt PIN; màn
   await expect(P.locator('tbody tr', { hasText: 'e2e-ha' }).getByRole('button', { name: 'Xóa PIN của e2e-ha' })).toBeVisible();
   await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'LOGIN', moneyPin: false }); // trả lại cho các test sau
 });
+
+test('nhắc & báo quên chấm công: máy quầy nhắc người có lịch chưa chấm vào; chạm tên chưa có PIN → đặt PIN bằng mật khẩu ngay ở màn chung; vào ca xong hết nhắc; bàn phím PIN có "Quên PIN?"; Giờ công của tôi báo quên ngày có lịch; quản lý duyệt ở trang Lương (F-072, AC-072-12)', async ({
+  request,
+}) => {
+  const vnOf = (ms) => {
+    const t = new Date(ms + 7 * 3600e3).toISOString();
+    return { date: t.slice(0, 10), hhmm: t.slice(11, 16) };
+  };
+  const now = Date.now();
+  await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'KIOSK', moneyPin: false });
+  await apiAs(request, 'post', '/api/admin/users', { username: 'e2e-quay', password: 'Pass@123', fullName: 'Quầy E2E', role: 'STAFF' });
+  const tu = await apiAs(request, 'post', '/api/admin/users', { username: 'e2e-tu', password: 'Pass@123', fullName: 'Tú E2E', role: 'STAFF' });
+  const [s, e] = [vnOf(now - 30 * 60e3), vnOf(now + 180 * 60e3)];
+  await apiAs(request, 'post', '/api/admin/rosters', { userId: tu.userId, workDate: s.date, startTime: s.hhmm, endTime: e.hhmm });
+  const yesterday = vnOf(now - 86400e3).date;
+  await apiAs(request, 'post', '/api/admin/rosters', { userId: tu.userId, workDate: yesterday, startTime: '08:00', endTime: '12:00' });
+
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  const Q = await ctx.newPage();
+  watch(Q, 'remind');
+  try {
+    await Q.goto('/pos/login');
+    await Q.fill('#username', 'e2e-quay');
+    await Q.fill('#password', 'Pass@123');
+    await Q.click('#submit');
+    await expect(Q).toHaveURL(/\/pos$/);
+    await Q.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click();
+
+    // Dải nhắc: Tú có lịch từ 30 phút trước mà chưa chấm vào
+    const remind = Q.locator('#att-remind');
+    await expect(remind).toContainText(`Tú E2E có lịch ${s.hhmm}–${e.hhmm} nhưng chưa chấm vào ca`);
+    await remind.getByRole('button', { name: 'Mở Chấm công' }).click();
+    const kiosk = Q.locator('.modal', { hasText: 'Chạm vào tên mình' });
+    const tile = kiosk.locator('.person-tile', { hasText: 'Tú E2E' });
+    await expect(tile).toContainText('Chưa đặt PIN — chạm để đặt');
+    // Chưa có PIN: đặt ngay ở màn chung bằng mật khẩu đăng nhập của Tú (máy vẫn đứng tên Quầy E2E)
+    await tile.click();
+    const setPin = Q.locator('.modal', { hasText: 'Đặt PIN — Tú E2E' });
+    await setPin.locator('#pin-pw').fill('Pass@123');
+    await setPin.locator('#pin-new').fill('3691');
+    await setPin.locator('#pin-again').fill('3691');
+    await setPin.getByRole('button', { name: 'Lưu PIN' }).click();
+    await expect(Q.locator('.toast', { hasText: 'Đã lưu PIN của Tú E2E' })).toBeVisible();
+    await expect(tile).toContainText('Chưa vào ca');
+    await tile.click();
+    const pad = Q.locator('.modal', { hasText: 'Vào ca — Tú E2E' });
+    await expect(pad.getByRole('button', { name: /Quên PIN\?/ })).toBeVisible();
+    await Q.keyboard.type('3691');
+    await pad.getByRole('button', { name: 'Vào ca' }).click();
+    await expect(Q.locator('.toast', { hasText: 'Tú E2E vào ca lúc' })).toBeVisible();
+    await kiosk.getByRole('button', { name: 'Xong' }).click();
+    await expect(remind).toBeHidden();
+
+    // "Quên PIN?" trên bàn phím → hộp đặt lại PIN bằng mật khẩu
+    await Q.locator('#kiosk-btn').click();
+    await Q.locator('.modal', { hasText: 'Chạm vào tên mình' }).locator('.person-tile', { hasText: 'Tú E2E' }).click();
+    await Q.locator('.modal', { hasText: 'Ra ca — Tú E2E' })
+      .getByRole('button', { name: /Quên PIN\?/ })
+      .click();
+    const reset = Q.locator('.modal', { hasText: 'Đặt lại PIN — Tú E2E' });
+    await expect(reset.locator('#pin-pw')).toBeVisible();
+    await reset.getByRole('button', { name: 'Hủy' }).click();
+    await Q.locator('.modal', { hasText: 'Chạm vào tên mình' }).getByRole('button', { name: 'Xong' }).click();
+
+    // Tú đứng máy → Giờ công của tôi: hôm qua có lịch mà không chấm công → Báo quên chấm công
+    await Q.locator('#switch-btn').click();
+    await Q.locator('.modal', { hasText: 'Đổi người đứng máy' }).locator('.person-tile', { hasText: 'Tú E2E' }).click();
+    await Q.keyboard.type('3691');
+    await Q.locator('.modal', { hasText: 'Đổi sang Tú E2E' }).getByRole('button', { name: 'Đổi người' }).click();
+    await expect(Q.locator('.pos-top .user-name')).toContainText('Tú E2E');
+    await Q.goto('/pos/me');
+    await expect(Q.getByRole('heading', { name: 'Giờ công của tôi' })).toBeVisible();
+    if (yesterday.slice(0, 7) !== vnOf(now).date.slice(0, 7)) await Q.locator('#me-month').selectOption(yesterday.slice(0, 7));
+    const missing = Q.locator('.card', { hasText: 'Quên chấm công?' });
+    await expect(missing).toContainText('lịch 08:00–12:00');
+    await missing.getByRole('button', { name: 'Báo quên chấm công' }).click();
+    const form = Q.locator('.modal', { hasText: 'Báo quên chấm công' });
+    await expect(form.locator('#mp-in')).toHaveValue('08:00');
+    await form.locator('#mp-note').fill('Quên bấm Chấm công lúc vào ca');
+    await form.getByRole('button', { name: 'Gửi quản lý' }).click();
+    await expect(Q.locator('.toast', { hasText: 'Đã gửi' })).toBeVisible();
+    await expect(missing).toContainText('Đã báo quên');
+    await expect(missing).toContainText('chờ quản lý duyệt');
+  } finally {
+    await ctx.close();
+  }
+
+  // Quản lý duyệt ở trang Lương → tạo lần chấm công
+  await P.goto('/admin/payroll');
+  await P.locator('#pay-month').selectOption(yesterday.slice(0, 7));
+  const item = P.locator('.pending-list li', { hasText: 'Tú E2E' }).filter({ hasText: 'báo quên chấm công' });
+  await expect(item).toContainText('Quên bấm Chấm công lúc vào ca');
+  await item.getByRole('button', { name: 'Duyệt…' }).click();
+  const approve = P.locator('.modal', { hasText: 'Duyệt báo quên — Tú E2E' });
+  await expect(approve.locator('#mpa-out')).toHaveValue('12:00');
+  await approve.getByRole('button', { name: 'Duyệt — thêm chấm công' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã duyệt' })).toBeVisible();
+  await expect(P.locator('.pending-list li', { hasText: 'Tú E2E' }).filter({ hasText: 'báo quên chấm công' })).toHaveCount(0);
+  await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'LOGIN', moneyPin: false }); // trả lại cho các test sau
+});

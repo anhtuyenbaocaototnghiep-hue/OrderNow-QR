@@ -7,7 +7,7 @@ description: Chấm công nhiều người và tính lương cho cafe-qr-app —
 
 Ghi lại **chấm công nhiều người + tính lương** (làm ngày 05/11/2026, TASK-089) để agent sau **sửa, mở rộng hoặc làm lại** mà không tính sai tiền lương, không mở lỗ "người này làm, tên người kia", không để sửa giờ công sau khi đã trả lương.
 
-Nguồn chính là tài liệu trong repo; skill này tóm tắt và chỉ chỗ. Lệch nhau → làm theo tài liệu, ghi câu hỏi vào `tài-liệu/open-questions.md`.
+Nguồn chính là tài liệu trong repo; skill này tóm tắt và chỉ chỗ. Quên PIN, nhắc chấm công, báo quên chấm công (TASK-090, ADR-031): skill `nhac-va-bao-quen-cham-cong`. Lệch nhau → làm theo tài liệu, ghi câu hỏi vào `tài-liệu/open-questions.md`.
 
 | Tài liệu | Đường dẫn |
 | --- | --- |
@@ -90,8 +90,8 @@ Xem bảng đầy đủ ở `api-contract.md` mục F-072 / F-073. Hay dùng: `P
 | --- | --- |
 | "Không chốt được lương" | Còn việc chờ (trang Lương, mục Việc chờ xử lý) hoặc tháng chưa hết |
 | "Lương của X sai" | Mở Phiếu: giờ được tính khác giờ chấm công vì đến sớm / về muộn không tính, làm thêm chưa duyệt; xem Giờ công của X (ai sửa, quyết định gì); tạm ứng đã duyệt bị trừ |
-| "Nhân viên bị báo tạm khóa PIN" | Sai 5 lần trong 15 phút — đợi, hoặc người khác đứng quầy chấm giúp; xem cảnh báo "Sai mật khẩu nhiều lần" |
-| "Quên PIN" | Tài khoản → Xóa PIN → người đó đăng nhập bằng mật khẩu, bấm Đặt PIN |
+| "Nhân viên bị báo tạm khóa PIN" | Sai 5 lần trong 15 phút — người đó bấm "Quên PIN?" đặt PIN mới bằng mật khẩu là hết khóa ngay (TASK-090); xem cảnh báo "Sai mật khẩu nhiều lần" |
+| "Quên PIN" | Ở màn Chấm công chạm tên mình → "Quên PIN?" → mật khẩu đăng nhập + PIN mới (TASK-090, skill `nhac-va-bao-quen-cham-cong`); quên cả mật khẩu → quản lý đặt lại mật khẩu ở Tài khoản |
 | "Bị hỏi PIN hoài" | Chỉ thao tác tiền hỏi; tắt ở Nhân sự → Cách chấm công (không khuyến nghị) |
 | "Tạm ứng không trừ lương" | Khoản phải **đã duyệt**, có người nhận, chưa hủy, ghi trong tháng đó |
 | "Lãi/lỗ trừ lương hai lần" | Xóa khoản lương ở Chi phí cố định khi đã nhập hồ sơ lương |

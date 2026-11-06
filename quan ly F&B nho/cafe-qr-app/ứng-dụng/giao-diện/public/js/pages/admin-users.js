@@ -23,7 +23,7 @@ async function load() {
     el(
       'p',
       { class: 'small muted' },
-      'PIN chấm công: mỗi người tự đặt sau khi đăng nhập (máy quầy → Giờ công → Đặt / Đổi PIN, cần mật khẩu đăng nhập). Quản lý không biết và không đặt PIN hộ — người quên PIN tự đổi bằng mật khẩu, quên cả mật khẩu thì bấm "Đặt lại mật khẩu"; nghi bị lộ thì "Xóa PIN".',
+      'PIN chấm công: mỗi người tự đặt bằng mật khẩu đăng nhập của mình — ngay ở màn Chấm công (chạm tên mình, hoặc "Quên PIN?" trên bàn phím) hoặc máy quầy → Giờ công → Đặt / Đổi PIN. Quản lý không biết và không đặt PIN hộ; quên cả mật khẩu thì bấm "Đặt lại mật khẩu"; nghi bị lộ thì "Xóa PIN".',
     ),
     el(
       'div',

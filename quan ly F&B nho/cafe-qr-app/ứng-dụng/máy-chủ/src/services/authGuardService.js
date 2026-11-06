@@ -18,11 +18,14 @@ const LOCKED = {
 const since = () => new Date(Date.now() - WINDOW_MINUTES * 60_000);
 
 /** who: { username, ip } (LOGIN) | { username, actor } (APPROVAL / PIN — actor = người đang đứng quầy). */
-function keyOf(kind, { username, actor, ip }) {
-  const name = String(username ?? '')
+const normName = (username) =>
+  String(username ?? '')
     .trim()
     .toLowerCase()
     .slice(0, 50);
+
+function keyOf(kind, { username, actor, ip }) {
+  const name = normName(username);
   return kind === 'LOGIN' ? { kind, username: name, ip: String(ip || 'unknown').slice(0, 45) } : { kind, username: name, actorUserId: actor.userId };
 }
 
@@ -38,3 +41,6 @@ export async function recordFailure(kind, who) {
     console.error('[auth-guard] không tạo được cảnh báo', err.message),
   );
 }
+
+/** ADR-031 D-135: PIN vừa được đặt lại / bị quản lý xóa → xóa mọi lần nhập sai PIN cũ của người đó (ở mọi máy, mọi người đứng quầy). */
+export const clearFailures = (kind, username) => authGuardRepo.clear({ kind, username: normName(username) });

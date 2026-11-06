@@ -10,6 +10,7 @@ import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import * as attendanceRepo from '../repositories/attendanceRepo.js';
 import * as payrollRepo from '../repositories/payrollRepo.js';
 import * as usersRepo from '../repositories/usersRepo.js';
+import { rosterWindow } from '../domain/payroll.js';
 import { addDays, todayVn, vnDayStartUtc } from '../utils/time.js';
 import { verifyPin } from './pinService.js';
 import { getSettings } from './settingsService.js';
@@ -240,4 +241,89 @@ export async function dispute(attId, note, user) {
 export async function resolveDispute(id, resolution, user) {
   if (!(await attendanceRepo.resolveDispute(id, { resolution, by: user.userId }))) throw notFound('Không tìm thấy báo sai đang chờ');
   return { resolved: true };
+}
+
+// ---- ADR-031 D-136…D-139: nhắc chấm công ở máy quầy, nhân viên báo quên chấm công ----
+export const REMIND_IN_MINUTES = 10; // quá giờ bắt đầu lịch 10 phút chưa chấm vào → nhắc (kịp chấm trước mốc đi trễ 15 phút)
+export const REMIND_OUT_MINUTES = 15; // hết lịch 15 phút vẫn đang làm (không còn lịch nào sắp tới) → nhắc chấm ra
+export const MISSED_PUNCH_DAYS = 7; // báo quên trong vòng 7 ngày — lâu hơn thì nói trực tiếp với quản lý
+
+const hhmmVn = (t) => new Date(t + VN_OFFSET_MS).toISOString().slice(11, 16);
+
+/** Báo quên luôn có đủ giờ vào và giờ ra, giờ ra sau giờ vào. */
+function assertSpan(clockIn, clockOut) {
+  if (!(clockOut > clockIn)) throw badRequest('VALIDATION_ERROR', 'Giờ ra phải sau giờ vào');
+  assertTimes(clockIn, clockOut);
+}
+
+/** Dải nhắc ở máy quầy (chỉ chế độ màn chung): ai có lịch mà chưa chấm vào, ai hết lịch mà chưa chấm ra. */
+export async function reminders(now = Date.now()) {
+  if (!(await kioskMode())) return [];
+  const today = todayVn();
+  const [users, rosterList, records] = await Promise.all([
+    usersRepo.list(),
+    attendanceRepo.rosters(addDays(today, -1), today), // hôm qua: ca qua đêm
+    attendanceRepo.list({ fromUtc: new Date(now - 36 * 3600e3), toUtc: new Date(now + 60e3) }),
+  ]);
+  const people = new Map(users.filter((u) => u.isActive && u.role !== 'ADMIN').map((u) => [u.userId, u]));
+  const windows = rosterList.filter((r) => people.has(r.user.userId)).map((r) => ({ userId: r.user.userId, ...rosterWindow(r) }));
+  const items = [];
+  for (const w of windows) {
+    if (now < w.start + REMIND_IN_MINUTES * 60_000 || now >= w.end) continue;
+    // Có lần chấm công giao với lịch là đủ — KHÔNG so giờ vào với "bây giờ": DATETIME2(0) làm tròn lên tới nửa giây,
+    // người vừa chấm vào có thể có giờ vào sau "bây giờ" (lỗi bắt được ở E2E AC-072-12).
+    const covered = records.some(
+      (a) => a.user.userId === w.userId && new Date(a.clockIn).getTime() < w.end && (a.clockOut ? new Date(a.clockOut).getTime() > w.start : true),
+    );
+    if (!covered) {
+      items.push({ kind: 'NOT_IN', userId: w.userId, fullName: people.get(w.userId).fullName, rosterStart: hhmmVn(w.start), rosterEnd: hhmmVn(w.end) });
+    }
+  }
+  for (const a of records.filter((x) => !x.clockOut && people.has(x.user.userId))) {
+    const since = new Date(a.clockIn).getTime();
+    const mine = windows.filter((w) => w.userId === a.user.userId && w.end > since - 3600e3);
+    if (!mine.length) continue; // làm ngoài lịch: không đoán được giờ về (tự đóng sau 14 giờ, người đóng ca kiểm)
+    const busy = mine.some((w) => now >= w.start - 30 * 60_000 && now <= w.end + REMIND_OUT_MINUTES * 60_000);
+    const lastEnd = Math.max(...mine.filter((w) => w.end <= now).map((w) => w.end));
+    if (busy || !Number.isFinite(lastEnd)) continue;
+    items.push({ kind: 'NOT_OUT', userId: a.user.userId, fullName: a.user.fullName, rosterEnd: hhmmVn(lastEnd), since: a.clockIn });
+  }
+  return items.sort((x, y) => x.fullName.localeCompare(y.fullName, 'vi'));
+}
+
+/** Nhân viên báo quên chấm công (ngày không có lần chấm nào để "Báo sai") → chờ quản lý duyệt. */
+export async function reportMissed({ clockIn, clockOut, note }, user) {
+  if (user.role === 'ADMIN') throw forbidden('Quản lý thêm chấm công trực tiếp ở trang Nhân sự', 'MISSED_PUNCH_ADMIN');
+  assertSpan(clockIn, clockOut);
+  if (clockIn < new Date(Date.now() - MISSED_PUNCH_DAYS * 86400e3)) {
+    throw badRequest('MISSED_PUNCH_TOO_OLD', `Chỉ báo quên chấm công trong ${MISSED_PUNCH_DAYS} ngày gần đây — ngày cũ hơn nói trực tiếp với quản lý`);
+  }
+  await assertMonthOpen(clockIn);
+  if (await attendanceRepo.overlaps(user.userId, clockIn, clockOut)) {
+    throw conflict('ATTENDANCE_OVERLAP', 'Giờ này trùng một lần chấm công đã có — bấm "Báo sai" trên lần đó');
+  }
+  if (await attendanceRepo.missedOverlaps(user.userId, clockIn, clockOut)) {
+    throw conflict('MISSED_PUNCH_OPEN', 'Bạn đã báo quên chấm công cho giờ này — chờ quản lý duyệt');
+  }
+  return attendanceRepo.addMissed({ userId: user.userId, clockIn, clockOut, note });
+}
+
+/** Quản lý duyệt (có thể sửa giờ) → tạo lần chấm công MANUAL ghi người duyệt; hoặc từ chối kèm lý do. */
+export async function resolveMissed(id, { approve, clockIn, clockOut, note }, user) {
+  const req = await attendanceRepo.missedById(id);
+  if (!req || req.status !== 'PENDING') throw notFound('Không tìm thấy báo quên chấm công đang chờ');
+  if (!approve) {
+    if (!(await attendanceRepo.rejectMissed(id, { resolution: note, by: user.userId }))) throw notFound('Không tìm thấy báo quên chấm công đang chờ');
+    return { status: 'REJECTED' };
+  }
+  const [inAt, outAt] = [clockIn ?? new Date(req.clockIn), clockOut ?? new Date(req.clockOut)];
+  assertSpan(inAt, outAt);
+  await assertMonthOpen(req.clockIn, inAt);
+  if (await attendanceRepo.overlaps(req.user.userId, inAt, outAt)) {
+    throw conflict('ATTENDANCE_OVERLAP', 'Trùng một lần chấm công đã có của người này — sửa giờ hoặc từ chối');
+  }
+  const reason = `Báo quên chấm công: ${req.note}`.slice(0, 200);
+  const attId = await attendanceRepo.approveMissed(id, { clockIn: inAt, clockOut: outAt, reason, resolution: note ?? null, by: user.userId });
+  if (!attId) throw notFound('Không tìm thấy báo quên chấm công đang chờ');
+  return { status: 'APPROVED', attendance: await attendanceRepo.getById(attId) };
 }

@@ -372,3 +372,95 @@ export async function editHistory(attIds) {
   );
   return r.recordset.map((x) => ({ attId: Number(x.EntityId), by: x.UserName, action: x.Action, before: x.BeforeJson, after: x.AfterJson, at: x.At }));
 }
+
+// ---- Báo quên chấm công (ADR-031 D-136…D-138) ----
+const mapMissed = (r) => ({
+  requestId: r.RequestId,
+  user: { userId: r.UserId, fullName: r.FullName },
+  clockIn: r.ClockIn,
+  clockOut: r.ClockOut,
+  note: r.Note,
+  createdAt: r.CreatedAt,
+  status: r.Status,
+  resolvedBy: r.ResolvedByName ?? null,
+  resolvedAt: r.ResolvedAt ?? null,
+  resolution: r.Resolution ?? null,
+  attId: r.AttId ?? null,
+});
+const MISSED_SELECT = `SELECT m.*, u.FullName, ru.FullName AS ResolvedByName FROM dbo.MissedPunches m
+  JOIN dbo.Users u ON u.UserId = m.UserId LEFT JOIN dbo.Users ru ON ru.UserId = m.ResolvedBy`;
+
+export async function addMissed({ userId, clockIn, clockOut, note }) {
+  const r = await query('INSERT dbo.MissedPunches (UserId, ClockIn, ClockOut, Note) OUTPUT inserted.RequestId VALUES (@u, @i, @o, @n)', {
+    u: [sql.Int, userId],
+    i: [sql.DateTime2(0), clockIn],
+    o: [sql.DateTime2(0), clockOut],
+    n: [sql.NVarChar(300), note],
+  });
+  return missedById(r.recordset[0].RequestId);
+}
+
+export async function missedById(id) {
+  const r = await query(`${MISSED_SELECT} WHERE m.RequestId = @id`, { id: [sql.Int, id] });
+  return r.recordset[0] ? mapMissed(r.recordset[0]) : null;
+}
+
+/** Báo quên có giờ vào trong [from, to) — của một người hoặc mọi người; `pendingOnly` = chỉ đang chờ. */
+export async function missedIn({ fromUtc, toUtc, userId = null, pendingOnly = false }) {
+  const r = await query(
+    `${MISSED_SELECT} WHERE m.ClockIn >= @f AND m.ClockIn < @t AND (@u IS NULL OR m.UserId = @u) AND (@p = 0 OR m.Status = 'PENDING')
+     ORDER BY m.ClockIn`,
+    { f: [sql.DateTime2(0), fromUtc], t: [sql.DateTime2(0), toUtc], u: [sql.Int, userId], p: [sql.Bit, pendingOnly] },
+  );
+  return r.recordset.map(mapMissed);
+}
+
+/** Báo quên đang chờ của người này giao với [clockIn, clockOut) (chặn gửi trùng). */
+export async function missedOverlaps(userId, clockIn, clockOut) {
+  const r = await query(
+    `SELECT TOP 1 RequestId FROM dbo.MissedPunches
+     WHERE UserId = @u AND Status = 'PENDING' AND ClockIn < @o AND ClockOut > @i`,
+    { u: [sql.Int, userId], i: [sql.DateTime2(0), clockIn], o: [sql.DateTime2(0), clockOut] },
+  );
+  return r.recordset.length > 0;
+}
+
+/** Duyệt: một giao dịch — giữ phiếu (chỉ khi còn chờ), tạo lần chấm công MANUAL ghi người duyệt, gắn vào phiếu. → AttId | null */
+export async function approveMissed(id, { clockIn, clockOut, reason, resolution, by }) {
+  const r = await query(
+    `SET XACT_ABORT ON;
+     BEGIN TRAN;
+     DECLARE @uid INT;
+     DECLARE @att TABLE (AttId INT);
+     UPDATE dbo.MissedPunches SET Status = 'APPROVED', ResolvedBy = @b, ResolvedAt = SYSUTCDATETIME(), Resolution = @res, @uid = UserId
+     WHERE RequestId = @id AND Status = 'PENDING';
+     IF @uid IS NULL
+       ROLLBACK;
+     ELSE
+     BEGIN
+       INSERT dbo.Attendance (UserId, ClockIn, ClockOut, Source, EditedBy, EditReason, EditedAt)
+       OUTPUT inserted.AttId INTO @att VALUES (@uid, @i, @o, 'MANUAL', @b, @r, SYSUTCDATETIME());
+       UPDATE dbo.MissedPunches SET AttId = (SELECT AttId FROM @att) WHERE RequestId = @id;
+       COMMIT;
+       SELECT AttId FROM @att;
+     END`,
+    {
+      id: [sql.Int, id],
+      b: [sql.Int, by],
+      i: [sql.DateTime2(0), clockIn],
+      o: [sql.DateTime2(0), clockOut],
+      r: [sql.NVarChar(200), reason],
+      res: [sql.NVarChar(200), resolution],
+    },
+  );
+  return r.recordset?.[0]?.AttId ?? null;
+}
+
+export async function rejectMissed(id, { resolution, by }) {
+  const r = await query(
+    `UPDATE dbo.MissedPunches SET Status = 'REJECTED', ResolvedBy = @b, ResolvedAt = SYSUTCDATETIME(), Resolution = @res
+     OUTPUT inserted.RequestId WHERE RequestId = @id AND Status = 'PENDING'`,
+    { id: [sql.Int, id], b: [sql.Int, by], res: [sql.NVarChar(200), resolution] },
+  );
+  return r.recordset.length === 1;
+}

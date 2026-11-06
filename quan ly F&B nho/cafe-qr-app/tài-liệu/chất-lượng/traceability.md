@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 430 test, sửa lúc 2026-11-05 09:05 UTC
-- `npm run test:e2e` (JSON): 65 test, sửa lúc 2026-11-06 04:50 UTC
+- `npm test` (JUnit): 434 test, sửa lúc 2026-11-06 06:49 UTC
+- `npm run test:e2e` (JSON): 66 test, sửa lúc 2026-11-06 06:42 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 166 |
-| Acceptance Criteria | 449 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 449 |
+| User Story | 167 |
+| Acceptance Criteria | 454 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 454 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -535,6 +535,11 @@
 | AC-072-05 | TC-072-05 | F-072 | US-072-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-BILLING, MOD-FINANCE | SCR-14, SCR-15 | BR-109 | Integration: `attendance-kiosk.test.js` › AC-072-05: PIN cho thao tác tiền — giảm giá tay, hoàn tiền, chi sổ quỹ, hủy khoản sổ quỹ: thiếu PIN 403 PIN_REQUIRED, sai 403 PIN_INVALID, đúng thì làm; thu thêm không cần; quản lý miễn; tắt cài đặt thì không hỏi — **PASS** | **PASS** |
 | AC-072-06 | TC-072-06 | F-072 | US-072-3 | ACT-ADMIN, ACT-LEAD | UC-11, UC-12 | MOD-SHIFT | SCR-15, SCR-37 | BR-109 | Integration: `attendance-kiosk.test.js` › AC-072-06: đóng ca — chấm ra hộ người quên (cần quản lý xem lại), báo không có mặt; không đánh dấu được bản ghi của chính người đóng ca; mở quá 14 giờ → tự đóng ở 8 giờ, cần xem lại — **PASS** | **PASS** |
 | AC-072-07 | TC-072-07 | F-072 | US-072-1, US-072-2, US-073-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-12, UC-17 | MOD-SHIFT, MOD-AUTH, MOD-BILLING, MOD-FINANCE | SCR-10, SCR-53, SCR-14, SCR-15, SCR-52 | BR-109, BR-110 | E2E: `flow.spec.js` › chấm công nhiều người + lương: nhân viên tự đặt PIN; màn Chấm công vào ca bằng PIN; chi tiền hỏi PIN người đứng máy; Đổi người; Giờ công của tôi; quản lý nhập hồ sơ lương ở trang Lương (F-072, F-073, AC-072-07, AC-073-09) — **PASS** | **PASS** |
+| AC-072-08 | TC-072-08 | F-072 | US-072-4 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-12 | MOD-SHIFT, MOD-AUTH, MOD-FINANCE | SCR-10, SCR-51, SCR-52, SCR-53 | BR-111 | Integration: `attendance-missed.test.js` › AC-072-08: bị khóa PIN → đặt PIN mới bằng mật khẩu ngay ở màn chung (không phải đăng xuất máy quầy) → hết khóa, chấm công được ngay; quản lý xóa PIN cũng xóa lần sai cũ; sai mật khẩu tính như đăng nhập sai — **PASS** | **PASS** |
+| AC-072-09 | TC-072-09 | F-072 | US-072-4 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-12 | MOD-SHIFT, MOD-AUTH, MOD-FINANCE | SCR-10, SCR-51, SCR-52, SCR-53 | BR-111 | Integration: `attendance-missed.test.js` › AC-072-09: có lịch quá 10 phút chưa chấm vào → nhắc; chấm vào rồi thì hết; hết lịch 15 phút vẫn đang làm → nhắc chấm ra; chưa tới mốc, làm ngoài lịch, người nghỉ việc, chế độ đăng nhập → không nhắc — **PASS** | **PASS** |
+| AC-072-10 | TC-072-10 | F-072 | US-072-4 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-12 | MOD-SHIFT, MOD-AUTH, MOD-FINANCE | SCR-10, SCR-51, SCR-52, SCR-53 | BR-111 | Integration: `attendance-missed.test.js` › AC-072-10: ngày có lịch mà không chấm công → Giờ công của tôi hiện "báo quên được"; nhân viên gửi giờ thật + lý do → chờ quản lý; chặn gửi trùng, trùng chấm công đã có, quá 7 ngày, giờ tương lai, quản lý tự gửi — **PASS** | **PASS** |
+| AC-072-11 | TC-072-11 | F-072 | US-072-4 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-12 | MOD-SHIFT, MOD-AUTH, MOD-FINANCE | SCR-10, SCR-51, SCR-52, SCR-53 | BR-111 | Integration: `attendance-missed.test.js` › AC-072-11: chỉ quản lý duyệt; duyệt (sửa giờ được) → tạo lần chấm công nguồn MANUAL ghi người duyệt + lý do, hết vắng; không duyệt phải có lý do, không tạo chấm công; không xóa được; báo quên đang chờ chặn chốt lương, tháng đã chốt không duyệt được — **PASS** | **PASS** |
+| AC-072-12 | TC-072-12 | F-072 | US-072-4 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-12 | MOD-SHIFT, MOD-AUTH, MOD-FINANCE | SCR-10, SCR-51, SCR-52, SCR-53 | BR-111 | E2E: `flow.spec.js` › nhắc & báo quên chấm công: máy quầy nhắc người có lịch chưa chấm vào; chạm tên chưa có PIN → đặt PIN bằng mật khẩu ngay ở màn chung; vào ca xong hết nhắc; bàn phím PIN có "Quên PIN?"; Giờ công của tôi báo quên ngày có lịch; quản lý duyệt ở trang Lương (F-072, AC-072-12) — **PASS** | **PASS** |
 | AC-073-01 | TC-073-01 | F-073 | US-073-1 | ACT-ADMIN | UC-12 | MOD-FINANCE | SCR-51 | BR-110 | Unit: `payroll.test.js` › AC-073-01 (unit): VietQR đúng chuẩn (trường, CRC-16), nội dung chuyển khoản không dấu ≤ 25 ký tự; tiền công đêm / lễ; dòng lương theo giờ / theo tháng — **PASS** | **PASS** |
 | AC-073-02 | TC-073-02 | F-073 | US-073-1 | ACT-ADMIN | UC-12 | MOD-FINANCE | SCR-51 | BR-110 | Integration: `payroll.test.js` › AC-073-02: hồ sơ lương (kiểm số liệu, ngân hàng trong danh sách), ngày lễ; nhân viên / trưởng ca không vào được bảng lương — **PASS** | **PASS** |
 | AC-073-03 | TC-073-03 | F-073 | US-073-1 | ACT-ADMIN | UC-12 | MOD-FINANCE | SCR-51 | BR-110 | Integration: `payroll.test.js` › AC-073-03: bảng lương nháp — theo lịch, đến sớm không tính, đi trễ, làm thêm / ngoài lịch chờ quản lý, vắng; quyết định của quản lý; chưa xử lý hết thì không chốt (409) — **PASS** | **PASS** |

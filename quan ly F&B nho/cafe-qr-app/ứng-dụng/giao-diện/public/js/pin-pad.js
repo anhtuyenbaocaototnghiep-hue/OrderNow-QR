@@ -14,12 +14,13 @@ const shuffle = (arr) => {
 /**
  * Mở bàn phím PIN. submit(pin) chạy khi bấm Xác nhận: trả giá trị → đóng và trả giá trị đó;
  * ném lỗi có code trong `retryCodes` (mặc định PIN sai) → báo lỗi, xóa ô, nhập lại; lỗi khác → đóng và ném tiếp.
- * Bấm Hủy → null.
+ * Bấm Hủy → null. `onForgot` (ADR-031 D-135): có thì hiện "Quên PIN?" — bấm → đóng bàn phím (null) rồi gọi onForgot().
  */
-export function pinPad({ title, hint = '', submit, retryCodes = ['PIN_INVALID', 'PIN_WEAK'], confirmLabel = 'Xác nhận' }) {
+export function pinPad({ title, hint = '', submit, retryCodes = ['PIN_INVALID', 'PIN_WEAK'], confirmLabel = 'Xác nhận', onForgot = null }) {
   let pin = '';
   let busy = false;
   let failure = null;
+  let forgot = false;
   const dots = el('div', { class: 'pin-dots', role: 'status', 'aria-live': 'polite', 'aria-label': 'Chưa nhập số nào' });
   const msg = el('div', { class: 'pin-msg', role: 'alert' });
   const paint = () => {
@@ -82,10 +83,24 @@ export function pinPad({ title, hint = '', submit, retryCodes = ['PIN_INVALID', 
     ),
   );
   const ok = el('button', { type: 'button', class: 'btn btn-primary btn-block', onclick: () => go(dialog.close) }, confirmLabel);
+  const forgotBtn = onForgot
+    ? el(
+        'button',
+        {
+          type: 'button',
+          class: 'link-btn small pin-forgot',
+          onclick: () => {
+            forgot = true;
+            dialog.close(null);
+          },
+        },
+        'Quên PIN? Đặt lại bằng mật khẩu đăng nhập',
+      )
+    : null;
   paint();
   const dialog = modal({
     title,
-    body: el('div', { class: 'pin-pad' }, hint ? el('p', { class: 'muted small' }, hint) : null, dots, msg, grid, ok),
+    body: el('div', { class: 'pin-pad' }, hint ? el('p', { class: 'muted small' }, hint) : null, dots, msg, grid, ok, forgotBtn),
     actions: [{ label: 'Hủy', value: null }],
   });
   const onKey = (e) => {
@@ -99,6 +114,7 @@ export function pinPad({ title, hint = '', submit, retryCodes = ['PIN_INVALID', 
   return dialog.result.then((value) => {
     document.removeEventListener('keydown', onKey);
     if (failure) throw failure;
+    if (forgot) onForgot();
     return value;
   });
 }

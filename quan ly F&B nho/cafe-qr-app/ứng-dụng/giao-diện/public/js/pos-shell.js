@@ -1,5 +1,6 @@
 // Khung trang quầy: kiểm đăng nhập, thanh trên (điều hướng, ca, nhận đơn QR, kết nối, âm thanh, đăng xuất).
 // ADR-005: thu tiền cần ca đang mở (F-018); ADR-017 (F-055): tiếp nhận / xử lý đơn cũng cần ca — banner "Chưa mở ca" + nút mở ca; công tắc nhận đơn QR (F-020).
+// ADR-031 D-136: dải nhắc chấm công (chế độ màn chung) — tải lại mỗi phút và sau khi đóng hộp Chấm công.
 import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, moneyValue, playSound, time, toast, unlockAudio } from './ui.js';
@@ -77,7 +78,7 @@ export async function mountPosShell(active) {
         el('span', { class: 'user-name' }, user.fullName, user.role === 'MANAGER' ? el('span', { class: 'badge ok' }, 'Trưởng ca') : null),
         // F-072: màn chấm công chung (PIN riêng) + đổi người đứng máy
         current.attendance.mode === 'KIOSK'
-          ? el('button', { class: 'btn btn-sm', type: 'button', id: 'kiosk-btn', onclick: () => kioskDialog() }, icon('clock'), 'Chấm công')
+          ? el('button', { class: 'btn btn-sm', type: 'button', id: 'kiosk-btn', onclick: () => kioskDialog().then(loadReminders) }, icon('clock'), 'Chấm công')
           : null,
         user.role !== 'ADMIN'
           ? el('button', { class: 'btn btn-sm', type: 'button', id: 'switch-btn', onclick: () => switchUserDialog() }, icon('users'), 'Đổi người')
@@ -117,6 +118,8 @@ export async function mountPosShell(active) {
           el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => setPinDialog() }, 'Đặt PIN'),
         )
       : null;
+  // ADR-031 D-136: có lịch mà quá 10 phút chưa chấm vào / hết lịch 15 phút chưa chấm ra → dải nhắc (ẩn được tới khi danh sách đổi)
+  const remind = el('div', { class: 'banner att-remind', id: 'att-remind', role: 'status', hidden: true });
   // Trang có vùng "Cần xử lý ngay" (màn Đơn hàng) thì dải chưa mở ca đứng đầu vùng đó
   const alerts = $('#pos-alerts');
   if (alerts) {
@@ -124,6 +127,7 @@ export async function mountPosShell(active) {
     alerts.prepend(noShift);
     if (noPin) alerts.prepend(noPin);
   } else document.body.prepend(header, ...(noPin ? [noPin] : []), noShift);
+  noShift.after(remind);
   // Thanh trên một hàng khi đủ chỗ; không thì đưa điều hướng xuống hàng hai (không để nút xuống dòng lộn xộn)
   const fitHeader = () => {
     header.classList.remove('stacked');
@@ -278,6 +282,64 @@ export async function mountPosShell(active) {
     } catch {
       /* lần kết nối lại sau sẽ tải lại */
     }
+  }
+
+  const REMIND_KEY = 'att-remind-hidden';
+  const remindLine = (r) =>
+    r.kind === 'NOT_IN'
+      ? el('li', {}, el('strong', {}, r.fullName), ` có lịch ${r.rosterStart}–${r.rosterEnd} nhưng chưa chấm vào ca`)
+      : el('li', {}, el('strong', {}, r.fullName), ` hết lịch lúc ${r.rosterEnd} nhưng chưa chấm ra (vào từ ${time(r.since)})`);
+  async function loadReminders() {
+    if (current.attendance.mode !== 'KIOSK' || document.visibilityState === 'hidden') return;
+    let items;
+    try {
+      ({ items } = await staffApi('/api/attendance/reminders'));
+    } catch {
+      return; // lần sau tải lại
+    }
+    const sig = items.map((r) => `${r.kind}:${r.userId}`).join(',');
+    let hiddenSig = null;
+    try {
+      hiddenSig = sessionStorage.getItem(REMIND_KEY);
+    } catch {
+      /* không có sessionStorage: luôn hiện */
+    }
+    if (!items.length || hiddenSig === sig) {
+      remind.hidden = true;
+      return;
+    }
+    clear(
+      remind,
+      icon('clock'),
+      el('ul', { 'aria-label': 'Nhắc chấm công' }, items.map(remindLine)),
+      el(
+        'div',
+        { class: 'row' },
+        el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => kioskDialog().then(loadReminders) }, 'Mở Chấm công'),
+        el(
+          'button',
+          {
+            class: 'btn btn-sm',
+            type: 'button',
+            onclick: () => {
+              try {
+                sessionStorage.setItem(REMIND_KEY, sig);
+              } catch {
+                /* bỏ qua */
+              }
+              remind.hidden = true;
+            },
+          },
+          'Ẩn',
+        ),
+      ),
+    );
+    remind.hidden = false;
+  }
+  if (current.attendance.mode === 'KIOSK') {
+    setInterval(loadReminders, 60_000);
+    document.addEventListener('visibilitychange', loadReminders);
+    loadReminders();
   }
 
   renderShift();

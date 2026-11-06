@@ -1253,6 +1253,37 @@ body:has(.tour-layer) .toasts {
   cursor: not-allowed;
   opacity: 0.7;
 }
+/* ADR-031 D-135: người chưa có PIN vẫn chạm được (đặt PIN bằng mật khẩu đăng nhập) — viền đứt để khác người đã có PIN */
+.person-tile.no-pin {
+  border-style: dashed;
+}
+.pin-forgot {
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* ADR-031 D-136: nhắc chấm công ở máy quầy */
+.banner.att-remind {
+  background: var(--c-warning-50);
+  color: var(--c-warning-text);
+  border-bottom: 1px solid #efd5a6;
+  font-weight: 500;
+}
+.att-remind ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1rem;
+}
+.att-remind strong {
+  font-weight: 700;
+}
+.att-remind .row {
+  margin-left: auto;
+  gap: 0.4rem;
+}
 .att-check h3 {
   margin: 0.5rem 0 0;
 }
@@ -1320,4 +1351,10 @@ body:has(.tour-layer) .toasts {
   gap: 0.2rem;
   padding: 0.6rem 0;
   border-bottom: 1px solid var(--c-border);
+}
+/* ADR-031 D-136: giờ vào / giờ ra cạnh nhau (báo quên chấm công, duyệt báo quên) */
+.time-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }

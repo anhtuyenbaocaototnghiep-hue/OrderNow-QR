@@ -27,3 +27,9 @@ export async function add(key) {
   );
   return r.recordset[0].N;
 }
+
+/** Xóa các lần sai của một tên (theo loại) — PIN vừa đặt lại / bị quản lý xóa thì lần sai cũ không còn ý nghĩa (ADR-031 D-135). */
+export async function clear({ kind, username }) {
+  const r = await query('DELETE dbo.AuthFailures WHERE Kind = @k AND Username = @u', { k: [sql.VarChar(10), kind], u: [sql.NVarChar(50), username] });
+  return r.rowsAffected[0];
+}

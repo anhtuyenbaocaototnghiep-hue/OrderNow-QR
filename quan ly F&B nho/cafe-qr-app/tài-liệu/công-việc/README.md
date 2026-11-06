@@ -105,6 +105,7 @@
 | [TASK-087](TASK-087.md) | Ly treo — mua tặng bạn một ly (F-070), ADR-028 | FEATURE-070 | TASK-086 | Agent | — | chủ dự án 04/11 | READY_FOR_REVIEW |
 | [TASK-088](TASK-088.md) | Chống sửa / xóa dữ liệu trái phép (F-071), ADR-029 | FEATURE-071 | TASK-087 | Agent | — | chủ dự án 05/11 | READY_FOR_REVIEW |
 | [TASK-089](TASK-089.md) | Chấm công nhiều người (F-072) + tính lương (F-073), ADR-030 | FEATURE-072, FEATURE-073 | TASK-088 | Agent | — | chủ dự án 05/11 | READY_FOR_REVIEW |
+| [TASK-090](TASK-090.md) | Quên PIN, nhắc chấm công, nhân viên báo quên chấm công (F-072 bổ sung), ADR-031 | FEATURE-072 | TASK-089 | Agent | — | chủ dự án 06/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 
