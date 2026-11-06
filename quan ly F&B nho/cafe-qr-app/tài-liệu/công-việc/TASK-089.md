@@ -30,4 +30,6 @@ Quầy nhiều người chấm công đúng người bằng màn chung + PIN ri�
 | `npm run lint`, `npm run format:check` | PASS |
 | Lỗi tìm được khi chạy test | Người vừa chấm vào trong cùng giây không có trong danh sách đóng ca (giờ DATETIME2(0) làm tròn lên quá "bây giờ") → ca đang mở lấy mọi lần chấm công từ lúc mở ca |
 
-Chưa có review G3 độc lập; chưa gộp `main`, chưa đẩy GitHub — chờ chủ dự án.
+| Sửa sau bàn giao (06/11/2026) | DEF-020: trang Tài khoản thêm cột **PIN** (Đã đặt / Chưa đặt / Không cần) + hướng dẫn đặt / đổi / quên PIN — chủ dự án không thấy chỗ đổi PIN vì chưa ai đặt. E2E 65/65 (thêm bước Tài khoản ghi "Đã đặt"), trace 449/449 |
+
+Chưa có review G3 độc lập; chưa gộp `main` ở máy. Đã đẩy lên GitHub theo yêu cầu chủ dự án (05/11/2026, `72463af`).

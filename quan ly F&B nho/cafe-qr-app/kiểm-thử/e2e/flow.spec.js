@@ -2567,5 +2567,9 @@ test('chấm công nhiều người + lương: nhân viên tự đặt PIN; màn
   await P.locator('.modal').getByRole('button', { name: 'Lưu' }).click();
   await expect(P.locator('.toast', { hasText: 'Đã lưu hồ sơ lương' })).toBeVisible();
   await expect(P.locator('table.pay-table')).toContainText('Bảo E2E');
+  // DEF-020: trang Tài khoản cho thấy ai đã đặt PIN
+  await P.goto('/admin/users');
+  await expect(P.locator('tbody tr', { hasText: 'e2e-ha' })).toContainText('Đã đặt');
+  await expect(P.locator('tbody tr', { hasText: 'e2e-ha' }).getByRole('button', { name: 'Xóa PIN của e2e-ha' })).toBeVisible();
   await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'LOGIN', moneyPin: false }); // trả lại cho các test sau
 });

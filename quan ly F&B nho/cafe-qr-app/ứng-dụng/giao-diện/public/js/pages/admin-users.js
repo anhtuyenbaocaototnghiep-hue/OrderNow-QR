@@ -19,6 +19,12 @@ async function load() {
   }
   clear(
     $('#content'),
+    // F-072 (DEF-020): chỉ chỗ đặt / đổi PIN — quản lý không đặt hộ, chỉ xóa để người đó tự đặt lại
+    el(
+      'p',
+      { class: 'small muted' },
+      'PIN chấm công: mỗi người tự đặt sau khi đăng nhập (máy quầy → Giờ công → Đặt / Đổi PIN, cần mật khẩu đăng nhập). Quản lý không biết và không đặt PIN hộ — người quên PIN tự đổi bằng mật khẩu, quên cả mật khẩu thì bấm "Đặt lại mật khẩu"; nghi bị lộ thì "Xóa PIN".',
+    ),
     el(
       'div',
       { class: 'table-wrap' },
@@ -31,7 +37,7 @@ async function load() {
           el(
             'tr',
             {},
-            ['Tên đăng nhập', 'Họ tên', 'Vai trò', 'Tạo lúc', 'Hoạt động', ''].map((h) => el('th', {}, h)),
+            ['Tên đăng nhập', 'Họ tên', 'Vai trò', 'PIN', 'Tạo lúc', 'Hoạt động', ''].map((h) => el('th', {}, h)),
           ),
         ),
         el(
@@ -49,6 +55,15 @@ async function load() {
               ),
               el('td', {}, u.fullName),
               el('td', {}, el('span', { class: `badge ${u.role === 'ADMIN' ? 'primary' : u.role === 'MANAGER' ? 'ok' : ''}` }, ROLE[u.role])),
+              el(
+                'td',
+                {},
+                u.role === 'ADMIN' && !u.hasPin
+                  ? el('span', { class: 'muted small' }, 'Không cần')
+                  : u.hasPin
+                    ? el('span', { class: 'badge ok' }, 'Đã đặt')
+                    : el('span', { class: 'badge pending' }, 'Chưa đặt'),
+              ),
               el('td', { class: 'small' }, dateTime(u.createdAt)),
               el(
                 'td',
