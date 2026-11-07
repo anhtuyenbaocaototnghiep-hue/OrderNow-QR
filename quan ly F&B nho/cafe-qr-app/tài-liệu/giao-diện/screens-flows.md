@@ -452,3 +452,11 @@ flowchart LR
 - **SCR-13 — phiếu bán tay:** trưởng ca / quản lý có ô **Nhập đơn từ phiếu bán tay** → ô **Giờ bán ghi trên phiếu** (mặc định bây giờ), nút **Ghi đơn bán tay**. Mọi người có nút **In phiếu bán tay trống (dự phòng mất điện / hỏng máy)** → phiếu A4 22 dòng (giờ, món × SL, tổng, TM / CK, SĐT hội viên, người bán).
 - **SCR-54 Ca & hoàn tiền → Đơn bán lúc mất mạng (N) · tổng:** bảng Đơn (#mã + mã tạm, "phiếu tay"), Giờ bán, Người bán, Tiền, Cách trả, Cần kiểm (đỏ: giá lệch / chưa trừ kho / ghi vào ca khác; thường: đối chiếu chuyển khoản). **Đóng ca** khi máy này còn đơn tạm → hộp **Còn đơn bán tạm chưa gửi**: **Gửi ngay** / **Vẫn đóng ca** / **Hủy**.
 - **SCR-47 Cảnh báo:** loại **Bán lúc mất mạng cần kiểm** (một cảnh báo mỗi ca).
+
+## F-075 — Hạn dùng nguyên liệu (TASK-092, ADR-033, 07/11/2026)
+
+- **SCR-23 Nguyên liệu → Kho nâng cao:** nhóm **Hạn sau khi mở hộp / gói (sữa, kem, siro…)** — ô **Một hộp / gói bao nhiêu {đơn vị}**, ô **Mở rồi dùng được (giờ)** (cạnh nhau), chú thích ví dụ sữa tươi 1000 ml / 72 giờ. Dòng nguyên liệu: "hộp 1000 ml, mở rồi dùng trong 72 giờ · hộp đang mở còn 350 ml".
+- **SCR-55 (trong SCR-17) Kho & sơ chế → Hạn dùng → Hộp / gói đang mở sắp hoặc đã quá hạn:** mỗi dòng tên, "còn khoảng … ml", "mở lúc …", nhãn **Đã quá hạn** (đỏ) / "còn N giờ"; nút **Bỏ phần còn** (đỏ khi quá hạn) → hộp xác nhận → toast "Đã ghi hủy …". Bên dưới bảng lô như cũ.
+- **Máy quầy (mọi trang):** dải xanh **Nên mời khách hôm nay: Latte, Bạc xỉu** + dòng lý do ("Sữa tươi hộp đang mở còn 5 giờ · Sữa đặc hết hạn ngày mai") + **Ẩn**; ở trang Đơn hàng nằm trong vùng "Cần xử lý ngay".
+- **SCR-42 Hôm nay → Sắp hết hạn (2 ngày tới):** quản lý: số tiền (đỏ) "giá vốn phần sẽ phải bỏ nếu không dùng kịp", 5 dòng (tên: số lượng, thời hạn, tiền), "Nên mời khách: …", mục mở rộng **Tháng này đã hủy vì hết hạn: …đ** (3 nguyên liệu, 3 nhà cung cấp). Trưởng ca: không có số tiền.
+- **SCR-47 Cảnh báo:** loại **Nguyên liệu sắp hết hạn** (một cảnh báo mỗi ngày, 06:00).

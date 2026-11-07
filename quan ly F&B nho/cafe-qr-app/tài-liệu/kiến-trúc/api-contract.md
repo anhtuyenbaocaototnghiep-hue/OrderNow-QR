@@ -727,3 +727,17 @@ Chi tiết: [FEATURE-074](../chức-năng/FEATURE-074.md), BR-112.
 
 - `POST /api/orders/takeaway`: thêm `clientRef` (UUID, không bắt buộc) — đã có đơn với mã này → `200 { order, payment, totals: null, duplicate: true }` (không ghi thêm).
 - Đơn (`order`) có thêm `saleSource`: `null` | `OFFLINE` | `PAPER`. Cảnh báo thêm loại `OFFLINE_SALE`.
+
+## Bổ sung F-075 — hạn dùng nguyên liệu (ADR-033, TASK-092, 07/11/2026)
+
+Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `GET /api/expiry/risk` | Nhân viên | `{ days: 2, totalValue (chỉ ADMIN), items: [{ kind: OPEN \| LOT, ingredientId, name, unit, qty, when, expired, value (chỉ ADMIN), … }], pushItems: [{ menuItemId, name, because: [{ ingredientId, name, when }] }] }` — `OPEN`: `openedAt`, `expiresAt`, `hoursLeft`; `LOT`: `lotId`, `lotCode`, `expiryDate`, `daysLeft` |
+| `POST /api/ingredients/{id}/discard-open` | Nhân viên | `{ note? }` → `{ wasteId, qty, ingredient }`; không có hộp mở `409 NO_OPEN_PACK`; không có nguyên liệu `404` |
+| `GET /api/admin/expiry/waste?month=YYYY-MM` | ADMIN | `{ month, total, byIngredient: [{ ingredientId, name, unit, qty, cost, times }], bySupplier: [{ supplierId, name (null = không rõ), cost }] }`; tháng sai `400` |
+
+- `PUT /api/admin/ingredients/{id}/advanced`: thêm `packSize` (> 0, đơn vị gốc) + `openShelfHours` (1–8760) — cả hai hoặc `null` (`400` nếu chỉ một); không gửi hai ô → giữ nguyên.
+- Nguyên liệu (`GET /api/admin/ingredients`, `/api/ops/ingredients`) thêm `packSize`, `openShelfHours`, `openedAt`, `openLeft`; `expiredQty` gồm cả phần hộp mở quá hạn.
+- `GET /api/dashboard/today`: thêm `expiry` (= `/expiry/risk`; ADMIN thêm `wasteThisMonth`). Cảnh báo thêm loại `EXPIRY_RISK`.
