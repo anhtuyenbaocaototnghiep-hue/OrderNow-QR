@@ -3,8 +3,8 @@
 // F-075 (ADR-033): thẻ "Sắp hết hạn (2 ngày)" tính trực tiếp — quản lý thấy số tiền sẽ phải bỏ + tiền đã hủy vì hết hạn tháng này.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
-import { logout, requireStaffPage } from '../auth.js';
-import { canOpenAdminPage, hasAdminPages, hasCap, ROLE_LABEL } from '../roles.js';
+import { adminLogout, requireStaffPage } from '../auth.js';
+import { canOpenAdminPage, firstAdminHref, hasAdminPages, hasCap, ROLE_LABEL } from '../roles.js';
 import { $, clear, dateTime, el, errorMessage, money, num, toast } from '../ui.js';
 import { brandMark, icon } from '../icons.js';
 
@@ -20,8 +20,11 @@ else if (hasCap(user, 'dashboard.view')) {
     el('a', { href: '/pos' }, '← Màn hình quầy'),
     el('div', { class: 'spacer' }),
     el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small' }, ROLE_LABEL[user.role])),
-    el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, 'Đăng xuất'),
+    el('button', { class: 'btn btn-sm', type: 'button', onclick: adminLogout }, 'Đăng xuất'), // F-080
   );
+} else if (hasAdminPages(user)) {
+  location.replace(firstAdminHref(user)); // F-080: có trang Quản lý khác nhưng không có Hôm nay
+  await new Promise(() => {});
 } else {
   location.replace('/pos?denied=admin');
   await new Promise(() => {});

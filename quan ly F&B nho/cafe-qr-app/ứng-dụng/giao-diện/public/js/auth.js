@@ -1,16 +1,29 @@
-// Bảo vệ trang quầy/quản lý: chưa đăng nhập → /pos/login; trang admin cần Chủ quán, hoặc Quản lý cửa hàng với trang được mở (F-077).
-// Đây chỉ là trải nghiệm — quyền thật được kiểm ở server cho mọi endpoint.
+// Bảo vệ trang quầy/quản lý: chưa đăng nhập → /pos/login (máy quầy) hoặc /admin/login (trang Quản lý — F-080, phiên riêng);
+// trang admin cần quyền trang đó (F-077, F-079). Đây chỉ là trải nghiệm — quyền thật được kiểm ở server cho mọi endpoint.
 import { staffApi } from './api.js';
-import { clearStaffSession, getToken } from './auth-store.js';
+import { clearAdminSession, clearStaffSession, getPosToken, getToken, isAdminArea, saveAdminSession } from './auth-store.js';
 import { confirmDialog } from './ui.js';
-import { canOpenAdminPage, pageCap } from './roles.js';
+import { canOpenAdminPage, firstAdminHref, hasAdminPages, pageCap } from './roles.js';
 
 /** Thông tin phiên hiện tại sau requireStaffPage(): { user, shop, modules } — modules: nhóm menu nâng cao đang bật (F-061). */
 export const current = { user: null, shop: null, modules: [], attendance: { mode: 'LOGIN', moneyPin: false }, pos: { oneTap: false } };
 
+/** F-080: đi từ nút "Quản lý" của máy quầy (?from=pos) → trang Quản lý dùng phiên của người đang đứng máy quầy. */
+function followPosIfAsked() {
+  const params = new URLSearchParams(location.search);
+  if (!isAdminArea() || params.get('from') !== 'pos') return;
+  const pos = getPosToken();
+  if (pos) saveAdminSession(pos, null, { follow: true });
+  params.delete('from');
+  const q = params.toString();
+  history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
+}
+
 export async function requireStaffPage({ admin = false, page = '' } = {}) {
+  followPosIfAsked();
   if (!getToken()) {
-    location.replace(`/pos/login?next=${encodeURIComponent(location.pathname + location.search)}`);
+    const login = isAdminArea() ? '/admin/login' : '/pos/login';
+    location.replace(`${login}?next=${encodeURIComponent(location.pathname + location.search)}`);
     return new Promise(() => {}); // dừng trang trong lúc chuyển hướng
   }
   const { user, shop, modules, attendance, pos } = await staffApi('/api/auth/me');
@@ -20,11 +33,21 @@ export async function requireStaffPage({ admin = false, page = '' } = {}) {
   current.attendance = attendance ?? { mode: 'LOGIN', moneyPin: false }; // F-072
   current.pos = pos ?? { oneTap: false }; // F-076
   if (admin && !canOpenAdminPage(user, page)) {
-    const cap = pageCap(page); // F-079: quyền cấp riêng được → máy quầy mời "Xin quyền"
-    location.replace(`/pos?denied=admin${cap ? `&cap=${cap}` : ''}`);
+    const cap = pageCap(page); // F-079: quyền cấp riêng được → mời "Xin quyền"
+    const home = hasAdminPages(user) ? firstAdminHref(user) : null;
+    // F-080: có trang Quản lý khác → ở lại trang Quản lý (trang đầu tiên được mở); không có → về máy quầy / trang đăng nhập Quản lý
+    if (home) location.replace(`${home}${cap ? `?cap=${cap}` : ''}`);
+    else if (getPosToken()) location.replace(`/pos?denied=admin${cap ? `&cap=${cap}` : ''}`);
+    else location.replace('/admin/login?reason=noaccess');
     return new Promise(() => {});
   }
   return user;
+}
+
+/** F-080: thoát trang Quản lý — chỉ xóa phiên Quản lý trên máy này (máy quầy, chấm công, ca không bị ảnh hưởng). */
+export function adminLogout() {
+  clearAdminSession();
+  location.href = '/admin/login';
 }
 
 /**

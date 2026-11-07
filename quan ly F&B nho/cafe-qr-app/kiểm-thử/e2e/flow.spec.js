@@ -222,7 +222,8 @@ test('hóa đơn phiên in khổ 80mm, tạm tính có chữ TẠM TÍNH (S-12, 
 test('báo cáo: khoảng ngày sai vô hiệu nút Xem; 01–10/10/2026 = 3.190.000đ (AC-012-01/02)', async () => {
   // Xóa phiên đăng nhập ngay trên trang hiện tại (cùng origin) — vào /pos/login khi đang đăng nhập sẽ tự chuyển trang, làm hỏng lệnh goto kế tiếp
   await P.evaluate(() => localStorage.clear());
-  await P.goto('/admin/reports');
+  // F-080: trang Quản lý có đăng nhập riêng — ở đây đăng nhập máy quầy (các bài sau dùng P cho cả quầy) rồi sang Báo cáo
+  await P.goto('/pos/login?next=/admin/reports');
   await P.fill('#username', 'admin');
   await P.fill('#password', 'Admin@123');
   await P.click('#submit');
@@ -2803,7 +2804,7 @@ test('quy trình 1 chạm: quản lý bật ở Cài đặt → màn Đơn hàng
   await apiAs(request, 'put', '/api/admin/settings', { oneTap: false }); // trả lại 3 cột cho các test sau
 });
 
-test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở Tài khoản (có bảng "Mỗi vai trò làm được gì?"); quản lý cửa hàng đăng nhập → máy quầy có "Quản lý" → trang Quản lý chỉ có mục vận hành (không Lãi / lỗ, Lương, Tài khoản, Cài đặt); đổi giá món → chủ quán thấy cảnh báo đổi giá; mở thẳng Lãi / lỗ → về quầy (F-077, AC-077-08)', async ({
+test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở Tài khoản (có bảng "Mỗi vai trò làm được gì?"); quản lý cửa hàng đăng nhập → máy quầy có "Quản lý" → trang Quản lý chỉ có mục vận hành (không Lãi / lỗ, Lương, Tài khoản, Cài đặt); đổi giá món → chủ quán thấy cảnh báo đổi giá; mở thẳng Lãi / lỗ → về Hôm nay kèm thanh Xin quyền (F-077, AC-077-08)', async ({
   request,
 }) => {
   await P.goto('/admin/users');
@@ -2855,7 +2856,8 @@ test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở
   await expect(S.locator('.tabs')).toContainText('Sổ quỹ');
   await expect(S.locator('.tabs')).not.toContainText('Danh mục thu chi');
   await S.goto('/admin/pnl');
-  await expect(S).toHaveURL(/\/pos\?denied=admin/);
+  await expect(S).toHaveURL(/\/admin\/today\?cap=admin\.pnl$/); // F-080: ở lại trang Quản lý, mời Xin quyền
+  await expect(S.locator('#access-bar')).toContainText('Lãi / lỗ');
   await ctx.close();
 
   await P.goto('/admin/alerts');
@@ -2959,5 +2961,44 @@ test('quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuy�
   await expect(row).not.toContainText('Có quyền riêng');
   await X.goto('/pos/takeaway');
   await expect(X).toHaveURL(/\/pos\?denied=position/);
+  await ctx.close();
+});
+
+test('trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Quản lý" → vào thẳng Hôm nay; phiên riêng với máy quầy (mở /pos vẫn phải đăng nhập quầy); Đăng xuất chỉ thoát trang Quản lý; nhân viên không có quyền thì được mời Xin quyền; máy đang đăng nhập quầy bằng chủ quán thì "Vào bằng tài khoản này" (F-080, AC-080-03)', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  const A2 = await ctx.newPage();
+  watch(A2, 'admin-area');
+  await A2.goto('/admin');
+  await expect(A2).toHaveURL(/\/admin\/login\?next=%2Fadmin%2Ftoday/);
+  await expect(A2.getByRole('heading', { name: 'Đăng nhập Quản lý' })).toBeVisible();
+  await A2.fill('#username', 'admin');
+  await A2.fill('#password', 'Admin@123');
+  await A2.click('#submit');
+  await expect(A2).toHaveURL(/\/admin\/today$/);
+  await expect(A2.locator('.today-grid')).toBeVisible();
+  await expect(A2.locator('#side .nav-pos')).toHaveAttribute('target', '_blank');
+  // Phiên riêng: máy quầy trên cùng trình duyệt chưa đăng nhập
+  await A2.goto('/pos');
+  await expect(A2).toHaveURL(/\/pos\/login/);
+  await A2.goto('/admin/menu');
+  await expect(A2.locator('#side')).toContainText('Món & định lượng');
+  await A2.locator('#side').getByRole('button', { name: 'Đăng xuất' }).click();
+  await expect(A2).toHaveURL(/\/admin\/login$/);
+  // Nhân viên không có trang Quản lý → báo + Xin quyền (không vào được)
+  await A2.fill('#username', 'staff1');
+  await A2.fill('#password', 'Staff@123');
+  await A2.click('#submit');
+  await expect(A2.locator('#msg')).toContainText('chưa có quyền vào trang Quản lý');
+  await expect(A2.locator('#ask-cap')).toBeVisible();
+  await expect(A2).toHaveURL(/\/admin\/login$/);
+  // Máy quầy đăng nhập chủ quán → trang đăng nhập Quản lý mời dùng luôn
+  await A2.goto('/pos/login');
+  await A2.fill('#username', 'admin');
+  await A2.fill('#password', 'Admin@123');
+  await A2.click('#submit');
+  await expect(A2).toHaveURL(/\/pos$/);
+  await A2.goto('/admin/login');
+  await A2.locator('#follow-pos').click();
+  await expect(A2).toHaveURL(/\/admin\/today$/);
   await ctx.close();
 });

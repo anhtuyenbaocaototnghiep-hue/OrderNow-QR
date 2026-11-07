@@ -59,6 +59,7 @@ const PAGES = {
   // Giai đoạn 8 — phân tích + dashboard chủ quán (/admin/today: quản lý + trưởng ca)
   '/admin/analytics': 'admin/analytics.html',
   '/admin/today': 'admin/today.html',
+  '/admin/login': 'admin/login.html', // F-080: đăng nhập Quản lý riêng (SCR-56)
   '/admin/api-docs': 'admin/api-docs.html', // F-052 tra cứu API
 };
 
@@ -67,7 +68,8 @@ export const pagesRouter = express.Router();
 for (const [route, file] of Object.entries(PAGES)) {
   pagesRouter.get(route, (_req, res) => res.sendFile(file, { root: publicDir, headers: { 'Cache-Control': 'no-cache' } }));
 }
-pagesRouter.get('/admin', (_req, res) => res.redirect('/admin/reports'));
+// F-080: địa chỉ chủ quán lưu — vào Hôm nay (chưa đăng nhập → /admin/login; không có Hôm nay → trang Quản lý đầu tiên được mở)
+pagesRouter.get('/admin', (_req, res) => res.redirect('/admin/today'));
 
 export function notFoundPage(_req, res) {
   res.status(404).sendFile('404.html', { root: publicDir });

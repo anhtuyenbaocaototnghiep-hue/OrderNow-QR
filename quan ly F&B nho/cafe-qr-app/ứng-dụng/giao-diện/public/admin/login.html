@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đăng nhập Quản lý</title>
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
+  </head>
+  <body class="admin">
+    <!-- S-56 Đăng nhập Quản lý (FEATURE-080, ADR-038): phiên riêng với máy quầy, không tính chấm công -->
+    <div class="admin-login">
+      <section class="card admin-login-card" aria-labelledby="h-login">
+        <div class="admin-login-brand" id="brand"></div>
+        <h1 id="h-login">Đăng nhập Quản lý</h1>
+        <p class="muted small">Dành cho chủ quán và người được giao quản lý. Đăng nhập ở đây không tính là vào ca.</p>
+        <div id="msg"></div>
+        <div id="follow"></div>
+        <form id="form" class="stack" novalidate>
+          <div class="field">
+            <label for="username">Tên đăng nhập</label>
+            <input class="input" id="username" name="username" autocomplete="username" required maxlength="50" autofocus />
+          </div>
+          <div class="field">
+            <label for="password">Mật khẩu</label>
+            <input class="input" id="password" name="password" type="password" autocomplete="current-password" required maxlength="100" />
+          </div>
+          <button class="btn btn-primary btn-lg btn-block" id="submit" type="submit">Vào trang Quản lý</button>
+        </form>
+        <div id="noaccess"></div>
+        <p class="small center admin-login-alt"><a href="/pos/login">Nhân viên đứng quầy? Mở màn hình quầy</a></p>
+      </section>
+    </div>
+    <script type="module" src="/js/pages/admin-login.js"></script>
+  </body>
+</html>

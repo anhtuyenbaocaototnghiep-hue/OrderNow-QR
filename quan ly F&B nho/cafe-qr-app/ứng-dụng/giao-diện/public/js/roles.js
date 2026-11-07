@@ -79,7 +79,7 @@ export const canOpenAdminPage = (user, page) => isOwner(user) || (Boolean(PAGE_C
 /** Có quyền trang Quản lý nào (ngoài Hôm nay)? → máy quầy hiện nút "Quản lý". */
 export const hasAdminPages = (user) => isOwner(user) || ADMIN_PAGE_HREF.some(([page]) => page !== 'today' && canOpenAdminPage(user, page));
 /** Trang Quản lý đầu tiên mở được (đích nút "Quản lý" ở máy quầy). */
-export const firstAdminHref = (user) => (isOwner(user) ? '/admin' : (ADMIN_PAGE_HREF.find(([page]) => canOpenAdminPage(user, page))?.[1] ?? null));
+export const firstAdminHref = (user) => (isOwner(user) ? '/admin/today' : (ADMIN_PAGE_HREF.find(([page]) => canOpenAdminPage(user, page))?.[1] ?? null));
 
 // ---- F-078 (ADR-036): vị trí + cấp của nhân viên (vai STAFF). Để trống vị trí = mọi vị trí; trưởng ca trở lên không bị giới hạn. ----
 export const POSITION_LABEL = { CASHIER: 'Thu ngân', BARISTA: 'Pha chế', SERVER: 'Phục vụ' };

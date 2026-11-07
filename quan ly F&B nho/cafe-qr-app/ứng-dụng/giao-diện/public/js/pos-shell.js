@@ -67,7 +67,8 @@ export async function mountPosShell(active) {
   nav.length = 0;
   nav.push(...ownNav);
   // F-077 / F-079: có quyền trang Quản lý nào → "Quản lý" (trang đầu tiên được mở); chỉ có Hôm nay (trưởng ca) → "Hôm nay" bản gọn
-  if (hasAdminPages(user)) nav.push(['admin', firstAdminHref(user), 'Quản lý', 'settings']);
+  if (hasAdminPages(user))
+    nav.push(['admin', `${firstAdminHref(user)}?from=pos`, 'Quản lý', 'settings']); // F-080: dùng phiên máy quầy
   else if (hasCap(user, 'dashboard.view')) nav.push(['today', '/admin/today', 'Hôm nay', 'chart-column']); // F-043 bản rút gọn
 
   // ADR-018 D-67: trái tên quán + điều hướng; phải cụm trạng thái (ca, QR, kết nối, âm thanh) rồi người dùng

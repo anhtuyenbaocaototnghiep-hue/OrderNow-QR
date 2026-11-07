@@ -1,6 +1,6 @@
 // Khung trang quản lý: Chủ quán mọi mục; Quản lý cửa hàng chỉ mục được mở (F-077 — server vẫn kiểm quyền cho mọi API, đây chỉ là trải nghiệm).
 import { staffApi } from './api.js';
-import { current, logout, requireStaffPage } from './auth.js';
+import { adminLogout, current, requireStaffPage } from './auth.js';
 import { $, clear, confirmDialog, el, errorMessage, toast } from './ui.js';
 import { brandMark, icon } from './icons.js';
 import { canOpenAdminPage, isOwner, ROLE_LABEL } from './roles.js';
@@ -155,7 +155,7 @@ export async function mountAdminShell(active) {
     el('div', { class: 'brand' }, brandMark(), current.shop?.name || 'Quản lý'),
     allowed('today') ? navLink(HOME, active, icon('house')) : null,
     NAV.map((g) => navGroup(g, active, open)),
-    el('a', { href: '/pos', class: 'nav-pos' }, icon('monitor'), 'Màn hình quầy'),
+    el('a', { href: '/pos', class: 'nav-pos', target: '_blank', rel: 'noopener' }, icon('monitor'), 'Mở màn hình quầy'), // F-080: tab mới
     el('div', { class: 'spacer' }),
     el(
       'div',
@@ -164,7 +164,7 @@ export async function mountAdminShell(active) {
       isOwner(user) ? null : el('div', { class: 'small' }, ROLE_LABEL[user.role]),
       el('div', { class: 'small', title: 'Tên đăng nhập' }, `@${user.username}`),
     ),
-    el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, icon('log-out'), 'Đăng xuất'),
+    el('button', { class: 'btn btn-sm', type: 'button', onclick: adminLogout }, icon('log-out'), 'Đăng xuất'), // F-080: chỉ thoát trang Quản lý
   );
   noteHiddenPage(active);
   refreshQrBanner(active);

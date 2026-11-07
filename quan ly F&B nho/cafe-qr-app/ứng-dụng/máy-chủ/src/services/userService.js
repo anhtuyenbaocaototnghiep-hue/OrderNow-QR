@@ -13,7 +13,7 @@ const BCRYPT_COST = 10;
 // Hash giả để so sánh khi không có user → thời gian phản hồi như nhau (không lộ username tồn tại hay không)
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', BCRYPT_COST);
 
-export async function login(username, password, { ip = null } = {}) {
+export async function login(username, password, { ip = null, area = 'pos' } = {}) {
   const who = { username, ip };
   await authGuard.assertNotLocked('LOGIN', who); // F-071: đang khóa → 429 kể cả khi gõ đúng
   const user = await usersRepo.findByUsernameWithHash(username);
@@ -24,10 +24,12 @@ export async function login(username, password, { ip = null } = {}) {
   }
   if (!user.isActive) throw forbidden('Tài khoản đã bị khóa', 'ACCOUNT_LOCKED');
   const { passwordHash: _omit, ...publicUser } = user;
-  // F-035: đăng nhập → chấm công vào (không chặn đăng nhập nếu ghi chấm công lỗi)
-  await onLogin(publicUser).catch((err) => {
-    if (config.env !== 'test') console.error('[attendance] không ghi được giờ vào', err.message);
-  });
+  // F-035: đăng nhập máy quầy → chấm công vào (không chặn đăng nhập nếu ghi chấm công lỗi). F-080: trang Quản lý thì không.
+  if (area !== 'admin') {
+    await onLogin(publicUser).catch((err) => {
+      if (config.env !== 'test') console.error('[attendance] không ghi được giờ vào', err.message);
+    });
+  }
   return { accessToken: signToken(publicUser), user: publicUser };
 }
 

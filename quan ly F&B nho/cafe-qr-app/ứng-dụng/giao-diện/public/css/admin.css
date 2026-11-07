@@ -1507,3 +1507,48 @@ ul.bday-tips {
     width: 100%;
   }
 }
+
+/* F-080 (ADR-038): trang Đăng nhập Quản lý (SCR-56) — nền sáng của trang Quản lý, khác màn đăng nhập quầy */
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: radial-gradient(circle at 12% 8%, var(--c-primary-50), transparent 45%), var(--c-bg, #f6efe6);
+}
+.admin-login-card {
+  width: min(420px, 100%);
+  padding: 2rem 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: var(--shadow-lg);
+}
+.admin-login-card h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.admin-login-card p {
+  margin: 0;
+}
+.admin-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.admin-login-follow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--c-border, #e8dccd);
+  border-radius: var(--radius-sm, 10px);
+  background: var(--c-surface-2, #f8f2ea);
+}
+.admin-login-ask {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--c-border, #e8dccd);
+}
+.admin-login-alt {
+  margin-top: 0.25rem;
+}

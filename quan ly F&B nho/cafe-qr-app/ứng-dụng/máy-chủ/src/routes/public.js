@@ -30,8 +30,15 @@ publicRouter.get('/health', async (_req, res) => {
 
 // ---- Auth (FEATURE-009) ----
 publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
-  const body = parse(z.object({ username: zText(50).min(1, 'Nhập tên đăng nhập'), password: z.string().min(1, 'Nhập mật khẩu').max(100) }), req.body);
-  res.json(await userService.login(body.username, body.password, { ip: req.ip }));
+  const body = parse(
+    z.object({
+      username: zText(50).min(1, 'Nhập tên đăng nhập'),
+      password: z.string().min(1, 'Nhập mật khẩu').max(100),
+      area: z.enum(['pos', 'admin']).default('pos'), // F-080: 'admin' = đăng nhập trang Quản lý — không chấm công vào
+    }),
+    req.body,
+  );
+  res.json(await userService.login(body.username, body.password, { ip: req.ip, area: body.area }));
 });
 
 // F-053: tên / địa chỉ quán đọc từ Cài đặt (chưa lưu → .env). F-061: nhóm menu nâng cao đang bật (`modules`), `user.tourSeenAt`
