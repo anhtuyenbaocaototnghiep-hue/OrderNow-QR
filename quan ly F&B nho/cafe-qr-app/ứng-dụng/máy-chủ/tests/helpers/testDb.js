@@ -34,7 +34,9 @@ export async function resetTestDatabase() {
   // F-072: test cũ viết theo chấm công bằng đăng nhập, thao tác tiền không hỏi PIN — test của F-072 / F-073 tự bật mặc định mới
   await pool
     .request()
-    .query(`INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false'), ('pos.one_tap', 'false')`);
+    .query(
+      `INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false'), ('pos.one_tap', 'false'), ('menu.sheet_all', 'false')`,
+    );
   return { pool, ...seeded };
 }
 

@@ -140,6 +140,7 @@ operationsRouter.put('/settings', async (req, res) => {
       alertCostMarginDrop: z.coerce.number().int().min(1).max(100).optional(),
       alertCostMarginMin: z.coerce.number().int().min(0).max(100).optional(),
       oneTap: z.boolean().optional(), // F-076: quy trình 1 chạm ở màn Đơn hàng
+      menuSheetAll: z.boolean().optional(), // F-083: bấm "+" mở bảng chọn cho mọi món (màn khách)
       // F-061 (ADR-021 D-79): nhóm menu nâng cao đang bật (rỗng = chế độ cơ bản)
       uiModules: z
         .array(z.enum(MODULES, { message: 'Nhóm mục không hợp lệ' }))

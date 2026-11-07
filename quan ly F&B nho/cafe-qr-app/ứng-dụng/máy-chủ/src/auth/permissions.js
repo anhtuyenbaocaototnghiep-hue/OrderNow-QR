@@ -294,6 +294,7 @@ export const STORE_MGR_SETTINGS = [
   'etaSpreadPercent',
   'etaDefaultItemSeconds',
   'oneTap',
+  'menuSheetAll', // F-083
 ];
 
 /** Loại cảnh báo chỉ chủ quán xem (khóa đăng nhập; giá món do quản lý cửa hàng đổi; cấp quyền dính tiền). */

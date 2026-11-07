@@ -31,7 +31,9 @@ await seedDemo(pool, seeded.adminId);
 // F-072: luồng E2E cũ chấm công bằng đăng nhập, không hỏi PIN — E2E "chấm công nhiều người" tự bật rồi trả lại
 await pool
   .request()
-  .query(`INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false'), ('pos.one_tap', 'false')`);
+  .query(
+    `INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false'), ('pos.one_tap', 'false'), ('menu.sheet_all', 'false')`,
+  );
 // F-069 (E2E "mừng khách quay lại"): hội viên đã thanh toán 8 lần, lần cuối 52 ngày trước — không có API đặt "lần cuối ghé"
 await pool.request().query(`INSERT dbo.Members (Phone, FullName, TierCode, TotalSpent, VisitCount, FirstOrderDiscountUsed, ConsentAt, CreatedAt, LastVisitAt)
   SELECT '+84907069001', N'Khách Lâu Không Ghé', (SELECT TOP 1 TierCode FROM dbo.MemberTiers ORDER BY MinSpent, SortOrder), 320000, 8, 1,

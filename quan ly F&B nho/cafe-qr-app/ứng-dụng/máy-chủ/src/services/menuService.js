@@ -171,6 +171,7 @@ export async function getPublicMenu({ staff = false } = {}) {
       })),
     suggested: buildSuggested(all, top, settings),
     modifierGroups,
+    ui: { sheetAll: settings.menuSheetAll }, // F-083: "+" mở bảng chọn cho mọi món
   };
 }
 

@@ -58,6 +58,8 @@ function toSettings(map) {
     moneyPin: map.get('security.money_pin') !== 'false',
     // F-076 (ADR-034 D-153): màn Đơn hàng "Quy trình 1 chạm" — gộp Mới + Đang pha thành "Cần làm", một nút "Xong" (mặc định bật)
     oneTap: map.get('pos.one_tap') !== 'false',
+    // F-083 (ADR-041 D-185): màn gọi món của khách — bấm "+" mở bảng chọn cho MỌI món (mặc định bật; tắt: món không tùy chọn thêm ngay)
+    menuSheetAll: map.get('menu.sheet_all') !== 'false',
     staffMaxAmount: num(map.get('discount.staff_max_amount'), 20000),
     // F-025 thời gian chờ (D-18)
     etaBaseSeconds: num(map.get('kitchen.base_seconds'), 120),
@@ -156,6 +158,7 @@ const KEYS = {
   attendanceMode: 'attendance.mode',
   moneyPin: 'security.money_pin',
   oneTap: 'pos.one_tap',
+  menuSheetAll: 'menu.sheet_all',
   staffMaxAmount: 'discount.staff_max_amount',
   etaBaseSeconds: 'kitchen.base_seconds',
   kitchenParallelism: 'kitchen.parallelism',

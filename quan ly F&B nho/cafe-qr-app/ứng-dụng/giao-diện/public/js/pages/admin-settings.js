@@ -190,6 +190,8 @@ function render(s) {
   const moduleChecks = MODULE_GROUPS.map(([key]) => el('input', { type: 'checkbox', name: `module-${key}`, value: key, checked: s.uiModules.includes(key) }));
   // F-076 (ADR-034): quy trình 1 chạm ở màn Đơn hàng
   const oneTapCheck = el('input', { type: 'checkbox', name: 'oneTap', id: 'one-tap', checked: s.oneTap });
+  // F-083 (ADR-041): màn gọi món của khách — "+" mở bảng chọn cho mọi món
+  const sheetAllCheck = el('input', { type: 'checkbox', name: 'menuSheetAll', id: 'sheet-all', checked: s.menuSheetAll });
   const card = (title, ...children) =>
     el('div', { class: 'card', style: { maxWidth: '720px', marginBottom: '1rem' } }, el('h2', { style: { fontSize: '1rem' } }, title), ...children);
   clear(
@@ -220,6 +222,20 @@ function render(s) {
         'p',
         { class: 'small muted' },
         'Hợp với quán nhỏ 1–2 người pha: bấm Xong là nhận đơn, hoàn tất, trừ kho và báo khách "Món đã xong" cùng lúc. Quán đông nhiều người pha thì tắt để dùng 3 cột (Mới → Đang pha → Xong). Màn quầy đang mở đổi theo khi tải lại.',
+      ),
+    ),
+    card(
+      'Màn gọi món của khách',
+      el(
+        'label',
+        { class: 'check' },
+        sheetAllCheck,
+        el('span', {}, el('strong', {}, 'Bấm "+" mở bảng chọn cho mọi món'), ' — khách chọn size, topping, ghi chú, số lượng một lần rồi mới vào giỏ'),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Tắt: món không có tùy chọn bấm "+" là vào giỏ ngay (nhanh hơn 1 chạm), muốn ghi chú thì bấm tên món. Món có tùy chọn luôn mở bảng chọn. Điện thoại khách đổi theo khi tải lại menu.',
       ),
     ),
     card(
@@ -400,6 +416,7 @@ function render(s) {
                 alertUseStats: alertUseStats.checked,
                 uiModules: moduleChecks.filter((c) => c.checked).map((c) => c.value), // F-061
                 oneTap: oneTapCheck.checked, // F-076
+                menuSheetAll: sheetAllCheck.checked, // F-083
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,
                 staffMaxPercent: Number(maxPct.value),

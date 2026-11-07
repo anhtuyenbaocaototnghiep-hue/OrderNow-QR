@@ -3118,3 +3118,44 @@ test('giỏ gọn: giỏ không còn ô ghi chú / nút nhanh, mỗi món một 
     await phone.close();
   }
 });
+
+test('"+" mở bảng chọn cho mọi món: chủ quán bật ở Cài đặt → khách bấm "+" món không tùy chọn (Nước suối) cũng mở bảng chọn (không có nhóm tùy chọn, có ghi chú, số lượng) → chọn 2 → "Thêm vào giỏ" → thẻ món hiện 2, không còn nút −/+ trên thẻ → gửi đơn được (F-083, AC-083-02)', async ({
+  request,
+}) => {
+  await P.goto('/admin/settings');
+  await P.locator('label', { hasText: 'Bấm "+" mở bảng chọn cho mọi món' }).click();
+  await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+  await expect(P.locator('.toast').first()).toBeVisible();
+  expect((await apiAs(request, 'get', '/api/admin/settings')).menuSheetAll).toBe(true);
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  await apiAs(request, 'post', '/api/admin/tables', { code: 'SA', name: 'Bàn mọi món' });
+  const t = (await apiAs(request, 'get', '/api/admin/tables')).find((x) => x.code === 'SA');
+  const phone = await browser.newContext(phoneOpts);
+  try {
+    const G = await phone.newPage();
+    watch(G, 'G');
+    await G.goto(`/t/${t.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    const water = G.locator('.c-section.cat .c-item', { hasText: 'Nước suối' });
+    await water.locator('.add-btn').click();
+    const sheet = G.locator('.item-sheet');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('.opt-group')).toHaveCount(0);
+    await expect(G.locator('#item-note')).toBeVisible();
+    await sheet.getByRole('button', { name: 'Thêm Nước suối' }).click();
+    await expect(G.locator('#item-qty')).toHaveText('2');
+    await G.locator('[role="dialog"]', { has: sheet }).locator('.modal-foot .btn-primary').click();
+    await expect(water.locator('.qty-badge')).toHaveText('2');
+    await expect(water.locator('.stepper')).toHaveCount(0);
+    await G.click('#open-cart');
+    await expect(G.locator('.sheet .cart-line', { hasText: 'Nước suối' }).locator('.stepper span')).toHaveText('2');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+  } finally {
+    await phone.close();
+    await apiAs(request, 'put', '/api/admin/settings', { menuSheetAll: false }); // trả lại cho bài sau
+    const s = (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === 'SA')?.sessions?.[0];
+    if (s) await apiAs(request, 'post', `/api/sessions/${s.sessionId}/cancel`, { reason: 'Dọn bàn thử bảng chọn' });
+    await apiAs(request, 'delete', `/api/admin/tables/${t.tableId}`);
+  }
+});

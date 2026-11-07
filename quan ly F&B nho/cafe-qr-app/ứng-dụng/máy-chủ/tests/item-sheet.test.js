@@ -82,4 +82,25 @@ describe('Bảng chọn món của khách (F-081)', () => {
     assert.equal(Number(rows[0].UnitPrice), Number(unit));
     assert.equal(o.body.totalAmount, quote.body.total);
   });
+  test('AC-083-01: cài đặt "bấm + mở bảng chọn cho mọi món" — chưa đặt thì bật; menu khách gửi ui.sheetAll theo cài đặt; chủ quán / quản lý cửa hàng đổi được, nhân viên → 403', async () => {
+    await q1("DELETE dbo.Settings WHERE SettingKey = 'menu.sheet_all'");
+    await api.put('/api/admin/settings').set(auth(admin)).send({ acceptingOrders: true }); // lưu cài đặt khác → bộ nhớ đệm đọc lại
+    const s = await api.get('/api/admin/settings').set(auth(admin));
+    assert.equal(s.body.menuSheetAll, true, 'mặc định bật');
+    assert.equal((await api.get('/api/menu')).body.ui.sheetAll, true);
+    const off = await api.put('/api/admin/settings').set(auth(admin)).send({ menuSheetAll: false });
+    assert.equal(off.status, 200, JSON.stringify(off.body));
+    assert.equal(off.body.menuSheetAll, false);
+    assert.equal((await api.get('/api/menu')).body.ui.sheetAll, false);
+    assert.equal((await api.put('/api/admin/settings').set(auth(staff)).send({ menuSheetAll: true })).status, 403);
+    const u = await api
+      .post('/api/admin/users')
+      .set(auth(admin))
+      .send({ username: 'ql_sheet', password: 'Pass@123', fullName: 'QL bảng chọn', role: 'STORE_MGR' });
+    assert.equal(u.status, 201, JSON.stringify(u.body));
+    const store = await app.login('ql_sheet', 'Pass@123');
+    const on = await api.put('/api/admin/settings').set(auth(store)).send({ menuSheetAll: true });
+    assert.equal(on.status, 200, JSON.stringify(on.body));
+    assert.equal((await api.get('/api/menu')).body.ui.sheetAll, true);
+  });
 });

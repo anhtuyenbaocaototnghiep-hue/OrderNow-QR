@@ -2,6 +2,7 @@
 // F-081 (ADR-039): bấm món có tùy chọn ("+" hoặc tên món) → bảng chọn trượt lên ngay (tùy chọn + ghi chú + số lượng) → "Thêm vào giỏ";
 // món không tùy chọn: "+" vẫn thêm ngay (3 chạm), bấm tên món mở bảng chọn để ghi chú / chọn số lượng. Giỏ hàng để xem và gửi.
 // F-082 (ADR-040): giỏ không còn ô ghi chú / nút nhanh — bấm vào món trong giỏ để sửa (mở lại bảng chọn, "Cập nhật").
+// F-083 (ADR-041): cài đặt menu.sheet_all (mặc định bật) — "+" mở bảng chọn cho MỌI món (khách làm một lần); tắt → như F-081.
 // Lỗi hết món (BR-009/Q-005): server từ chối cả đơn → bỏ món đó khỏi giỏ và báo khách.
 // ADR-005: mục Ưu đãi / Gợi ý / Combo, tùy chọn món (món có lựa chọn mặc định vẫn thêm 1 chạm), hội viên SĐT, báo giá từ server.
 // ADR-006: "Lần trước bạn gọi — Gọi lại?" + món yêu thích ♥ (F-045), thời gian chờ ước tính (F-025), menu theo lịch tự tải lại (F-040).
@@ -412,8 +413,8 @@ function renderControl(itemId) {
       continue;
     }
     const lines = state.cart.filter((l) => l.menuItemId === itemId);
-    if (hasOptions || lines.length > 1) {
-      // F-081: món có tùy chọn → "+" mở bảng chọn; nhiều dòng (khác tùy chọn / ghi chú) → số trong giỏ, sửa từng dòng trong giỏ
+    if (sheetAll() || hasOptions || lines.length > 1) {
+      // F-081 / F-083: "+" mở bảng chọn (mọi món khi quán bật, hoặc món có tùy chọn); nhiều dòng → số trong giỏ, sửa từng dòng trong giỏ
       clear(
         control,
         qty ? el('span', { class: 'qty-badge', 'aria-label': `${qty} trong giỏ` }, qty) : null,
@@ -441,10 +442,13 @@ function stepper(qty, onChange, name) {
   );
 }
 
-/** Nút "+": món có tùy chọn → mở bảng chọn (F-081); món không tùy chọn → thêm 1 phần ngay. */
+/** F-083: quán bật "+" mở bảng chọn cho mọi món (mặc định) — máy chủ gửi `ui.sheetAll` cùng menu. */
+const sheetAll = () => state.menu?.ui?.sheetAll !== false;
+
+/** Nút "+": bật "mở bảng chọn cho mọi món" (F-083) hoặc món có tùy chọn (F-081) → bảng chọn; còn lại → thêm 1 phần ngay. */
 async function quickAdd(item) {
   if (!item.isAvailable) return toast(`${item.name} đã hết món`, 'warning');
-  if (groupsOf(item, state.menu.modifierGroups).length) return openItem(item);
+  if (sheetAll() || groupsOf(item, state.menu.modifierGroups).length) return openItem(item);
   addItem(state.cart, item, {});
   changed(item.id);
 }
