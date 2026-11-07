@@ -115,6 +115,7 @@
 | [TASK-097](TASK-097.md) | Trang Quản lý riêng — đăng nhập riêng, phiên riêng với máy quầy (F-080), ADR-038 | FEATURE-080 | TASK-096 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
 | [TASK-098](TASK-098.md) | Bảng chọn món của khách — bấm món là chọn tùy chọn, ghi chú, số lượng ngay (F-081), ADR-039 | FEATURE-081 | TASK-097 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
 | [TASK-099](TASK-099.md) | Giỏ hàng gọn — bấm món trong giỏ để sửa (F-082), ADR-040 | FEATURE-082 | TASK-098 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
+| [TASK-100](TASK-100.md) | "+" mở bảng chọn cho mọi món (F-083), ADR-041 | FEATURE-083 | TASK-099 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

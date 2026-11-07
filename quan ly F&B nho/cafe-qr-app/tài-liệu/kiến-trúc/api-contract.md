@@ -793,3 +793,8 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `POST /api/auth/login`: thêm `area` = `pos` (mặc định — chấm công vào như cũ) / `admin` (đăng nhập trang Quản lý — không chấm công). Giá trị khác → 400.
 - Trang: `GET /admin` → 302 `/admin/today`; `GET /admin/login` → Đăng nhập Quản lý (SCR-56).
 - Giao diện trang Quản lý không gọi `POST /api/auth/logout` khi Đăng xuất (chỉ xóa phiên Quản lý trên máy).
+
+## Bổ sung F-083 — "+" mở bảng chọn cho mọi món (ADR-041, TASK-100, 07/11/2026)
+
+- `GET` · `PUT /api/admin/settings`: thêm `menuSheetAll` (boolean, mặc định `true`; khóa `menu.sheet_all`). Quản lý cửa hàng đổi được (`STORE_MGR_SETTINGS`).
+- `GET /api/menu`: thêm `ui: { sheetAll }` — màn gọi món của khách đọc để quyết định "+" mở bảng chọn cho mọi món hay chỉ món có tùy chọn.

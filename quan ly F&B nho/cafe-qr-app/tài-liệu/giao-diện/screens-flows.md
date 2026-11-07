@@ -505,3 +505,8 @@ flowchart LR
 
 - **SCR-03 Giỏ:** mỗi món một dòng — khối bấm được (tên in đậm, tùy chọn, "Ghi chú: …", giá + giá gạch / tên khuyến mãi, chữ "Sửa ›" màu chính; món hết: "Món này vừa hết — vui lòng bỏ khỏi giỏ") và bước số lượng [−] n [+] bên phải. Không còn ô ghi chú, không còn hàng nút nhanh.
 - **Bấm món trong giỏ** → **SCR-57** mở đè lên giỏ với lựa chọn cũ, nút **Cập nhật · tổng** → đóng bảng, dòng đổi tại chỗ, thông báo "Đã cập nhật …".
+
+## F-083 — "+" mở bảng chọn cho mọi món (TASK-100, ADR-041, 07/11/2026)
+
+- **SCR-02 Menu (bật — mặc định):** "+" mọi món mở **SCR-57** (món không tùy chọn: chỉ ghi chú + số lượng; combo: chỉ số lượng); thẻ món chỉ hiện số trong giỏ + "+" (không còn −/+ trên thẻ). Tắt: như F-081.
+- **SCR-33 Cài đặt:** thẻ **Màn gọi món của khách** — ô **Bấm "+" mở bảng chọn cho mọi món** + giải thích (tắt: món không có tùy chọn bấm "+" là vào giỏ ngay, nhanh hơn 1 chạm).

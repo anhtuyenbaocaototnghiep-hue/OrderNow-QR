@@ -83,6 +83,7 @@ Mỗi dòng: làm theo bước, so với **Kỳ vọng**, ghi `Đạt` / `Không
 | UAT-49 | UC-17 | Chủ quán lưu `http://<IP>:3000/admin` trên điện thoại, đăng nhập ở trang Đăng nhập Quản lý; cùng lúc máy quầy đang bán. Quản lý cửa hàng ở nhà đăng nhập trang Quản lý xem báo cáo. Chủ quán đăng xuất trang Quản lý trên điện thoại. | Điện thoại vào thẳng Hôm nay, không qua màn quầy; máy quầy không bị văng, không hỏi đóng ca; quản lý cửa hàng không bị tính giờ công; chủ quán thấy tách trang dễ dùng. | | |
 | UAT-50 | UC-02 | Khách thật (2–3 người) quét QR gọi: một ly có size + topping + "ít đá", một chai nước có ghi chú, một bánh. | Khách thấy ngay bảng chọn khi bấm món có tùy chọn, chọn xong mới vào giỏ; giỏ đúng size / topping / ghi chú / số lượng; quầy nhận đúng; khách thấy nhanh hơn trước (không phải vào giỏ mới sửa). | | |
 | UAT-51 | UC-02 | Khách gọi 3 món (1 có size + ghi chú), mở giỏ, bấm món có ghi chú để đổi size và thêm "mang về", rồi gửi đơn. | Giỏ gọn, mỗi món một dòng, không có ô nhập; bấm món mở đúng lựa chọn cũ; sau Cập nhật dòng đổi tại chỗ; quầy nhận đúng; khách thấy dễ hơn trước. | | |
+| UAT-52 | UC-02 | Quán để mặc định (bật). Khách gọi 1 ly có size và 2 chai nước suối ghi chú "không lạnh"; giờ đông thử tắt cài đặt và gọi lại. | Bật: mọi "+" mở bảng chọn, khách chọn một lần là đủ; tắt: nước suối "+" vào giỏ ngay. Chủ quán chọn được chế độ hợp với quán. | | |
 
 ## 3. Kiểm tra chỉ làm được bằng tay (NOT_RUN trong kiểm thử tự động)
 
