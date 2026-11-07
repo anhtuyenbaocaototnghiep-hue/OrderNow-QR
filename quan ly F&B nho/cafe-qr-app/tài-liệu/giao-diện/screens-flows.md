@@ -460,3 +460,8 @@ flowchart LR
 - **Máy quầy (mọi trang):** dải xanh **Nên mời khách hôm nay: Latte, Bạc xỉu** + dòng lý do ("Sữa tươi hộp đang mở còn 5 giờ · Sữa đặc hết hạn ngày mai") + **Ẩn**; ở trang Đơn hàng nằm trong vùng "Cần xử lý ngay".
 - **SCR-42 Hôm nay → Sắp hết hạn (2 ngày tới):** quản lý: số tiền (đỏ) "giá vốn phần sẽ phải bỏ nếu không dùng kịp", 5 dòng (tên: số lượng, thời hạn, tiền), "Nên mời khách: …", mục mở rộng **Tháng này đã hủy vì hết hạn: …đ** (3 nguyên liệu, 3 nhà cung cấp). Trưởng ca: không có số tiền.
 - **SCR-47 Cảnh báo:** loại **Nguyên liệu sắp hết hạn** (một cảnh báo mỗi ngày, 06:00).
+
+## F-076 — Quy trình 1 chạm (TASK-093, ADR-034, 07/11/2026)
+
+- **SCR-10 Đơn hàng (bật):** cột đầu tiêu đề **Cần làm** (đếm đơn mới + đang pha), cột "Đang pha" ẩn, phiếu xếp lưới (17rem / phiếu); mỗi phiếu nút xanh lớn **Xong** (+ **Hủy** với đơn mới); phiếu đang giữ (hẹn giờ) giữ "Làm ngay" như cũ; hộp chi tiết đơn có nút **Xong**. Trống: "Không có đơn cần làm". Dải "Đã xong hôm nay" như cũ.
+- **SCR-33 Cài đặt:** thẻ **Màn Đơn hàng ở quầy** — ô **Quy trình 1 chạm** + giải thích (quán nhỏ 1–2 người pha; quán đông tắt để dùng 3 cột).

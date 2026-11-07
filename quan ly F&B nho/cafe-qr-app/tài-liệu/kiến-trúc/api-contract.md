@@ -741,3 +741,8 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `PUT /api/admin/ingredients/{id}/advanced`: thêm `packSize` (> 0, đơn vị gốc) + `openShelfHours` (1–8760) — cả hai hoặc `null` (`400` nếu chỉ một); không gửi hai ô → giữ nguyên.
 - Nguyên liệu (`GET /api/admin/ingredients`, `/api/ops/ingredients`) thêm `packSize`, `openShelfHours`, `openedAt`, `openLeft`; `expiredQty` gồm cả phần hộp mở quá hạn.
 - `GET /api/dashboard/today`: thêm `expiry` (= `/expiry/risk`; ADMIN thêm `wasteThisMonth`). Cảnh báo thêm loại `EXPIRY_RISK`.
+
+## Bổ sung F-076 — quy trình 1 chạm (ADR-034, TASK-093, 07/11/2026)
+
+- `GET` · `PUT /api/admin/settings`: thêm `oneTap` (boolean, mặc định `true`; khóa `pos.one_tap`).
+- `GET /api/auth/me`: thêm `pos: { oneTap }` — màn Đơn hàng đọc để gộp cột. Không thêm endpoint: "Xong" gọi `POST /api/orders/{id}/accept` rồi `…/complete` (đơn mới) hoặc `…/complete` (đơn đang pha).

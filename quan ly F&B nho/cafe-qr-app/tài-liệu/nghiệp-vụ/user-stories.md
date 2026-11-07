@@ -205,6 +205,7 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-074-2 | Should | ACT-ADMIN, ACT-LEAD | Là chủ quán, tôi muốn đơn bán lúc mất mạng không bị tính hai lần, không làm sai kho / ca, và tôi thấy rõ đơn nào cần kiểm, để sổ sách vẫn đúng sau sự cố. | AC-074-01, AC-074-03, AC-074-04, AC-074-05 | BR-112 | UC-05, UC-11 | MOD-BILLING, MOD-SHIFT, MOD-INVENTORY | SCR-13, SCR-15, SCR-47, SCR-54 | F-074 | DONE |
 | US-075-1 | Should | ACT-ADMIN, ACT-STAFF, ACT-LEAD | Là chủ quán, tôi muốn app tự biết hộp sữa / kem / siro đã mở bao lâu và nhắc bỏ phần quá hạn, để không pha đồ hỏng cho khách và không bị trừ kho sai. | AC-075-01, AC-075-02, AC-075-05 | BR-113 | UC-03, UC-13 | MOD-INVENTORY | SCR-23, SCR-17, SCR-55 | F-075 | DONE |
 | US-075-2 | Should | ACT-ADMIN, ACT-STAFF | Là chủ quán, tôi muốn biết trước bằng tiền nguyên liệu nào sắp hết hạn, được gợi ý món nên mời để dùng kịp, và thấy mỗi tháng mất bao nhiêu vì hết hạn (theo nguyên liệu, nhà cung cấp), để giảm tiền đổ bỏ. | AC-075-03, AC-075-04, AC-075-05 | BR-113 | UC-13, UC-16 | MOD-INVENTORY, MOD-REPORT | SCR-42, SCR-47, SCR-10 | F-075 | DONE |
+| US-076-1 | Should | ACT-STAFF, ACT-LEAD, ACT-ADMIN | Là nhân viên quầy, tôi muốn mỗi đơn chỉ bấm một lần "Xong" mà kho vẫn trừ đúng và khách vẫn được báo, để không bỏ quên đơn ở bước giữa khi đông khách. | AC-076-01, AC-076-02, AC-076-03 | BR-114 | UC-03 | MOD-ORDER, MOD-INVENTORY | SCR-10, SCR-33 | F-076 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 
