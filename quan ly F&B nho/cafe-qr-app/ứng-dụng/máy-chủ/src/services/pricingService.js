@@ -54,12 +54,13 @@ async function toAppError(err) {
  * Báo giá đơn (khóa giá lúc gửi — D-8). `exclude`: id khuyến mãi coi như đã hết lượt (SP báo PROMO_EXHAUSTED khi tranh lượt cuối).
  * Trả { priced, settings }.
  */
-export async function quote(items, { exclude = [], now = new Date() } = {}) {
+export async function quote(items, { exclude = [], now = new Date(), withPromotions = true } = {}) {
   const [catalog, promotions, settings] = await Promise.all([getCatalog(), activePromotions(), getSettings()]);
   if (exclude.length) promoCache = null; // vừa có khuyến mãi hết lượt → lần sau đọc lại
   for (const p of promotions) if (exclude.includes(p.promotionId)) p.exhausted = true;
   try {
-    return { priced: priceOrder(items, catalog, promotions, now), settings, catalog };
+    // F-074: gửi bù đơn bán lúc mất mạng → giá niêm yết (máy quầy không tính được khuyến mãi khi mất mạng)
+    return { priced: priceOrder(items, catalog, withPromotions ? promotions : [], now), settings, catalog };
   } catch (err) {
     throw await toAppError(err);
   }

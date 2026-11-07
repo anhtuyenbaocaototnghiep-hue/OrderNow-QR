@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 434 test, sửa lúc 2026-11-06 06:49 UTC
-- `npm run test:e2e` (JSON): 66 test, sửa lúc 2026-11-06 06:42 UTC
+- `npm test` (JUnit): 438 test, sửa lúc 2026-11-06 11:26 UTC
+- `npm run test:e2e` (JSON): 67 test, sửa lúc 2026-11-06 11:31 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 167 |
-| Acceptance Criteria | 454 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 454 |
+| User Story | 169 |
+| Acceptance Criteria | 459 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 459 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -549,4 +549,9 @@
 | AC-073-07 | TC-073-07 | F-073 | US-073-3 | ACT-ADMIN | UC-11, UC-16 | MOD-FINANCE | SCR-51, SCR-33 | BR-110 | Integration: `payroll.test.js` › AC-073-07: tạm ứng lương ở sổ quỹ — phải chọn người nhận, luôn chờ duyệt, không ai tự duyệt khoản ứng của mình; đã duyệt thì trừ vào bảng lương tháng đó — **PASS** | **PASS** |
 | AC-073-08 | TC-073-08 | F-073 | US-072-3, US-073-3 | ACT-ADMIN, ACT-LEAD | UC-11, UC-12, UC-16 | MOD-SHIFT, MOD-FINANCE | SCR-15, SCR-37, SCR-51, SCR-33 | BR-109, BR-110 | Integration: `payroll.test.js` › AC-073-08: chia thưởng chung theo phút trong ca; báo cáo tuần (lịch vs giờ được tính, sửa tay, % lương / doanh thu theo ca); Lãi/lỗ trừ lương theo chấm công, không tính tạm ứng thêm lần nữa — **PASS** | **PASS** |
 | AC-073-09 | TC-073-09 | F-073 | US-073-1 | ACT-ADMIN | UC-12 | MOD-FINANCE | SCR-51 | BR-110 | E2E: `flow.spec.js` › chấm công nhiều người + lương: nhân viên tự đặt PIN; màn Chấm công vào ca bằng PIN; chi tiền hỏi PIN người đứng máy; Đổi người; Giờ công của tôi; quản lý nhập hồ sơ lương ở trang Lương (F-072, F-073, AC-072-07, AC-073-09) — **PASS** | **PASS** |
+| AC-074-01 | TC-074-01 | F-074 | US-074-2 | ACT-ADMIN, ACT-LEAD | UC-05, UC-11 | MOD-BILLING, MOD-SHIFT, MOD-INVENTORY | SCR-13, SCR-15, SCR-47, SCR-54 | BR-112 | Integration: `offline-sales.test.js` › AC-074-01: bán mang đi gửi kèm mã lượt thu — gửi lại cùng mã (mạng chập chờn, bấm hai lần) trả đúng đơn đã ghi, không tạo đơn / lượt thu thứ hai — **PASS** | **PASS** |
+| AC-074-02 | TC-074-02 | F-074 | US-074-1 | ACT-STAFF, ACT-LEAD | UC-05 | MOD-ORDER, MOD-BILLING, MOD-INVENTORY | SCR-13, SCR-12 | BR-112 | Integration: `offline-sales.test.js` › AC-074-02: gửi bù → đơn mang đi "Đã xong", đúng giờ bán, đúng giá đã thu, ghi vào ca, trừ kho, có nhật ký; món đang tắt vẫn ghi; gửi lại → DUPLICATE; danh sách theo ca — **PASS** | **PASS** |
+| AC-074-03 | TC-074-03 | F-074 | US-074-2 | ACT-ADMIN, ACT-LEAD | UC-05, UC-11 | MOD-BILLING, MOD-SHIFT, MOD-INVENTORY | SCR-13, SCR-15, SCR-47, SCR-54 | BR-112 | Integration: `offline-sales.test.js` › AC-074-03: kho thiếu → vẫn ghi, chỉ trừ phần còn có (không âm), báo "Chưa trừ"; giá khác bảng giá → ghi đúng số đã thu + báo; một cảnh báo cho cả ca; chuyển khoản → cần đối chiếu; SĐT hội viên → cộng điểm, SĐT lạ → báo — **PASS** | **PASS** |
+| AC-074-04 | TC-074-04 | F-074 | US-074-2 | ACT-ADMIN, ACT-LEAD | UC-05, UC-11 | MOD-BILLING, MOD-SHIFT, MOD-INVENTORY | SCR-13, SCR-15, SCR-47, SCR-54 | BR-112 | Integration: `offline-sales.test.js` › AC-074-04: chặn dữ liệu sai — tổng không khớp, giờ bán tương lai, quá 72 giờ, tiền khách đưa thiếu, món đã xóa; phiếu bán tay chỉ trưởng ca / quản lý (7 ngày); ca lúc bán đã đóng → ghi vào ca mới + báo; chưa mở ca → 409 giữ lại gửi sau — **PASS** | **PASS** |
+| AC-074-05 | TC-074-05 | F-074 | US-074-1, US-074-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-05, UC-11 | MOD-ORDER, MOD-BILLING, MOD-INVENTORY, MOD-SHIFT | SCR-13, SCR-12, SCR-15, SCR-47, SCR-54 | BR-112 | E2E: `flow.spec.js` › bán khi mất mạng: máy quầy mất kết nối → tự chuyển "bán tạm" (giá niêm yết), thu tiền lưu đơn tạm T-… + in bill; có mạng lại tự gửi bù → đơn vào hệ thống, Ca & hoàn tiền có "Đơn bán lúc mất mạng"; quản lý nhập đơn từ phiếu bán tay (F-074, AC-074-05) — **PASS** | **PASS** |
 

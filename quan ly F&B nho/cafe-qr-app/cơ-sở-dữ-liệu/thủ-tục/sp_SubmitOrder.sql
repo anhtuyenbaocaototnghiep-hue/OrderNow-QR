@@ -7,6 +7,10 @@
 -- Lỗi: 50002 OUT_OF_STOCK (message = danh sách MenuItemId), 50010 ITEM_UNAVAILABLE (danh sách MenuItemId), 50011 EMPTY_ORDER,
 --      50012 INVALID_ORDER, 50020 INSUFFICIENT_AMOUNT, 50031 SESSION_CLOSED, 50034 AMOUNT_CHANGED,
 --      50060 PROMO_EXHAUSTED (message = PromotionId), 50070 NO_OPEN_SHIFT, 50080 MEMBER_NOT_FOUND.
+-- F-074 (ADR-032 D-141…D-143): @ClientRef = mã máy quầy tạo cho lượt thu (duy nhất — UX_Orders_ClientRef chặn ghi hai lần).
+--   @SaleSource 'OFFLINE' | 'PAPER' (chỉ mang đi) = đơn đã bán lúc mất mạng / ghi trên phiếu tay, gửi bù: ghi giờ bán thật (@SoldAt),
+--   không chặn món đang tắt / tùy chọn đang tắt (đã giao cho khách), kho thiếu thì KHÔNG từ chối — chỉ giữ / trừ phần còn có,
+--   trả danh sách nguyên liệu thiếu qua @StockShort để báo quản lý kiểm kho (tồn kho không bao giờ âm — CK_Ingredients_Stock).
 CREATE OR ALTER PROCEDURE dbo.sp_SubmitOrder
   @Type             VARCHAR(10),               -- 'DINE_IN' | 'TAKE_AWAY'
   @SessionId        UNIQUEIDENTIFIER = NULL,   -- dine-in
@@ -35,6 +39,10 @@ CREATE OR ALTER PROCEDURE dbo.sp_SubmitOrder
   @AcceptNow        BIT = 0,                  -- F-024: nhân viên nhập đơn tại bàn → vào thẳng PREPARING (đã tiếp nhận)
   @HoldMode         VARCHAR(10) = NULL,       -- F-066 (ADR-024 D-93): khách hẹn làm món 'TIME' | chờ bạn tới 'ARRIVAL' — đơn vẫn PENDING
   @HoldMinutes      INT = NULL,               --   giữ bao lâu (5–45 phút); ARRIVAL = tối đa
+  @ClientRef        UNIQUEIDENTIFIER = NULL,  -- F-074: mã lượt thu của máy quầy (chống ghi hai lần)
+  @SaleSource       VARCHAR(10) = NULL,       -- F-074: 'OFFLINE' | 'PAPER' — gửi bù đơn đã bán
+  @SoldAt           DATETIME2(0) = NULL,      -- F-074: giờ bán thật (chỉ khi gửi bù)
+  @StockShort       NVARCHAR(2000) = NULL OUTPUT, -- F-074: IngredientId thiếu kho lúc gửi bù (không trừ phần thiếu)
   @OrderId          INT OUTPUT,
   @OrderCode        CHAR(8) OUTPUT,
   @SessionReopened  BIT OUTPUT                 -- 1 nếu phiên đang PAYMENT_REQUESTED được đưa về OPEN (gọi thêm món)
@@ -56,6 +64,12 @@ BEGIN
   IF @MemberDiscount > 0 AND @MemberId IS NULL THROW 50012, 'INVALID_ORDER', 1;
   IF @ManualDiscount > 0 AND NULLIF(LTRIM(RTRIM(@ManualReason)), '') IS NULL THROW 50012, 'INVALID_ORDER', 1;
   IF (@OrderPromoDiscount > 0 AND @OrderPromotionId IS NULL) OR (@OrderPromoDiscount = 0 AND @OrderPromotionId IS NOT NULL) THROW 50012, 'INVALID_ORDER', 1;
+  -- F-074: gửi bù chỉ cho đơn mang đi đã thu, phải có mã lượt thu + giờ bán; giờ bán chỉ đi cùng gửi bù
+  IF (@SaleSource IS NOT NULL AND (@SaleSource NOT IN ('OFFLINE', 'PAPER') OR @Type <> 'TAKE_AWAY' OR @SoldAt IS NULL OR @ClientRef IS NULL))
+     OR (@SaleSource IS NULL AND @SoldAt IS NOT NULL)
+    THROW 50012, 'INVALID_ORDER', 1;
+  DECLARE @Backfill BIT = CASE WHEN @SaleSource IS NULL THEN 0 ELSE 1 END;
+  SET @StockShort = NULL;
 
   -- 0. Gom dòng về một dạng (@L)
   DECLARE @L TABLE (
@@ -114,14 +128,14 @@ BEGIN
     FROM (SELECT DISTINCT r.ReportId
           FROM @L l JOIN @Report r ON r.LineNum = l.LineNum
           LEFT JOIN dbo.MenuItems m ON m.MenuItemId = l.MenuItemId
-          WHERE m.MenuItemId IS NULL OR m.IsAvailable = 0 OR m.DeletedAt IS NOT NULL OR (l.ParentLineNum IS NULL AND m.IsActive = 0)
-             OR l.ListPrice IS NULL
+          WHERE m.MenuItemId IS NULL OR m.DeletedAt IS NOT NULL OR l.ListPrice IS NULL
+             OR (@Backfill = 0 AND (m.IsAvailable = 0 OR (l.ParentLineNum IS NULL AND m.IsActive = 0)))  -- gửi bù: món đã giao cho khách
           UNION
           SELECT r.ReportId
           FROM @LO o JOIN @Report r ON r.LineNum = o.LineNum
           LEFT JOIN dbo.ModifierOptions mo ON mo.OptionId = o.OptionId
           LEFT JOIN dbo.ModifierGroups g ON g.GroupId = mo.GroupId
-          WHERE mo.OptionId IS NULL OR mo.IsActive = 0 OR mo.DeletedAt IS NOT NULL OR g.DeletedAt IS NOT NULL) x);
+          WHERE mo.OptionId IS NULL OR mo.DeletedAt IS NOT NULL OR g.DeletedAt IS NOT NULL OR (@Backfill = 0 AND mo.IsActive = 0)) x);
   IF @Unavailable IS NOT NULL
   BEGIN ROLLBACK; THROW 50010, @Unavailable, 1; END
 
@@ -198,7 +212,13 @@ BEGIN
     LEFT JOIN dbo.tvf_ExpiredLotQty() ex ON ex.IngredientId = ing.IngredientId   -- F-028: lô hết hạn không bán
     WHERE ing.StockQty - ing.ReservedQty - ISNULL(ex.ExpiredQty, 0) >= n.Qty;
 
-    IF (SELECT COUNT(*) FROM @Reserved) <> @NeedCount
+    -- F-074: gửi bù — không từ chối đơn đã bán; chỉ giữ / trừ phần kho còn có, báo phần thiếu
+    IF @Backfill = 1 AND (SELECT COUNT(*) FROM @Reserved) <> @NeedCount
+    BEGIN
+      SET @StockShort = (SELECT STRING_AGG(CAST(IngredientId AS NVARCHAR(10)), ',') FROM @Need WHERE IngredientId NOT IN (SELECT IngredientId FROM @Reserved));
+      DELETE @Need WHERE IngredientId NOT IN (SELECT IngredientId FROM @Reserved);
+    END
+    IF (SELECT COUNT(*) FROM @Reserved) <> (SELECT COUNT(*) FROM @Need)
     BEGIN
       DECLARE @Short NVARCHAR(2000) = (
         SELECT STRING_AGG(CAST(x.ReportId AS NVARCHAR(10)), ',')
@@ -222,16 +242,17 @@ BEGIN
 
   -- 8. Ghi đơn
   INSERT dbo.Orders (OrderCode, SessionId, TableId, Type, Status, PaymentStatus, PaymentMethod, TotalAmount, SubtotalAmount, PromoDiscount,
-                     OrderPromotionId, MemberId, Note, CreatedBy, AcceptedAt, PaidAt, HoldMode, HoldUntil)
+                     OrderPromotionId, MemberId, Note, CreatedBy, AcceptedAt, PaidAt, HoldMode, HoldUntil, CreatedAt, ClientRef, SaleSource)
   VALUES (@OrderCode, @SessionId, @TableId, @Type,
           CASE WHEN @IsCash = 1 OR @AcceptNow = 1 THEN 'PREPARING' ELSE 'PENDING' END,
           CASE WHEN @IsCash = 1 THEN 'PAID' ELSE 'UNPAID' END,
           CASE WHEN @IsCash = 1 THEN @PaymentMethod END,
           @Total, @Subtotal, @Subtotal - @Total, @OrderPromotionId, @MemberId,
           NULLIF(LTRIM(RTRIM(@Note)), ''), @CreatedBy,
-          CASE WHEN @IsCash = 1 OR @AcceptNow = 1 THEN SYSUTCDATETIME() END,
-          CASE WHEN @IsCash = 1 THEN SYSUTCDATETIME() END,
-          @HoldMode, CASE WHEN @HoldMode IS NOT NULL THEN DATEADD(MINUTE, @HoldMinutes, SYSUTCDATETIME()) END);
+          CASE WHEN @IsCash = 1 OR @AcceptNow = 1 THEN ISNULL(@SoldAt, SYSUTCDATETIME()) END,
+          CASE WHEN @IsCash = 1 THEN ISNULL(@SoldAt, SYSUTCDATETIME()) END,
+          @HoldMode, CASE WHEN @HoldMode IS NOT NULL THEN DATEADD(MINUTE, @HoldMinutes, SYSUTCDATETIME()) END,
+          ISNULL(@SoldAt, SYSUTCDATETIME()), @ClientRef, @SaleSource);
   SET @OrderId = SCOPE_IDENTITY();
 
   -- Dòng khách chọn trước (theo LineNum), rồi dòng con combo. INSERT…SELECT…ORDER BY bảo đảm thứ tự cấp identity → ghép LineNum ↔ OrderItemId.
@@ -281,12 +302,12 @@ BEGIN
   BEGIN
     DECLARE @PaymentId INT;
     INSERT dbo.Payments (OrderId, Method, AmountDue, AmountReceived, ReceivedBy, MemberId, MemberPercent, SubtotalAmount, PromoDiscount,
-                         MemberDiscount, ManualDiscount, ManualReason, ApprovedBy, RoundingAdj, ShiftId, VoucherDiscount, RewardDiscount, VoucherId)
+                         MemberDiscount, ManualDiscount, ManualReason, ApprovedBy, RoundingAdj, ShiftId, VoucherDiscount, RewardDiscount, VoucherId, PaidAt)
     VALUES (@OrderId, @PaymentMethod, @AmountDue, @AmountReceived, @CreatedBy, @MemberId, @MemberPercent, @Subtotal, @Subtotal - @Total,
             @MemberDiscount, @ManualDiscount, NULLIF(LTRIM(RTRIM(@ManualReason)), ''), @ApprovedBy, @RoundingAdj, @ShiftId, @VoucherDiscount, @RewardDiscount,
-          TRY_CAST(JSON_VALUE(@LoyaltyJson, '$.voucherId') AS INT));
+          TRY_CAST(JSON_VALUE(@LoyaltyJson, '$.voucherId') AS INT), ISNULL(@SoldAt, SYSUTCDATETIME()));
     SET @PaymentId = SCOPE_IDENTITY();
-    UPDATE dbo.OrderItems SET PaidAt = SYSUTCDATETIME(), PaymentId = @PaymentId WHERE OrderId = @OrderId;
+    UPDATE dbo.OrderItems SET PaidAt = ISNULL(@SoldAt, SYSUTCDATETIME()), PaymentId = @PaymentId WHERE OrderId = @OrderId;
     IF @MemberId IS NOT NULL
       EXEC dbo.sp_ApplyMemberPayment @MemberId = @MemberId, @PaymentId = @PaymentId, @Spent = @AmountDue, @Discount = @MemberDiscount;
     IF @MemberId IS NOT NULL OR @LoyaltyJson IS NOT NULL

@@ -2673,3 +2673,68 @@ test('nhắc & báo quên chấm công: máy quầy nhắc người có lịch c
   await expect(P.locator('.pending-list li', { hasText: 'Tú E2E' }).filter({ hasText: 'báo quên chấm công' })).toHaveCount(0);
   await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'LOGIN', moneyPin: false }); // trả lại cho các test sau
 });
+
+test('bán khi mất mạng: máy quầy mất kết nối → tự chuyển "bán tạm" (giá niêm yết), thu tiền lưu đơn tạm T-… + in bill; có mạng lại tự gửi bù → đơn vào hệ thống, Ca & hoàn tiền có "Đơn bán lúc mất mạng"; quản lý nhập đơn từ phiếu bán tay (F-074, AC-074-05)', async ({
+  request,
+}) => {
+  await apiAs(request, 'post', '/api/admin/users', { username: 'e2e-offline', password: 'Pass@123', fullName: 'Thu ngân Mất Mạng', role: 'STAFF' });
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  const Q = await ctx.newPage();
+  watch(Q, 'offline');
+  try {
+    await Q.goto('/pos/login');
+    await Q.fill('#username', 'e2e-offline');
+    await Q.fill('#password', 'Pass@123');
+    await Q.click('#submit');
+    await expect(Q).toHaveURL(/\/pos$/);
+    await Q.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click();
+    await Q.goto('/pos/takeaway');
+    await Q.locator('#tabs').getByRole('button', { name: 'Trà & đồ uống khác' }).click();
+    const water = Q.getByRole('button', { name: /^Nước suối,/ });
+    await expect(water).toBeEnabled();
+
+    // Mất mạng: báo giá không tới máy chủ → chuyển sang bán tạm
+    await ctx.setOffline(true);
+    await water.click();
+    await expect(Q.locator('#offline-note')).toBeVisible();
+    await expect(Q.locator('#pay')).toHaveText('Thu tiền — lưu đơn tạm & In bill');
+    await expect(Q.locator('#billing-slot')).toBeHidden();
+    await Q.locator('#quick button').first().click(); // "Đủ tiền"
+    await Q.locator('#pay').click();
+    await expect(Q.locator('.toast', { hasText: 'Đã lưu đơn tạm T-0001' })).toBeVisible();
+    await expect(Q.locator('#offline-card')).toContainText('Đơn bán tạm chờ gửi (1)');
+    await expect(Q.locator('#offline-card')).toContainText('Thu ngân Mất Mạng');
+    await expect(Q.locator('#lines')).toContainText('Chạm vào món');
+
+    // Có mạng lại → tự gửi bù
+    await ctx.setOffline(false);
+    await expect(Q.locator('.toast', { hasText: 'Đã gửi 1 đơn bán tạm về hệ thống' })).toBeVisible({ timeout: 20_000 });
+    await expect(Q.locator('#offline-card')).toBeHidden();
+    await expect(Q.locator('#offline-note')).toBeHidden();
+
+    await Q.goto('/pos/shift');
+    const card = Q.locator('#offline-sales');
+    await expect(card).toContainText('Đơn bán lúc mất mạng (1)');
+    await expect(card).toContainText('(T-0001)');
+    await expect(card).toContainText('Thu ngân Mất Mạng');
+  } finally {
+    await ctx.close();
+  }
+
+  // Quản lý nhập lại đơn ghi trên phiếu bán tay
+  await P.goto('/pos/takeaway');
+  await P.getByRole('dialog')
+    .getByRole('button', { name: 'Bỏ qua' })
+    .click({ timeout: 3000 })
+    .catch(() => {});
+  await P.locator('label', { hasText: 'Nhập đơn từ phiếu bán tay' }).click();
+  await expect(P.locator('#paper-time')).toBeVisible();
+  await expect(P.locator('#pay')).toHaveText('Ghi đơn bán tay');
+  await P.locator('#tabs').getByRole('button', { name: 'Trà & đồ uống khác' }).click();
+  await P.getByRole('button', { name: /^Nước suối,/ }).click();
+  await P.locator('#quick button').first().click();
+  await P.locator('#pay').click();
+  await expect(P.locator('.toast', { hasText: 'Đã ghi đơn bán tay #' })).toBeVisible();
+  await P.locator('label', { hasText: 'Nhập đơn từ phiếu bán tay' }).click();
+  await expect(P.locator('#pay')).toHaveText('Thu tiền & In bill');
+});

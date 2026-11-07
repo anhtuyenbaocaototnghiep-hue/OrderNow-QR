@@ -6,7 +6,7 @@ const ORDER_SELECT = `
          o.PaymentStatus, o.PaymentMethod, o.TotalAmount, o.SubtotalAmount, o.PromoDiscount, o.OrderPromotionId, op.Name AS OrderPromotionName,
          o.MemberId, o.Note, o.CreatedBy, cu.FullName AS CreatedByName,
          o.CreatedAt, o.AcceptedAt, o.PaidAt, o.CompletedAt, o.CancelledAt, o.CancelReason, o.VoidedAt,
-         o.HoldMode, o.HoldUntil, o.ReleasedAt
+         o.HoldMode, o.HoldUntil, o.ReleasedAt, o.SaleSource
   FROM dbo.Orders o
   LEFT JOIN dbo.Tables t ON t.TableId = o.TableId
   LEFT JOIN dbo.Users cu ON cu.UserId = o.CreatedBy
@@ -38,6 +38,7 @@ const mapOrder = (r) => ({
   // F-066: hẹn giờ làm món — đang giữ = holdUntil có, releasedAt trống, chưa tới holdUntil
   holdMode: r.HoldMode ?? null,
   holdUntil: r.HoldUntil ?? null,
+  saleSource: r.SaleSource ?? null, // F-074: OFFLINE (bán lúc mất mạng, gửi bù) | PAPER (nhập lại từ phiếu bán tay)
   releasedAt: r.ReleasedAt ?? null,
   items: [],
 });
@@ -185,6 +186,8 @@ export async function submit({
   acceptNow = false,
   hold = null,
   pay = {},
+  backfill = null, // F-074: { clientRef, source: OFFLINE | PAPER, soldAt } — gửi bù đơn đã bán
+  clientRef = null, // F-074: mã lượt thu của máy quầy (cả lúc có mạng) — chống ghi hai lần
 }) {
   const tvp = new sql.Table('dbo.OrderLineInput');
   tvp.columns.add('LineNum', sql.Int, { nullable: false });
@@ -232,11 +235,20 @@ export async function submit({
     .input('AcceptNow', sql.Bit, acceptNow)
     .input('HoldMode', sql.VarChar(10), hold?.mode ?? null)
     .input('HoldMinutes', sql.Int, hold ? (hold.mode === 'ARRIVAL' ? 45 : hold.minutes) : null)
+    .input('ClientRef', sql.UniqueIdentifier, backfill?.clientRef ?? clientRef ?? null)
+    .input('SaleSource', sql.VarChar(10), backfill?.source ?? null)
+    .input('SoldAt', sql.DateTime2(0), backfill?.soldAt ?? null)
     .output('OrderId', sql.Int)
     .output('OrderCode', sql.Char(8))
     .output('SessionReopened', sql.Bit)
+    .output('StockShort', sql.NVarChar(2000))
     .execute('dbo.sp_SubmitOrder');
-  return { orderId: r.output.OrderId, orderCode: r.output.OrderCode, sessionReopened: Boolean(r.output.SessionReopened) };
+  return {
+    orderId: r.output.OrderId,
+    orderCode: r.output.OrderCode,
+    sessionReopened: Boolean(r.output.SessionReopened),
+    stockShort: r.output.StockShort ? r.output.StockShort.split(',').map(Number) : [],
+  };
 }
 
 /** F-066: đơn đang giữ (PENDING, có hẹn, chưa báo) → ghi lúc báo đã tới. Hết giờ giữ mà chưa báo vẫn ghi (khách tới muộn). → true nếu đổi */
@@ -263,9 +275,21 @@ export async function accept(orderId) {
 }
 
 /** sp_CompleteOrder → danh sách nguyên liệu đã trừ (kèm khả dụng sau trừ). */
-export async function complete(orderId, userId) {
-  const r = await (await request()).input('OrderId', sql.Int, orderId).input('UserId', sql.Int, userId).execute('dbo.sp_CompleteOrder');
+export async function complete(orderId, userId, completedAt = null) {
+  const r = await (
+    await request()
+  )
+    .input('OrderId', sql.Int, orderId)
+    .input('UserId', sql.Int, userId)
+    .input('CompletedAt', sql.DateTime2(0), completedAt) // F-074: gửi bù → giờ bán thật
+    .execute('dbo.sp_CompleteOrder');
   return r.recordset ?? [];
+}
+
+/** F-074: đơn đã ghi với mã lượt thu này (gửi lại / gửi bù) → OrderId | null. */
+export async function orderIdByClientRef(clientRef) {
+  const r = await query('SELECT OrderId FROM dbo.Orders WHERE ClientRef = @c', { c: [sql.UniqueIdentifier, clientRef] });
+  return r.recordset[0]?.OrderId ?? null;
 }
 
 export async function cancel(orderId, userId, reason) {

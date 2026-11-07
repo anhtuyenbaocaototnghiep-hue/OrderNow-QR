@@ -35,12 +35,16 @@ function idempotent(key, run) {
   return promise;
 }
 
-async function submitWithRetry(args) {
+/** F-074: lỗi trùng mã lượt thu (UX_Orders_ClientRef) — lượt thu này đã ghi rồi (gửi lại / gửi bù). */
+export const isDuplicateSale = (err) => [2601, 2627].includes(sqlErrorNumber(err)) && /UX_Orders_ClientRef/.test(err?.message ?? '');
+
+export async function submitWithRetry(args) {
   for (let attempt = 1; ; attempt++) {
     try {
       return await withDeadlockRetry(() => ordersRepo.submit(args));
     } catch (err) {
       const n = sqlErrorNumber(err);
+      if (isDuplicateSale(err)) throw conflict('DUPLICATE_SALE', 'Lượt thu này đã được ghi rồi');
       if ((n === 2627 || n === 2601) && attempt < 3) continue; // trùng OrderCode (rất hiếm) → sinh mã khác
       const appErr = fromSqlError(err);
       if (!appErr) throw err;
@@ -244,6 +248,11 @@ export async function takeawayQuote(body, user) {
  * ADR-005: bắt buộc ca mở (F-018), hội viên (F-014), giảm tay có ngưỡng (F-022); expectedAmountDue lệch → AMOUNT_CHANGED.
  */
 export async function takeaway(body, user) {
+  // F-074 (ADR-032 D-141): máy quầy gửi kèm mã lượt thu — gửi lại (mạng chập chờn, bấm hai lần) trả đúng đơn đã ghi, không tạo đơn thứ hai
+  if (body.clientRef) {
+    const existing = await ordersRepo.orderIdByClientRef(body.clientRef);
+    if (existing) return existingSale(existing);
+  }
   const shift = await requireOpenShift();
   const calc = await takeawayTotals(body, user.role);
   const { priced, totals } = calc;
@@ -256,6 +265,7 @@ export async function takeaway(body, user) {
   try {
     ({ orderId } = await submitWithRetry({
       type: 'TAKE_AWAY',
+      clientRef: body.clientRef ?? null,
       createdBy: user.userId,
       paymentMethod: body.method ?? 'CASH',
       note: body.note,
@@ -280,6 +290,7 @@ export async function takeaway(body, user) {
     }));
   } catch (err) {
     if (err.code === 'PROMO_EXHAUSTED') throw conflict('AMOUNT_CHANGED', 'Khuyến mãi vừa hết lượt hôm nay — tổng tiền đã thay đổi, vui lòng kiểm tra lại');
+    if (err.code === 'DUPLICATE_SALE') return existingSale(await ordersRepo.orderIdByClientRef(body.clientRef));
     throw err;
   }
   if (usesPromotion(priced)) invalidatePromotions();
@@ -289,6 +300,12 @@ export async function takeaway(body, user) {
   publishOrderEvent('order.created', order, { order });
   refreshAvailability();
   return { order, payment, totals };
+}
+
+/** F-074: lượt thu đã ghi trước đó (cùng mã lượt thu) → trả lại như lần đầu, đánh dấu `duplicate`. */
+async function existingSale(orderId) {
+  const [order, payment] = await Promise.all([ordersRepo.getById(orderId), ordersRepo.paymentForOrder(orderId)]);
+  return { order, payment, totals: null, duplicate: true };
 }
 
 /** Dòng in bill: dòng khách chọn + tùy chọn + thành phần combo (giá 0). */

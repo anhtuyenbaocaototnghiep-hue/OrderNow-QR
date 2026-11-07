@@ -1505,3 +1505,48 @@ body.pos .tc-main .btn {
   border-color: #efd5a6;
   flex-wrap: wrap;
 }
+
+/* F-074 (ADR-032): bán tạm khi mất kết nối, phiếu bán tay */
+.offline-note {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.6rem 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #efd5a6;
+  border-radius: var(--radius-sm);
+  background: var(--c-warning-50);
+  color: var(--c-warning-text);
+}
+.offline-note p {
+  margin: 0;
+}
+.paper-toggle {
+  margin-top: 0.75rem;
+}
+.paper-box {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+.paper-box p {
+  margin: 0;
+}
+#blank-form {
+  display: block;
+  margin-top: 0.6rem;
+  font-weight: 500;
+}
+.offline-card {
+  margin-top: 1rem;
+  border-color: #efd5a6;
+  background: var(--c-warning-50);
+}
+.offline-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+.offline-list li {
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed #efd5a6;
+}

@@ -84,11 +84,13 @@ staffRouter.post('/orders/takeaway', async (req, res) => {
     payBody({
       items: zOrderItems(),
       note: zText(200).optional().nullable(),
+      clientRef: z.uuid('Mã lượt thu không hợp lệ').optional(), // F-074: chống ghi hai lần khi gửi lại
       ...billingFields,
     }),
     req.body,
   );
-  res.status(201).json(await orderService.takeaway(body, req.user));
+  const r = await orderService.takeaway(body, req.user);
+  res.status(r.duplicate ? 200 : 201).json(r);
 });
 
 staffRouter.post('/orders/:id/accept', async (req, res) => {

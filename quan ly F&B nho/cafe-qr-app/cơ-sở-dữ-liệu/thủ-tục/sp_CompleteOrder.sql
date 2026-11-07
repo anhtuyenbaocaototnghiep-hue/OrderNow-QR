@@ -4,9 +4,11 @@
 --   cost.method = FIFO); giá vốn đơn chia cho các dòng món (OrderItems.CogsAmount) theo định lượng × giá vốn — chốt lúc hoàn tất (D-21).
 -- Lỗi: 50001 ALREADY_PROCESSED, 50002 OUT_OF_STOCK, 50003 INVALID_STATE, 50004 ORDER_NOT_FOUND, 50122 LOT_SHORT.
 -- Trả về result set: nguyên liệu đã trừ + khả dụng sau trừ (để app phát inventory.low).
+-- F-074 (ADR-032 D-142): @CompletedAt = giờ bán thật khi gửi bù đơn đã bán lúc mất mạng (mặc định: bây giờ).
 CREATE OR ALTER PROCEDURE dbo.sp_CompleteOrder
-  @OrderId INT,
-  @UserId  INT
+  @OrderId     INT,
+  @UserId      INT,
+  @CompletedAt DATETIME2(0) = NULL
 AS
 BEGIN
   SET NOCOUNT ON; SET XACT_ABORT ON;
@@ -14,7 +16,7 @@ BEGIN
 
   -- 1. Đổi trạng thái có điều kiện: chỉ một client thắng
   UPDATE dbo.Orders
-     SET Status = 'COMPLETED', CompletedAt = SYSUTCDATETIME(), CompletedBy = @UserId
+     SET Status = 'COMPLETED', CompletedAt = ISNULL(@CompletedAt, SYSUTCDATETIME()), CompletedBy = @UserId
    WHERE OrderId = @OrderId AND Status = 'PREPARING';
 
   IF @@ROWCOUNT = 0

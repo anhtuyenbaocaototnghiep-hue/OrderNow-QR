@@ -60,6 +60,7 @@ export async function recomputePrepStats(days = 30) {
                WHERE x.OrderId = o.OrderId AND mx.ItemType = 'SINGLE') AS Lines
        FROM dbo.Orders o
        WHERE o.Status IN ('COMPLETED', 'VOIDED') AND o.AcceptedAt IS NOT NULL AND o.CompletedAt IS NOT NULL
+         AND o.SaleSource IS NULL -- F-074: đơn gửi bù không có thời gian pha thật
          AND o.CompletedAt >= DATEADD(DAY, -@days, SYSUTCDATETIME())),
      Samples AS (
        SELECT oi.MenuItemId, CAST(d.Dur AS FLOAT) / d.Lines AS Sec

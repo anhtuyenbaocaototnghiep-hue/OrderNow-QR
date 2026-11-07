@@ -2,10 +2,12 @@
 // F-056 (ADR-019 D-72): tiền mặt và chuyển khoản tách riêng — két chỉ tính tiền mặt.
 // Hoàn tiền sau thu (FEATURE-019, D-15): chọn lượt thu → số tiền, lý do, đơn bị hủy, hoàn kho; nhân viên cần quản lý nhập tài khoản.
 // ADR-006: sổ quỹ ca — chi tiền / thu khác, duyệt khoản chờ (F-033); trưởng ca / quản lý sửa chấm công trong ngày (F-035, F-036).
+// F-074 (ADR-032): danh sách đơn bán lúc mất mạng / phiếu bán tay ghi vào ca + việc cần kiểm; đóng ca khi máy này còn đơn bán tạm chưa gửi → nhắc.
 import { staffApi } from '../api.js';
 import { attendanceDialog, attendanceTable } from '../attendance.js';
 import { getToken, logout } from '../auth.js';
 import { cashBookTable, cashEntryDialog } from '../cash-book.js';
+import { pendingSales, syncPending } from '../offline-sales.js';
 import { mountPosShell } from '../pos-shell.js';
 import { connectRealtime } from '../socket.js';
 import { $, clear, dateTime, el, errorMessage, modal, money, moneyInput, moneyValue, setMoney, statusBadge, time, toast, todayVn } from '../ui.js';
@@ -44,11 +46,12 @@ async function load() {
   let data;
   try {
     const today = todayVn();
-    const [report, attendance] = await Promise.all([
+    const [report, attendance, offline] = await Promise.all([
       staffApi(`/api/shifts/${shift.shiftId}/report`),
       isLead ? staffApi(`/api/attendance?from=${today}&to=${today}`) : null,
+      staffApi(`/api/offline-sales?shiftId=${shift.shiftId}`).catch(() => []), // phần phụ — lỗi thì bỏ qua, không làm hỏng cả trang Ca
     ]);
-    data = { ...report, attendance };
+    data = { ...report, attendance, offline };
   } catch (err) {
     if (my !== loadSeq || closedReport) return;
     clear(main, el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -137,6 +140,7 @@ function render(data) {
       ),
     ),
     summary(data),
+    offlineCard(data.offline),
     cashCard(data, true),
     data.attendance ? attendanceCard(data.attendance) : null,
     el(
@@ -251,6 +255,60 @@ function renderClosed(data) {
       shift.note ? el('p', {}, `Ghi chú: ${shift.note}`) : null,
       summary(data),
       cashCard(data, false),
+    ),
+  );
+}
+
+// ---- F-074: đơn bán lúc mất mạng / phiếu bán tay ghi vào ca này ----
+function offlineCard(rows) {
+  if (!rows?.length) return null;
+  const total = rows.reduce((sum, r) => sum + r.amountDue, 0);
+  const toCheck = rows.filter((r) => r.issues.length).length;
+  return el(
+    'section',
+    { class: 'card', id: 'offline-sales', style: { marginTop: '1rem' } },
+    el('h2', {}, `Đơn bán lúc mất mạng (${rows.length}) · ${money(total)}`),
+    el(
+      'p',
+      { class: 'small muted' },
+      toCheck
+        ? `${toCheck} đơn cần kiểm — giá khác bảng giá: hỏi người bán; kho chưa trừ: kiểm kho lại; chuyển khoản: đối chiếu app ngân hàng; ghi vào ca khác: két ca trước sẽ lệch đúng số này.`
+        : 'Không có đơn nào cần kiểm.',
+    ),
+    el(
+      'div',
+      { class: 'table-wrap' },
+      el(
+        'table',
+        { class: 'table' },
+        el(
+          'thead',
+          {},
+          el('tr', {}, ...['Đơn', 'Giờ bán', 'Người bán', 'Tiền', 'Cách trả', 'Cần kiểm'].map((h, i) => el('th', { class: i === 3 ? 'num' : '' }, h))),
+        ),
+        el(
+          'tbody',
+          {},
+          rows.map((r) =>
+            el(
+              'tr',
+              {},
+              el(
+                'td',
+                {},
+                el('span', { class: 'mono' }, `#${r.orderCode}`),
+                r.localCode ? ` (${r.localCode})` : '',
+                r.source === 'PAPER' ? ' · phiếu tay' : '',
+              ),
+              el('td', {}, dateTime(r.soldAt)),
+              el('td', {}, r.soldBy.fullName),
+              el('td', { class: 'num' }, money(r.amountDue)),
+              el('td', {}, methodBadge(r.method)),
+              el('td', { class: 'small' }, r.issues.length ? r.issues.map((i) => el('div', { class: i.code === 'TRANSFER_CHECK' ? '' : 'neg' }, i.text)) : '—'),
+            ),
+          ),
+        ),
+      ),
     ),
   );
 }
@@ -375,6 +433,30 @@ async function attendanceCheck(shift) {
 }
 
 async function closeShift(shift) {
+  // F-074: máy này còn đơn bán tạm chưa gửi → tiền của các đơn đó chưa vào ca, két sẽ lệch
+  const queued = pendingSales();
+  if (queued.length) {
+    const choice = await modal({
+      title: 'Còn đơn bán tạm chưa gửi',
+      body: el(
+        'p',
+        {},
+        `Máy này còn ${queued.length} đơn bán lúc mất mạng (${money(queued.reduce((sum, q) => sum + q.total, 0))}) chưa gửi về hệ thống. Gửi trước rồi hãy đóng ca để tiền khớp két — đóng ca bây giờ thì các đơn này sẽ ghi vào ca sau.`,
+      ),
+      actions: [
+        { label: 'Hủy', value: 'cancel' },
+        { label: 'Vẫn đóng ca', value: 'close' },
+        { label: 'Gửi ngay', class: 'btn-primary', value: 'sync' },
+      ],
+    }).result;
+    if (choice === 'sync') {
+      const r = await syncPending();
+      toast(r.left ? `Đã gửi ${r.sent}, còn ${r.left} đơn chưa gửi được` : `Đã gửi ${r.sent} đơn bán tạm`, r.left ? 'warning' : 'success');
+      await shell.reloadShift();
+      return load();
+    }
+    if (choice !== 'close') return;
+  }
   const counted = moneyInput({ id: 'counted', 'aria-label': 'Tiền đếm thực tế' });
   const note = el('input', { class: 'input', maxlength: 200, placeholder: 'Ghi chú (không bắt buộc)' });
   const diff = el('div', { class: 'change' });

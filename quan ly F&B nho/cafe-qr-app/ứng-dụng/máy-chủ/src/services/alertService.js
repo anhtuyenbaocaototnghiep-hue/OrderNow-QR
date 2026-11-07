@@ -216,6 +216,32 @@ async function immediateAlert(a) {
   return (await newAlert(a)) ?? alertsRepo.findAlertByKey(a.dedupeKey);
 }
 
+/**
+ * F-074 (ADR-032 D-145): đơn bán lúc mất mạng gửi bù có chuyện cần kiểm (giá lệch bảng giá, kho thiếu, ghi vào ca khác) → một cảnh báo
+ * mỗi ca (khóa theo ca được ghi) — danh sách đầy đủ ở màn Ca & hoàn tiền. Đối chiếu chuyển khoản không tạo cảnh báo (đã hiện trong danh sách).
+ */
+export const onOfflineSale = (info) => withDeadlockRetry(() => checkOfflineSale(info));
+
+const OFFLINE_ISSUE = { PRICE_DIFF: 'Giá khác bảng giá hiện tại', STOCK_SHORT: 'Kho không đủ — chưa trừ phần thiếu', SHIFT_LATE: 'Ghi vào ca khác ca lúc bán' };
+
+async function checkOfflineSale({ shiftId, user, orderCode, issues }) {
+  const real = issues.filter((i) => OFFLINE_ISSUE[i.code]);
+  if (!real.length) return { alert: null, email: null };
+  const s = await getSettings();
+  const alert = await immediateAlert({
+    kind: 'OFFLINE_SALE',
+    severity: 'MEDIUM',
+    shiftId,
+    userId: user?.userId ?? null,
+    title: `Đơn bán lúc mất mạng cần kiểm — ca #${shiftId}`,
+    detail: { orderCode, issues: real.map((i) => ({ code: i.code, label: OFFLINE_ISSUE[i.code], text: i.text })) },
+    dedupeKey: `OFFLINE:${shiftId}`,
+  });
+  if (!alert) return { alert: null, email: null };
+  const rows = [['Ca', `#${shiftId}`, false], ['Đơn đầu tiên', `#${orderCode}`, false], ...real.map((i) => [OFFLINE_ISSUE[i.code], i.text, true])];
+  return { alert, email: await enqueueImmediate(s, alert, rows, 'Xem đủ danh sách ở Ca & hoàn tiền → Đơn bán lúc mất mạng. ' + DISCLAIMER) };
+}
+
 /** Hoàn tiền từ mức "lớn" trở lên → cảnh báo tức thì. refund: bản ghi vừa tạo; user: người thao tác. */
 export const onRefund = (refund, opts) => withDeadlockRetry(() => checkRefund(refund, opts));
 

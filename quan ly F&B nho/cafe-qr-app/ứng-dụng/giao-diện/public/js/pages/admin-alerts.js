@@ -20,6 +20,7 @@ const KIND = {
   CASH_VOID: 'Sửa / hủy sổ quỹ',
   COST_RISE: 'Giá vốn tăng',
   AUTH_LOCK: 'Sai mật khẩu nhiều lần',
+  OFFLINE_SALE: 'Bán lúc mất mạng cần kiểm', // F-074
 };
 const STATUS = { NEW: 'Mới', SEEN: 'Đã xem', RESOLVED: 'Đã xử lý' };
 const state = { status: 'NEW' };
@@ -152,6 +153,11 @@ function facts(a) {
     lines.push(
       `${{ LOGIN: 'Đăng nhập', APPROVAL: 'Tài khoản duyệt ở quầy', PIN: 'PIN ở quầy' }[d.kind]} "${d.username}": sai ${d.count} lần trong ${d.windowMinutes} phút — tạm khóa`,
       d.kind === 'LOGIN' ? `Máy gửi: ${d.ip ?? '?'}` : `Người đứng quầy nhập: ${d.actor ?? '?'}`,
+    );
+  else if (a.kind === 'OFFLINE_SALE')
+    lines.push(
+      `Đơn #${d.orderCode}: ${(d.issues ?? []).map((i) => `${i.label} — ${i.text}`).join('; ')}`,
+      'Danh sách đủ ở máy quầy → Ca & hoàn tiền → Đơn bán lúc mất mạng',
     );
   else if (a.kind === 'CASH_VOID')
     lines.push(
