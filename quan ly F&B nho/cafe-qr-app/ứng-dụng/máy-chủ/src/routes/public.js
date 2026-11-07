@@ -37,7 +37,13 @@ publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
 // F-072: `attendance` — chấm công bằng màn chung (KIOSK) hay theo đăng nhập; có cần PIN cho thao tác tiền không
 publicRouter.get('/auth/me', requireStaff, async (req, res) => {
   const s = await settingsService.getSettings();
-  res.json({ user: req.user, shop: await settingsService.shopInfo(), modules: s.uiModules, attendance: { mode: s.attendanceMode, moneyPin: s.moneyPin } });
+  res.json({
+    user: req.user,
+    shop: await settingsService.shopInfo(),
+    modules: s.uiModules,
+    attendance: { mode: s.attendanceMode, moneyPin: s.moneyPin },
+    pos: { oneTap: s.oneTap }, // F-076
+  });
 });
 // F-061 (ADR-021 D-80): xem xong / bỏ qua hướng dẫn 5 bước ở màn quầy — lưu theo tài khoản
 publicRouter.post('/auth/tour-seen', requireStaff, async (req, res) => res.json({ tourSeenAt: await usersRepo.markTourSeen(req.user.userId) }));

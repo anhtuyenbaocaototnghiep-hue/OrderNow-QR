@@ -11,7 +11,7 @@ import { mountPosShell } from '../pos-shell.js';
 import { startTour } from '../pos-tour.js';
 import { printUrl } from '../print.js';
 import { connectRealtime } from '../socket.js';
-import { getToken } from '../auth.js';
+import { current, getToken } from '../auth.js';
 import {
   $,
   breakdownRows,
@@ -42,6 +42,13 @@ const shiftGate = () => (shell.shift ? {} : { disabled: true, title: NO_SHIFT_HI
 
 const state = { orders: new Map(), sessions: [], tables: [], calls: [], lowReviews: [], fresh: new Set(), drawer: null };
 const COLUMNS = ['PENDING', 'PREPARING', 'COMPLETED'];
+// F-076 (ADR-034): quy trình 1 chạm — "Mới" + "Đang pha" gộp thành "Cần làm", mỗi đơn một nút "Xong" (= nhận + hoàn tất)
+const oneTap = Boolean(current.pos?.oneTap);
+if (oneTap) {
+  $('#board').classList.add('one-tap');
+  $('#h-pending').textContent = 'Cần làm';
+  $('.col-preparing').hidden = true;
+}
 
 // ---------- Tải ảnh chụp ----------
 async function loadOrders() {
@@ -232,7 +239,13 @@ function ticket(o) {
   if (isHeld(o)) return heldTicket(o);
   const actions = [];
   const gate = shiftGate();
-  if (o.status === 'PENDING') {
+  if (oneTap && (o.status === 'PENDING' || o.status === 'PREPARING')) {
+    // F-076: một nút — đơn mới thì nhận + hoàn tất, đơn đang pha (mang đi đã thu) thì hoàn tất
+    const done = (btn) => (o.status === 'PENDING' ? acceptAndComplete(o, btn) : complete(o, btn));
+    actions.push(el('button', { class: 'btn btn-success btn-done', type: 'button', ...gate, onclick: (e) => act(e, () => done(e.currentTarget)) }, 'Xong'));
+    if (o.status === 'PENDING')
+      actions.push(el('button', { class: 'btn btn-danger', type: 'button', ...gate, onclick: (e) => act(e, () => cancelOrder(o)) }, 'Hủy'));
+  } else if (o.status === 'PENDING') {
     actions.push(el('button', { class: 'btn btn-primary', type: 'button', ...gate, onclick: (e) => act(e, () => accept(o, e.currentTarget)) }, 'Tiếp nhận'));
     actions.push(
       el('button', { class: 'btn', type: 'button', ...gate, onclick: (e) => act(e, () => acceptAndComplete(o, e.currentTarget)) }, 'Tiếp nhận & Hoàn tất'),
@@ -328,7 +341,11 @@ function ticketNode(o) {
   return node;
 }
 
-const EMPTY_TEXT = { PENDING: 'Chưa có đơn mới', PREPARING: 'Không có đơn đang pha', COMPLETED: 'Chưa có đơn xong hôm nay' };
+const EMPTY_TEXT = {
+  PENDING: oneTap ? 'Không có đơn cần làm' : 'Chưa có đơn mới',
+  PREPARING: 'Không có đơn đang pha',
+  COMPLETED: 'Chưa có đơn xong hôm nay',
+};
 
 function renderBoard() {
   const byStatus = { PENDING: [], PREPARING: [], COMPLETED: [] };
@@ -337,6 +354,12 @@ function renderBoard() {
   // F-066: đơn đang giữ xuống cuối cột Mới, cái tới giờ trước nằm trên
   const held = byStatus.PENDING.filter((o) => isHeld(o)).sort((a, b) => new Date(a.holdUntil) - new Date(b.holdUntil));
   byStatus.PENDING = [...byStatus.PENDING.filter((o) => !isHeld(o)), ...held];
+  if (oneTap) {
+    // F-076: "Cần làm" = đơn mới + đơn đang pha, chờ lâu nhất trên cùng; đơn đang giữ vẫn ở cuối
+    const ready = [...byStatus.PENDING.filter((o) => !isHeld(o)), ...byStatus.PREPARING].sort((a, b) => new Date(readySince(a)) - new Date(readySince(b)));
+    byStatus.PENDING = [...ready, ...held];
+    byStatus.PREPARING = [];
+  }
   for (const id of ticketCache.keys()) if (!state.orders.has(id)) ticketCache.delete(id);
   for (const s of COLUMNS) {
     $(`#count-${s}`).textContent = byStatus[s].length;
@@ -429,8 +452,12 @@ function openOrder(orderId) {
   if (o.type === 'TAKE_AWAY') actions.push({ label: 'In lại bill', onClick: () => printUrl(`/pos/orders/${o.orderId}/receipt`) });
   if (o.sessionId) actions.push({ label: 'Mở bàn / Thu tiền', onClick: () => openSettle(o.sessionId) });
   // F-055: chưa mở ca thì chi tiết đơn không có nút xử lý (review G3 TASK-072)
-  if (o.status === 'PENDING' && shell.shift) actions.push({ label: 'Tiếp nhận', class: 'btn-primary', onClick: () => accept(o, null) });
-  if (o.status === 'PREPARING' && shell.shift) actions.push({ label: 'Hoàn tất', class: 'btn-success', onClick: () => complete(o, null) });
+  if (oneTap && shell.shift && (o.status === 'PENDING' || o.status === 'PREPARING')) {
+    actions.push({ label: 'Xong', class: 'btn-success', onClick: () => (o.status === 'PENDING' ? acceptAndComplete(o, null) : complete(o, null)) });
+  } else {
+    if (o.status === 'PENDING' && shell.shift) actions.push({ label: 'Tiếp nhận', class: 'btn-primary', onClick: () => accept(o, null) });
+    if (o.status === 'PREPARING' && shell.shift) actions.push({ label: 'Hoàn tất', class: 'btn-success', onClick: () => complete(o, null) });
+  }
   modal({
     title: `Đơn #${o.orderCode}`,
     drawer: true,

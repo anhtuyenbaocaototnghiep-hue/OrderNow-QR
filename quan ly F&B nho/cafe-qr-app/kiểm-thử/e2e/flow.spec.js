@@ -2777,3 +2777,28 @@ test('hạn dùng nguyên liệu: quản lý đặt "hộp 100 ml, mở rồi d�
   await expect(exp).toContainText('Tháng này đã hủy vì hết hạn');
   await apiAs(request, 'put', `/api/admin/ingredients/${coffee.ingredientId}/advanced`, { kind: 'RAW', wastePercent: 0, packSize: null, openShelfHours: null }); // trả lại
 });
+
+test('quy trình 1 chạm: quản lý bật ở Cài đặt → màn Đơn hàng chỉ còn cột "Cần làm" (không còn "Đang pha"), mỗi đơn một nút "Xong" → đơn sang "Đã xong hôm nay" (F-076, AC-076-03)', async ({
+  request,
+}) => {
+  await P.goto('/admin/settings');
+  await P.locator('label', { hasText: 'Quy trình 1 chạm' }).click();
+  await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+  await expect(P.locator('.toast').first()).toBeVisible();
+  const sale = await apiAs(request, 'post', '/api/orders/takeaway', { items: [{ menuItemId: ids['Nước suối'], quantity: 1 }], amountReceived: 50_000 });
+
+  await P.goto('/pos');
+  await P.getByRole('dialog')
+    .getByRole('button', { name: 'Bỏ qua' })
+    .click({ timeout: 3000 })
+    .catch(() => {});
+  await expect(P.locator('#h-pending')).toHaveText('Cần làm');
+  await expect(P.locator('.col-preparing')).toBeHidden();
+  const card = P.locator('#col-PENDING .ticket', { hasText: `#${sale.order.orderCode}` });
+  await expect(card).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Tiếp nhận' })).toHaveCount(0);
+  await card.getByRole('button', { name: 'Xong' }).click();
+  await expect(P.locator('.toast', { hasText: `Đã hoàn tất #${sale.order.orderCode}` })).toBeVisible();
+  await expect(P.locator('#col-COMPLETED')).toContainText(`#${sale.order.orderCode}`);
+  await apiAs(request, 'put', '/api/admin/settings', { oneTap: false }); // trả lại 3 cột cho các test sau
+});

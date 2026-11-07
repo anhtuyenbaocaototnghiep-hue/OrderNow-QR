@@ -51,17 +51,26 @@ export async function queueLines() {
 /**
  * Job 02:00: trung vị 30 ngày của (CompletedAt − AcceptedAt) ÷ số dòng món SINGLE của đơn, theo món. Ghi đè ItemPrepStats.
  * Bỏ đơn bất thường (≤ 0 hoặc > 2 giờ). Trả số món có thống kê.
+ * F-076 (ADR-034 D-155): đơn nhận + xong cùng lúc (quy trình 1 chạm / "Tiếp nhận & Hoàn tất", cách nhau < 10 giây) không có giờ bắt đầu pha
+ *   → thời gian làm = từ lúc có thể bắt đầu (đơn sẵn sàng — tới / hết giữ — hoặc đơn trước vừa xong, lấy cái muộn hơn) tới lúc xong.
  */
 export async function recomputePrepStats(days = 30) {
   const r = await query(
-    `WITH OrderDur AS (
-       SELECT o.OrderId, DATEDIFF(SECOND, o.AcceptedAt, o.CompletedAt) AS Dur,
-              (SELECT COUNT(*) FROM dbo.OrderItems x JOIN dbo.MenuItems mx ON mx.MenuItemId = x.MenuItemId
-               WHERE x.OrderId = o.OrderId AND mx.ItemType = 'SINGLE') AS Lines
+    `WITH Base AS (
+       SELECT o.OrderId, o.AcceptedAt, o.CompletedAt,
+              CASE WHEN o.HoldMode IS NOT NULL THEN COALESCE(o.ReleasedAt, o.HoldUntil, o.CreatedAt) ELSE o.CreatedAt END AS ReadyAt,
+              LAG(o.CompletedAt) OVER (ORDER BY o.CompletedAt, o.OrderId) AS PrevDone
        FROM dbo.Orders o
        WHERE o.Status IN ('COMPLETED', 'VOIDED') AND o.AcceptedAt IS NOT NULL AND o.CompletedAt IS NOT NULL
          AND o.SaleSource IS NULL -- F-074: đơn gửi bù không có thời gian pha thật
          AND o.CompletedAt >= DATEADD(DAY, -@days, SYSUTCDATETIME())),
+     OrderDur AS (
+       SELECT b.OrderId,
+              CASE WHEN DATEDIFF(SECOND, b.AcceptedAt, b.CompletedAt) >= 10 THEN DATEDIFF(SECOND, b.AcceptedAt, b.CompletedAt)
+                   ELSE DATEDIFF(SECOND, CASE WHEN b.PrevDone > b.ReadyAt THEN b.PrevDone ELSE b.ReadyAt END, b.CompletedAt) END AS Dur,
+              (SELECT COUNT(*) FROM dbo.OrderItems x JOIN dbo.MenuItems mx ON mx.MenuItemId = x.MenuItemId
+               WHERE x.OrderId = b.OrderId AND mx.ItemType = 'SINGLE') AS Lines
+       FROM Base b),
      Samples AS (
        SELECT oi.MenuItemId, CAST(d.Dur AS FLOAT) / d.Lines AS Sec
        FROM OrderDur d JOIN dbo.OrderItems oi ON oi.OrderId = d.OrderId JOIN dbo.MenuItems m ON m.MenuItemId = oi.MenuItemId AND m.ItemType = 'SINGLE'

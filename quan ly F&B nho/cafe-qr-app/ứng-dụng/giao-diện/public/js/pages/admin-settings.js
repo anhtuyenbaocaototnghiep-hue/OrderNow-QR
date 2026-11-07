@@ -188,6 +188,8 @@ function render(s) {
     ['advanced', 'Công cụ nâng cao', 'Lịch thực đơn, Nhật ký thao tác, Tra cứu API'],
   ];
   const moduleChecks = MODULE_GROUPS.map(([key]) => el('input', { type: 'checkbox', name: `module-${key}`, value: key, checked: s.uiModules.includes(key) }));
+  // F-076 (ADR-034): quy trình 1 chạm ở màn Đơn hàng
+  const oneTapCheck = el('input', { type: 'checkbox', name: 'oneTap', id: 'one-tap', checked: s.oneTap });
   const card = (title, ...children) =>
     el('div', { class: 'card', style: { maxWidth: '720px', marginBottom: '1rem' } }, el('h2', { style: { fontSize: '1rem' } }, title), ...children);
   clear(
@@ -204,6 +206,20 @@ function render(s) {
         'p',
         { class: 'small muted' },
         'Hiện ở thanh quầy, thanh bên quản lý, đầu trang menu khách, hóa đơn, phiếu đặt hàng và thẻ QR in. Màn đang mở ở máy khác đổi theo khi tải lại.',
+      ),
+    ),
+    card(
+      'Màn Đơn hàng ở quầy',
+      el(
+        'label',
+        { class: 'check' },
+        oneTapCheck,
+        el('span', {}, el('strong', {}, 'Quy trình 1 chạm'), ' — gộp "Mới" và "Đang pha" thành một cột "Cần làm", mỗi đơn chỉ một nút "Xong"'),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Hợp với quán nhỏ 1–2 người pha: bấm Xong là nhận đơn, hoàn tất, trừ kho và báo khách "Món đã xong" cùng lúc. Quán đông nhiều người pha thì tắt để dùng 3 cột (Mới → Đang pha → Xong). Màn quầy đang mở đổi theo khi tải lại.',
       ),
     ),
     card(
@@ -383,6 +399,7 @@ function render(s) {
                 alertCostMarginMin: numOrKeep(alertCostMarginMin),
                 alertUseStats: alertUseStats.checked,
                 uiModules: moduleChecks.filter((c) => c.checked).map((c) => c.value), // F-061
+                oneTap: oneTapCheck.checked, // F-076
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,
                 staffMaxPercent: Number(maxPct.value),

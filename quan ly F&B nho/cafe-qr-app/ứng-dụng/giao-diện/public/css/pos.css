@@ -1554,3 +1554,19 @@ body.pos .tc-main .btn {
 .pos-alerts > .banner.push-items {
   border-color: #c3d5e8;
 }
+
+/* F-076 (ADR-034): quy trình 1 chạm — một cột "Cần làm", phiếu xếp lưới cho đỡ cuộn; nút "Xong" lớn */
+.board.one-tap {
+  grid-template-columns: minmax(0, 1fr);
+}
+.board.one-tap .column-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.6rem;
+  align-content: start;
+}
+.board.one-tap .btn-done {
+  flex: 1 1 auto;
+  min-height: 2.75rem;
+  font-size: 1.05rem;
+}

@@ -5,18 +5,19 @@ import { clearStaffSession, getToken } from './auth-store.js';
 import { confirmDialog } from './ui.js';
 
 /** Thông tin phiên hiện tại sau requireStaffPage(): { user, shop, modules } — modules: nhóm menu nâng cao đang bật (F-061). */
-export const current = { user: null, shop: null, modules: [], attendance: { mode: 'LOGIN', moneyPin: false } };
+export const current = { user: null, shop: null, modules: [], attendance: { mode: 'LOGIN', moneyPin: false }, pos: { oneTap: false } };
 
 export async function requireStaffPage({ admin = false } = {}) {
   if (!getToken()) {
     location.replace(`/pos/login?next=${encodeURIComponent(location.pathname + location.search)}`);
     return new Promise(() => {}); // dừng trang trong lúc chuyển hướng
   }
-  const { user, shop, modules, attendance } = await staffApi('/api/auth/me');
+  const { user, shop, modules, attendance, pos } = await staffApi('/api/auth/me');
   current.user = user;
   current.shop = shop;
   current.modules = modules ?? [];
   current.attendance = attendance ?? { mode: 'LOGIN', moneyPin: false }; // F-072
+  current.pos = pos ?? { oneTap: false }; // F-076
   if (admin && user.role !== 'ADMIN') {
     location.replace('/pos?denied=admin');
     return new Promise(() => {});

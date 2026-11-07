@@ -32,7 +32,9 @@ export async function resetTestDatabase() {
   const pool = await new sql.ConnectionPool({ ...config.db, database: name }).connect();
   const seeded = await seedBase(pool, { adminUsername: 'admin', adminPassword: 'Admin@123' });
   // F-072: test cũ viết theo chấm công bằng đăng nhập, thao tác tiền không hỏi PIN — test của F-072 / F-073 tự bật mặc định mới
-  await pool.request().query(`INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false')`);
+  await pool
+    .request()
+    .query(`INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false'), ('pos.one_tap', 'false')`);
   return { pool, ...seeded };
 }
 

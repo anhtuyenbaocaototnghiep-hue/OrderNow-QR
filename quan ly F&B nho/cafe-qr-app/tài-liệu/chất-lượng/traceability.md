@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 442 test, sửa lúc 2026-11-07 07:34 UTC
-- `npm run test:e2e` (JSON): 68 test, sửa lúc 2026-11-07 07:38 UTC
+- `npm test` (JUnit): 444 test, sửa lúc 2026-11-07 07:59 UTC
+- `npm run test:e2e` (JSON): 69 test, sửa lúc 2026-11-07 08:02 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 171 |
-| Acceptance Criteria | 464 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 464 |
+| User Story | 172 |
+| Acceptance Criteria | 467 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 467 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -559,4 +559,7 @@
 | AC-075-03 | TC-075-03 | F-075 | US-075-2 | ACT-ADMIN, ACT-STAFF | UC-13, UC-16 | MOD-INVENTORY, MOD-REPORT | SCR-42, SCR-47, SCR-10 | BR-113 | Integration: `expiry.test.js` › AC-075-03: hộp mở sắp quá hạn + lô hết hạn ngày mai → danh sách rủi ro có số tiền (chỉ quản lý), món nên mời là món đang bán dùng các nguyên liệu đó; lô đã hết hạn không gợi ý mời; trang Hôm nay có rủi ro + tiền đã hủy tháng này — **PASS** | **PASS** |
 | AC-075-04 | TC-075-04 | F-075 | US-075-2 | ACT-ADMIN, ACT-STAFF | UC-13, UC-16 | MOD-INVENTORY, MOD-REPORT | SCR-42, SCR-47, SCR-10 | BR-113 | Integration: `expiry.test.js` › AC-075-04: 06:00 có cảnh báo EXPIRY_RISK (một lần mỗi ngày); tiền hủy vì hết hạn trong tháng theo nguyên liệu và nhà cung cấp (lô từ phiếu nhập; không theo lô → không rõ); tháng sai → 400 — **PASS** | **PASS** |
 | AC-075-05 | TC-075-05 | F-075 | US-075-1, US-075-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-03, UC-13, UC-16 | MOD-INVENTORY, MOD-REPORT | SCR-23, SCR-17, SCR-55, SCR-42, SCR-47, SCR-10 | BR-113 | E2E: `flow.spec.js` › hạn dùng nguyên liệu: quản lý đặt "hộp 100 ml, mở rồi dùng 24 giờ" ở Kho nâng cao; bán món → máy quầy hiện "Nên mời khách hôm nay"; Kho & sơ chế → Hạn dùng có hộp đang mở → "Bỏ phần còn"; trang Hôm nay có thẻ Sắp hết hạn (F-075, AC-075-05) — **PASS** | **PASS** |
+| AC-076-01 | TC-076-01 | F-076 | US-076-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03 | MOD-ORDER, MOD-INVENTORY | SCR-10, SCR-33 | BR-114 | Integration: `one-tap.test.js` › AC-076-01: cài đặt "Quy trình 1 chạm" (mặc định bật; dữ liệu cũ của test để tắt) — quản lý bật / tắt, máy quầy đọc qua /auth/me; nhân viên không đổi được — **PASS** | **PASS** |
+| AC-076-02 | TC-076-02 | F-076 | US-076-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03 | MOD-ORDER, MOD-INVENTORY | SCR-10, SCR-33 | BR-114 | Integration: `one-tap.test.js` › AC-076-02: thời gian làm món — đơn nhận + xong cùng lúc (1 chạm) tính từ lúc có thể bắt đầu (đơn tới / đơn trước vừa xong) tới lúc xong, không ra 0 giây; đơn 3 bước vẫn tính từ lúc tiếp nhận — **PASS** | **PASS** |
+| AC-076-03 | TC-076-03 | F-076 | US-076-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03 | MOD-ORDER, MOD-INVENTORY | SCR-10, SCR-33 | BR-114 | E2E: `flow.spec.js` › quy trình 1 chạm: quản lý bật ở Cài đặt → màn Đơn hàng chỉ còn cột "Cần làm" (không còn "Đang pha"), mỗi đơn một nút "Xong" → đơn sang "Đã xong hôm nay" (F-076, AC-076-03) — **PASS** | **PASS** |
 
