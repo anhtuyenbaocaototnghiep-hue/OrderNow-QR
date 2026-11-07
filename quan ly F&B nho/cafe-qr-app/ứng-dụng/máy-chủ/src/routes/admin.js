@@ -15,6 +15,7 @@ import { financeAdminRouter } from './financeAdmin.js';
 import { payrollAdminRouter } from './payroll.js';
 import { analyticsAdminRouter } from './analytics.js';
 import { apiDocsRouter } from './apiDocs.js';
+import { accessAdminRouter } from './access.js';
 
 export const adminRouter = express.Router();
 adminRouter.use(requireAdminArea); // F-077 (ADR-035): thay requireAdmin
@@ -201,6 +202,7 @@ adminRouter.use(advancedRouter); // ADR-006 giai đoạn 4–8
 adminRouter.use(financeAdminRouter); // ADR-006 giai đoạn 6: sổ quỹ, nhân sự, nhật ký, lãi/lỗ
 adminRouter.use(payrollAdminRouter); // F-072 / F-073: cách chấm công, bảng lương, hồ sơ lương, ngày lễ
 adminRouter.use(analyticsAdminRouter); // ADR-006 giai đoạn 8: menu engineering, phân tích
+adminRouter.use(accessAdminRouter); // F-079 (ADR-037): quyền riêng từng tài khoản, duyệt xin quyền
 adminRouter.use(apiDocsRouter); // F-052 (ADR-011): tra cứu API
 
 // ---- Báo cáo (FEATURE-012), lịch sử đơn (Q-014), thu tiền ----

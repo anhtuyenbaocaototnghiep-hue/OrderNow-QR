@@ -16,6 +16,12 @@ export const setPinPrompter = (fn) => {
   pinPrompter = fn;
 };
 
+// F-079: máy chủ chặn vì thiếu một quyền cấp riêng được (403 + details.capability) → khung trang hiện thanh "Xin quyền"
+let accessNotifier = null;
+export const setAccessNotifier = (fn) => {
+  accessNotifier = fn;
+};
+
 async function call(path, opts = {}) {
   try {
     return await send(path, opts);
@@ -53,6 +59,7 @@ async function send(path, { method = 'GET', body, headers = {}, staff = false } 
       const next = encodeURIComponent(location.pathname + location.search);
       location.href = `/pos/login?next=${next}&reason=${err.code === 'ACCOUNT_LOCKED' ? 'locked' : 'expired'}`;
     }
+    if (staff && res.status === 403 && err.details?.capability && accessNotifier) accessNotifier(err);
     throw err;
   }
   return data;

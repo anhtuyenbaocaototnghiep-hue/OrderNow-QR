@@ -3,6 +3,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { request, withDeadlockRetry } from '../db.js';
+import { capsOf } from '../auth/permissions.js';
 import { optionalStaff, requireStaff } from '../middleware/auth.js';
 import { loginLimiter, memberLimiters, orderLimiter } from '../middleware/rateLimit.js';
 import { paramGuid, paramId, parse, zBirthDate, zGuid, zId, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
@@ -38,7 +39,7 @@ publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
 publicRouter.get('/auth/me', requireStaff, async (req, res) => {
   const s = await settingsService.getSettings();
   res.json({
-    user: req.user,
+    user: { ...req.user, caps: capsOf(req.user) }, // F-079: quyền đang có (mặc định theo vai + đặt riêng) — giao diện ẩn / hiện theo đây
     shop: await settingsService.shopInfo(),
     modules: s.uiModules,
     attendance: { mode: s.attendanceMode, moneyPin: s.moneyPin },

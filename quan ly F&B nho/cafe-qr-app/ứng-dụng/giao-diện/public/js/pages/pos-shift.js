@@ -11,10 +11,10 @@ import { pendingSales, syncPending } from '../offline-sales.js';
 import { mountPosShell } from '../pos-shell.js';
 import { connectRealtime } from '../socket.js';
 import { $, clear, dateTime, el, errorMessage, modal, money, moneyInput, moneyValue, setMoney, statusBadge, time, toast, todayVn } from '../ui.js';
+import { hasCap } from '../roles.js'; // F-079
 
 const shell = await mountPosShell('shift');
 const main = $('#main');
-const isLead = ['MANAGER', 'STORE_MGR', 'ADMIN'].includes(shell.user.role); // trưởng ca / quản lý cửa hàng / chủ quán
 let closedReport = null; // phiếu chốt ca vừa đóng (để in)
 // F-054 (ADR-014 D-59): tới từ nút Đăng xuất khi đang giữ ca → nhắc + tự mở hộp đóng ca; đóng xong thì đăng xuất
 const logoutAfter = new URLSearchParams(location.search).get('then') === 'logout';
@@ -48,7 +48,7 @@ async function load() {
     const today = todayVn();
     const [report, attendance, offline] = await Promise.all([
       staffApi(`/api/shifts/${shift.shiftId}/report`),
-      isLead ? staffApi(`/api/attendance?from=${today}&to=${today}`) : null,
+      hasCap(shell.user, 'attendance.edit') ? staffApi(`/api/attendance?from=${today}&to=${today}`) : null, // F-079
       staffApi(`/api/offline-sales?shiftId=${shift.shiftId}`).catch(() => []), // phần phụ — lỗi thì bỏ qua, không làm hỏng cả trang Ca
     ]);
     data = { ...report, attendance, offline };

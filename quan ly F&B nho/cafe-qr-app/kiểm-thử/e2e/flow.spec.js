@@ -2901,6 +2901,63 @@ test('vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", c
   await expect(B2.locator('.pos-user')).toContainText('Thử việc');
   await B2.goto('/pos/takeaway');
   await expect(B2).toHaveURL(/\/pos\?denied=position/);
-  await expect(B2.locator('.toast', { hasText: 'không thuộc vị trí của bạn (Pha chế)' })).toBeVisible();
+  await expect(B2.locator('#access-bar')).toContainText('Bạn chưa có quyền: Thu tiền'); // F-079: lời nhắc kèm nút Xin quyền
+  await ctx.close();
+});
+
+test('quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuyển về kèm thanh "Xin quyền" → gửi lý do; chủ quán thấy ở Hôm nay → Tài khoản → Duyệt "Hết hôm nay" → nhân viên vào được; chủ quán mở "Quyền" của người đó đặt lại "Theo vai trò" → hết vào được (F-079, AC-079-07)', async ({
+  request,
+}) => {
+  await apiAs(request, 'post', '/api/admin/users', {
+    username: 'xin-e2e',
+    password: 'Xinquyen@1',
+    fullName: 'Xin quyền E2E',
+    role: 'STAFF',
+    positions: ['SERVER'],
+  });
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  const X = await ctx.newPage();
+  watch(X, 'xin');
+  await X.goto('/pos/login');
+  await X.fill('#username', 'xin-e2e');
+  await X.fill('#password', 'Xinquyen@1');
+  await X.click('#submit');
+  await expect(X).toHaveURL(/\/pos$/);
+  await X.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click();
+  await X.goto('/pos/takeaway');
+  await expect(X).toHaveURL(/\/pos\?denied=position&cap=pos\.cashier/);
+  const bar = X.locator('#access-bar');
+  await expect(bar).toContainText('Bạn chưa có quyền: Thu tiền');
+  await bar.getByRole('button', { name: 'Xin quyền' }).click();
+  await X.locator('#access-reason').fill('Thu ngân nghỉ ốm');
+  await X.getByRole('dialog').getByRole('button', { name: 'Gửi yêu cầu' }).click();
+  await expect(X.locator('.toast', { hasText: 'Đã gửi — chờ chủ quán duyệt' })).toBeVisible();
+
+  await P.goto('/admin/today');
+  await P.locator('.today-todo')
+    .getByRole('link', { name: /yêu cầu xin quyền chờ duyệt/ })
+    .click();
+  await expect(P).toHaveURL(/\/admin\/users#xin-quyen$/);
+  const req = P.locator('.access-request', { hasText: 'Xin quyền E2E' });
+  await expect(req).toContainText('Thu ngân nghỉ ốm');
+  await expect(req.locator('select')).toHaveValue('TODAY');
+  await req.getByRole('button', { name: 'Duyệt' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã cho phép Xin quyền E2E' })).toBeVisible();
+  const row = P.locator('tr', { hasText: 'xin-e2e' });
+  await expect(row).toContainText('Có quyền riêng');
+
+  await X.goto('/pos/takeaway');
+  await expect(X).toHaveURL(/\/pos\/takeaway$/);
+
+  await row.getByRole('button', { name: 'Quyền', exact: true }).click();
+  const dlg = P.getByRole('dialog');
+  const cashier = dlg.getByLabel('Quyền: Thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi thu chi');
+  await expect(cashier).toHaveValue('ALLOW');
+  await cashier.selectOption('');
+  await dlg.getByRole('button', { name: 'Lưu quyền' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu quyền của Xin quyền E2E' })).toBeVisible();
+  await expect(row).not.toContainText('Có quyền riêng');
+  await X.goto('/pos/takeaway');
+  await expect(X).toHaveURL(/\/pos\?denied=position/);
   await ctx.close();
 });

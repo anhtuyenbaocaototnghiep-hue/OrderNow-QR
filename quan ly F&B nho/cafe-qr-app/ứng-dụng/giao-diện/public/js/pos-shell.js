@@ -6,19 +6,21 @@ import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, moneyValue, playSound, time, toast, unlockAudio } from './ui.js';
 import { brandMark, icon } from './icons.js';
-import { canOpenPosPage, hasPosition, isProbation, positionsText, ROLE_LABEL } from './roles.js';
+import { canOpenPosPage, firstAdminHref, hasAdminPages, hasCap, hasPosition, isProbation, posPageCap, positionsText, ROLE_LABEL } from './roles.js';
+import { registerAccessPrompter } from './access.js';
 import { kioskDialog, registerPinPrompter, setPinDialog, switchUserDialog } from './staff-pin.js';
 
 export async function mountPosShell(active) {
   const user = await requireStaffPage();
   // F-078: trang không thuộc vị trí của nhân viên → về Đơn hàng (máy chủ vẫn chặn từng việc)
   if (!canOpenPosPage(user, active)) {
-    location.replace('/pos?denied=position');
+    location.replace(`/pos?denied=position&cap=${posPageCap(active)}`); // F-079: mời "Xin quyền"
     return new Promise(() => {});
   }
   const canPay = hasPosition(user, 'CASHIER');
   const { shop } = current;
   registerPinPrompter(); // F-072: thao tác tiền cần PIN → hỏi PIN rồi gửi lại
+  registerAccessPrompter(); // F-079: bị chặn vì thiếu quyền cấp được → thanh "Xin quyền"
   // Chưa kết nối xong: trạng thái trung tính, không đỏ (đỏ chỉ khi mất kết nối thật — DEF-011)
   const conn = el('span', { class: 'conn connecting', id: 'conn' }, 'Đang kết nối…');
   const soundBtn = el(
@@ -64,9 +66,9 @@ export async function mountPosShell(active) {
   const ownNav = nav.filter(([key]) => canOpenPosPage(user, key)); // F-078: mục theo vị trí
   nav.length = 0;
   nav.push(...ownNav);
-  if (user.role === 'MANAGER') nav.push(['today', '/admin/today', 'Hôm nay', 'chart-column']); // F-043 bản rút gọn
-  if (user.role === 'STORE_MGR') nav.push(['admin', '/admin/today', 'Quản lý', 'settings']); // F-077: trang Quản lý phần vận hành
-  if (user.role === 'ADMIN') nav.push(['admin', '/admin', 'Quản lý', 'settings']);
+  // F-077 / F-079: có quyền trang Quản lý nào → "Quản lý" (trang đầu tiên được mở); chỉ có Hôm nay (trưởng ca) → "Hôm nay" bản gọn
+  if (hasAdminPages(user)) nav.push(['admin', firstAdminHref(user), 'Quản lý', 'settings']);
+  else if (hasCap(user, 'dashboard.view')) nav.push(['today', '/admin/today', 'Hôm nay', 'chart-column']); // F-043 bản rút gọn
 
   // ADR-018 D-67: trái tên quán + điều hướng; phải cụm trạng thái (ca, QR, kết nối, âm thanh) rồi người dùng
   const header = el(
@@ -165,7 +167,7 @@ export async function mountPosShell(active) {
   }).observe(header);
   document.fonts?.ready.then(fitHeader); // phông web nạp xong làm chữ rộng ra
   if (new URLSearchParams(location.search).get('denied') === 'admin') toast('Chức năng quản lý chỉ dành cho tài khoản Quản lý', 'warning');
-  if (new URLSearchParams(location.search).get('denied') === 'position')
+  if (new URLSearchParams(location.search).get('denied') === 'position' && !new URLSearchParams(location.search).get('cap'))
     toast(`Trang đó không thuộc vị trí của bạn (${positionsText(user)}) — nhờ chủ quán đổi ở Tài khoản nếu cần`, 'warning', 6000);
   // F-063 (ADR-021 D-82): QR trên bàn in ở địa chỉ cũ → nhân viên biết vì sao khách quét lỗi, báo quản lý in lại
   staffApi('/api/qr-check')

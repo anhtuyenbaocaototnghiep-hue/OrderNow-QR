@@ -1397,3 +1397,30 @@ fieldset.open-pack p {
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--c-border);
 }
+
+/* F-079 (ADR-037): thanh "Xin quyền" — bị chặn vì thiếu quyền cấp riêng được (máy quầy + trang Quản lý) */
+.access-bar {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  margin: 0 auto;
+  width: fit-content;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  max-width: min(36rem, calc(100vw - 2rem));
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius, 10px);
+  background: var(--c-surface, #fff);
+  border: 1px solid var(--c-warning, #b7791f);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+}
+.access-bar.ok {
+  border-color: var(--c-success, #2f6b47);
+}
+.access-bar > span {
+  flex: 1 1 14rem;
+}

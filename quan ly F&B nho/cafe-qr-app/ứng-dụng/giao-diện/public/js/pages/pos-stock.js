@@ -10,9 +10,10 @@ import { adjustDialog } from '../stock-adjust.js';
 import { stocktakeUi } from '../stocktake.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, money, num, setBusy, toast, todayVn } from '../ui.js';
 import { icon } from '../icons.js';
+import { hasCap } from '../roles.js';
 
 const shell = await mountPosShell('stock');
-const isLead = ['MANAGER', 'STORE_MGR', 'ADMIN'].includes(shell.user.role);
+const isLead = hasCap(shell.user, 'stock.count'); // F-079: kiểm kê + điều chỉnh kho — theo quyền (mặc định trưởng ca trở lên)
 const REASONS = { SPILL: 'Đổ / vỡ', EXPIRED: 'Hết hạn', QUALITY: 'Hỏng / không đạt', OTHER: 'Khác' };
 const state = { tab: 'prep' };
 const tabs = $('#tabs');

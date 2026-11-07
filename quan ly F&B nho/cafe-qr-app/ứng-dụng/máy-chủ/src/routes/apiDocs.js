@@ -1,7 +1,7 @@
 // Tra cứu API (F-052, ADR-011 D-49…D-51): đọc router Express lúc chạy → method, đường dẫn đầy đủ, mức quyền theo middleware.
 // Gắn dưới /api/admin (requireAdminArea ở adminRouter) — chỉ Chủ quán (không nằm trong STORE_MGR_AREAS). Mô tả request / response ghép ở apiDocsService từ api-contract.md.
 import express from 'express';
-import { PERMISSIONS, ROLES, storeManagerMay } from '../auth/permissions.js';
+import { capabilityForAdmin, PERMISSIONS, ROLES, storeManagerMay } from '../auth/permissions.js';
 import { optionalStaff, requireAdmin, requireStaff } from '../middleware/auth.js';
 import * as apiDocsService from '../services/apiDocsService.js';
 
@@ -17,9 +17,10 @@ export function accessOf(handlers, route = null) {
   if (handlers.includes(requireAdmin)) return { access: 'ADMIN', roles: ['ADMIN'], permission: null };
   if (handlers.some((h) => h.adminArea)) {
     const sub = route?.path.startsWith(ADMIN_PREFIX) ? route.path.slice(ADMIN_PREFIX.length) : null;
+    const capability = sub !== null ? capabilityForAdmin(route.method, sub) : null; // F-079: quyền cấp riêng được (null = chỉ chủ quán)
     return sub !== null && storeManagerMay(route.method, sub)
-      ? { access: 'STORE_MGR', roles: ['STORE_MGR', 'ADMIN'], permission: null }
-      : { access: 'ADMIN', roles: ['ADMIN'], permission: null };
+      ? { access: 'STORE_MGR', roles: ['STORE_MGR', 'ADMIN'], permission: null, capability }
+      : { access: 'ADMIN', roles: ['ADMIN'], permission: null, capability };
   }
   const permission = handlers.find((h) => typeof h.permission === 'string')?.permission;
   if (permission) {

@@ -7,6 +7,7 @@ import { userFromToken } from '../middleware/auth.js';
 import { clientTokenFromCookieHeader } from '../middleware/client.js';
 import * as sessionsRepo from '../repositories/sessionsRepo.js';
 import { ROOMS, setIo } from './publisher.js';
+import { hasCap } from '../auth/permissions.js';
 
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -21,8 +22,9 @@ export function attachRealtime(httpServer) {
         const user = await userFromToken(token);
         socket.data.user = user;
         rooms.push(ROOMS.staff);
-        if (user.role === 'ADMIN') rooms.push(ROOMS.admin); // F-060 cảnh báo bất thường
-        if (user.role === 'STORE_MGR') rooms.push(ROOMS.store); // F-077 quản lý cửa hàng
+        if (user.role === 'ADMIN')
+          rooms.push(ROOMS.admin); // F-060 cảnh báo bất thường
+        else if (hasCap(user, 'admin.alerts')) rooms.push(ROOMS.store); // F-077 / F-079: người có quyền Cảnh báo (không phải chủ quán)
       }
       if (sessionId) {
         if (!GUID.test(sessionId)) return next(new Error('FORBIDDEN'));

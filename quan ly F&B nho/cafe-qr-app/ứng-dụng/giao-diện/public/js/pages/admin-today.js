@@ -4,12 +4,14 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { logout, requireStaffPage } from '../auth.js';
+import { canOpenAdminPage, hasAdminPages, hasCap, ROLE_LABEL } from '../roles.js';
 import { $, clear, dateTime, el, errorMessage, money, num, toast } from '../ui.js';
 import { brandMark, icon } from '../icons.js';
 
 const user = await requireStaffPage();
-if (user.role === 'ADMIN' || user.role === 'STORE_MGR') await mountAdminShell('today');
-else if (user.role === 'MANAGER') {
+// F-079: có quyền trang Quản lý (mặc định chủ quán, quản lý cửa hàng; hoặc được cấp riêng) → khung Quản lý; chỉ có Hôm nay → bản gọn
+if (hasAdminPages(user) && canOpenAdminPage(user, 'today')) await mountAdminShell('today');
+else if (hasCap(user, 'dashboard.view')) {
   // Trưởng ca không có menu quản lý — chỉ thanh trên gọn
   document.body.classList.add('today-lead');
   clear(
@@ -17,7 +19,7 @@ else if (user.role === 'MANAGER') {
     el('div', { class: 'brand' }, brandMark(), 'Hôm nay'),
     el('a', { href: '/pos' }, '← Màn hình quầy'),
     el('div', { class: 'spacer' }),
-    el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small' }, 'Trưởng ca')),
+    el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small' }, ROLE_LABEL[user.role])),
     el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, 'Đăng xuất'),
   );
 } else {
@@ -114,6 +116,7 @@ function render(d) {
         'ul',
         {},
         todo(t.pendingCash, `${t.pendingCash} khoản chi quỹ chờ duyệt${t.pendingCashAmount ? ` (${money(t.pendingCashAmount)})` : ''}`, '/pos/shift'),
+        todo(t.pendingAccess, `${t.pendingAccess} yêu cầu xin quyền chờ duyệt`, '/admin/users#xin-quyen'), // F-079
         todo(t.posDue, `${t.posDue} đơn đặt hàng đến hạn nhận`, '/pos/stock'),
         todo(t.expiredLots, `${t.expiredLots} lô đã hết hạn còn hàng — cần hủy`, '/pos/stock'),
         todo(
@@ -121,7 +124,7 @@ function render(d) {
           t.stocktakeAgeDays === null ? 'Chưa từng chốt kiểm kê' : `${t.stocktakeAgeDays} ngày chưa kiểm kê (quá 7 ngày)`,
           d.full ? '/admin/stock' : '/pos/stock',
         ),
-        !t.pendingCash && !t.posDue && !t.expiredLots && !t.stocktakeOverdue
+        !t.pendingCash && !t.pendingAccess && !t.posDue && !t.expiredLots && !t.stocktakeOverdue
           ? el('li', { class: 'muted' }, icon('circle-check'), 'Không có việc tồn đọng.')
           : null,
       ),

@@ -282,6 +282,35 @@ async function checkPriceChange({ item, oldPrice, user }) {
 }
 
 /**
+ * F-079 (ADR-037 D-171): cho phép quyền dính tiền (thu tiền, sổ quỹ, báo cáo, lãi / lỗ, lương) cho một người → cảnh báo ACCESS_GRANT
+ * (chỉ chủ quán xem) + email theo cài đặt cảnh báo tức thì. Một cảnh báo mỗi lần cấp.
+ */
+export const onAccessGrant = (info) => withDeadlockRetry(() => checkAccessGrant(info));
+
+async function checkAccessGrant({ target, capabilities, actor, expiresAt }) {
+  const s = await getSettings();
+  const { CAPABILITY } = await import('../auth/permissions.js');
+  const labels = capabilities.map((k) => CAPABILITY[k]?.label ?? k);
+  const until = expiresAt ? `đến ${fmtTime(expiresAt)}` : 'không hạn';
+  const alert = await immediateAlert({
+    kind: 'ACCESS_GRANT',
+    severity: 'MEDIUM',
+    userId: target.userId,
+    title: `${actor.fullName} cấp quyền cho ${target.fullName}: ${labels.join(', ')} (${until})`,
+    detail: { capabilities, labels, to: target.fullName, by: actor.fullName, expiresAt: expiresAt ?? null },
+    dedupeKey: `GRANT:${target.userId}:${capabilities.join(',')}:${Date.now()}`,
+  });
+  if (!alert) return { alert: null, email: null };
+  const rows = [
+    ['Người được cấp', target.fullName, false],
+    ['Quyền', labels.join(', '), true],
+    ['Hạn', until, false],
+    ['Người cấp', actor.fullName, false],
+  ];
+  return { alert, email: await enqueueImmediate(s, alert, rows, 'Thu lại ở Tài khoản → Quyền nếu chưa đúng.') };
+}
+
+/**
  * F-075 (ADR-033 D-150): 06:00 còn nguyên liệu sắp / đã hết hạn trong 2 ngày có giá trị → một cảnh báo mỗi ngày (khóa theo ngày),
  * ghi số tiền sẽ phải bỏ + món nên mời khách để dùng kịp.
  */
@@ -712,12 +741,12 @@ export async function runDigests(now = new Date()) {
 
 // ---------------- Trang Cảnh báo ----------------
 /** F-077: Quản lý cửa hàng không thấy loại chỉ chủ quán xem (OWNER_ONLY_ALERTS). */
-const hiddenFor = (user) => (user?.role === 'STORE_MGR' ? OWNER_ONLY_ALERTS : []);
+const hiddenFor = (user) => (user && user.role !== 'ADMIN' ? OWNER_ONLY_ALERTS : []); // F-079: mọi người không phải chủ quán
 export const list = (opts, user = null) => alertsRepo.listAlerts({ ...opts, excludeKinds: hiddenFor(user) });
 export const countNew = (user = null) => alertsRepo.countNew(hiddenFor(user));
 /** F-077 (ADR-035 D-160): Quản lý cửa hàng không xử lý cảnh báo về chính mình, không đụng loại chỉ chủ quán xem. */
 export async function setStatus(id, body, user) {
-  if (user?.role === 'STORE_MGR') {
+  if (user && user.role !== 'ADMIN') {
     const a = await alertsRepo.findAlert(id);
     if (!a || OWNER_ONLY_ALERTS.includes(a.kind)) return null;
     if (a.user?.userId === user.userId) throw forbidden('Cảnh báo về chính bạn — để chủ quán xem và xử lý', 'SELF_ALERT');

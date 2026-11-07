@@ -4,6 +4,7 @@ import { current, logout, requireStaffPage } from './auth.js';
 import { $, clear, confirmDialog, el, errorMessage, toast } from './ui.js';
 import { brandMark, icon } from './icons.js';
 import { canOpenAdminPage, isOwner, ROLE_LABEL } from './roles.js';
+import { registerAccessPrompter } from './access.js';
 
 // Menu quản lý (TASK-066, ADR-013 D-58): "Hôm nay" luôn ở trên; 6 nhóm thu gọn được, nhóm chứa trang đang mở tự mở.
 // Mục: [khóa trang, đường dẫn, tên ngắn một dòng, tên đầy đủ (tiêu đề trang — hiện khi rê chuột)].
@@ -146,12 +147,13 @@ function navGroup(g, active, open) {
 
 export async function mountAdminShell(active) {
   const user = await requireStaffPage({ admin: true, page: active });
+  registerAccessPrompter(); // F-079
   const side = $('#side');
   const open = savedOpen();
   clear(
     side,
     el('div', { class: 'brand' }, brandMark(), current.shop?.name || 'Quản lý'),
-    navLink(HOME, active, icon('house')),
+    allowed('today') ? navLink(HOME, active, icon('house')) : null,
     NAV.map((g) => navGroup(g, active, open)),
     el('a', { href: '/pos', class: 'nav-pos' }, icon('monitor'), 'Màn hình quầy'),
     el('div', { class: 'spacer' }),

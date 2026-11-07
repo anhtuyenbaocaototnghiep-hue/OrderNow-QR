@@ -1,4 +1,4 @@
-import { query, request, sql } from '../db.js';
+import { inTransaction, query, request, sql, txQuery } from '../db.js';
 
 const map = (r) =>
   r && {
@@ -41,8 +41,12 @@ export async function markTourSeen(id) {
 }
 
 export async function list() {
-  const r = await query(`SELECT ${COLS} FROM dbo.Users WHERE DeletedAt IS NULL ORDER BY Role, Username`);
-  return r.recordset.map(map);
+  const r = await query(
+    `SELECT ${COLS},
+       (SELECT COUNT(*) FROM dbo.UserGrants g WHERE g.UserId = Users.UserId AND (g.ExpiresAt IS NULL OR g.ExpiresAt > SYSUTCDATETIME())) AS GrantCount
+     FROM dbo.Users WHERE DeletedAt IS NULL ORDER BY Role, Username`,
+  );
+  return r.recordset.map((row) => ({ ...map(row), grantCount: row.GrantCount })); // F-079: số quyền riêng còn hạn
 }
 
 export async function create({ username, passwordHash, fullName, role, positions = null, level = 'OFFICIAL' }) {
@@ -120,6 +124,70 @@ export async function remove(id, actorId) {
     .output('Result', sql.VarChar(10))
     .execute('dbo.sp_DeleteUser');
   return r.output.Result;
+}
+
+// ---- F-079 (ADR-037): quyền riêng từng tài khoản ----
+const mapGrant = (r) => ({
+  capability: r.Capability,
+  effect: r.Effect,
+  expiresAt: r.ExpiresAt ?? null,
+  grantedBy: r.GrantedBy ? { userId: r.GrantedBy, fullName: r.GrantedByName ?? null } : null,
+  grantedAt: r.GrantedAt ?? null,
+  note: r.Note ?? null,
+});
+
+/** Quyền riêng còn hạn của một người (nạp mỗi request). */
+export async function activeGrants(userId) {
+  const r = await query('SELECT Capability, Effect, ExpiresAt FROM dbo.UserGrants WHERE UserId = @id AND (ExpiresAt IS NULL OR ExpiresAt > SYSUTCDATETIME())', {
+    id: [sql.Int, userId],
+  });
+  return r.recordset.map(mapGrant);
+}
+
+/** Quyền riêng còn hạn kèm người cấp (hộp "Quyền" ở trang Tài khoản). */
+export async function grantsOf(userId) {
+  const r = await query(
+    `SELECT g.Capability, g.Effect, g.ExpiresAt, g.GrantedBy, g.GrantedAt, g.Note, u.FullName AS GrantedByName
+     FROM dbo.UserGrants g JOIN dbo.Users u ON u.UserId = g.GrantedBy
+     WHERE g.UserId = @id AND (g.ExpiresAt IS NULL OR g.ExpiresAt > SYSUTCDATETIME())`,
+    { id: [sql.Int, userId] },
+  );
+  return r.recordset.map(mapGrant);
+}
+
+/** Thay toàn bộ quyền riêng của một người (trong một transaction). grants: [{ capability, effect, expiresAt, note }]. */
+export function replaceGrants(userId, grants, grantedBy) {
+  return inTransaction(async (tx) => {
+    await txQuery(tx, 'DELETE dbo.UserGrants WHERE UserId = @id', { id: [sql.Int, userId] });
+    for (const g of grants) {
+      await txQuery(tx, 'INSERT dbo.UserGrants (UserId, Capability, Effect, ExpiresAt, GrantedBy, Note) VALUES (@id, @cap, @eff, @exp, @by, @note)', {
+        id: [sql.Int, userId],
+        cap: [sql.VarChar(30), g.capability],
+        eff: [sql.VarChar(5), g.effect],
+        exp: [sql.DateTime2(0), g.expiresAt ?? null],
+        by: [sql.Int, grantedBy],
+        note: [sql.NVarChar(200), g.note ?? null],
+      });
+    }
+  });
+}
+
+/** Cho phép một quyền (duyệt xin quyền): ghi đè dòng cũ của quyền đó. */
+export async function upsertGrant(userId, { capability, effect, expiresAt = null, note = null }, grantedBy) {
+  await query(
+    `MERGE dbo.UserGrants WITH (HOLDLOCK) AS t
+     USING (SELECT @id AS UserId, @cap AS Capability) AS s ON t.UserId = s.UserId AND t.Capability = s.Capability
+     WHEN MATCHED THEN UPDATE SET Effect = @eff, ExpiresAt = @exp, GrantedBy = @by, GrantedAt = SYSUTCDATETIME(), Note = @note
+     WHEN NOT MATCHED THEN INSERT (UserId, Capability, Effect, ExpiresAt, GrantedBy, Note) VALUES (@id, @cap, @eff, @exp, @by, @note);`,
+    {
+      id: [sql.Int, userId],
+      cap: [sql.VarChar(30), capability],
+      eff: [sql.VarChar(5), effect],
+      exp: [sql.DateTime2(0), expiresAt],
+      by: [sql.Int, grantedBy],
+      note: [sql.NVarChar(200), note],
+    },
+  );
 }
 
 // ---- F-072 (ADR-030 D-125): PIN riêng từng người (bcrypt) ----

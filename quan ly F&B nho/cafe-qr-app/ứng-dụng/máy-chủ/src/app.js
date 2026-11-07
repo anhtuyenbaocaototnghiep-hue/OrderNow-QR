@@ -20,6 +20,7 @@ import { opsRouter } from './routes/ops.js';
 import { notFoundPage, pagesRouter, publicDir } from './routes/pages.js';
 import { publicRouter } from './routes/public.js';
 import { staffRouter } from './routes/staff.js';
+import { accessRouter } from './routes/access.js';
 import './jobs/index.js'; // đăng ký job nền (không tự chạy — server.js mới bật bộ lập lịch)
 
 export function createApp() {
@@ -59,6 +60,7 @@ export function createApp() {
     ['', payrollRouter], // F-072 / F-073: PIN, đổi người, màn chấm công, giờ công của tôi
     ['', offlineSalesRouter], // F-074: gửi bù đơn bán lúc mất mạng / phiếu bán tay
     ['', expiryRouter], // F-075: hạn dùng nguyên liệu — rủi ro, món nên mời, bỏ hộp đã mở quá hạn
+    ['', accessRouter], // F-079: danh mục quyền, xin quyền (nhân viên)
     ['', dashboardRouter], // ADR-006 F-043: dashboard chủ quán (quản lý + trưởng ca)
     ['', staffRouter],
   ];

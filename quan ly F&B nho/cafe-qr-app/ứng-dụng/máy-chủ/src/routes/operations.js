@@ -64,7 +64,7 @@ operationsRouter.delete('/modifier-groups/:id', async (req, res) => res.json({ r
 // F-077: Quản lý cửa hàng xem được (không thấy email nhận cảnh báo), chỉ đổi STORE_MGR_SETTINGS
 operationsRouter.get('/settings', async (req, res) => {
   const s = await settingsService.getSettings();
-  res.json(req.user.role === 'STORE_MGR' ? { ...s, alertEmails: [] } : s);
+  res.json(req.user.role !== 'ADMIN' ? { ...s, alertEmails: [] } : s); // F-079: mọi người không phải chủ quán
 });
 operationsRouter.put('/settings', async (req, res) => {
   const body = parse(
@@ -148,7 +148,7 @@ operationsRouter.put('/settings', async (req, res) => {
     }),
     req.body,
   );
-  if (req.user.role === 'STORE_MGR') {
+  if (req.user.role !== 'ADMIN') {
     const blocked = Object.keys(body).filter((k) => !STORE_MGR_SETTINGS.includes(k));
     if (blocked.length) throw new AppError(403, 'OWNER_ONLY', 'Cài đặt này chỉ chủ quán đổi được', { fields: blocked });
   }

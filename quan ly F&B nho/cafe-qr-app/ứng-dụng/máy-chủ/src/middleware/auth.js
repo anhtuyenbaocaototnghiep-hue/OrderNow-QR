@@ -22,6 +22,8 @@ export async function userFromToken(token) {
   const user = await usersRepo.findById(Number(payload.sub));
   if (!user) throw unauthorized('Phiên đăng nhập không hợp lệ');
   if (!user.isActive) throw forbidden('Tài khoản đã bị khóa', 'ACCOUNT_LOCKED');
+  // F-079: quyền riêng còn hạn — đổi / thu hồi có hiệu lực ngay request kế tiếp (chủ quán luôn đủ quyền, không cần nạp)
+  user.grants = user.role === 'ADMIN' ? [] : await usersRepo.activeGrants(user.userId);
   return user;
 }
 

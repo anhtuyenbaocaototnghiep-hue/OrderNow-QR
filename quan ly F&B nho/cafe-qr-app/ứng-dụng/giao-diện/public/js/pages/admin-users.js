@@ -1,4 +1,5 @@
 // S-20 Tài khoản: tạo (username duy nhất — BR-004), sửa tên/vai trò, đặt lại mật khẩu, khóa/mở (BR-017). Không xóa cứng.
+// F-079 (ADR-037): nút "Quyền" — đặt riêng từng quyền (theo vai trò / cho phép / không cho, kèm hạn); khung "Xin quyền chờ duyệt".
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, setBusy, showFieldErrors, toast } from '../ui.js';
@@ -82,8 +83,15 @@ async function load() {
   } catch (err) {
     return clear($('#content'), el('div', { class: 'alert danger' }, errorMessage(err)));
   }
+  let requests = [];
+  try {
+    requests = (await staffApi('/api/admin/access-requests')).requests; // F-079
+  } catch {
+    /* không chặn trang Tài khoản */
+  }
   clear(
     $('#content'),
+    requestsCard(requests),
     roleGuide(),
     // F-072 (DEF-020): chỉ chỗ đặt / đổi PIN — quản lý không đặt hộ, chỉ xóa để người đó tự đặt lại
     el(
@@ -126,6 +134,7 @@ async function load() {
                 el('span', { class: `badge ${ROLE_BADGE[u.role] ?? ''}` }, ROLE[u.role]),
                 u.level === 'PROBATION' ? el('span', { class: 'badge pending', style: { marginLeft: '0.3rem' } }, 'Thử việc') : null,
                 u.role === 'STAFF' ? el('div', { class: 'small muted' }, positionsText(u)) : null,
+                u.grantCount ? el('div', {}, el('span', { class: 'badge preparing' }, 'Có quyền riêng')) : null, // F-079
               ),
               el(
                 'td',
@@ -151,6 +160,7 @@ async function load() {
                   'div',
                   { class: 'row wrap' },
                   el('button', { class: 'btn btn-sm', type: 'button', onclick: () => editUser(u) }, 'Sửa'),
+                  u.role !== 'ADMIN' ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => grantsDialog(u) }, 'Quyền') : null, // F-079
                   el('button', { class: 'btn btn-sm', type: 'button', onclick: () => resetPassword(u) }, 'Đặt lại mật khẩu'),
                   // F-072: quên PIN / nghi bị lộ → xóa để người đó đăng nhập bằng mật khẩu và đặt lại (quản lý không biết PIN của ai)
                   u.hasPin
@@ -341,6 +351,211 @@ function resetPassword(u) {
       toast('Đã đặt lại mật khẩu', 'success');
     },
   });
+}
+
+// ---------- F-079 (ADR-037): quyền riêng từng tài khoản ----------
+const DURATIONS = [
+  ['ALWAYS', 'Luôn luôn'],
+  ['TODAY', 'Hết hôm nay'],
+  ['WEEK', '7 ngày'],
+];
+const dateTimeOrDash = (d) => (d ? dateTime(d) : 'không hạn');
+
+/** Hạn theo lựa chọn: luôn / hết hôm nay (giờ VN) / 7 ngày / đến ngày (hết ngày đó, giờ VN). → ISO hoặc null */
+function expiryFrom(kind, date) {
+  const endOfVnDay = (d) => new Date(Date.parse(`${d}T00:00:00+07:00`) + 86400000).toISOString();
+  const todayVn = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+  if (kind === 'TODAY') return endOfVnDay(todayVn);
+  if (kind === 'WEEK') return endOfVnDay(new Date(Date.parse(`${todayVn}T00:00:00Z`) + 6 * 86400000).toISOString().slice(0, 10));
+  if (kind === 'DATE') return date ? endOfVnDay(date) : undefined;
+  return null;
+}
+
+async function grantsDialog(u) {
+  let view;
+  try {
+    view = await staffApi(`/api/admin/users/${u.userId}/grants`);
+  } catch (err) {
+    return toast(errorMessage(err), 'error');
+  }
+  const rows = view.items.map((it) => {
+    const mode = el(
+      'select',
+      { class: 'input', 'aria-label': `Quyền: ${it.label}` },
+      el('option', { value: '' }, 'Mặc định'),
+      el('option', { value: 'ALLOW', selected: it.override?.effect === 'ALLOW' }, 'Cho phép'),
+      el('option', { value: 'DENY', selected: it.override?.effect === 'DENY' }, 'Không cho'),
+    );
+    const until = el(
+      'select',
+      { class: 'input', 'aria-label': `Hạn: ${it.label}` },
+      el('option', { value: 'KEEP', selected: Boolean(it.override) }, 'Giữ hạn cũ'),
+      el('option', { value: 'ALWAYS' }, 'Luôn luôn'),
+      el('option', { value: 'TODAY' }, 'Hết hôm nay'),
+      el('option', { value: 'WEEK' }, '7 ngày'),
+      el('option', { value: 'DATE' }, 'Đến ngày…'),
+    );
+    if (!it.override) until.querySelector('option[value="KEEP"]').remove();
+    const date = el('input', { class: 'input', type: 'date', hidden: true, 'aria-label': `Đến ngày: ${it.label}` });
+    const sync = () => {
+      until.disabled = !mode.value;
+      date.hidden = until.value !== 'DATE' || !mode.value;
+    };
+    mode.addEventListener('change', sync);
+    until.addEventListener('change', sync);
+    sync();
+    const tr = el(
+      'tr',
+      { dataset: { cap: it.key } },
+      el(
+        'td',
+        {},
+        it.label,
+        it.money ? el('span', { class: 'badge pending', style: { marginLeft: '0.35rem' }, title: 'Dính tới tiền — cấp thì có cảnh báo' }, 'Tiền') : null,
+        el('div', { class: 'small muted' }, `Mặc định theo vai trò: ${it.byRole ? 'có' : 'không'}`),
+      ),
+      el('td', {}, mode),
+      el(
+        'td',
+        { class: 'stack' },
+        until,
+        date,
+        it.override ? el('div', { class: 'small muted' }, `Hạn hiện tại: ${dateTimeOrDash(it.override.expiresAt)}`) : null,
+      ),
+    );
+    return { it, tr, mode, until, date };
+  });
+  const groups = [...new Set(view.items.map((i) => i.group))];
+  const body = el(
+    'div',
+    { class: 'stack grants' },
+    el(
+      'p',
+      { class: 'small muted' },
+      'Mặc định mỗi người làm được theo vai trò và vị trí. Đặt "Cho phép" / "Không cho" để thay riêng cho người này (có thể kèm hạn — hết hạn tự về theo vai trò). Đổi có hiệu lực ngay ở thao tác kế tiếp của người đó.',
+    ),
+    groups.map((g) =>
+      el(
+        'div',
+        { class: 'table-wrap' },
+        el(
+          'table',
+          { class: 'table' },
+          el('thead', {}, el('tr', {}, el('th', {}, g), el('th', {}, 'Người này'), el('th', {}, 'Hạn'))),
+          el(
+            'tbody',
+            {},
+            rows.filter((r) => r.it.group === g).map((r) => r.tr),
+          ),
+        ),
+      ),
+    ),
+    el('p', { class: 'small muted' }, 'Không cấp được (chỉ chủ quán): tài khoản & phân quyền, cài đặt chung, duyệt xin quyền.'),
+  );
+  modal({
+    title: `Quyền của ${u.fullName}`,
+    body,
+    actions: [
+      { label: 'Hủy' },
+      {
+        label: 'Lưu quyền',
+        class: 'btn-primary',
+        onClick: async (_close, e) => {
+          const grants = [];
+          for (const r of rows.filter((x) => x.mode.value)) {
+            const expiresAt = r.until.value === 'KEEP' ? (r.it.override?.expiresAt ?? null) : expiryFrom(r.until.value, r.date.value);
+            if (expiresAt === undefined) {
+              toast(`Chọn ngày hết hạn cho "${r.it.label}"`, 'warning');
+              return false;
+            }
+            grants.push({ capability: r.it.key, effect: r.mode.value, expiresAt });
+          }
+          setBusy(e.currentTarget, true);
+          try {
+            await staffApi(`/api/admin/users/${u.userId}/grants`, { method: 'PUT', body: { grants } });
+            toast(`Đã lưu quyền của ${u.fullName}`, 'success');
+            load();
+            return true;
+          } catch (err) {
+            toast(errorMessage(err), 'error', 6000);
+            return false;
+          } finally {
+            setBusy(e.currentTarget, false);
+          }
+        },
+      },
+    ],
+  });
+}
+
+/** Khung "Xin quyền chờ duyệt" (chỉ hiện khi có yêu cầu). */
+function requestsCard(requests) {
+  if (!requests.length) return null;
+  return el(
+    'section',
+    { class: 'card access-requests', id: 'xin-quyen' },
+    el('h2', {}, `Xin quyền chờ duyệt (${requests.length})`),
+    el(
+      'ul',
+      { class: 'stack' },
+      requests.map((r) => {
+        const dur = el(
+          'select',
+          { class: 'input', 'aria-label': `Thời hạn cho ${r.user.fullName}` },
+          DURATIONS.map(([v, l]) => el('option', { value: v, selected: v === 'TODAY' }, l)),
+        );
+        const decide = async (btn, path, body, ok) => {
+          setBusy(btn, true);
+          try {
+            await staffApi(`/api/admin/access-requests/${r.requestId}/${path}`, { method: 'POST', body });
+            toast(ok, 'success');
+            load();
+          } catch (err) {
+            toast(errorMessage(err), 'error');
+            setBusy(btn, false);
+          }
+        };
+        return el(
+          'li',
+          { class: 'access-request' },
+          el(
+            'div',
+            {},
+            el('strong', {}, r.user.fullName),
+            ` (${ROLE[r.user.role] ?? r.user.role}) xin: `,
+            el('strong', {}, r.capabilityLabel ?? r.capability),
+            el('div', { class: 'small muted' }, `${dateTime(r.createdAt)}${r.reason ? ` — "${r.reason}"` : ''}`),
+          ),
+          el(
+            'div',
+            { class: 'row wrap' },
+            dur,
+            el(
+              'button',
+              {
+                class: 'btn btn-sm btn-primary',
+                type: 'button',
+                onclick: (e) => decide(e.currentTarget, 'approve', { duration: dur.value }, `Đã cho phép ${r.user.fullName}`),
+              },
+              'Duyệt',
+            ),
+            el(
+              'button',
+              {
+                class: 'btn btn-sm',
+                type: 'button',
+                onclick: async (e) => {
+                  if (!(await confirmDialog('Từ chối yêu cầu?', `${r.user.fullName} sẽ được báo là chưa được cấp quyền này.`, { okLabel: 'Từ chối' }))) return;
+                  decide(e.currentTarget, 'reject', {}, 'Đã từ chối');
+                },
+              },
+              'Từ chối',
+            ),
+          ),
+        );
+      }),
+    ),
+  );
 }
 
 load();

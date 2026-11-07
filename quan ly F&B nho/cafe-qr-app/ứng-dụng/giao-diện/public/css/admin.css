@@ -1441,3 +1441,69 @@ ul.bday-tips {
   flex-wrap: wrap;
   gap: 0.5rem 1.25rem;
 }
+
+/* F-079 (ADR-037): Tài khoản — xin quyền chờ duyệt + hộp Quyền */
+.access-requests {
+  border-color: var(--c-warning, #b7791f);
+  margin-bottom: 0.75rem;
+}
+.access-requests h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+.access-requests ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.access-request {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--c-border, #e8dccd);
+}
+.access-request select {
+  width: auto;
+}
+.modal:has(.grants) {
+  width: min(52rem, 100%);
+}
+.grants td:first-child {
+  min-width: 13rem;
+}
+.grants select {
+  min-width: 8.5rem;
+}
+@media (max-width: 600px) {
+  /* Hộp Quyền trên điện thoại: mỗi quyền một thẻ dọc (tên, ô quyền, ô hạn) — không cuộn ngang */
+  .grants table,
+  .grants thead,
+  .grants tbody,
+  .grants tr,
+  .grants td {
+    display: block;
+    width: 100%;
+  }
+  .grants thead th {
+    display: none;
+  }
+  .grants thead th:first-child {
+    display: block;
+  }
+  .grants tbody tr {
+    padding: 0.6rem 0.75rem;
+    border-top: 1px solid var(--c-border, #e8dccd);
+  }
+  .grants td {
+    padding: 0.2rem 0;
+    border: 0;
+  }
+  .grants td:first-child {
+    min-width: 0;
+  }
+  .grants select {
+    width: 100%;
+  }
+}

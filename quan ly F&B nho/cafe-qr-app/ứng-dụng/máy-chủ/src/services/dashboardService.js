@@ -7,6 +7,7 @@ import { pctChange } from '../domain/analytics.js';
 import * as expiryService from './expiryService.js';
 import * as inventoryService from './inventoryService.js';
 import { addDays, todayVn, vnDayStartUtc } from '../utils/time.js';
+import * as accessRepo from '../repositories/accessRepo.js';
 
 /** Tính + lưu tổng hợp của một ngày (giờ VN). Chạy lại bao nhiêu lần cũng ra cùng một dòng (MERGE). */
 export async function computeDay(date) {
@@ -81,6 +82,7 @@ export async function today(user) {
     todos: {
       ...todo,
       pendingCashAmount: full ? todo.pendingCashAmount : undefined,
+      pendingAccess: user.role === 'ADMIN' ? await accessRepo.countPending() : undefined, // F-079: xin quyền chờ chủ quán duyệt
       stocktakeAgeDays,
       stocktakeOverdue: stocktakeAgeDays === null || stocktakeAgeDays > 7,
     },

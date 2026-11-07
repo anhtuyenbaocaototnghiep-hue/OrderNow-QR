@@ -3,7 +3,7 @@
 import { staffApi } from './api.js';
 import { clearStaffSession, getToken } from './auth-store.js';
 import { confirmDialog } from './ui.js';
-import { canOpenAdminPage } from './roles.js';
+import { canOpenAdminPage, pageCap } from './roles.js';
 
 /** Thông tin phiên hiện tại sau requireStaffPage(): { user, shop, modules } — modules: nhóm menu nâng cao đang bật (F-061). */
 export const current = { user: null, shop: null, modules: [], attendance: { mode: 'LOGIN', moneyPin: false }, pos: { oneTap: false } };
@@ -20,7 +20,8 @@ export async function requireStaffPage({ admin = false, page = '' } = {}) {
   current.attendance = attendance ?? { mode: 'LOGIN', moneyPin: false }; // F-072
   current.pos = pos ?? { oneTap: false }; // F-076
   if (admin && !canOpenAdminPage(user, page)) {
-    location.replace('/pos?denied=admin');
+    const cap = pageCap(page); // F-079: quyền cấp riêng được → máy quầy mời "Xin quyền"
+    location.replace(`/pos?denied=admin${cap ? `&cap=${cap}` : ''}`);
     return new Promise(() => {});
   }
   return user;
