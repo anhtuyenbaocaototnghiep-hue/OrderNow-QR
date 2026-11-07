@@ -494,3 +494,9 @@ flowchart LR
 - **Thanh bên Quản lý:** "Màn hình quầy" → **Mở màn hình quầy** (tab mới); **Đăng xuất** chỉ thoát trang Quản lý → SCR-56.
 - **Máy quầy:** nút **Quản lý** → trang Quản lý đầu tiên được mở, dùng phiên người đang đứng máy.
 - **Mở trang Quản lý không được phép:** còn trang Quản lý khác → về trang đó kèm thanh Xin quyền; không còn → máy quầy (`/pos?denied=admin`) hoặc SCR-56.
+
+## F-081 — Bảng chọn món (TASK-098, ADR-039, 07/11/2026)
+
+- **SCR-02 Menu:** tên món là nút (bấm mở bảng chọn), bấm ảnh cũng mở; "+" món có tùy chọn mở bảng chọn (không thêm ngay nữa); "+" món không tùy chọn thêm ngay như cũ. Dòng "Chọn size / tùy chọn ›" vẫn còn (mở cùng bảng).
+- **SCR-57 Bảng chọn món** (sheet trượt lên): tiêu đề tên món, ảnh + giá (giá gạch nếu khuyến mãi), nhãn khuyến mãi, thành phần combo; các nhóm tùy chọn (radio / ô tick, ghi "Bắt buộc chọn 1", "Tối đa 2"…, +giá); **Ghi chú** — 6 nút nhanh (Ít đường, Không đường, Ít đá, Nhiều đá, Không đá, Mang về) ghép vào ô gõ (combo không có); **Số lượng** [−] n [+]; "Giá 1 phần"; chân: **Hủy**, **Thêm vào giỏ · tổng tiền** (tổng = giá 1 phần × số lượng, đổi ngay khi chọn). Không tự bật bàn phím. Thiếu nhóm bắt buộc → "Vui lòng chọn …". Thêm xong → thông báo "Đã thêm n × Tên (tùy chọn, ghi chú)".
+- **SCR-03 Giỏ:** như cũ; món cùng tùy chọn khác ghi chú là dòng riêng.

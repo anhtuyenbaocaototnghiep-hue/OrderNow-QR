@@ -20,7 +20,7 @@
   - Giá dòng = giá món (sau khuyến mãi dòng) + Σ phụ thu.
   - Nhu cầu kho = Σ SL × (BOM món + BOM tùy chọn đã chọn) → giữ kho khi gửi, trừ khi hoàn tất (ADR-001).
   - Cùng món nhưng khác tùy chọn là hai dòng giỏ.
-  - Món mà mọi nhóm bắt buộc đều có mặc định: bấm "+" là thêm ngay theo mặc định (giữ ≤ 3 chạm — NFR-003). Khách đổi bằng "Chọn size / tùy chọn".
+  - Món mà mọi nhóm bắt buộc đều có mặc định: bấm "+" là thêm ngay theo mặc định (giữ ≤ 3 chạm — NFR-003). Khách đổi bằng "Chọn size / tùy chọn". _Từ F-081 (ADR-039): ở màn khách, "+" món có tùy chọn mở bảng chọn (tùy chọn + ghi chú + số lượng); máy quầy giữ như trên._
   - Sửa hoặc xóa tùy chọn không đổi đơn cũ. Tùy chọn đã có trong đơn thì xóa mềm.
 - **API:**
   - `GET/POST /api/admin/modifier-groups`, `PUT/DELETE /api/admin/modifier-groups/{id}`.
