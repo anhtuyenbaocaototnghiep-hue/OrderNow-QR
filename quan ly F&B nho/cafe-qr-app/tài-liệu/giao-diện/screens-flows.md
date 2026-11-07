@@ -480,3 +480,10 @@ flowchart LR
 - **Máy quầy:** menu chỉ trang của vị trí (Pha chế: Đơn hàng, Kho & sơ chế, Giờ công; Phục vụ: Đơn hàng, Gọi món tại bàn, Giờ công; Thu ngân: Đơn hàng, Bán mang đi, Ca & hoàn tiền, Giờ công); mở thẳng trang khác → `/pos?denied=position` + lời nhắc; nhãn **Thử việc** cạnh tên; chưa mở ca mà không phải thu ngân → dải ghi "Nhờ thu ngân mở ca", nút Ca báo "việc của thu ngân".
 - **SCR-10 Đơn hàng:** không phải Pha chế → phiếu chỉ xem (đơn mới vẫn Hủy); không phải Thu ngân → thẻ bàn "Xem bill", nút thu tiền trong hộp bill khóa; không phải Phục vụ → thẻ bàn không có "Gọi món".
 - **SCR-46 Tra cứu API:** dòng chi tiết thêm "nhân viên cần vị trí …".
+
+## F-079 — Quyền riêng từng tài khoản + xin quyền (TASK-096, ADR-037, 07/11/2026)
+
+- **SCR-20 Tài khoản:** khung **Xin quyền chờ duyệt** (`#xin-quyen`, chỉ hiện khi có): mỗi dòng người — quyền — lý do — giờ, ô hạn (Hết hôm nay mặc định / 7 ngày / Luôn luôn), **Duyệt**, **Từ chối** (hỏi lại). Mỗi dòng tài khoản (trừ chủ quán) có nút **Quyền** → hộp "Quyền của …": bảng theo nhóm (Máy quầy, Trang Quản lý) — tên quyền (+ nhãn "Tiền"), ô **Theo vai trò (có / không) / Cho phép / Không cho**, ô **Hạn** (Giữ / Luôn luôn / Hết hôm nay / 7 ngày / Đến ngày… + ô ngày); **Lưu quyền**. Dòng có quyền riêng: nhãn xanh **Có quyền riêng**.
+- **SCR-42 Hôm nay (chủ quán):** việc cần làm "n yêu cầu xin quyền chờ duyệt" → `/admin/users#xin-quyen`.
+- **Mọi trang quầy / Quản lý:** thanh nổi cuối màn hình **Bạn chưa có quyền: … [Xin quyền] [Đóng]** khi máy chủ chặn ở quyền cấp được hoặc bị chuyển về (`?cap=`); hộp **Xin quyền** (lý do) → "Đã gửi — chờ chủ quán duyệt"; kết quả: thanh xanh "Chủ quán đã cho phép … [Tải lại]" hoặc thanh "chưa cho phép …".
+- **Máy quầy:** mục **Quản lý** hiện khi có bất kỳ quyền trang Quản lý nào (đích = trang đầu tiên được mở); chỉ có Hôm nay → mục **Hôm nay**.

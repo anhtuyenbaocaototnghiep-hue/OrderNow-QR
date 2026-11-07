@@ -1322,3 +1322,10 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Thành phần | Nội dung |
 | --- | --- |
 | Migration `0054_vi_tri_cap_nhan_vien.sql` | `Users.Positions VARCHAR(40) NULL` (`'CASHIER,BARISTA'` — chỉ chữ hoa và dấu phẩy; NULL = mọi vị trí), `Users.StaffLevel VARCHAR(10) NOT NULL DEFAULT 'OFFICIAL'` (`PROBATION` / `OFFICIAL`). Vai khác STAFF luôn lưu NULL / `OFFICIAL` (`usersRepo`) |
+
+### Quyền riêng + xin quyền (FEATURE-079, ADR-037, TASK-096, 07/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0055_quyen_rieng_tung_tai_khoan.sql` | `UserGrants (GrantId PK, UserId → Users, Capability VARCHAR(30), Effect ALLOW/DENY, ExpiresAt DATETIME2(0) NULL, GrantedBy → Users, GrantedAt, Note)`, duy nhất `(UserId, Capability)`. `AccessRequests (RequestId PK, UserId → Users, Capability, Reason, Status PENDING/APPROVED/REJECTED, CreatedAt, DecidedBy → Users, DecidedAt, Duration TODAY/WEEK/ALWAYS, DecisionNote)`, chỉ mục duy nhất lọc `(UserId, Capability) WHERE Status = 'PENDING'`. `Alerts.Kind` thêm `ACCESS_GRANT` |
+| Thủ tục | `sp_DeleteUser`: xin quyền / người đã cấp quyền cho người khác = lịch sử (xóa mềm); xóa hẳn thì xóa `UserGrants` của tài khoản trước |

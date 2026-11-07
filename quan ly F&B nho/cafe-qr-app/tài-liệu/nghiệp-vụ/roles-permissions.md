@@ -166,3 +166,19 @@ Chỉ áp cho vai **Nhân viên** (STAFF). Để trống vị trí = mọi việ
 | Thử việc | Không — luôn cần trưởng ca trở lên | Luôn chờ duyệt | Luôn cần người duyệt |
 
 Test: `staff-positions.test.js` (AC-078-01…05), E2E AC-078-06.
+
+## 4.8. Bổ sung F-079 — quyền riêng từng tài khoản + xin quyền (ADR-037, 07/11/2026)
+
+Ngoài vai trò / vị trí, chủ quán đặt riêng cho từng người (trừ chủ quán) **Cho phép** / **Không cho** từng quyền dưới đây, có thể kèm hạn. Không đặt = theo vai trò.
+
+| Quyền | Mặc định có |
+| --- | --- |
+| Thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi thu chi (tiền) | Thu ngân / nhân viên chưa đặt vị trí / trưởng ca trở lên |
+| Nhận / làm đơn, sơ chế, hủy hàng, nhận hàng | Pha chế / chưa đặt vị trí / trưởng ca trở lên |
+| Mở bàn, gọi món tại bàn, chuyển bàn | Phục vụ / chưa đặt vị trí / trưởng ca trở lên |
+| Kiểm kê, điều chỉnh kho ở quầy · Sửa / thêm chấm công người khác · Trang Hôm nay | Trưởng ca trở lên |
+| Báo cáo bán hàng & ca (tiền) · Thực đơn & giá · Kho hàng · Khách hàng & khuyến mãi · Bàn & QR · Nhân sự · Sổ quỹ (tiền) · Cảnh báo | Quản lý cửa hàng |
+| Lãi / lỗ & phân tích (tiền) · Lương (tiền) · Nhật ký thao tác | Chỉ chủ quán (cấp riêng được) |
+| Tài khoản & phân quyền, cài đặt chung, cách chấm công, email cảnh báo, việc chạy nền khác, danh mục thu chi (sửa), ẩn danh hội viên, Tra cứu API, duyệt xin quyền | Chỉ chủ quán — **không cấp được** |
+
+Bị chặn ở quyền cấp được → thanh "Xin quyền" → chủ quán duyệt (hết hôm nay / 7 ngày / luôn) hoặc từ chối. Test: `access-grants.test.js` (AC-079-01…06), E2E AC-079-07.

@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 456 test, sửa lúc 2026-11-07 08:44 UTC
-- `npm run test:e2e` (JSON): 71 test, sửa lúc 2026-11-07 08:53 UTC
+- `npm test` (JUnit): 462 test, sửa lúc 2026-11-07 14:32 UTC
+- `npm run test:e2e` (JSON): 72 test, sửa lúc 2026-11-07 14:43 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 176 |
-| Acceptance Criteria | 481 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 481 |
+| User Story | 178 |
+| Acceptance Criteria | 488 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 488 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -576,4 +576,11 @@
 | AC-078-04 | TC-078-04 | F-078 | US-078-1 | ACT-ADMIN, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ORDER, MOD-BILLING | SCR-20, SCR-10 | BR-116 | Integration: `staff-positions.test.js` › AC-078-04: Thu ngân — bán mang đi, thu tiền, ghi chi quỹ được; tiếp nhận / hoàn tất, mở bàn → 403; nhân viên chưa đặt vị trí và trưởng ca làm được mọi việc; Tra cứu API ghi vị trí — **PASS** | **PASS** |
 | AC-078-05 | TC-078-05 | F-078 | US-078-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-17 | MOD-AUTH, MOD-BILLING, MOD-SHIFT | SCR-20, SCR-14, SCR-15 | BR-116 | Integration: `staff-positions.test.js` › AC-078-05: Thử việc — giảm giá tay bất kỳ cần trưởng ca duyệt (chính thức 5 % tự giảm được), khoản chi nhỏ vẫn chờ duyệt, xóa món của đơn chưa tiếp nhận cần người duyệt — **PASS** | **PASS** |
 | AC-078-06 | TC-078-06 | F-078 | US-078-1, US-078-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-17 | MOD-AUTH, MOD-ORDER, MOD-BILLING, MOD-SHIFT | SCR-20, SCR-10, SCR-14, SCR-15 | BR-116 | E2E: `flow.spec.js` › vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", cấp "Thử việc" ở Tài khoản; người đó đăng nhập → máy quầy chỉ có Đơn hàng, Kho & sơ chế, Giờ công + nhãn "Thử việc"; mở thẳng Bán mang đi → về Đơn hàng kèm lời nhắc (F-078, AC-078-06) — **PASS** | **PASS** |
+| AC-079-01 | TC-079-01 | F-079 | US-079-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47 | BR-117 | Integration: `access-grants.test.js` › AC-079-01: chủ quán xem hộp Quyền (mặc định theo vai, đặt riêng, đang có); cho phép "Thu tiền" có hạn → người Phục vụ bán mang đi được ngay, /auth/me có quyền mới; chủ quán / quyền lạ / hạn đã qua → 400; người khác đặt → 403; xóa tài khoản có quyền riêng vẫn được — **PASS** | **PASS** |
+| AC-079-02 | TC-079-02 | F-079 | US-079-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47 | BR-117 | Integration: `access-grants.test.js` › AC-079-02: "Không cho" thắng mặc định — quản lý cửa hàng bị thu "Thực đơn & giá" → 403 OWNER_ONLY kèm quyền cần, phần khác vẫn dùng được; quyền hết hạn tự về theo vai trò — **PASS** | **PASS** |
+| AC-079-03 | TC-079-03 | F-079 | US-079-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47 | BR-117 | Integration: `access-grants.test.js` › AC-079-03: cấp riêng một phần trang Quản lý cho trưởng ca — vào được Lương, máy quầy có "Quản lý"; phần khác 403 kèm quyền cần; tài khoản, cài đặt chung, duyệt xin quyền không cấp được — **PASS** | **PASS** |
+| AC-079-04 | TC-079-04 | F-079 | US-079-2 | ACT-STAFF, ACT-LEAD, ACT-STORE, ACT-ADMIN | UC-17 | MOD-AUTH | SCR-20, SCR-42, SCR-10 | BR-117 | Integration: `access-grants.test.js` › AC-079-04: xin quyền → chủ quán duyệt "hết hôm nay" — bị chặn kèm quyền cần, gửi yêu cầu (gửi lại = cùng yêu cầu), chủ quán thấy ở danh sách + trang Hôm nay, duyệt xong làm được ngay, hạn = hết ngày (giờ VN); đã có quyền thì không xin nữa — **PASS** | **PASS** |
+| AC-079-05 | TC-079-05 | F-079 | US-079-2 | ACT-STAFF, ACT-LEAD, ACT-STORE, ACT-ADMIN | UC-17 | MOD-AUTH | SCR-20, SCR-42, SCR-10 | BR-117 | Integration: `access-grants.test.js` › AC-079-05: từ chối có ghi chú; nhân viên / quản lý cửa hàng không duyệt được; tối đa 5 yêu cầu chờ mỗi người — **PASS** | **PASS** |
+| AC-079-06 | TC-079-06 | F-079 | US-079-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47 | BR-117 | Integration: `access-grants.test.js` › AC-079-06: cho phép quyền dính tiền (đặt riêng hoặc duyệt) → cảnh báo ACCESS_GRANT cho chủ quán (quản lý cửa hàng không thấy); quyền không dính tiền → không cảnh báo; Tra cứu API ghi quyền cấp được của từng dòng Quản lý — **PASS** | **PASS** |
+| AC-079-07 | TC-079-07 | F-079 | US-079-1, US-079-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47, SCR-42, SCR-10 | BR-117 | E2E: `flow.spec.js` › quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuyển về kèm thanh "Xin quyền" → gửi lý do; chủ quán thấy ở Hôm nay → Tài khoản → Duyệt "Hết hôm nay" → nhân viên vào được; chủ quán mở "Quyền" của người đó đặt lại "Theo vai trò" → hết vào được (F-079, AC-079-07) — **PASS** | **PASS** |
 

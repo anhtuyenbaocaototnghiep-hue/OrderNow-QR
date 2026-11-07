@@ -764,3 +764,26 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - Việc theo vị trí (vai STAFF): `POST /api/orders/takeaway`, `…/sessions/{id}/settle`, `…/splits/{id}/settle`, `…/shifts/open`, `…/shifts/{id}/close`, `…/payments/{id}/refunds`, `…/cash-transactions`, `…/gift-drinks` — CASHIER; `POST /api/orders/{id}/accept`, `…/complete`, `…/prep/batches`, `…/waste`, `…/lots/{id}/write-off`, `…/receiving/purchase-orders/{id}/receive` — BARISTA; `POST /api/tables/{id}/sessions`, `…/sessions/{id}/orders`, `…/sessions/{id}/move` — SERVER. Sai → `403 POSITION_REQUIRED`.
 - Nhân viên thử việc: báo giá / thu tiền có giảm tay > 0 → `needsApproval = true`; ghi chi luôn `PENDING`; sửa / xóa món luôn cần `adminUsername` + `adminPassword` (thiếu → `403 ADMIN_APPROVAL_REQUIRED`).
 - `GET /api/admin/api-docs`: mỗi dòng thêm `positions` (`null` = mọi vị trí).
+
+## Bổ sung F-079 — quyền riêng từng tài khoản + xin quyền (ADR-037, TASK-096, 07/11/2026)
+
+**Nhân viên**
+
+| Method & path | Mục đích | Lỗi |
+| --- | --- | --- |
+| `GET /api/access/capabilities` | Danh mục quyền `[{ key, group, label, money }]` | 401 |
+| `POST /api/access-requests` | Xin quyền `{ capability, reason? }` → 201 `{ request, created: true }`; đã có yêu cầu chờ → 200 `created: false` | 400 quyền lạ; `409 ALREADY_ALLOWED`; `409 TOO_MANY_REQUESTS` (5 yêu cầu chờ); `400 OWNER_ALWAYS` |
+| `GET /api/access-requests/mine` | Yêu cầu của mình 7 ngày (`status`, `decisionNote`, `decidedBy`) | 401 |
+
+**Chủ quán**
+
+| Method & path | Mục đích | Lỗi |
+| --- | --- | --- |
+| `GET /api/admin/users/{id}/grants` | `{ user, items: [{ key, group, label, money, byRole, override, effective }] }` | `400 OWNER_ALWAYS` (chủ quán), 404 |
+| `PUT /api/admin/users/{id}/grants` | Thay toàn bộ quyền riêng `{ grants: [{ capability, effect: ALLOW/DENY, expiresAt? }] }` | 400 (quyền lạ, trùng, hạn đã qua), `400 OWNER_ALWAYS` |
+| `GET /api/admin/access-requests?status` | `{ requests, pending }` (`status` = `PENDING` mặc định / `ALL`) | — |
+| `POST /api/admin/access-requests/{id}/approve` · `…/reject` | Duyệt `{ duration: TODAY/WEEK/ALWAYS, note? }` → `{ request, expiresAt }`; từ chối `{ note? }` | `409 REQUEST_DECIDED`, 404 |
+
+- `GET /api/auth/me`: `user.caps` (quyền đang có), `user.grants`.
+- Bị chặn ở việc thuộc quyền cấp được: 403 (`FORBIDDEN` / `OWNER_ONLY` / `POSITION_REQUIRED`) kèm `details: { capability, capabilityLabel }`.
+- `GET /api/admin/users`: thêm `grantCount`. `GET /api/dashboard/today` (chủ quán): `todos.pendingAccess`. `GET /api/admin/api-docs`: dòng `/api/admin` thêm `capability`. Cảnh báo loại mới `ACCESS_GRANT`.

@@ -210,6 +210,8 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-077-2 | Should | ACT-ADMIN, ACT-STORE | Là chủ quán, tôi muốn được báo khi quản lý cửa hàng đổi giá hay thêm món, và quản lý cửa hàng không tự đóng cảnh báo về chính họ, để vẫn nắm được những thay đổi ảnh hưởng tới tiền. | AC-077-04, AC-077-06 | BR-115 | UC-17 | MOD-AUTH, MOD-NOTIFY | SCR-47, SCR-21 | F-077 | DONE |
 | US-078-1 | Should | ACT-ADMIN, ACT-STAFF | Là chủ quán, tôi muốn chia nhân viên theo vị trí thu ngân / pha chế / phục vụ để mỗi người chỉ thấy và làm phần việc của mình, tiền chỉ qua tay thu ngân. | AC-078-01, AC-078-02, AC-078-03, AC-078-04, AC-078-06 | BR-116 | UC-17 | MOD-AUTH, MOD-ORDER, MOD-BILLING | SCR-20, SCR-10 | F-078 | DONE |
 | US-078-2 | Should | ACT-ADMIN, ACT-STAFF, ACT-LEAD | Là chủ quán, tôi muốn nhân viên thử việc không tự giảm giá, tự chi tiền hay tự xóa món mà phải có trưởng ca duyệt, để yên tâm khi nhận người mới. | AC-078-05, AC-078-06 | BR-116 | UC-17 | MOD-AUTH, MOD-BILLING, MOD-SHIFT | SCR-20, SCR-14, SCR-15 | F-078 | DONE |
+| US-079-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn cho phép hoặc không cho từng người một việc cụ thể, có thể chỉ trong hôm nay, để xử lý những hôm thiếu người hay giới hạn riêng một người mà không phải đổi vai trò. | AC-079-01, AC-079-02, AC-079-03, AC-079-06, AC-079-07 | BR-117 | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47 | F-079 | DONE |
+| US-079-2 | Should | ACT-STAFF, ACT-LEAD, ACT-STORE, ACT-ADMIN | Là nhân viên, tôi muốn xin quyền ngay khi bị chặn và được chủ quán duyệt từ xa, để làm tiếp việc mà không phải gọi điện hay chờ chủ quán tới quán. | AC-079-04, AC-079-05, AC-079-07 | BR-117 | UC-17 | MOD-AUTH | SCR-20, SCR-42, SCR-10 | F-079 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

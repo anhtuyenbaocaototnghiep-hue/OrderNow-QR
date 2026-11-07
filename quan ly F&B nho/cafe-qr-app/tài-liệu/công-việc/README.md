@@ -111,6 +111,7 @@
 | [TASK-093](TASK-093.md) | Quy trình 1 chạm ở màn Đơn hàng (F-076), ADR-034 | FEATURE-076 | TASK-092 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
 | [TASK-094](TASK-094.md) | Phân quyền rõ ràng, đợt 1 — vai Quản lý cửa hàng, tên Chủ quán (F-077), ADR-035 | FEATURE-077 | TASK-093 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
 | [TASK-095](TASK-095.md) | Phân quyền rõ ràng, đợt 2 — vị trí Thu ngân / Pha chế / Phục vụ, cấp Thử việc / Chính thức (F-078), ADR-036 | FEATURE-078 | TASK-094 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
+| [TASK-096](TASK-096.md) | Quyền riêng từng tài khoản + xin quyền / duyệt (F-079), ADR-037 | FEATURE-079 | TASK-095 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 
