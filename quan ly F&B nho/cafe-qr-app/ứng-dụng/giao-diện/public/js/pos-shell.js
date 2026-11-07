@@ -6,11 +6,17 @@ import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, moneyValue, playSound, time, toast, unlockAudio } from './ui.js';
 import { brandMark, icon } from './icons.js';
-import { ROLE_LABEL } from './roles.js';
+import { canOpenPosPage, hasPosition, isProbation, positionsText, ROLE_LABEL } from './roles.js';
 import { kioskDialog, registerPinPrompter, setPinDialog, switchUserDialog } from './staff-pin.js';
 
 export async function mountPosShell(active) {
   const user = await requireStaffPage();
+  // F-078: trang không thuộc vị trí của nhân viên → về Đơn hàng (máy chủ vẫn chặn từng việc)
+  if (!canOpenPosPage(user, active)) {
+    location.replace('/pos?denied=position');
+    return new Promise(() => {});
+  }
+  const canPay = hasPosition(user, 'CASHIER');
   const { shop } = current;
   registerPinPrompter(); // F-072: thao tác tiền cần PIN → hỏi PIN rồi gửi lại
   // Chưa kết nối xong: trạng thái trung tính, không đỏ (đỏ chỉ khi mất kết nối thật — DEF-011)
@@ -55,6 +61,9 @@ export async function mountPosShell(active) {
     ['shift', '/pos/shift', 'Ca & hoàn tiền', 'wallet'],
     ['me', '/pos/me', 'Giờ công', 'timer'], // F-072 / F-073: giờ công, lương tạm tính, phiếu lương của chính mình
   ];
+  const ownNav = nav.filter(([key]) => canOpenPosPage(user, key)); // F-078: mục theo vị trí
+  nav.length = 0;
+  nav.push(...ownNav);
   if (user.role === 'MANAGER') nav.push(['today', '/admin/today', 'Hôm nay', 'chart-column']); // F-043 bản rút gọn
   if (user.role === 'STORE_MGR') nav.push(['admin', '/admin/today', 'Quản lý', 'settings']); // F-077: trang Quản lý phần vận hành
   if (user.role === 'ADMIN') nav.push(['admin', '/admin', 'Quản lý', 'settings']);
@@ -85,6 +94,7 @@ export async function mountPosShell(active) {
           ['MANAGER', 'STORE_MGR'].includes(user.role)
             ? el('span', { class: `badge ${user.role === 'MANAGER' ? 'ok' : 'preparing'}` }, ROLE_LABEL[user.role])
             : null,
+          isProbation(user) ? el('span', { class: 'badge pending', title: 'Giảm giá tay, chi quỹ, sửa / xóa món cần trưởng ca duyệt' }, 'Thử việc') : null,
         ),
         // F-072: màn chấm công chung (PIN riêng) + đổi người đứng máy
         current.attendance.mode === 'KIOSK'
@@ -115,7 +125,9 @@ export async function mountPosShell(active) {
     { class: 'banner no-shift', id: 'no-shift', role: 'status', hidden: true },
     icon('triangle-alert'),
     'Chưa mở ca — chưa nhận, xử lý đơn và thu tiền được. ',
-    el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => openShiftDialog() }, 'Mở ca'),
+    canPay
+      ? el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => openShiftDialog() }, 'Mở ca')
+      : el('strong', {}, 'Nhờ thu ngân mở ca.'), // F-078
   );
   // F-072: chưa đặt PIN (cần cho chấm công / thao tác tiền) → dải nhắc đặt PIN
   const noPin =
@@ -153,6 +165,8 @@ export async function mountPosShell(active) {
   }).observe(header);
   document.fonts?.ready.then(fitHeader); // phông web nạp xong làm chữ rộng ra
   if (new URLSearchParams(location.search).get('denied') === 'admin') toast('Chức năng quản lý chỉ dành cho tài khoản Quản lý', 'warning');
+  if (new URLSearchParams(location.search).get('denied') === 'position')
+    toast(`Trang đó không thuộc vị trí của bạn (${positionsText(user)}) — nhờ chủ quán đổi ở Tài khoản nếu cần`, 'warning', 6000);
   // F-063 (ADR-021 D-82): QR trên bàn in ở địa chỉ cũ → nhân viên biết vì sao khách quét lỗi, báo quản lý in lại
   staffApi('/api/qr-check')
     .then((q) => {
@@ -215,7 +229,8 @@ export async function mountPosShell(active) {
     const s = shell.shift;
     shiftBtn.classList.toggle('btn-danger', !s);
     shiftBtn.replaceChildren(...(s ? [`Ca #${s.shiftId} · từ ${time(s.openedAt)}`] : [icon('triangle-alert'), 'Chưa mở ca']));
-    shiftBtn.onclick = s ? () => (location.href = '/pos/shift') : () => openShiftDialog();
+    // F-078: chỉ thu ngân (hoặc trưởng ca trở lên) vào trang Ca / mở ca
+    shiftBtn.onclick = !canPay ? () => toast('Mở / đóng ca là việc của thu ngân', 'info') : s ? () => (location.href = '/pos/shift') : () => openShiftDialog();
     noShift.hidden = Boolean(s) || active === 'shift';
     fitHeader();
   }

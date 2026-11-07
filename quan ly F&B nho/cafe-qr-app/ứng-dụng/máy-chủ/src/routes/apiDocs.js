@@ -50,7 +50,8 @@ export function listRoutes(mounts) {
         const routePath = String(layer.route.path);
         for (const method of Object.keys(layer.route.methods).filter((m) => m !== '_all')) {
           const route = { method: method.toUpperCase(), path: prefix + (routePath === '/' ? '' : routePath) };
-          out.push({ ...route, ...accessOf(handlers, route) });
+          // F-078: vị trí nhân viên cần cho việc này (null = mọi vị trí)
+          out.push({ ...route, ...accessOf(handlers, route), positions: handlers.find((h) => Array.isArray(h.positions))?.positions ?? null });
         }
       } else if (layer.slash && Array.isArray(layer.handle?.stack)) {
         before = walk(layer.handle, prefix, before);

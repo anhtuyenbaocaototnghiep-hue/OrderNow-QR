@@ -5,6 +5,7 @@
 // ADR-019: thu bằng chuyển khoản (F-056), thu chung nhiều bàn (F-057), tách hóa đơn theo món (F-058).
 import express from 'express';
 import { z } from 'zod';
+import { requirePosition } from '../auth/permissions.js';
 import { requireStaff } from '../middleware/auth.js';
 import { paramGuid, paramId, parse, zGuid, zId, zManualDiscount, zMoney, zOrderItems, zText } from '../middleware/validate.js';
 import * as attendanceService from '../services/attendanceService.js';
@@ -19,6 +20,10 @@ import * as splitService from '../services/splitService.js';
 import * as voidService from '../services/voidService.js';
 
 export const staffRouter = express.Router();
+// F-078 (ADR-036): việc theo vị trí của nhân viên (vai STAFF; để trống = mọi vị trí; trưởng ca trở lên không bị giới hạn)
+const cashier = requirePosition('CASHIER');
+const barista = requirePosition('BARISTA');
+const server = requirePosition('SERVER');
 staffRouter.use(requireStaff);
 
 const ORDER_STATUSES = ['PENDING', 'PREPARING', 'COMPLETED', 'CANCELLED', 'VOIDED'];
@@ -79,7 +84,7 @@ staffRouter.post('/orders/takeaway/quote', async (req, res) => {
   res.json(await orderService.takeawayQuote(body, req.user));
 });
 
-staffRouter.post('/orders/takeaway', async (req, res) => {
+staffRouter.post('/orders/takeaway', cashier, async (req, res) => {
   const body = parse(
     payBody({
       items: zOrderItems(),
@@ -93,11 +98,11 @@ staffRouter.post('/orders/takeaway', async (req, res) => {
   res.status(r.duplicate ? 200 : 201).json(r);
 });
 
-staffRouter.post('/orders/:id/accept', async (req, res) => {
+staffRouter.post('/orders/:id/accept', barista, async (req, res) => {
   res.json({ order: await orderService.accept(paramId(req)) });
 });
 
-staffRouter.post('/orders/:id/complete', async (req, res) => {
+staffRouter.post('/orders/:id/complete', barista, async (req, res) => {
   res.json(await orderService.complete(paramId(req), req.user));
 });
 
@@ -120,7 +125,7 @@ staffRouter.post('/sessions/:id/settle/preview', async (req, res) => {
   res.json(await sessionService.settlePreview(paramGuid(req), body, req.user));
 });
 
-staffRouter.post('/sessions/:id/settle', async (req, res) => {
+staffRouter.post('/sessions/:id/settle', cashier, async (req, res) => {
   const body = parse(payBody({ ...billingFields, ...mergeField }), req.body);
   res.json(await sessionService.settle(paramGuid(req), body, req.user));
 });
@@ -143,7 +148,7 @@ staffRouter.post('/sessions/:id/cancel', async (req, res) =>
 staffRouter.get('/sessions/:id/voids', async (req, res) => res.json(await voidService.voidsOfSession(paramGuid(req))));
 
 // F-049: chuyển cả nhóm sang bàn khác (bàn trống hoặc có nhóm khác — bill vẫn riêng)
-staffRouter.post('/sessions/:id/move', async (req, res) =>
+staffRouter.post('/sessions/:id/move', server, async (req, res) =>
   res.json(await sessionService.moveSession(paramGuid(req), parse(z.object({ toTableId: zId(), fromTableId: zId().optional() }), req.body ?? {}), req.user)),
 );
 
@@ -156,7 +161,7 @@ staffRouter.post('/splits/:id/settle/preview', async (req, res) => {
   const body = parse(z.object(billingFields), req.body ?? {});
   res.json(await splitService.preview(paramId(req), body, req.user));
 });
-staffRouter.post('/splits/:id/settle', async (req, res) => {
+staffRouter.post('/splits/:id/settle', cashier, async (req, res) => {
   const body = parse(payBody(billingFields), req.body);
   res.json(await splitService.settle(paramId(req), body, req.user));
 });
@@ -181,12 +186,12 @@ staffRouter.get('/payments/:id/receipt', async (req, res) => res.json(await sess
 // ---- Gọi món tại bàn + ghi chú bàn (FEATURE-024) ----
 staffRouter.get('/tables', async (_req, res) => res.json(await sessionService.tablesOverview()));
 
-staffRouter.post('/tables/:id/sessions', async (req, res) => {
+staffRouter.post('/tables/:id/sessions', server, async (req, res) => {
   const body = parse(z.object({ note: zText(200).optional().nullable(), newGroup: z.boolean().default(false) }), req.body ?? {});
   res.status(201).json({ session: await sessionService.openTable(paramId(req), body, req.user) });
 });
 
-staffRouter.post('/sessions/:id/orders', async (req, res) => {
+staffRouter.post('/sessions/:id/orders', server, async (req, res) => {
   const body = parse(z.object({ items: zOrderItems(), note: zText(200).optional().nullable() }), req.body);
   const key = parse(z.string().max(100).optional(), req.get('idempotency-key') || undefined);
   res.status(201).json({ order: await orderService.submitByStaff(paramGuid(req), body, req.user, key) });
@@ -219,12 +224,12 @@ staffRouter.get('/shifts/current', async (_req, res) =>
   res.json({ shift: (await shiftService.current()) ?? null, cashApproveThreshold: (await settingsService.getSettings()).cashApproveThreshold }),
 );
 
-staffRouter.post('/shifts/open', async (req, res) => {
+staffRouter.post('/shifts/open', cashier, async (req, res) => {
   const { openingCash } = parse(z.object({ openingCash: zMoney() }), req.body);
   res.status(201).json({ shift: await shiftService.open(openingCash, req.user) });
 });
 
-staffRouter.post('/shifts/:id/close', async (req, res) => {
+staffRouter.post('/shifts/:id/close', cashier, async (req, res) => {
   const ids = () => z.array(zId()).max(100).default([]);
   const body = parse(
     z.object({
@@ -244,7 +249,7 @@ staffRouter.get('/shifts/:id/report', async (req, res) => res.json(await shiftSe
 // ---- Hoàn tiền sau thu (FEATURE-019): STAFF phải kèm tài khoản quản lý ----
 staffRouter.get('/payments/:id', async (req, res) => res.json(await refundService.paymentDetail(paramId(req))));
 
-staffRouter.post('/payments/:id/refunds', async (req, res) => {
+staffRouter.post('/payments/:id/refunds', cashier, async (req, res) => {
   const body = parse(
     z.object({
       amount: zMoney().refine((v) => v > 0, 'Số tiền hoàn phải lớn hơn 0'),

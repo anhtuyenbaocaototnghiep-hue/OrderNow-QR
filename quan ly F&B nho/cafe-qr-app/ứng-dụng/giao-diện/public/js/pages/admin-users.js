@@ -2,7 +2,7 @@
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, setBusy, showFieldErrors, toast } from '../ui.js';
-import { ROLE_BADGE, ROLE_LABEL, ROLE_SUMMARY } from '../roles.js';
+import { LEVEL_LABEL, POSITION_HINT, POSITION_LABEL, positionsText, ROLE_BADGE, ROLE_LABEL, ROLE_SUMMARY } from '../roles.js';
 
 const me = await mountAdminShell('users');
 
@@ -23,7 +23,57 @@ const roleGuide = () =>
       {},
       ROLE_SUMMARY.flatMap(([r, text]) => [el('dt', {}, el('span', { class: `badge ${ROLE_BADGE[r]}` }, ROLE[r])), el('dd', {}, text)]),
     ),
+    // F-078: vị trí + cấp của nhân viên quầy
+    el(
+      'p',
+      { class: 'small', style: { margin: '0.75rem 0 0.25rem' } },
+      el('strong', {}, 'Nhân viên quầy chia theo vị trí'),
+      ' (chọn được nhiều, để trống = mọi việc):',
+    ),
+    el(
+      'ul',
+      { class: 'small' },
+      Object.entries(POSITION_LABEL).map(([p, l]) => el('li', {}, el('strong', {}, l), `: ${POSITION_HINT[p]}.`)),
+      el('li', {}, el('strong', {}, 'Thử việc'), ': giảm giá tay, ghi chi quỹ, sửa / xóa món luôn cần trưởng ca trở lên duyệt.'),
+    ),
   );
+
+/** F-078: ô chọn vị trí + cấp — chỉ hiện khi vai trò là Nhân viên quầy. */
+function staffFields(form, u = null) {
+  const boxes = Object.entries(POSITION_LABEL).map(([p, l]) => {
+    const input = el('input', { type: 'checkbox', name: 'positions', value: p, checked: Boolean(u?.positions?.includes(p)) });
+    return el('label', { class: 'check' }, input, l);
+  });
+  const level = el(
+    'select',
+    { class: 'input', name: 'level', id: 'user-level' },
+    Object.entries(LEVEL_LABEL).map(([v, l]) => el('option', { value: v, selected: v === (u?.level ?? 'OFFICIAL') }, l)),
+  );
+  const box = el(
+    'div',
+    { class: 'staff-fields stack' },
+    el('fieldset', { class: 'field' }, el('legend', {}, 'Vị trí (để trống = mọi việc)'), el('div', { class: 'row' }, boxes)),
+    el('div', { class: 'field' }, el('label', { for: 'user-level' }, 'Cấp'), level),
+  );
+  const role = form.elements.namedItem('role');
+  const sync = () => (box.hidden = role.value !== 'STAFF');
+  role.addEventListener('change', sync);
+  sync();
+  form.append(box);
+  return () =>
+    role.value === 'STAFF'
+      ? {
+          positions: (() => {
+            const picked = boxes
+              .map((b) => b.querySelector('input'))
+              .filter((i) => i.checked)
+              .map((i) => i.value);
+            return picked.length ? picked : null;
+          })(),
+          level: level.value,
+        }
+      : { positions: null, level: 'OFFICIAL' };
+}
 
 async function load() {
   let users;
@@ -70,7 +120,13 @@ async function load() {
                 u.userId === me.userId ? el('span', { class: 'badge primary', style: { marginLeft: '0.4rem' } }, 'Bạn') : null,
               ),
               el('td', {}, u.fullName),
-              el('td', {}, el('span', { class: `badge ${ROLE_BADGE[u.role] ?? ''}` }, ROLE[u.role])),
+              el(
+                'td',
+                {},
+                el('span', { class: `badge ${ROLE_BADGE[u.role] ?? ''}` }, ROLE[u.role]),
+                u.level === 'PROBATION' ? el('span', { class: 'badge pending', style: { marginLeft: '0.3rem' } }, 'Thử việc') : null,
+                u.role === 'STAFF' ? el('div', { class: 'small muted' }, positionsText(u)) : null,
+              ),
               el(
                 'td',
                 {},
@@ -226,6 +282,7 @@ function createUser() {
     el('div', { class: 'field' }, el('label', {}, 'Vai trò'), roleSelect('STAFF')),
   );
   const f = (n) => form.elements.namedItem(n);
+  const staffValues = staffFields(form);
   formModal({
     title: 'Thêm nhân viên',
     form,
@@ -233,7 +290,7 @@ function createUser() {
     send: async () => {
       await staffApi('/api/admin/users', {
         method: 'POST',
-        body: { username: f('username').value, password: f('password').value, fullName: f('fullName').value, role: f('role').value },
+        body: { username: f('username').value, password: f('password').value, fullName: f('fullName').value, role: f('role').value, ...staffValues() },
       });
       toast('Đã tạo tài khoản — nhân viên có thể đăng nhập ngay', 'success');
     },
@@ -249,6 +306,7 @@ function editUser(u) {
   );
   const f = (n) => form.elements.namedItem(n);
   if (u.userId === me.userId) f('role').disabled = true;
+  const staffValues = staffFields(form, u); // F-078
   formModal({
     title: `Sửa ${u.username}`,
     form,
@@ -256,7 +314,7 @@ function editUser(u) {
     send: async () => {
       await staffApi(`/api/admin/users/${u.userId}`, {
         method: 'PUT',
-        body: { fullName: f('fullName').value, role: u.userId === me.userId ? u.role : f('role').value },
+        body: { fullName: f('fullName').value, role: u.userId === me.userId ? u.role : f('role').value, ...staffValues() },
       });
       toast('Đã lưu', 'success');
     },

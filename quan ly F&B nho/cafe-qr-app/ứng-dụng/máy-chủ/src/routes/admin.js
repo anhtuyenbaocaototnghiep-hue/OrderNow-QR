@@ -1,7 +1,7 @@
 // API quản trị (Chủ quán = ADMIN; Quản lý cửa hàng = STORE_MGR theo STORE_MGR_AREAS — F-077): danh mục, món, BOM, bàn + QR, nguyên liệu/kho, tài khoản, báo cáo, lịch sử đơn/thu tiền.
 import express from 'express';
 import { z } from 'zod';
-import { requireAdminArea } from '../auth/permissions.js';
+import { LEVELS, POSITIONS, requireAdminArea } from '../auth/permissions.js';
 import { paramId, parse, zDate, zId, zText, zTime } from '../middleware/validate.js';
 import * as adminService from '../services/adminService.js';
 import * as qrCheckService from '../services/qrCheckService.js';
@@ -149,6 +149,17 @@ adminRouter.delete('/ingredients/:id', async (req, res) => res.json({ result: aw
 // ---- Tài khoản (FEATURE-009) ----
 const role = () => z.enum(['STAFF', 'MANAGER', 'STORE_MGR', 'ADMIN']); // F-036 trưởng ca · F-077 quản lý cửa hàng
 const password = () => z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự').max(100);
+// F-078: vị trí (nhân viên; null / vắng = mọi vị trí) + cấp. Vai khác STAFF bỏ qua (lưu null / OFFICIAL).
+const staffFields = {
+  positions: z
+    .array(z.enum(POSITIONS, { message: 'Vị trí không hợp lệ' }))
+    .min(1, 'Chọn ít nhất một vị trí')
+    .max(POSITIONS.length)
+    .refine((a) => new Set(a).size === a.length, 'Vị trí bị trùng')
+    .nullable()
+    .optional(),
+  level: z.enum(LEVELS, { message: 'Cấp không hợp lệ' }).optional(),
+};
 adminRouter.get('/users', async (_req, res) => res.json(await userService.list()));
 adminRouter.post('/users', async (req, res) => {
   const body = parse(
@@ -162,13 +173,14 @@ adminRouter.post('/users', async (req, res) => {
       password: password(),
       fullName: zText(100).min(1, 'Nhập họ tên'),
       role: role(),
+      ...staffFields,
     }),
     req.body,
   );
   res.status(201).json(await userService.create(body));
 });
 adminRouter.put('/users/:id', async (req, res) => {
-  const body = parse(z.object({ fullName: zText(100).min(1, 'Nhập họ tên'), role: role() }), req.body);
+  const body = parse(z.object({ fullName: zText(100).min(1, 'Nhập họ tên'), role: role(), ...staffFields }), req.body);
   res.json(await userService.update(paramId(req), body, req.user));
 });
 adminRouter.post('/users/:id/reset-password', async (req, res) => {

@@ -3,6 +3,7 @@
 // ADR-005: giá mỗi dòng do bộ pricing tính (khuyến mãi, combo, tùy chọn) rồi truyền vào SP; mang đi tính thêm hội viên + giảm tay.
 // Ghi kho/thu tiền chỉ qua SP; realtime phát sau commit.
 import { sqlErrorNumber, withDeadlockRetry } from '../db.js';
+import { discountRole } from '../auth/permissions.js'; // F-078: ngưỡng giảm tay theo cấp
 import { AppError, conflict, forbidden, fromSqlError, idsFromMessage, notFound } from '../errors.js';
 import * as ordersRepo from '../repositories/ordersRepo.js';
 import * as sessionsRepo from '../repositories/sessionsRepo.js';
@@ -238,7 +239,7 @@ async function takeawayTotals(body, role = 'STAFF') {
 }
 
 export async function takeawayQuote(body, user) {
-  const { priced, totals, memberView, needsApproval } = await takeawayTotals(body, user?.role);
+  const { priced, totals, memberView, needsApproval } = await takeawayTotals(body, discountRole(user));
   return { ...publicQuote(priced), totals, member: memberView, needsApproval };
 }
 
@@ -254,7 +255,7 @@ export async function takeaway(body, user) {
     if (existing) return existingSale(existing);
   }
   const shift = await requireOpenShift();
-  const calc = await takeawayTotals(body, user.role);
+  const calc = await takeawayTotals(body, discountRole(user));
   const { priced, totals } = calc;
   if (body.expectedAmountDue !== undefined && body.expectedAmountDue !== null && body.expectedAmountDue !== totals.amountDue) {
     throw conflict('AMOUNT_CHANGED', 'Tổng tiền vừa thay đổi (giá/khuyến mãi), vui lòng kiểm tra lại', { amountDue: totals.amountDue });

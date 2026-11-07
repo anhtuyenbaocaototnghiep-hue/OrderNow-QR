@@ -2871,3 +2871,36 @@ test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở
     isActive: latte.isActive,
   }); // trả giá cũ
 });
+
+test('vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", cấp "Thử việc" ở Tài khoản; người đó đăng nhập → máy quầy chỉ có Đơn hàng, Kho & sơ chế, Giờ công + nhãn "Thử việc"; mở thẳng Bán mang đi → về Đơn hàng kèm lời nhắc (F-078, AC-078-06)', async () => {
+  await P.goto('/admin/users');
+  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  const form = P.getByRole('dialog');
+  await form.locator('input[name="username"]').fill('phache-e2e');
+  await form.locator('input[name="password"]').fill('Phache@123');
+  await form.locator('input[name="fullName"]').fill('Pha chế E2E');
+  await expect(form.locator('.staff-fields')).toBeVisible();
+  await form.getByLabel('Pha chế', { exact: true }).check();
+  await form.locator('#user-level').selectOption({ label: 'Thử việc' });
+  await form.getByRole('button', { name: 'Tạo tài khoản' }).click();
+  const row = P.locator('tr', { hasText: 'phache-e2e' });
+  await expect(row).toContainText('Thử việc');
+  await expect(row).toContainText('Pha chế');
+
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  const B2 = await ctx.newPage();
+  watch(B2, 'barista');
+  await B2.goto('/pos/login');
+  await B2.fill('#username', 'phache-e2e');
+  await B2.fill('#password', 'Phache@123');
+  await B2.click('#submit');
+  await expect(B2).toHaveURL(/\/pos$/);
+  await B2.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click();
+  const nav = B2.locator('.pos-nav');
+  await expect(nav.getByRole('link')).toHaveText(['Đơn hàng', 'Kho & sơ chế', 'Giờ công']);
+  await expect(B2.locator('.pos-user')).toContainText('Thử việc');
+  await B2.goto('/pos/takeaway');
+  await expect(B2).toHaveURL(/\/pos\?denied=position/);
+  await expect(B2.locator('.toast', { hasText: 'không thuộc vị trí của bạn (Pha chế)' })).toBeVisible();
+  await ctx.close();
+});

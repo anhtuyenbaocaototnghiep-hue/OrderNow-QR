@@ -47,9 +47,9 @@ export async function switchTo(userId, pin, actor) {
 
 export const list = () => usersRepo.list();
 
-export async function create({ username, password, fullName, role }) {
+export async function create({ username, password, fullName, role, positions = null, level = 'OFFICIAL' }) {
   try {
-    return await usersRepo.create({ username, passwordHash: await bcrypt.hash(password, BCRYPT_COST), fullName, role });
+    return await usersRepo.create({ username, passwordHash: await bcrypt.hash(password, BCRYPT_COST), fullName, role, positions, level });
   } catch (err) {
     const n = sqlErrorNumber(err);
     if (n === 2627 || n === 2601) throw conflict('USERNAME_TAKEN', 'Tên đăng nhập đã tồn tại, vui lòng chọn tên khác');
@@ -57,10 +57,15 @@ export async function create({ username, password, fullName, role }) {
   }
 }
 
-/** Đổi họ tên / vai trò. Không tự đổi vai trò; không hạ quản lý cuối cùng (409 LAST_ADMIN — kiểm nguyên tử trong SQL). */
-export async function update(id, { fullName, role }, actor) {
+/**
+ * Đổi họ tên / vai trò (+ vị trí, cấp của nhân viên — F-078). Không tự đổi vai trò; không hạ quản lý cuối cùng (409 LAST_ADMIN — kiểm
+ * nguyên tử trong SQL). Vắng `positions` / `level` → giữ như cũ.
+ */
+export async function update(id, { fullName, role, positions, level }, actor) {
   if (id === actor.userId && role !== actor.role) throw badRequest('CANNOT_CHANGE_OWN_ROLE', 'Không thể tự đổi vai trò của chính mình');
-  const user = await withDeadlockRetry(() => usersRepo.update(id, { fullName, role }));
+  const cur = positions === undefined || level === undefined ? await usersRepo.findById(id) : null;
+  const next = { fullName, role, positions: positions === undefined ? cur?.positions : positions, level: level ?? cur?.level ?? 'OFFICIAL' };
+  const user = await withDeadlockRetry(() => usersRepo.update(id, next));
   if (!user) throw notFound('Không tìm thấy tài khoản');
   return user;
 }

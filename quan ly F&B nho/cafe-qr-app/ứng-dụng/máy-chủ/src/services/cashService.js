@@ -18,7 +18,7 @@ import { requireOpenShift } from './shiftService.js';
 import * as alertService from './alertService.js';
 import { assertActorPin } from './pinService.js';
 import { resolveApproval } from './userService.js';
-import { storeManagerCashMax } from '../auth/permissions.js';
+import { isProbation, storeManagerCashMax } from '../auth/permissions.js';
 
 export const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
 const SIGNATURES = [
@@ -60,7 +60,15 @@ export async function create({ categoryId, amount, reason, employeeId = null }, 
   } else employeeId = null;
   if (cat?.direction === 'OUT') await assertActorPin(user); // F-072: chi tiền cần PIN của người ghi
   const { cashTxnId } = await withDeadlockRetry(() =>
-    cashRepo.create({ shiftId: shift.shiftId, categoryId, amount, reason, userId: user.userId, threshold: settings.cashApproveThreshold, employeeId }),
+    cashRepo.create({
+      shiftId: shift.shiftId,
+      categoryId,
+      amount,
+      reason,
+      userId: user.userId,
+      threshold: isProbation(user) ? 0 : settings.cashApproveThreshold, // F-078: thử việc → mọi khoản chi chờ duyệt
+      employeeId,
+    }),
   );
   const txn = await cashRepo.getById(cashTxnId);
   publish([ROOMS.staff], 'cash.created', { txn });

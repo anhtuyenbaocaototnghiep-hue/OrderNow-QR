@@ -3,6 +3,7 @@
 // Quầy thu từng phần (hội viên / giảm tay riêng từng phần), phần cuối tự gộp dòng Chung; thu hết → đóng phiên.
 // Tiền: pricing.partOrders (khuyến mãi đơn chia theo dòng) → settleTotals — cùng bộ tính với thu cả bàn (D-7).
 import { withDeadlockRetry } from '../db.js';
+import { discountRole } from '../auth/permissions.js'; // F-078: ngưỡng giảm tay theo cấp
 import { conflict, forbidden, fromSqlError, idsFromMessage, notFound } from '../errors.js';
 import { allocateOrderPromo, partOrders } from '../pricing/pricing.js';
 import * as ordersRepo from '../repositories/ordersRepo.js';
@@ -165,7 +166,7 @@ async function splitTotals(splitId, body, role = 'STAFF') {
 }
 
 export async function preview(splitId, body, user) {
-  const { split, includeCommon, part, totals, memberView, needsApproval } = await splitTotals(splitId, body, user?.role);
+  const { split, includeCommon, part, totals, memberView, needsApproval } = await splitTotals(splitId, body, discountRole(user));
   return {
     split: { splitId: split.splitId, label: split.label, isCommon: split.isCommon },
     includeCommon,
@@ -177,7 +178,7 @@ export async function preview(splitId, body, user) {
 }
 
 export async function settle(splitId, body, user) {
-  const calc = await splitTotals(splitId, body, user.role);
+  const calc = await splitTotals(splitId, body, discountRole(user));
   const shift = await requireOpenShift();
   const { split, part, totals, includeCommon } = calc;
   if (body.expectedAmountDue !== undefined && body.expectedAmountDue !== null && body.expectedAmountDue !== totals.amountDue) {

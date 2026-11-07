@@ -17,6 +17,7 @@ const ACCESS = {
   ADMIN: { label: 'Chủ quán', badge: 'primary', hint: 'Chỉ chủ quán' },
 };
 const ROLE_NAMES = { STAFF: 'nhân viên', MANAGER: 'trưởng ca', STORE_MGR: 'quản lý cửa hàng', ADMIN: 'chủ quán' };
+const POSITION_NAMES = { CASHIER: 'thu ngân', BARISTA: 'pha chế', SERVER: 'phục vụ' }; // F-078
 const PURPOSE_FIELDS = ['Mục đích', 'Ghi chú', 'Kết quả']; // cột dùng làm dòng tóm tắt, theo thứ tự ưu tiên
 
 /** Bỏ dấu tiếng Việt: gõ "thu tien" cũng ra "thu tiền". */
@@ -169,7 +170,9 @@ function endpointRow(e) {
 function buildDetail(node, e) {
   node.dataset.built = '1';
   const access = ACCESS[e.access];
-  const who = e.roles.length ? `(${e.roles.map((r) => ROLE_NAMES[r]).join(', ')})` : `— ${access.hint.toLowerCase()}`;
+  const who =
+    (e.roles.length ? `(${e.roles.map((r) => ROLE_NAMES[r]).join(', ')})` : `— ${access.hint.toLowerCase()}`) +
+    (e.positions ? ` · nhân viên cần vị trí ${e.positions.map((p) => POSITION_NAMES[p]).join(' / ')}` : ''); // F-078
   const curl = curlFor(e);
   node.append(
     el(

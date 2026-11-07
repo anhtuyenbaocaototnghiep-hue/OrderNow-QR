@@ -172,9 +172,39 @@ export async function requireAdminArea(req, _res, next) {
 }
 requireAdminArea.adminArea = true;
 
-/** Ngưỡng giảm giá tay theo vai trò (D-14 nhân viên, D-24 trưởng ca; quản lý cửa hàng và chủ quán không giới hạn). */
+// ---- F-078 (ADR-036): vị trí + cấp của nhân viên (vai STAFF). Trưởng ca trở lên không bị giới hạn. ----
+export const POSITIONS = ['CASHIER', 'BARISTA', 'SERVER'];
+export const POSITION_LABEL = { CASHIER: 'Thu ngân', BARISTA: 'Pha chế', SERVER: 'Phục vụ' };
+export const LEVELS = ['PROBATION', 'OFFICIAL'];
+
+/** Có ít nhất một trong các vị trí? Vai khác STAFF, hoặc nhân viên chưa đặt vị trí (null = mọi vị trí) → có. */
+export const hasPosition = (user, ...positions) =>
+  Boolean(user) && (user.role !== 'STAFF' || !user.positions?.length || positions.some((p) => user.positions.includes(p)));
+/** Nhân viên thử việc: giảm giá tay, chi quỹ, sửa / xóa món luôn cần trưởng ca trở lên duyệt. */
+export const isProbation = (user) => user?.role === 'STAFF' && user.level === 'PROBATION';
+/** Vai dùng để tính ngưỡng giảm giá tay (thử việc → 'PROBATION' = 0). */
+export const discountRole = (user) => (isProbation(user) ? 'PROBATION' : user?.role);
+
+/** Middleware: việc của vị trí `positions` (403 POSITION_REQUIRED). Đặt sau requireStaff / requirePermission. Mang `.positions` cho Tra cứu API. */
+export function requirePosition(...positions) {
+  const middleware = async (req, _res, next) => {
+    const user = req.user ?? (await userFromToken(bearer(req)));
+    if (!user) throw unauthorized();
+    if (!hasPosition(user, ...positions)) {
+      const names = positions.map((p) => POSITION_LABEL[p]).join(' / ');
+      throw forbidden(`Việc này của vị trí ${names} — nhờ người đúng vị trí hoặc trưởng ca`, 'POSITION_REQUIRED');
+    }
+    req.user = withActorPin(req, user);
+    next();
+  };
+  middleware.positions = positions;
+  return middleware;
+}
+
+/** Ngưỡng giảm giá tay theo vai trò (D-14 nhân viên, D-24 trưởng ca; quản lý cửa hàng và chủ quán không giới hạn; thử việc 0 — F-078). */
 export function discountLimits(role, settings) {
   if (role === 'ADMIN' || role === 'STORE_MGR') return null;
+  if (role === 'PROBATION') return { staffMaxPercent: 0, staffMaxAmount: 0 };
   if (role === 'MANAGER') return { staffMaxPercent: settings.managerMaxPercent, staffMaxAmount: settings.managerMaxAmount };
   return { staffMaxPercent: settings.staffMaxPercent, staffMaxAmount: settings.staffMaxAmount };
 }

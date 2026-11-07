@@ -2,6 +2,7 @@
 // Nhận ly tặng đi qua ô "Mã voucher" sẵn có (POST /api/vouchers/validate + body thu tiền voucherCode) — không có API dùng riêng.
 import express from 'express';
 import { z } from 'zod';
+import { requirePosition } from '../auth/permissions.js';
 import { requireStaff } from '../middleware/auth.js';
 import { parse, zId, zText } from '../middleware/validate.js';
 import * as giftDrinkService from '../services/giftDrinkService.js';
@@ -9,7 +10,7 @@ import * as giftDrinkService from '../services/giftDrinkService.js';
 export const giftDrinksRouter = express.Router();
 
 giftDrinksRouter.get('/gift-drinks/config', requireStaff, async (_req, res) => res.json(await giftDrinkService.posConfig()));
-giftDrinksRouter.post('/gift-drinks', requireStaff, async (req, res) => {
+giftDrinksRouter.post('/gift-drinks', requireStaff, requirePosition('CASHIER'), async (req, res) => {
   const body = parse(
     z.object({
       menuItemId: zId(),

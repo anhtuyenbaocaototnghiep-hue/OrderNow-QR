@@ -34,8 +34,15 @@ import {
   toast,
 } from '../ui.js';
 import { icon } from '../icons.js';
+import { hasPosition } from '../roles.js';
 
 const shell = await mountPosShell('orders');
+// F-078 (ADR-036): nút theo vị trí — Pha chế nhận / làm đơn, Thu ngân thu tiền, Phục vụ gọi món tại bàn (máy chủ vẫn chặn)
+const canMake = hasPosition(shell.user, 'BARISTA');
+const canPay = hasPosition(shell.user, 'CASHIER');
+const canServe = hasPosition(shell.user, 'SERVER');
+if (!canServe) $('#go-table-order')?.remove();
+if (!canPay) $('#go-takeaway')?.remove();
 // F-055 (ADR-017 D-65): chưa mở ca thì khóa mọi nút xử lý đơn; lý do đọc ở dải #no-shift (aria-describedby). Server cũng chặn 409 NO_OPEN_SHIFT
 const NO_SHIFT_HINT = 'Chưa mở ca — bấm "Mở ca" ở dải phía trên để xử lý đơn';
 const shiftGate = () => (shell.shift ? {} : { disabled: true, title: NO_SHIFT_HINT, 'aria-describedby': 'no-shift' });
@@ -195,7 +202,7 @@ function heldTicket(o) {
     el(
       'div',
       { class: 'ticket-actions' },
-      el('button', { class: 'btn', type: 'button', ...gate, onclick: (e) => act(e, () => accept(o, e.currentTarget)) }, 'Làm ngay'),
+      canMake ? el('button', { class: 'btn', type: 'button', ...gate, onclick: (e) => act(e, () => accept(o, e.currentTarget)) }, 'Làm ngay') : null,
       el('button', { class: 'btn btn-danger', type: 'button', ...gate, onclick: (e) => act(e, () => cancelOrder(o)) }, 'Hủy'),
     ),
   );
@@ -239,7 +246,11 @@ function ticket(o) {
   if (isHeld(o)) return heldTicket(o);
   const actions = [];
   const gate = shiftGate();
-  if (oneTap && (o.status === 'PENDING' || o.status === 'PREPARING')) {
+  if (!canMake) {
+    // F-078: không phải Pha chế → chỉ xem đơn (đơn mới vẫn Hủy được)
+    if (o.status === 'PENDING')
+      actions.push(el('button', { class: 'btn btn-danger', type: 'button', ...gate, onclick: (e) => act(e, () => cancelOrder(o)) }, 'Hủy'));
+  } else if (oneTap && (o.status === 'PENDING' || o.status === 'PREPARING')) {
     // F-076: một nút — đơn mới thì nhận + hoàn tất, đơn đang pha (mang đi đã thu) thì hoàn tất
     const done = (btn) => (o.status === 'PENDING' ? acceptAndComplete(o, btn) : complete(o, btn));
     actions.push(el('button', { class: 'btn btn-success btn-done', type: 'button', ...gate, onclick: (e) => act(e, () => done(e.currentTarget)) }, 'Xong'));
@@ -450,9 +461,11 @@ function openOrder(orderId) {
   if (!o) return;
   const actions = [];
   if (o.type === 'TAKE_AWAY') actions.push({ label: 'In lại bill', onClick: () => printUrl(`/pos/orders/${o.orderId}/receipt`) });
-  if (o.sessionId) actions.push({ label: 'Mở bàn / Thu tiền', onClick: () => openSettle(o.sessionId) });
-  // F-055: chưa mở ca thì chi tiết đơn không có nút xử lý (review G3 TASK-072)
-  if (oneTap && shell.shift && (o.status === 'PENDING' || o.status === 'PREPARING')) {
+  if (o.sessionId) actions.push({ label: canPay ? 'Mở bàn / Thu tiền' : 'Xem bàn', onClick: () => openSettle(o.sessionId) });
+  // F-055: chưa mở ca thì chi tiết đơn không có nút xử lý (review G3 TASK-072). F-078: chỉ Pha chế nhận / làm đơn
+  if (!canMake) {
+    /* chỉ xem */
+  } else if (oneTap && shell.shift && (o.status === 'PENDING' || o.status === 'PREPARING')) {
     actions.push({ label: 'Xong', class: 'btn-success', onClick: () => (o.status === 'PENDING' ? acceptAndComplete(o, null) : complete(o, null)) });
   } else {
     if (o.status === 'PENDING' && shell.shift) actions.push({ label: 'Tiếp nhận', class: 'btn-primary', onClick: () => accept(o, null) });
@@ -598,9 +611,13 @@ function groupCard(s, groupNo) {
     el(
       'div',
       { class: 'tc-main' },
-      el('a', { class: 'btn', href: tableOrderUrl(s), 'aria-label': `Gọi món ${s.table.name}` }, 'Gọi món'),
+      canServe ? el('a', { class: 'btn', href: tableOrderUrl(s), 'aria-label': `Gọi món ${s.table.name}` }, 'Gọi món') : null,
       s.orderCount > 0
-        ? el('button', { class: 'btn btn-primary', type: 'button', onclick: () => openSettle(s.sessionId) }, 'Thu tiền')
+        ? el(
+            'button',
+            { class: `btn ${canPay ? 'btn-primary' : ''}`, type: 'button', onclick: () => openSettle(s.sessionId) },
+            canPay ? 'Thu tiền' : 'Xem bill',
+          )
         : el('button', { class: 'btn', type: 'button', 'aria-label': 'Đóng bàn trống', onclick: () => closeEmpty(s) }, 'Đóng bàn'),
     ),
   );
@@ -615,7 +632,7 @@ const emptyCard = (t) =>
     el(
       'div',
       { class: 'tc-main' },
-      el('a', { class: 'btn', href: `/pos/table-order?table=${t.tableId}`, 'aria-label': `Gọi món ${t.name}` }, icon('plus'), 'Gọi món'),
+      canServe ? el('a', { class: 'btn', href: `/pos/table-order?table=${t.tableId}`, 'aria-label': `Gọi món ${t.name}` }, icon('plus'), 'Gọi món') : null,
     ),
   );
 
@@ -1062,8 +1079,8 @@ function openSettle(sessionId) {
       clear(changeBox, el('span', {}, 'Tiền thừa trả khách'), el('span', {}, money(got - due())));
     }
     const paidEnough = method === 'TRANSFER' || (got !== null && got >= due());
-    settleBtn.disabled = busy || !preview || !shell.shift || pending || !paidEnough || session.status === 'CLOSED';
-    settleBtn.title = shell.shift ? '' : 'Chưa mở ca — bấm "Chưa mở ca" trên thanh trên để mở ca';
+    settleBtn.disabled = busy || !preview || !shell.shift || pending || !paidEnough || session.status === 'CLOSED' || !canPay;
+    settleBtn.title = !canPay ? 'Thu tiền là việc của thu ngân' : shell.shift ? '' : 'Chưa mở ca — bấm "Chưa mở ca" trên thanh trên để mở ca';
   };
   amount.addEventListener('input', updateChange);
 
@@ -1245,19 +1262,21 @@ function openSettle(sessionId) {
             ? el(
                 'div',
                 { class: 'row', style: { marginTop: '0.35rem' } },
-                el(
-                  'button',
-                  {
-                    class: 'btn btn-sm btn-primary',
-                    type: 'button',
-                    ...shiftGate(),
-                    onclick: async (e) => {
-                      await accept(o, e.currentTarget);
-                      reload();
-                    },
-                  },
-                  'Tiếp nhận',
-                ),
+                canMake
+                  ? el(
+                      'button',
+                      {
+                        class: 'btn btn-sm btn-primary',
+                        type: 'button',
+                        ...shiftGate(),
+                        onclick: async (e) => {
+                          await accept(o, e.currentTarget);
+                          reload();
+                        },
+                      },
+                      'Tiếp nhận',
+                    )
+                  : null,
                 el(
                   'button',
                   {

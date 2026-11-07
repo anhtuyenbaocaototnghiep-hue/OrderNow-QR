@@ -10,9 +10,15 @@ const map = (r) =>
     createdAt: r.CreatedAt,
     tourSeenAt: r.TourSeenAt ?? null, // F-061: đã xem hướng dẫn 5 bước ở màn quầy
     hasPin: Boolean(r.HasPin), // F-072: đã đặt PIN chấm công / xác nhận thao tác tiền (không bao giờ trả mã băm)
+    positions: r.Positions ? r.Positions.split(',') : null, // F-078: vị trí của nhân viên; null = mọi vị trí
+    level: r.StaffLevel ?? 'OFFICIAL', // F-078: PROBATION (thử việc) / OFFICIAL
   };
 
-const COLS = 'UserId, Username, FullName, Role, IsActive, CreatedAt, TourSeenAt, CAST(CASE WHEN PinHash IS NULL THEN 0 ELSE 1 END AS BIT) AS HasPin';
+const COLS =
+  'UserId, Username, FullName, Role, IsActive, CreatedAt, TourSeenAt, Positions, StaffLevel, CAST(CASE WHEN PinHash IS NULL THEN 0 ELSE 1 END AS BIT) AS HasPin';
+/** F-078: chỉ nhân viên (STAFF) có vị trí / cấp; vai khác lưu NULL / OFFICIAL. */
+const positionsCsv = (role, positions) => (role === 'STAFF' && positions?.length ? positions.join(',') : null);
+const levelOf = (role, level) => (role === 'STAFF' && level === 'PROBATION' ? 'PROBATION' : 'OFFICIAL');
 
 export async function findById(id) {
   const r = await query(`SELECT ${COLS} FROM dbo.Users WHERE UserId = @id AND DeletedAt IS NULL`, { id: [sql.Int, id] });
@@ -39,12 +45,19 @@ export async function list() {
   return r.recordset.map(map);
 }
 
-export async function create({ username, passwordHash, fullName, role }) {
+export async function create({ username, passwordHash, fullName, role, positions = null, level = 'OFFICIAL' }) {
   const r = await query(
-    `INSERT dbo.Users (Username, PasswordHash, FullName, Role)
-     OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt
-     VALUES (@u, @h, @n, @r)`,
-    { u: [sql.NVarChar(50), username], h: [sql.NVarChar(255), passwordHash], n: [sql.NVarChar(100), fullName], r: [sql.VarChar(10), role] },
+    `INSERT dbo.Users (Username, PasswordHash, FullName, Role, Positions, StaffLevel)
+     OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt, inserted.Positions, inserted.StaffLevel
+     VALUES (@u, @h, @n, @r, @pos, @lv)`,
+    {
+      u: [sql.NVarChar(50), username],
+      h: [sql.NVarChar(255), passwordHash],
+      n: [sql.NVarChar(100), fullName],
+      r: [sql.VarChar(10), role],
+      pos: [sql.VarChar(40), positionsCsv(role, positions)],
+      lv: [sql.VarChar(10), levelOf(role, level)],
+    },
   );
   return map(r.recordset[0]);
 }
@@ -59,14 +72,20 @@ const LAST_ADMIN_GUARD = (losesAdmin) => `
      AND EXISTS (SELECT 1 FROM dbo.Users WHERE UserId = @id AND Role = 'ADMIN' AND IsActive = 1 AND DeletedAt IS NULL)
   BEGIN ROLLBACK; THROW 50150, 'LAST_ADMIN', 1; END`;
 
-export async function update(id, { fullName, role }) {
+export async function update(id, { fullName, role, positions = null, level = 'OFFICIAL' }) {
   const r = await query(
     `${LAST_ADMIN_GUARD("@r <> 'ADMIN'")}
-     UPDATE dbo.Users SET FullName = @n, Role = @r
-     OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt
+     UPDATE dbo.Users SET FullName = @n, Role = @r, Positions = @pos, StaffLevel = @lv
+     OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt, inserted.Positions, inserted.StaffLevel
      WHERE UserId = @id AND DeletedAt IS NULL;
      COMMIT;`,
-    { id: [sql.Int, id], n: [sql.NVarChar(100), fullName], r: [sql.VarChar(10), role] },
+    {
+      id: [sql.Int, id],
+      n: [sql.NVarChar(100), fullName],
+      r: [sql.VarChar(10), role],
+      pos: [sql.VarChar(40), positionsCsv(role, positions)],
+      lv: [sql.VarChar(10), levelOf(role, level)],
+    },
   );
   return map(r.recordset[0]);
 }
@@ -83,7 +102,7 @@ export async function setActive(id, isActive) {
   const r = await query(
     `${LAST_ADMIN_GUARD('@a = 0')}
      UPDATE dbo.Users SET IsActive = @a
-     OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt
+     OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt, inserted.Positions, inserted.StaffLevel
      WHERE UserId = @id AND DeletedAt IS NULL;
      COMMIT;`,
     { id: [sql.Int, id], a: [sql.Bit, isActive] },

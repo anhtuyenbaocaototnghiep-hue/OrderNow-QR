@@ -2,7 +2,7 @@
 // lô sắp hết hạn + hủy lô (F-028), nhận hàng theo PO (F-030). Cấu hình (công thức, đơn vị, nhà cung cấp, PO) chỉ ở /api/admin.
 import express from 'express';
 import { z } from 'zod';
-import { requirePermission } from '../auth/permissions.js';
+import { requirePermission, requirePosition } from '../auth/permissions.js';
 import { requireStaff } from '../middleware/auth.js';
 import { paramId, parse, parseUtcRange, zId, zText } from '../middleware/validate.js';
 import * as ingredientsRepo from '../repositories/ingredientsRepo.js';
@@ -15,6 +15,7 @@ import { receiveBody } from './advanced.js';
 import { stocktakeBody, stocktakeEditBody, stocktakeLinesBody } from './operations.js';
 
 export const opsRouter = express.Router();
+const barista = requirePosition('BARISTA'); // F-078: sơ chế, hủy hàng, nhận hàng — vị trí Pha chế
 
 // Tồn kho xem nhanh ở quầy (khả dụng đã trừ phần giữ + lô hết hạn)
 opsRouter.get('/ops/ingredients', requireStaff, async (_req, res) => res.json(await ingredientsRepo.list()));
@@ -25,7 +26,7 @@ opsRouter.get('/prep/preview', requireStaff, async (req, res) => {
   const q = parse(z.object({ semiId: zId(), multiplier: z.coerce.number().positive().max(100).default(1) }), req.query);
   res.json(await inventoryService.prepPreview(q.semiId, q.multiplier));
 });
-opsRouter.post('/prep/batches', requireStaff, async (req, res) => {
+opsRouter.post('/prep/batches', requireStaff, barista, async (req, res) => {
   const body = parse(
     z.object({
       semiIngredientId: zId(),
@@ -42,7 +43,7 @@ opsRouter.get('/prep/batches', requireStaff, async (req, res) => {
 });
 
 // ---- F-032 Phiếu hủy hàng ----
-opsRouter.post('/waste', requireStaff, async (req, res) => {
+opsRouter.post('/waste', requireStaff, barista, async (req, res) => {
   const body = parse(
     z.object({
       ingredientId: zId(),
@@ -64,7 +65,7 @@ opsRouter.get('/lots/expiring', requireStaff, async (req, res) => {
   const { days } = parse(z.object({ days: z.coerce.number().int().min(0).max(30).default(2) }), req.query);
   res.json(await inventoryService.expiringLots(days));
 });
-opsRouter.post('/lots/:id/write-off', requireStaff, async (req, res) => {
+opsRouter.post('/lots/:id/write-off', requireStaff, barista, async (req, res) => {
   const { note } = parse(z.object({ note: zText(200).optional().nullable() }), req.body ?? {});
   res.status(201).json(await inventoryService.writeOffLot(paramId(req), note, req.user));
 });
@@ -72,7 +73,7 @@ opsRouter.post('/lots/:id/write-off', requireStaff, async (req, res) => {
 // ---- F-030 Nhận hàng theo PO ----
 opsRouter.get('/receiving/purchase-orders', requireStaff, async (_req, res) => res.json(await purchasingService.listPos(['SENT', 'PARTIAL'])));
 opsRouter.get('/receiving/purchase-orders/:id', requireStaff, async (req, res) => res.json(await purchasingService.getPo(paramId(req))));
-opsRouter.post('/receiving/purchase-orders/:id/receive', requireStaff, async (req, res) =>
+opsRouter.post('/receiving/purchase-orders/:id/receive', requireStaff, barista, async (req, res) =>
   res.status(201).json(await purchasingService.receivePo(paramId(req), parse(receiveBody, req.body), req.user)),
 );
 

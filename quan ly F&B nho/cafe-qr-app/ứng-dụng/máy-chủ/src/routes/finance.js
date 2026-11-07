@@ -2,7 +2,7 @@
 // sổ quỹ ca (F-033: ghi thu/chi, ảnh hóa đơn, duyệt / từ chối), chấm công (trưởng ca / quản lý sửa, có lý do).
 import express from 'express';
 import { z } from 'zod';
-import { requirePermission } from '../auth/permissions.js';
+import { requirePermission, requirePosition } from '../auth/permissions.js';
 import { badRequest } from '../errors.js';
 import { requireStaff } from '../middleware/auth.js';
 import { paramId, parse, parseUtcRange, zId, zMoney, zText } from '../middleware/validate.js';
@@ -28,7 +28,7 @@ financeRouter.get('/cash-transactions', requirePermission('cash.create'), async 
   const shiftId = q.shiftId ?? (await shiftService.current())?.shiftId;
   res.json(shiftId ? await cashService.listByShift(shiftId) : []);
 });
-financeRouter.post('/cash-transactions', requirePermission('cash.create'), async (req, res) => {
+financeRouter.post('/cash-transactions', requirePermission('cash.create'), requirePosition('CASHIER'), async (req, res) => {
   const body = parse(
     z.object({
       categoryId: zId(),

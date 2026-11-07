@@ -1423,3 +1423,21 @@ ul.bday-tips {
     margin-top: 0.4rem;
   }
 }
+
+/* F-078 (ADR-036): Tài khoản — vị trí + cấp của nhân viên */
+.staff-fields fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.staff-fields legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+  padding: 0;
+}
+.staff-fields .row {
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}

@@ -5,6 +5,7 @@
 // FEATURE-026: phiên đã chia bill thu từng phần (splitService); ước tính / hóa đơn tính theo dòng chưa thu.
 // FEATURE-049: chuyển bàn — cả nhóm sang bàn khác, điện thoại khách tự theo (mã QR bàn mới chỉ gửi cho người trong nhóm).
 import { badRequest, conflict, forbidden, fromSqlError, idsFromMessage, notFound } from '../errors.js';
+import { discountRole } from '../auth/permissions.js'; // F-078: ngưỡng giảm tay theo cấp
 import { withDeadlockRetry } from '../db.js';
 import * as membersRepo from '../repositories/membersRepo.js';
 import * as ordersRepo from '../repositories/ordersRepo.js';
@@ -286,7 +287,7 @@ async function sessionTotals(sessionId, body, role = 'STAFF') {
 
 /** Xem trước số phải thu (drawer Thu tiền) — cùng kết quả với lúc bấm "Đã thu tiền". */
 export async function settlePreview(sessionId, body, user) {
-  const { session, orders, merged, totals, memberView: member, needsApproval } = await sessionTotals(sessionId, body, user?.role);
+  const { session, orders, merged, totals, memberView: member, needsApproval } = await sessionTotals(sessionId, body, discountRole(user));
   return {
     session: { ...session, member: await withFirstOrder(memberView(session.member, true), { staff: true }) },
     orderCount: orders.length,
@@ -298,7 +299,7 @@ export async function settlePreview(sessionId, body, user) {
 }
 
 export async function settle(sessionId, body, user) {
-  const calc = await sessionTotals(sessionId, body, user.role);
+  const calc = await sessionTotals(sessionId, body, discountRole(user));
   const shift = await requireOpenShift();
   const { totals } = calc;
   if (body.expectedAmountDue !== undefined && body.expectedAmountDue !== null && body.expectedAmountDue !== totals.amountDue) {

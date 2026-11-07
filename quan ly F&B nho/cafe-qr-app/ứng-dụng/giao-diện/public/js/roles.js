@@ -46,3 +46,24 @@ export const isOwner = (user) => user?.role === 'ADMIN';
 export const isLead = (user) => ['MANAGER', 'STORE_MGR', 'ADMIN'].includes(user?.role);
 /** Vào được trang Quản lý `page` (khóa trang trong menu)? */
 export const canOpenAdminPage = (user, page) => user?.role === 'ADMIN' || (user?.role === 'STORE_MGR' && STORE_MGR_PAGES.has(page));
+
+// ---- F-078 (ADR-036): vị trí + cấp của nhân viên (vai STAFF). Để trống vị trí = mọi vị trí; trưởng ca trở lên không bị giới hạn. ----
+export const POSITION_LABEL = { CASHIER: 'Thu ngân', BARISTA: 'Pha chế', SERVER: 'Phục vụ' };
+export const POSITION_HINT = {
+  CASHIER: 'thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi chi quỹ',
+  BARISTA: 'nhận + làm đơn (Tiếp nhận / Hoàn tất / Xong), sơ chế, hủy hàng, nhận hàng',
+  SERVER: 'mở bàn, gọi món tại bàn, chuyển bàn',
+};
+export const LEVEL_LABEL = { PROBATION: 'Thử việc', OFFICIAL: 'Chính thức' };
+
+/** Có ít nhất một trong các vị trí (khớp hasPosition ở server). */
+export const hasPosition = (user, ...positions) =>
+  Boolean(user) && (user.role !== 'STAFF' || !user.positions?.length || positions.some((p) => user.positions.includes(p)));
+export const isProbation = (user) => user?.role === 'STAFF' && user.level === 'PROBATION';
+
+/** Trang máy quầy theo vị trí (không có trong bảng = mọi người). */
+const POS_PAGE_POSITIONS = { tables: ['SERVER'], takeaway: ['CASHIER'], stock: ['BARISTA'], shift: ['CASHIER'] };
+export const canOpenPosPage = (user, key) => !POS_PAGE_POSITIONS[key] || hasPosition(user, ...POS_PAGE_POSITIONS[key]);
+/** "Thu ngân, Pha chế" / "Mọi vị trí" (nhân viên) — vai khác: null. */
+export const positionsText = (user) =>
+  user?.role !== 'STAFF' ? null : user.positions?.length ? user.positions.map((p) => POSITION_LABEL[p]).join(', ') : 'Mọi vị trí';

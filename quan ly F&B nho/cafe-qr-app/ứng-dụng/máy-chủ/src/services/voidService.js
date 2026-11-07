@@ -3,6 +3,7 @@
 //       trưởng ca / quản lý (SP kiểm lại trạng thái lúc ghi). Luôn bắt buộc lý do. D-34: món đã pha → WASTE (mặc định) / RESTOCK.
 // D-35: hủy bàn = hủy mọi đơn chưa thu + đóng phiên (bàn trống lại).
 import { withDeadlockRetry } from '../db.js';
+import { isProbation } from '../auth/permissions.js'; // F-078
 import { badRequest, conflict, notFound } from '../errors.js';
 import * as ordersRepo from '../repositories/ordersRepo.js';
 import * as sessionsRepo from '../repositories/sessionsRepo.js';
@@ -17,7 +18,8 @@ import { assertShiftOpen } from './shiftService.js';
 const LIVE = ['PENDING', 'PREPARING', 'COMPLETED'];
 
 /** Người duyệt: trưởng ca / quản lý tự duyệt; nhân viên nhập tài khoản khi cần (hoặc tự nguyện nhập trước). null = không cần. */
-async function approverFor(user, body, needed) {
+async function approverFor(user, body, neededByStatus) {
+  const needed = neededByStatus || isProbation(user); // F-078: nhân viên thử việc — mọi lần sửa / xóa món cần người duyệt
   if (needed) await assertActorPin(user); // F-072: xóa món đã tiếp nhận / đã pha cần PIN của người thao tác
   if (user.role !== 'STAFF') return user.userId;
   if (!needed && !body.adminUsername) return null;
