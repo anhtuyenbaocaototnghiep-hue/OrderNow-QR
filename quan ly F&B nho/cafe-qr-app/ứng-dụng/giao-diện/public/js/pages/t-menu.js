@@ -1,4 +1,6 @@
 // S-02 Menu + S-03 Giỏ hàng. Luồng chuẩn ≤ 3 chạm (NFR-003/Q-016): "+" món → "Xem giỏ · Gửi đơn" → "Gửi đơn".
+// F-081 (ADR-039): bấm món có tùy chọn ("+" hoặc tên món) → bảng chọn trượt lên ngay (tùy chọn + ghi chú + số lượng) → "Thêm vào giỏ";
+// món không tùy chọn: "+" vẫn thêm ngay (3 chạm), bấm tên món mở bảng chọn để ghi chú / chọn số lượng. Giỏ hàng để xem và gửi.
 // Lỗi hết món (BR-009/Q-005): server từ chối cả đơn → bỏ món đó khỏi giỏ và báo khách.
 // ADR-005: mục Ưu đãi / Gợi ý / Combo, tùy chọn món (món có lựa chọn mặc định vẫn thêm 1 chạm), hội viên SĐT, báo giá từ server.
 // ADR-006: "Lần trước bạn gọi — Gọi lại?" + món yêu thích ♥ (F-045), thời gian chờ ước tính (F-025), menu theo lịch tự tải lại (F-040).
@@ -9,7 +11,6 @@ import {
   cartTotal,
   clearCart,
   itemQuantity,
-  lineKey,
   loadCart,
   MAX_QTY,
   removeItem,
@@ -19,7 +20,7 @@ import {
   toOrderItems,
 } from '../cart.js';
 import { mountMemberBox } from '../member-box.js';
-import { defaultChoice, groupsOf, pickOptions } from '../options.js';
+import { groupsOf, pickItem } from '../options.js';
 import { connectRealtime } from '../socket.js';
 import { $, clear, el, errorMessage, modal, money, setBusy, thumb, toast } from '../ui.js';
 import { followTable, getSessionId, goEntry, isLeaving, qrToken, setFlash, takeFlash } from '../customer.js';
@@ -202,12 +203,13 @@ async function replay(orderId, button) {
     for (const it of r.items) {
       const item = state.itemsById.get(it.menuItemId);
       if (!item) continue;
-      const key = lineKey(it.menuItemId, it.optionIds);
-      const before = state.cart.find((l) => l.key === key)?.quantity ?? 0;
-      addItem(state.cart, item, { optionIds: it.optionIds, optionLabels: it.optionLabels, optionDelta: it.optionDelta });
-      setQuantity(state.cart, key, before + it.quantity);
-      const line = state.cart.find((l) => l.key === key);
-      if (line && it.note && !line.note) line.note = it.note;
+      // F-081: cùng món + tùy chọn + ghi chú thì cộng dồn, ghi chú khác thì thành dòng riêng
+      addItem(
+        state.cart,
+        item,
+        { optionIds: it.optionIds, optionLabels: it.optionLabels, optionDelta: it.optionDelta },
+        { quantity: it.quantity, note: it.note || '' },
+      );
       added += it.quantity;
     }
     persist();
@@ -285,17 +287,19 @@ function itemCard(item, { badge = null } = {}) {
   state.controls.get(item.id).add(control);
   const hasOptions = groupsOf(item, state.menu.modifierGroups).length > 0;
   const isCombo = item.itemType === 'COMBO';
+  const pic = thumb(item.name, item.imageUrl);
+  pic.addEventListener('click', () => openItem(item)); // F-081: bấm ảnh = bấm tên món
   const card = el(
     'div',
     { class: `c-item ${item.isAvailable ? '' : 'soldout'}`, dataset: { id: item.id } },
-    thumb(item.name, item.imageUrl),
+    pic,
     el(
       'div',
       { class: 'grow' },
       el(
         'div',
         { class: 'c-item-name' },
-        item.name,
+        el('button', { class: 'c-name-btn', type: 'button', onclick: () => openItem(item) }, item.name), // F-081: mở bảng chọn
         badge ? el('span', { class: 'tag' }, badge) : null,
         item.promotionBadge ? el('span', { class: 'tag promo' }, item.promotionBadge) : null,
       ),
@@ -312,7 +316,7 @@ function itemCard(item, { badge = null } = {}) {
       priceNode(item),
       isCombo && item.savings > 0 ? el('div', { class: 'small save' }, `Tiết kiệm ${money(item.savings)}`) : null,
       hasOptions && item.isAvailable
-        ? el('button', { class: 'link-btn small', type: 'button', onclick: () => chooseOptions(item) }, 'Chọn size / tùy chọn ›')
+        ? el('button', { class: 'link-btn small', type: 'button', onclick: () => openItem(item) }, 'Chọn size / tùy chọn ›')
         : null,
     ),
     state.recall
@@ -405,8 +409,9 @@ function renderControl(itemId) {
       clear(control, el('span', { class: 'badge danger' }, 'Hết món'));
       continue;
     }
-    if (hasOptions) {
-      // Món có tùy chọn: "+" thêm theo lựa chọn mặc định (vẫn 1 chạm); sửa số lượng từng dòng trong giỏ
+    const lines = state.cart.filter((l) => l.menuItemId === itemId);
+    if (hasOptions || lines.length > 1) {
+      // F-081: món có tùy chọn → "+" mở bảng chọn; nhiều dòng (khác tùy chọn / ghi chú) → số trong giỏ, sửa từng dòng trong giỏ
       clear(
         control,
         qty ? el('span', { class: 'qty-badge', 'aria-label': `${qty} trong giỏ` }, qty) : null,
@@ -414,7 +419,7 @@ function renderControl(itemId) {
       );
       continue;
     }
-    const line = state.cart.find((l) => l.menuItemId === itemId);
+    const line = lines[0];
     if (!line) clear(control, el('button', { class: 'add-btn', type: 'button', 'aria-label': `Thêm ${item.name}`, onclick: () => quickAdd(item) }, '+'));
     else
       clear(
@@ -434,19 +439,35 @@ function stepper(qty, onChange, name) {
   );
 }
 
+/** Nút "+": món có tùy chọn → mở bảng chọn (F-081); món không tùy chọn → thêm 1 phần ngay. */
 async function quickAdd(item) {
   if (!item.isAvailable) return toast(`${item.name} đã hết món`, 'warning');
-  const choice = defaultChoice(item, state.menu.modifierGroups);
-  if (!choice) return chooseOptions(item);
-  addItem(state.cart, item, choice);
-  if (choice.optionLabels.length) toast(`Đã thêm ${item.name} (${choice.optionLabels.join(', ')})`, 'success', 2000);
+  if (groupsOf(item, state.menu.modifierGroups).length) return openItem(item);
+  addItem(state.cart, item, {});
   changed(item.id);
 }
 
-async function chooseOptions(item) {
-  const choice = await pickOptions(item, state.menu.modifierGroups);
+/** F-081 (ADR-039): bảng chọn món trượt lên — tùy chọn, ghi chú, số lượng → "Thêm vào giỏ". */
+async function openItem(item) {
+  if (!item.isAvailable) return toast(`${item.name} đã hết món`, 'warning');
+  const isCombo = item.itemType === 'COMBO';
+  const head = el(
+    'div',
+    { class: 'item-sheet-head' },
+    thumb(item.name, item.imageUrl),
+    el(
+      'div',
+      { class: 'grow' },
+      priceNode(item),
+      item.promotionBadge ? el('span', { class: 'tag promo' }, item.promotionBadge) : null,
+      isCombo ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity > 1 ? `${c.quantity}× ` : ''}${c.name}`).join(' + ')) : null,
+    ),
+  );
+  const choice = await pickItem(item, state.menu.modifierGroups, { head, noteChips: NOTE_CHIPS, allowNote: !isCombo, maxQty: MAX_QTY });
   if (!choice) return;
-  addItem(state.cart, item, choice);
+  addItem(state.cart, item, choice, { quantity: choice.quantity, note: choice.note });
+  const extra = [...choice.optionLabels, choice.note].filter(Boolean).join(', ');
+  toast(`Đã thêm ${choice.quantity} × ${item.name}${extra ? ` (${extra})` : ''}`, 'success', 2500);
   changed(item.id);
 }
 

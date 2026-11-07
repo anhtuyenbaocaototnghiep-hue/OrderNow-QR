@@ -925,3 +925,50 @@ body.customer .c-tabs {
     transition: none !important;
   }
 }
+
+/* F-081 (ADR-039): bấm món → bảng chọn trượt lên (tùy chọn + ghi chú + số lượng) */
+.c-name-btn {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0.2rem 0;
+  margin: 0;
+  min-height: 1.75rem; /* vùng chạm ≥ 24 px (WCAG 2.5.8) */
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.c-name-btn:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.c-item:not(.soldout) > .thumb {
+  cursor: pointer;
+}
+.item-sheet-head {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+.item-sheet-head .c-item-price {
+  font-size: 1.05rem;
+}
+.item-note {
+  margin-top: 0.25rem;
+}
+.item-note .note-chips {
+  margin: 0.15rem 0 0.4rem;
+}
+.item-qty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  font-weight: 600;
+}

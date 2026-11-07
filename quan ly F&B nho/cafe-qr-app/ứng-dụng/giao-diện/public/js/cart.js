@@ -35,20 +35,31 @@ export function clearCart(scope) {
   }
 }
 
-/** Thêm 1 phần. `choice` = { optionIds, optionLabels, optionDelta } khi món có tùy chọn. */
-export function addItem(lines, item, choice = {}) {
+/**
+ * Thêm `quantity` phần (mặc định 1). `choice` = { optionIds, optionLabels, optionDelta } khi món có tùy chọn.
+ * F-081: có truyền `note` (bảng chọn món của khách) → cùng món + cùng tùy chọn + cùng ghi chú mới cộng dồn, ghi chú khác → dòng
+ * riêng (khóa `key~n`); không truyền (quầy, nút "+" nhanh) → cộng vào dòng cùng món + tùy chọn như trước.
+ */
+export function addItem(lines, item, choice = {}, { quantity = 1, note } = {}) {
   const optionIds = choice.optionIds ?? [];
-  const key = lineKey(item.id, optionIds);
-  const line = lines.find((l) => l.key === key);
-  if (line) line.quantity = Math.min(MAX_QTY, line.quantity + 1);
+  const base = lineKey(item.id, optionIds);
+  const clean = (s) => (s ?? '').trim();
+  const add = Math.max(1, Math.floor(quantity));
+  const line =
+    note === undefined
+      ? lines.find((l) => l.key === base)
+      : lines.find((l) => (l.key === base || l.key.startsWith(`${base}~`)) && clean(l.note) === clean(note));
+  if (line) line.quantity = Math.min(MAX_QTY, line.quantity + add);
   else {
+    let key = base;
+    for (let i = 1; lines.some((l) => l.key === key); i++) key = `${base}~${i}`;
     lines.push({
       key,
       menuItemId: item.id,
       name: item.name,
       price: item.price + (choice.optionDelta ?? 0),
-      quantity: 1,
-      note: '',
+      quantity: Math.min(MAX_QTY, add),
+      note: clean(note).slice(0, 200),
       optionIds,
       optionLabels: choice.optionLabels ?? [],
       optionDelta: choice.optionDelta ?? 0,
