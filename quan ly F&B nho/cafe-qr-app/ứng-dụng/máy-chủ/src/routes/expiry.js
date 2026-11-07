@@ -9,7 +9,7 @@ export const expiryRouter = express.Router();
 
 expiryRouter.get('/expiry/risk', requireStaff, async (req, res) => {
   const r = await expiryService.risk();
-  res.json(req.user.role === 'ADMIN' ? r : expiryService.withoutMoney(r));
+  res.json(['ADMIN', 'STORE_MGR'].includes(req.user.role) ? r : expiryService.withoutMoney(r)); // F-077: quản lý cửa hàng thấy tiền như chủ quán
 });
 
 expiryRouter.post('/ingredients/:id/discard-open', requireStaff, async (req, res) => {

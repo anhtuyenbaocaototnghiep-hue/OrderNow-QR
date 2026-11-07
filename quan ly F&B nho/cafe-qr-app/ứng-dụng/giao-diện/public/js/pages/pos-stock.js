@@ -12,7 +12,7 @@ import { $, clear, confirmDialog, dateTime, el, errorMessage, money, num, setBus
 import { icon } from '../icons.js';
 
 const shell = await mountPosShell('stock');
-const isLead = ['MANAGER', 'ADMIN'].includes(shell.user.role);
+const isLead = ['MANAGER', 'STORE_MGR', 'ADMIN'].includes(shell.user.role);
 const REASONS = { SPILL: 'Đổ / vỡ', EXPIRED: 'Hết hạn', QUALITY: 'Hỏng / không đạt', OTHER: 'Khác' };
 const state = { tab: 'prep' };
 const tabs = $('#tabs');

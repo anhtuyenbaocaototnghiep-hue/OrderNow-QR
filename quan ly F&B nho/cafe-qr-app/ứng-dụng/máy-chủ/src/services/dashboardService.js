@@ -54,9 +54,9 @@ async function summaryOf(date) {
 /** Bỏ số tài chính nhạy cảm cho trưởng ca. */
 const forRole = (s, full) => (s && !full ? { ...s, cogs: undefined, grossProfit: undefined } : s);
 
-/** Dữ liệu trang /admin/today. user.role ADMIN → đủ; MANAGER → rút gọn. */
+/** Dữ liệu trang /admin/today. ADMIN, STORE_MGR (F-077 — quản lý cửa hàng chịu trách nhiệm giá vốn) → đủ; MANAGER → rút gọn. */
 export async function today(user) {
-  const full = user.role === 'ADMIN';
+  const full = user.role === 'ADMIN' || user.role === 'STORE_MGR';
   const day = addDays(todayVn(), -1);
   const [yesterday, lastWeek, shift, todo, expiry, expiredWaste] = await Promise.all([
     summaryOf(day),

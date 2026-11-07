@@ -14,7 +14,7 @@ import { $, clear, dateTime, el, errorMessage, modal, money, moneyInput, moneyVa
 
 const shell = await mountPosShell('shift');
 const main = $('#main');
-const isLead = ['MANAGER', 'ADMIN'].includes(shell.user.role); // trưởng ca / quản lý
+const isLead = ['MANAGER', 'STORE_MGR', 'ADMIN'].includes(shell.user.role); // trưởng ca / quản lý cửa hàng / chủ quán
 let closedReport = null; // phiếu chốt ca vừa đóng (để in)
 // F-054 (ADR-014 D-59): tới từ nút Đăng xuất khi đang giữ ca → nhắc + tự mở hộp đóng ca; đóng xong thì đăng xuất
 const logoutAfter = new URLSearchParams(location.search).get('then') === 'logout';

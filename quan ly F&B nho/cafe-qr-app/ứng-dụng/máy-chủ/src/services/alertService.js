@@ -16,6 +16,8 @@ import * as alertsRepo from '../repositories/alertsRepo.js';
 import * as costAlertRepo from '../repositories/costAlertRepo.js';
 import * as stockRepo from '../repositories/stockRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
+import { OWNER_ONLY_ALERTS } from '../auth/permissions.js';
+import { forbidden } from '../errors.js';
 import { baseline, judge, quietMinutesLeft } from '../utils/anomaly.js';
 import { addDays, vnDayStartUtc } from '../utils/time.js';
 import * as mailService from './mailService.js';
@@ -65,7 +67,8 @@ const DISCLAIMER = 'Cảnh báo là gợi ý để kiểm tra, không kết lu�
 
 async function newAlert(a) {
   const alert = await alertsRepo.createAlert(a);
-  if (alert) publish([ROOMS.admin], 'alert.created', { alert });
+  // F-077: quản lý cửa hàng (phòng `store`) nhận mọi loại trừ loại chỉ chủ quán xem
+  if (alert) publish(OWNER_ONLY_ALERTS.includes(alert.kind) ? [ROOMS.admin] : [ROOMS.admin, ROOMS.store], 'alert.created', { alert });
   return alert;
 }
 
@@ -240,6 +243,42 @@ async function checkOfflineSale({ shiftId, user, orderCode, issues }) {
   if (!alert) return { alert: null, email: null };
   const rows = [['Ca', `#${shiftId}`, false], ['Đơn đầu tiên', `#${orderCode}`, false], ...real.map((i) => [OFFLINE_ISSUE[i.code], i.text, true])];
   return { alert, email: await enqueueImmediate(s, alert, rows, 'Xem đủ danh sách ở Ca & hoàn tiền → Đơn bán lúc mất mạng. ' + DISCLAIMER) };
+}
+
+/**
+ * F-077 (ADR-035 D-159): Quản lý cửa hàng thêm món hoặc đổi giá món → một cảnh báo cho chủ quán mỗi lần (chỉ chủ quán xem),
+ * email theo cài đặt cảnh báo tức thì. Không chặn việc đổi giá — chủ quán xem lại, đổi lại nếu cần.
+ */
+export const onPriceChange = (info) => withDeadlockRetry(() => checkPriceChange(info));
+
+async function checkPriceChange({ item, oldPrice, user }) {
+  const s = await getSettings();
+  const title =
+    oldPrice === null
+      ? `${user.fullName} thêm món "${item.name}" giá ${vnd(item.price)}`
+      : `${user.fullName} đổi giá "${item.name}": ${vnd(oldPrice)} → ${vnd(item.price)}`;
+  const alert = await immediateAlert({
+    kind: 'PRICE_CHANGE',
+    severity: 'MEDIUM',
+    userId: user.userId,
+    title,
+    detail: {
+      menuItemId: item.menuItemId,
+      name: item.name,
+      oldPrice: oldPrice === null ? null : Number(oldPrice),
+      newPrice: Number(item.price),
+      by: user.fullName,
+    },
+    dedupeKey: `PRICE:${item.menuItemId}:${Date.now()}`,
+  });
+  if (!alert) return { alert: null, email: null };
+  const rows = [
+    ['Món', item.name, false],
+    ['Giá cũ', oldPrice === null ? 'món mới' : vnd(oldPrice), false],
+    ['Giá mới', vnd(item.price), true],
+    ['Người đổi', `${user.fullName} (quản lý cửa hàng)`, false],
+  ];
+  return { alert, email: await enqueueImmediate(s, alert, rows, 'Đổi lại ở Thực đơn & định lượng nếu chưa đúng.') };
 }
 
 /**
@@ -672,6 +711,16 @@ export async function runDigests(now = new Date()) {
 }
 
 // ---------------- Trang Cảnh báo ----------------
-export const list = (opts) => alertsRepo.listAlerts(opts);
-export const countNew = () => alertsRepo.countNew();
-export const setStatus = (id, body, user) => alertsRepo.setAlertStatus(id, { status: body.status, note: body.note ?? null, userId: user.userId });
+/** F-077: Quản lý cửa hàng không thấy loại chỉ chủ quán xem (OWNER_ONLY_ALERTS). */
+const hiddenFor = (user) => (user?.role === 'STORE_MGR' ? OWNER_ONLY_ALERTS : []);
+export const list = (opts, user = null) => alertsRepo.listAlerts({ ...opts, excludeKinds: hiddenFor(user) });
+export const countNew = (user = null) => alertsRepo.countNew(hiddenFor(user));
+/** F-077 (ADR-035 D-160): Quản lý cửa hàng không xử lý cảnh báo về chính mình, không đụng loại chỉ chủ quán xem. */
+export async function setStatus(id, body, user) {
+  if (user?.role === 'STORE_MGR') {
+    const a = await alertsRepo.findAlert(id);
+    if (!a || OWNER_ONLY_ALERTS.includes(a.kind)) return null;
+    if (a.user?.userId === user.userId) throw forbidden('Cảnh báo về chính bạn — để chủ quán xem và xử lý', 'SELF_ALERT');
+  }
+  return alertsRepo.setAlertStatus(id, { status: body.status, note: body.note ?? null, userId: user.userId });
+}

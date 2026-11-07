@@ -2,7 +2,8 @@
 // lịch sử ca (F-018), hoàn tiền (F-019), nhập kho & kiểm kê + giá vốn/hao hụt (F-023), sửa / hủy phiếu nhập & kiểm kê (F-048).
 import express from 'express';
 import { z } from 'zod';
-import { badRequest, notFound } from '../errors.js';
+import { AppError, badRequest, notFound } from '../errors.js';
+import { STORE_MGR_SETTINGS } from '../auth/permissions.js';
 import { paramId, parse, parseRange, zId, zMoney, zText } from '../middleware/validate.js';
 import * as alertService from '../services/alertService.js';
 import * as mailService from '../services/mailService.js';
@@ -60,7 +61,11 @@ operationsRouter.put('/modifier-groups/:id', async (req, res) => res.json(await 
 operationsRouter.delete('/modifier-groups/:id', async (req, res) => res.json({ result: await modifierService.removeGroup(paramId(req)) }));
 
 // ---- Cài đặt ----
-operationsRouter.get('/settings', async (_req, res) => res.json(await settingsService.getSettings()));
+// F-077: Quản lý cửa hàng xem được (không thấy email nhận cảnh báo), chỉ đổi STORE_MGR_SETTINGS
+operationsRouter.get('/settings', async (req, res) => {
+  const s = await settingsService.getSettings();
+  res.json(req.user.role === 'STORE_MGR' ? { ...s, alertEmails: [] } : s);
+});
 operationsRouter.put('/settings', async (req, res) => {
   const body = parse(
     z.object({
@@ -143,6 +148,10 @@ operationsRouter.put('/settings', async (req, res) => {
     }),
     req.body,
   );
+  if (req.user.role === 'STORE_MGR') {
+    const blocked = Object.keys(body).filter((k) => !STORE_MGR_SETTINGS.includes(k));
+    if (blocked.length) throw new AppError(403, 'OWNER_ONLY', 'Cài đặt này chỉ chủ quán đổi được', { fields: blocked });
+  }
   const before = Object.keys(body).some((k) => k.startsWith('alert')) ? await settingsService.getSettings() : null;
   const after = await settingsService.updateSettings(body);
   // F-060 (ADR-020 D-78): đổi cài đặt cảnh báo → thư báo tới cả địa chỉ cũ lẫn mới (lỗi gửi không làm hỏng việc lưu)
@@ -150,10 +159,10 @@ operationsRouter.put('/settings', async (req, res) => {
   res.json(after);
 });
 
-// ---- Cảnh báo bất thường (FEATURE-060, ADR-020) — chỉ ADMIN (requireAdmin ở adminRouter) ----
+// ---- Cảnh báo bất thường (FEATURE-060, ADR-020) — Chủ quán; Quản lý cửa hàng xem + xử lý (trừ loại chỉ chủ quán, trừ về chính mình — F-077) ----
 operationsRouter.get('/alerts', async (req, res) => {
   const q = parse(z.object({ status: z.enum(['NEW', 'ALL']).default('NEW'), limit: z.coerce.number().int().min(1).max(500).default(100) }), req.query);
-  res.json({ alerts: await alertService.list(q), newCount: await alertService.countNew() });
+  res.json({ alerts: await alertService.list(q, req.user), newCount: await alertService.countNew(req.user) });
 });
 operationsRouter.patch('/alerts/:id', async (req, res) => {
   const body = parse(z.object({ status: z.enum(['SEEN', 'RESOLVED']), note: zText(300).optional().nullable() }), req.body);

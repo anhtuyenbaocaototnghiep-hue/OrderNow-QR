@@ -81,19 +81,26 @@ export async function setActive(id, isActive, actor) {
 
 /**
  * Xác thực lại cho thao tác vượt quyền (giảm giá tay vượt ngưỡng — D-14/D-24, hoàn tiền — D-15, duyệt chi quỹ — D-23).
- * Người thao tác là ADMIN → tự duyệt; là MANAGER và `allowManager` → tự duyệt. Không thì kiểm tên + mật khẩu tài khoản
- * quản lý (hoặc trưởng ca khi `allowManager`) đang hoạt động — không dùng token của người đang đứng quầy.
+ * Người thao tác là ADMIN → tự duyệt; là MANAGER và `allowManager` → tự duyệt; là STORE_MGR và `allowStoreManager` (mặc định có —
+ * F-077) → tự duyệt. Không thì kiểm tên + mật khẩu tài khoản chủ quán (hoặc quản lý cửa hàng / trưởng ca theo hai cờ) đang hoạt động —
+ * không dùng token của người đang đứng quầy.
  * F-071: 5 lần sai / 15 phút cùng tên duyệt + cùng người đứng quầy → 429 APPROVAL_LOCKED (chặn dò mật khẩu quản lý).
  */
-export async function resolveApproval(user, { adminUsername, adminPassword } = {}, what = 'thao tác này', { allowManager = false } = {}) {
-  if (user.role === 'ADMIN' || (allowManager && user.role === 'MANAGER')) return user;
-  const who = allowManager ? 'trưởng ca / quản lý' : 'quản lý';
+export async function resolveApproval(
+  user,
+  { adminUsername, adminPassword } = {},
+  what = 'thao tác này',
+  { allowManager = false, allowStoreManager = true } = {},
+) {
+  const may = (role) => role === 'ADMIN' || (allowStoreManager && role === 'STORE_MGR') || (allowManager && role === 'MANAGER');
+  if (may(user.role)) return user;
+  const who = allowManager ? 'trưởng ca / quản lý' : allowStoreManager ? 'quản lý' : 'chủ quán';
   if (!adminUsername || !adminPassword) throw forbidden(`Cần tài khoản ${who} duyệt ${what}`, 'ADMIN_APPROVAL_REQUIRED');
   const attempt = { username: adminUsername, actor: user };
   await authGuard.assertNotLocked('APPROVAL', attempt);
   const admin = await usersRepo.findByUsernameWithHash(adminUsername);
   const ok = await bcrypt.compare(adminPassword, admin?.passwordHash ?? DUMMY_HASH);
-  const roleOk = admin && (admin.role === 'ADMIN' || (allowManager && admin.role === 'MANAGER'));
+  const roleOk = admin && may(admin.role);
   if (!admin || !ok || !roleOk || !admin.isActive) {
     if (!admin || !ok) await authGuard.recordFailure('APPROVAL', attempt); // chỉ đếm sai tên / mật khẩu — đúng mật khẩu mà không đủ quyền không phải dò
     throw forbidden(`Tài khoản ${who} hoặc mật khẩu không đúng`, 'ADMIN_APPROVAL_INVALID');

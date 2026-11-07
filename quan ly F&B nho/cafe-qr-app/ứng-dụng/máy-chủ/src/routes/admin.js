@@ -1,7 +1,7 @@
-// API quản trị (chỉ ADMIN): danh mục, món, BOM, bàn + QR, nguyên liệu/kho, tài khoản, báo cáo, lịch sử đơn/thu tiền.
+// API quản trị (Chủ quán = ADMIN; Quản lý cửa hàng = STORE_MGR theo STORE_MGR_AREAS — F-077): danh mục, món, BOM, bàn + QR, nguyên liệu/kho, tài khoản, báo cáo, lịch sử đơn/thu tiền.
 import express from 'express';
 import { z } from 'zod';
-import { requireAdmin } from '../middleware/auth.js';
+import { requireAdminArea } from '../auth/permissions.js';
 import { paramId, parse, zDate, zId, zText, zTime } from '../middleware/validate.js';
 import * as adminService from '../services/adminService.js';
 import * as qrCheckService from '../services/qrCheckService.js';
@@ -17,7 +17,7 @@ import { analyticsAdminRouter } from './analytics.js';
 import { apiDocsRouter } from './apiDocs.js';
 
 export const adminRouter = express.Router();
-adminRouter.use(requireAdmin);
+adminRouter.use(requireAdminArea); // F-077 (ADR-035): thay requireAdmin
 
 const zQty = () => z.coerce.number().min(0).max(1_000_000_000);
 const zBool = () => z.boolean();
@@ -60,8 +60,8 @@ const itemBody = z.object({
   prepSeconds: z.coerce.number().int().min(10, 'Thời gian pha tối thiểu 10 giây').max(3600).nullable().optional(), // F-025; vắng = giữ nguyên
 });
 adminRouter.get('/menu-items', async (_req, res) => res.json(await adminService.listItems()));
-adminRouter.post('/menu-items', async (req, res) => res.status(201).json(await adminService.createItem(parse(itemBody, req.body))));
-adminRouter.put('/menu-items/:id', async (req, res) => res.json(await adminService.updateItem(paramId(req), parse(itemBody, req.body))));
+adminRouter.post('/menu-items', async (req, res) => res.status(201).json(await adminService.createItem(parse(itemBody, req.body), req.user)));
+adminRouter.put('/menu-items/:id', async (req, res) => res.json(await adminService.updateItem(paramId(req), parse(itemBody, req.body), req.user)));
 adminRouter.delete('/menu-items/:id', async (req, res) => res.json({ result: await adminService.deleteItem(paramId(req)) }));
 adminRouter.patch('/menu-items/:id/availability', async (req, res) => {
   const { isAvailable } = parse(z.object({ isAvailable: zBool() }), req.body);
@@ -147,7 +147,7 @@ adminRouter.get('/ingredients/:id/transactions', async (req, res) => res.json(aw
 adminRouter.delete('/ingredients/:id', async (req, res) => res.json({ result: await adminService.deleteIngredient(paramId(req)) }));
 
 // ---- Tài khoản (FEATURE-009) ----
-const role = () => z.enum(['STAFF', 'MANAGER', 'ADMIN']); // F-036 trưởng ca
+const role = () => z.enum(['STAFF', 'MANAGER', 'STORE_MGR', 'ADMIN']); // F-036 trưởng ca · F-077 quản lý cửa hàng
 const password = () => z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự').max(100);
 adminRouter.get('/users', async (_req, res) => res.json(await userService.list()));
 adminRouter.post('/users', async (req, res) => {

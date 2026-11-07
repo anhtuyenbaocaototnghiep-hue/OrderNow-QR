@@ -15,7 +15,7 @@ export const CASH_STATUS = {
 };
 export const cashStatusBadge = (s) => el('span', { class: `badge ${CASH_STATUS[s][1]}` }, CASH_STATUS[s][0]);
 const MAX_IMAGE = 2 * 1024 * 1024;
-const canApprove = (user) => user.role === 'MANAGER' || user.role === 'ADMIN';
+const canApprove = (user) => ['MANAGER', 'STORE_MGR', 'ADMIN'].includes(user.role); // F-077: quản lý cửa hàng ≤ 3 × ngưỡng (server kiểm)
 
 let categoriesCache = null;
 const loadCategories = async () => (categoriesCache ??= await staffApi('/api/cash-categories'));

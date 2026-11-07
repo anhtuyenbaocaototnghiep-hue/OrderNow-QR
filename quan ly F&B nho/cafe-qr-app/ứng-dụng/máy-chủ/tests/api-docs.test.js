@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { auth, startApp } from './helpers/harness.js';
 
 const routesDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/routes');
-let app, api, admin, staff, lead, docs, apiDocsService, contractFile;
+let app, api, admin, staff, lead, store, docs, apiDocsService, contractFile;
 
 const find = (method, p) => docs.endpoints.find((e) => e.method === method && e.path === p);
 
@@ -25,6 +25,13 @@ before(async () => {
     .send({ username: 'lead_api', password: 'Pass@123', fullName: 'Trưởng ca API', role: 'MANAGER' });
   assert.equal(u.status, 201, JSON.stringify(u.body));
   lead = await app.login('lead_api', 'Pass@123');
+  // F-077: quản lý cửa hàng — một phần /api/admin
+  const sm = await api
+    .post('/api/admin/users')
+    .set(auth(admin))
+    .send({ username: 'store_api', password: 'Pass@123', fullName: 'Quản lý cửa hàng API', role: 'STORE_MGR' });
+  assert.equal(sm.status, 201, JSON.stringify(sm.body));
+  store = await app.login('store_api', 'Pass@123');
   const r = await api.get('/api/admin/api-docs').set(auth(admin));
   assert.equal(r.status, 200, JSON.stringify(r.body));
   docs = r.body;
@@ -40,7 +47,7 @@ describe('Tra cứu API (F-052)', () => {
       ['POST', '/api/sessions/:id/settle', 'STAFF', null, 'POS'],
       ['POST', '/api/ops/stocktakes', 'MANAGER', 'stocktake.post', 'POS'],
       ['POST', '/api/cash-transactions', 'STAFF', 'cash.create', 'POS'],
-      ['GET', '/api/admin/reviews', 'ADMIN', null, 'ADMIN'],
+      ['GET', '/api/admin/reviews', 'STORE_MGR', null, 'ADMIN'], // F-077: quản lý cửa hàng xem được
       ['GET', '/api/admin/api-docs', 'ADMIN', null, 'ADMIN'],
     ];
     for (const [method, p, access, permission, area] of expect) {
@@ -48,8 +55,8 @@ describe('Tra cứu API (F-052)', () => {
       assert.ok(e, `thiếu ${method} ${p}`);
       assert.deepEqual([e.access, e.permission, e.area], [access, permission, area], `${method} ${p}`);
     }
-    assert.deepEqual(find('POST', '/api/ops/stocktakes').roles, ['MANAGER', 'ADMIN']);
-    assert.deepEqual(find('POST', '/api/sessions/:id/settle').roles, ['STAFF', 'MANAGER', 'ADMIN']);
+    assert.deepEqual(find('POST', '/api/ops/stocktakes').roles, ['MANAGER', 'STORE_MGR', 'ADMIN']);
+    assert.deepEqual(find('POST', '/api/sessions/:id/settle').roles, ['STAFF', 'MANAGER', 'STORE_MGR', 'ADMIN']);
     assert.deepEqual(find('POST', '/api/orders').roles, []);
     assert.equal(find('POST', '/api/sessions/:id/settle').resource, '/sessions');
     assert.equal(find('GET', '/api/admin/reviews').resource, '/admin/reviews');
@@ -148,15 +155,17 @@ describe('Tra cứu API (F-052)', () => {
       [null, 'không token'],
       [staff, 'nhân viên'],
       [lead, 'trưởng ca'],
+      [store, 'quản lý cửa hàng'],
     ]);
     const wrong = [];
     let calls = 0;
     for (const e of docs.endpoints) {
       if (e.permission) assert.ok(e.roles.length > 0, `${e.method} ${e.path}: quyền ${e.permission} không có vai nào`);
       const checks = [];
-      if (['STAFF', 'MANAGER', 'ADMIN'].includes(e.access)) checks.push([null, 401]);
-      if (['MANAGER', 'ADMIN'].includes(e.access)) checks.push([staff, 403]);
-      if (e.access === 'ADMIN') checks.push([lead, 403]);
+      if (['STAFF', 'MANAGER', 'STORE_MGR', 'ADMIN'].includes(e.access)) checks.push([null, 401]);
+      if (['MANAGER', 'STORE_MGR', 'ADMIN'].includes(e.access)) checks.push([staff, 403]);
+      if (['STORE_MGR', 'ADMIN'].includes(e.access)) checks.push([lead, 403]);
+      if (e.access === 'ADMIN') checks.push([store, 403]); // F-077: phần chỉ chủ quán
       for (const [token, status] of checks) {
         const req = api[e.method.toLowerCase()](e.path.replace(/:\w+/g, '1'));
         const r = await (token ? req.set(auth(token)) : req);

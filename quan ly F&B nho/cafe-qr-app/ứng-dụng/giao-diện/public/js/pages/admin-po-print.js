@@ -3,7 +3,7 @@ import { staffApi } from '../api.js';
 import { current, requireStaffPage } from '../auth.js';
 import { $, clear, dateTime, el, errorMessage, money, num, toast } from '../ui.js';
 
-await requireStaffPage({ admin: true });
+await requireStaffPage({ admin: true, page: 'purchasing' });
 const id = Number(location.pathname.split('/')[3]);
 const fmtDate = (d) => (d ? d.split('-').reverse().join('/') : '—');
 

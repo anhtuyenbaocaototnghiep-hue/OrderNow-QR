@@ -4,10 +4,11 @@
 // ai sửa tay nhiều, % tiền lương trên doanh thu theo ca).
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
+import { isOwner } from '../roles.js';
 import { attendanceDialog, attendanceTable, hoursText, ROLE_LABEL } from '../attendance.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, time, toast, todayVn } from '../ui.js';
 
-await mountAdminShell('staff');
+const me = await mountAdminShell('staff');
 
 const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
 const mondayOf = (d) => addDays(d, -((new Date(`${d}T00:00:00Z`).getUTCDay() + 6) % 7));
@@ -89,7 +90,7 @@ async function renderAttendance() {
   }
   clear(
     body,
-    await settingsCard(),
+    isOwner(me) ? await settingsCard() : null, // F-077: cách chấm công — chủ quán
     rangeFilters([
       el('div', { class: 'field' }, el('label', {}, 'Nhân viên'), userSel),
       el(
@@ -130,7 +131,7 @@ async function renderAttendance() {
           { class: 'small muted' },
           'Tự động: đăng nhập = vào ca; đăng xuất / đóng ca / hết hạn đăng nhập = ra ca. Mọi lần sửa đều ghi nhật ký thao tác.',
         ),
-        attendanceTable(rows, { editable: () => true, onChange: load, showDate: true }),
+        attendanceTable(rows, { editable: (a) => isOwner(me) || a.user.userId !== me.userId, onChange: load, showDate: true }), // F-077: không tự sửa của mình
       ),
     ),
   );
@@ -478,7 +479,7 @@ async function renderWeek() {
                     el('td', {}, h(p.paidMinutes)),
                     el('td', {}, String(p.lateCount)),
                     el('td', {}, String(p.absentCount)),
-                    el('td', {}, p.pending ? el('a', { href: '/admin/payroll' }, String(p.pending)) : '0'),
+                    el('td', {}, p.pending && isOwner(me) ? el('a', { href: '/admin/payroll' }, String(p.pending)) : String(p.pending)),
                   ),
                 ),
               ),

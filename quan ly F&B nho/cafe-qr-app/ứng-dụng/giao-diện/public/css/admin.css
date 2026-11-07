@@ -1397,3 +1397,29 @@ ul.bday-tips {
 .inline-form + h3 {
   margin-top: 1.25rem;
 }
+
+/* F-077 (ADR-035): Tài khoản — "Mỗi vai trò làm được gì?" */
+.role-guide {
+  margin-bottom: 0.75rem;
+}
+.role-guide summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.role-guide dl {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.6rem 1rem;
+  margin: 0.75rem 0 0;
+}
+.role-guide dd {
+  margin: 0;
+}
+@media (max-width: 600px) {
+  .role-guide dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .role-guide dt:not(:first-child) {
+    margin-top: 0.4rem;
+  }
+}

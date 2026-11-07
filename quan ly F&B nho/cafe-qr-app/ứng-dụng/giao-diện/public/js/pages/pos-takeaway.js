@@ -32,7 +32,7 @@ const state = { menu: null, itemsById: new Map(), activeCat: null, cart: loadCar
 
 // ---------- F-074: bán tạm khi mất kết nối, nhập phiếu bán tay ----------
 const REF_KEY = 'cf_takeaway_ref';
-const isLead = ['MANAGER', 'ADMIN'].includes(shell.user.role);
+const isLead = ['MANAGER', 'STORE_MGR', 'ADMIN'].includes(shell.user.role);
 let offline = false;
 let paperMode = false;
 let offlineTimer = null;

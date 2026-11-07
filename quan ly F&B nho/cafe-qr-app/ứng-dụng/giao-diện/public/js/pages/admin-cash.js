@@ -34,22 +34,24 @@ const tabs = el(
   [
     ['book', 'Sổ quỹ'],
     ['categories', 'Danh mục thu chi'],
-  ].map(([key, label]) =>
-    el(
-      'button',
-      {
-        type: 'button',
-        role: 'tab',
-        'aria-selected': String(state.tab === key),
-        onclick: (e) => {
-          state.tab = key;
-          tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b === e.currentTarget)));
-          load();
+  ]
+    .filter(([key]) => key !== 'categories' || me.role === 'ADMIN') // F-077: danh mục (tính vào lãi / lỗ, cần duyệt) — chủ quán
+    .map(([key, label]) =>
+      el(
+        'button',
+        {
+          type: 'button',
+          role: 'tab',
+          'aria-selected': String(state.tab === key),
+          onclick: (e) => {
+            state.tab = key;
+            tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b === e.currentTarget)));
+            load();
+          },
         },
-      },
-      label,
+        label,
+      ),
     ),
-  ),
 );
 clear($('#content'), tabs, body);
 

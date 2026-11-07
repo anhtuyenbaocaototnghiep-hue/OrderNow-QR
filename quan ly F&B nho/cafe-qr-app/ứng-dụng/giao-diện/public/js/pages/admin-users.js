@@ -2,13 +2,28 @@
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, setBusy, showFieldErrors, toast } from '../ui.js';
+import { ROLE_BADGE, ROLE_LABEL, ROLE_SUMMARY } from '../roles.js';
 
 const me = await mountAdminShell('users');
 
 clear($('#head-actions'), el('button', { class: 'btn btn-primary', type: 'button', onclick: () => createUser() }, '+ Thêm nhân viên'));
 
 // F-036: Trưởng ca = quyền quầy + giảm tay 20 %/50k, hoàn tiền trong ca, duyệt chi quỹ, sửa chấm công trong ngày, kiểm kê, điều chỉnh kho
-const ROLE = { STAFF: 'Nhân viên quầy', MANAGER: 'Trưởng ca', ADMIN: 'Quản lý' };
+// F-077 (ADR-035): Quản lý cửa hàng = trưởng ca + trang Quản lý phần vận hành; ADMIN hiện là "Chủ quán"
+const ROLE = { ...ROLE_LABEL, STAFF: 'Nhân viên quầy' };
+
+/** F-077: bảng "vai trò làm được gì" — chủ quán chọn vai cho đúng người. */
+const roleGuide = () =>
+  el(
+    'details',
+    { class: 'card role-guide' },
+    el('summary', {}, 'Mỗi vai trò làm được gì?'),
+    el(
+      'dl',
+      {},
+      ROLE_SUMMARY.flatMap(([r, text]) => [el('dt', {}, el('span', { class: `badge ${ROLE_BADGE[r]}` }, ROLE[r])), el('dd', {}, text)]),
+    ),
+  );
 
 async function load() {
   let users;
@@ -19,6 +34,7 @@ async function load() {
   }
   clear(
     $('#content'),
+    roleGuide(),
     // F-072 (DEF-020): chỉ chỗ đặt / đổi PIN — quản lý không đặt hộ, chỉ xóa để người đó tự đặt lại
     el(
       'p',
@@ -54,7 +70,7 @@ async function load() {
                 u.userId === me.userId ? el('span', { class: 'badge primary', style: { marginLeft: '0.4rem' } }, 'Bạn') : null,
               ),
               el('td', {}, u.fullName),
-              el('td', {}, el('span', { class: `badge ${u.role === 'ADMIN' ? 'primary' : u.role === 'MANAGER' ? 'ok' : ''}` }, ROLE[u.role])),
+              el('td', {}, el('span', { class: `badge ${ROLE_BADGE[u.role] ?? ''}` }, ROLE[u.role])),
               el(
                 'td',
                 {},

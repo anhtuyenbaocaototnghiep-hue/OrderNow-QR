@@ -6,6 +6,7 @@ import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, moneyValue, playSound, time, toast, unlockAudio } from './ui.js';
 import { brandMark, icon } from './icons.js';
+import { ROLE_LABEL } from './roles.js';
 import { kioskDialog, registerPinPrompter, setPinDialog, switchUserDialog } from './staff-pin.js';
 
 export async function mountPosShell(active) {
@@ -55,6 +56,7 @@ export async function mountPosShell(active) {
     ['me', '/pos/me', 'Giờ công', 'timer'], // F-072 / F-073: giờ công, lương tạm tính, phiếu lương của chính mình
   ];
   if (user.role === 'MANAGER') nav.push(['today', '/admin/today', 'Hôm nay', 'chart-column']); // F-043 bản rút gọn
+  if (user.role === 'STORE_MGR') nav.push(['admin', '/admin/today', 'Quản lý', 'settings']); // F-077: trang Quản lý phần vận hành
   if (user.role === 'ADMIN') nav.push(['admin', '/admin', 'Quản lý', 'settings']);
 
   // ADR-018 D-67: trái tên quán + điều hướng; phải cụm trạng thái (ca, QR, kết nối, âm thanh) rồi người dùng
@@ -76,7 +78,14 @@ export async function mountPosShell(active) {
       el(
         'div',
         { class: 'pos-user' },
-        el('span', { class: 'user-name' }, user.fullName, user.role === 'MANAGER' ? el('span', { class: 'badge ok' }, 'Trưởng ca') : null),
+        el(
+          'span',
+          { class: 'user-name' },
+          user.fullName,
+          ['MANAGER', 'STORE_MGR'].includes(user.role)
+            ? el('span', { class: `badge ${user.role === 'MANAGER' ? 'ok' : 'preparing'}` }, ROLE_LABEL[user.role])
+            : null,
+        ),
         // F-072: màn chấm công chung (PIN riêng) + đổi người đứng máy
         current.attendance.mode === 'KIOSK'
           ? el('button', { class: 'btn btn-sm', type: 'button', id: 'kiosk-btn', onclick: () => kioskDialog().then(loadReminders) }, icon('clock'), 'Chấm công')

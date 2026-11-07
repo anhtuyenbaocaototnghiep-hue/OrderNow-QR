@@ -33,7 +33,7 @@ export async function record(body, user) {
   const existing = await ordersRepo.orderIdByClientRef(body.clientRef);
   if (existing) return finish(existing, 'DUPLICATE', { body, user, source });
 
-  if (source === 'PAPER' && !['ADMIN', 'MANAGER'].includes(user.role)) {
+  if (source === 'PAPER' && !['ADMIN', 'STORE_MGR', 'MANAGER'].includes(user.role)) {
     throw forbidden('Chỉ trưởng ca hoặc quản lý nhập đơn từ phiếu bán tay', 'PAPER_SALE_FORBIDDEN');
   }
   const soldAt = new Date(body.soldAt);

@@ -6,10 +6,11 @@
 // F-068 (ADR-026): lọc "Chưa có ngày sinh" (mở thẳng bằng ?view=nobirth), ngày sinh năm không bắt buộc.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
+import { isOwner } from '../roles.js';
 import { $, birthDateInput, birthLabel, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, showFieldErrors, toast } from '../ui.js';
 import { icon } from '../icons.js';
 
-await mountAdminShell('members');
+const me = await mountAdminShell('members');
 
 const state = { tab: 'members', q: '', page: 1, view: 'all', tiers: [] };
 const body = el('div');
@@ -387,7 +388,8 @@ async function openMember(id) {
     actions: m.anonymizedAt
       ? [{ label: 'Đóng', class: 'btn-primary' }]
       : [
-          {
+          // F-077: ẩn danh (không hoàn tác) — chỉ chủ quán
+          isOwner(me) && {
             label: 'Ẩn danh theo yêu cầu',
             class: 'btn-danger',
             onClick: async (close) => {
@@ -438,7 +440,7 @@ async function openMember(id) {
               }
             },
           },
-        ],
+        ].filter(Boolean),
   });
   if (!m.anonymizedAt) renderLoyalty(m, loyaltyBox);
 }

@@ -1,5 +1,5 @@
 // S-42 Hôm nay — dashboard chủ quán (FEATURE-043, ADR-006 D-32). Đọc số tính sẵn (job 00:30) → mở nhanh trên điện thoại.
-// Quản lý: đủ thẻ (kể cả lãi gộp). Trưởng ca: bản rút gọn, không có giá vốn / lãi (server đã bỏ). Nhân viên → về quầy.
+// Chủ quán, Quản lý cửa hàng (F-077): đủ thẻ (kể cả lãi gộp) + menu quản lý theo quyền. Trưởng ca: bản rút gọn, không có giá vốn / lãi (server đã bỏ). Nhân viên → về quầy.
 // F-075 (ADR-033): thẻ "Sắp hết hạn (2 ngày)" tính trực tiếp — quản lý thấy số tiền sẽ phải bỏ + tiền đã hủy vì hết hạn tháng này.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
@@ -8,7 +8,7 @@ import { $, clear, dateTime, el, errorMessage, money, num, toast } from '../ui.j
 import { brandMark, icon } from '../icons.js';
 
 const user = await requireStaffPage();
-if (user.role === 'ADMIN') await mountAdminShell('today');
+if (user.role === 'ADMIN' || user.role === 'STORE_MGR') await mountAdminShell('today');
 else if (user.role === 'MANAGER') {
   // Trưởng ca không có menu quản lý — chỉ thanh trên gọn
   document.body.classList.add('today-lead');

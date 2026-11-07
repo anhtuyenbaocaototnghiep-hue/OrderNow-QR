@@ -1,8 +1,9 @@
-// Khung trang quản lý: chỉ ADMIN (server vẫn kiểm quyền cho mọi API — đây chỉ là trải nghiệm).
+// Khung trang quản lý: Chủ quán mọi mục; Quản lý cửa hàng chỉ mục được mở (F-077 — server vẫn kiểm quyền cho mọi API, đây chỉ là trải nghiệm).
 import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, clear, confirmDialog, el, errorMessage, toast } from './ui.js';
 import { brandMark, icon } from './icons.js';
+import { canOpenAdminPage, isOwner, ROLE_LABEL } from './roles.js';
 
 // Menu quản lý (TASK-066, ADR-013 D-58): "Hôm nay" luôn ở trên; 6 nhóm thu gọn được, nhóm chứa trang đang mở tự mở.
 // Mục: [khóa trang, đường dẫn, tên ngắn một dòng, tên đầy đủ (tiêu đề trang — hiện khi rê chuột)].
@@ -97,6 +98,7 @@ export const MODULE_OF = {
   'api-docs': 'advanced',
 };
 const shown = (key) => !MODULE_OF[key] || current.modules.includes(MODULE_OF[key]);
+const allowed = (key) => canOpenAdminPage(current.user, key); // F-077
 
 // Nhóm người dùng tự mở được nhớ trên máy (tiện ích riêng mỗi trình duyệt; bị chặn lưu thì chỉ mất ghi nhớ)
 const OPEN_KEY = 'admin.nav.open';
@@ -119,8 +121,8 @@ const navLink = ([key, href, label, full], active, ...lead) =>
   el('a', { href, class: key === active ? 'active' : '', 'aria-current': key === active ? 'page' : null, title: full || null }, ...lead, label);
 
 function navGroup(g, active, open) {
-  const items = g.items.filter(([key]) => shown(key));
-  if (!items.length) return null; // cả nhóm đang ẩn (chế độ cơ bản)
+  const items = g.items.filter(([key]) => shown(key) && allowed(key));
+  if (!items.length) return null; // cả nhóm đang ẩn (chế độ cơ bản) hoặc không thuộc quyền
   const here = items.some(([key]) => key === active);
   const summary = el('summary', {}, icon(g.icon), el('span', { class: 'grow' }, g.title), icon('chevron-down'));
   const group = el(
@@ -143,7 +145,7 @@ function navGroup(g, active, open) {
 }
 
 export async function mountAdminShell(active) {
-  const user = await requireStaffPage({ admin: true });
+  const user = await requireStaffPage({ admin: true, page: active });
   const side = $('#side');
   const open = savedOpen();
   clear(
@@ -153,7 +155,13 @@ export async function mountAdminShell(active) {
     NAV.map((g) => navGroup(g, active, open)),
     el('a', { href: '/pos', class: 'nav-pos' }, icon('monitor'), 'Màn hình quầy'),
     el('div', { class: 'spacer' }),
-    el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small', title: 'Tên đăng nhập' }, `@${user.username}`)),
+    el(
+      'div',
+      { class: 'who' },
+      el('strong', {}, user.fullName),
+      isOwner(user) ? null : el('div', { class: 'small' }, ROLE_LABEL[user.role]),
+      el('div', { class: 'small', title: 'Tên đăng nhập' }, `@${user.username}`),
+    ),
     el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, icon('log-out'), 'Đăng xuất'),
   );
   noteHiddenPage(active);
@@ -170,7 +178,9 @@ function noteHiddenPage(active) {
       'div',
       { class: 'alert info module-hidden-note', id: 'module-hidden-note', role: 'status' },
       'Mục này đang ẩn khỏi menu (chế độ cơ bản) — vẫn dùng bình thường. ',
-      el('a', { href: '/admin/settings#giao-dien' }, 'Hiện lại trong menu: Cài đặt → Giao diện quản lý'),
+      isOwner(current.user)
+        ? el('a', { href: '/admin/settings#giao-dien' }, 'Hiện lại trong menu: Cài đặt → Giao diện quản lý')
+        : 'Nhờ chủ quán hiện lại trong menu (Cài đặt → Giao diện quản lý).',
     ),
   );
 }

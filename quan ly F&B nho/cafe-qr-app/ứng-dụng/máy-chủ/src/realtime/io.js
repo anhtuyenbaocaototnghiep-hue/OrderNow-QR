@@ -22,6 +22,7 @@ export function attachRealtime(httpServer) {
         socket.data.user = user;
         rooms.push(ROOMS.staff);
         if (user.role === 'ADMIN') rooms.push(ROOMS.admin); // F-060 cảnh báo bất thường
+        if (user.role === 'STORE_MGR') rooms.push(ROOMS.store); // F-077 quản lý cửa hàng
       }
       if (sessionId) {
         if (!GUID.test(sessionId)) return next(new Error('FORBIDDEN'));

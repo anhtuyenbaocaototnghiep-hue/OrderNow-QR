@@ -18,6 +18,7 @@ import { requireOpenShift } from './shiftService.js';
 import * as alertService from './alertService.js';
 import { assertActorPin } from './pinService.js';
 import { resolveApproval } from './userService.js';
+import { storeManagerCashMax } from '../auth/permissions.js';
 
 export const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
 const SIGNATURES = [
@@ -81,9 +82,10 @@ export async function review(id, approve, body, user) {
   if (!approve && !body.rejectReason) throw badRequest('VALIDATION_ERROR', 'Nhập lý do từ chối');
   const settings = await getSettings();
   const allowManager = txn.amount <= settings.managerCashApproveMax;
+  const allowStoreManager = txn.amount <= storeManagerCashMax(settings); // F-077: quản lý cửa hàng ≤ 3 × ngưỡng trưởng ca
   // Có nhập tài khoản duyệt → luôn kiểm tài khoản đó (trưởng ca khác duyệt khoản của trưởng ca đang đứng quầy)
   const actor = body.adminUsername ? { ...user, role: 'STAFF' } : user;
-  const approver = await resolveApproval(actor, body, approve ? 'khoản chi quỹ' : 'việc từ chối khoản chi', { allowManager });
+  const approver = await resolveApproval(actor, body, approve ? 'khoản chi quỹ' : 'việc từ chối khoản chi', { allowManager, allowStoreManager });
   if (approver.userId === txn.createdBy.userId && approver.role !== 'ADMIN') {
     throw forbidden('Không tự duyệt khoản chi do chính mình tạo — nhờ trưởng ca / quản lý khác', 'SELF_APPROVAL');
   }
@@ -107,9 +109,13 @@ export async function voidTxn(id, body, user) {
   if (txn.status !== 'APPROVED') throw conflict('CASH_NOT_APPROVED', 'Chỉ hủy / sửa được khoản đã duyệt — khoản chờ duyệt dùng Từ chối');
   const settings = await getSettings();
   const allowManager = txn.amount <= settings.managerCashApproveMax;
+  const allowStoreManager = txn.amount <= storeManagerCashMax(settings); // F-077
   await assertActorPin(user); // F-072: hủy / sửa khoản sổ quỹ cần PIN của người thao tác
   const actor = body.adminUsername ? { ...user, role: 'STAFF' } : user;
-  const approver = await resolveApproval(actor, body, body.replacement ? 'việc sửa khoản sổ quỹ' : 'việc hủy khoản sổ quỹ', { allowManager });
+  const approver = await resolveApproval(actor, body, body.replacement ? 'việc sửa khoản sổ quỹ' : 'việc hủy khoản sổ quỹ', {
+    allowManager,
+    allowStoreManager,
+  });
   if (approver.userId === txn.createdBy.userId && approver.role !== 'ADMIN') {
     throw forbidden('Không tự hủy / sửa khoản do chính mình ghi — nhờ trưởng ca / quản lý khác', 'SELF_APPROVAL');
   }

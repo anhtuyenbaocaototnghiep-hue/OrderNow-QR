@@ -129,9 +129,16 @@ export async function findAlertByKey(dedupeKey) {
   return r.recordset[0] ? findAlert(r.recordset[0].AlertId) : null;
 }
 
-export async function listAlerts({ status = 'NEW', limit = 100 } = {}) {
+// F-077: excludeKinds — loại ẩn với quản lý cửa hàng (hằng số trong code, không phải chữ người dùng gõ; vẫn kiểm dạng cho chắc)
+const kindsNotIn = (col, kinds) => {
+  const safe = kinds.filter((k) => /^[A-Z_]{1,20}$/.test(k));
+  return safe.length ? ` AND ${col} NOT IN (${safe.map((k) => `'${k}'`).join(', ')})` : '';
+};
+
+export async function listAlerts({ status = 'NEW', limit = 100, excludeKinds = [] } = {}) {
   const r = await query(
-    `SELECT TOP (@n) * FROM (${ALERT_SELECT}) x ${status === 'NEW' ? "WHERE x.Status = 'NEW'" : ''} ORDER BY x.CreatedAt DESC, x.AlertId DESC`,
+    `SELECT TOP (@n) * FROM (${ALERT_SELECT}) x WHERE 1 = 1${status === 'NEW' ? " AND x.Status = 'NEW'" : ''}${kindsNotIn('x.Kind', excludeKinds)}
+     ORDER BY x.CreatedAt DESC, x.AlertId DESC`,
     {
       n: [sql.Int, limit],
     },
@@ -139,8 +146,8 @@ export async function listAlerts({ status = 'NEW', limit = 100 } = {}) {
   return r.recordset.map(mapAlert);
 }
 
-export async function countNew() {
-  const r = await query("SELECT COUNT(*) AS n FROM dbo.Alerts WHERE Status = 'NEW'");
+export async function countNew(excludeKinds = []) {
+  const r = await query(`SELECT COUNT(*) AS n FROM dbo.Alerts WHERE Status = 'NEW'${kindsNotIn('Kind', excludeKinds)}`);
   return r.recordset[0].n;
 }
 

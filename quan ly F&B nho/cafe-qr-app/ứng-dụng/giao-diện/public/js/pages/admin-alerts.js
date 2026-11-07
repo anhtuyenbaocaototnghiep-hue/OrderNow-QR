@@ -22,6 +22,7 @@ const KIND = {
   AUTH_LOCK: 'Sai mật khẩu nhiều lần',
   OFFLINE_SALE: 'Bán lúc mất mạng cần kiểm', // F-074
   EXPIRY_RISK: 'Nguyên liệu sắp hết hạn', // F-075
+  PRICE_CHANGE: 'Quản lý cửa hàng đổi giá món', // F-077
 };
 const STATUS = { NEW: 'Mới', SEEN: 'Đã xem', RESOLVED: 'Đã xử lý' };
 const state = { status: 'NEW' };
@@ -143,6 +144,13 @@ function costTable(d) {
   );
 }
 
+/** F-077: "Tăng 3.000đ (+7,7 %)" / "Giảm …" — tiêu đề đã có giá cũ → mới. */
+function priceDelta(oldPrice, newPrice) {
+  const diff = newPrice - oldPrice;
+  const pct = oldPrice > 0 ? ` (${diff >= 0 ? '+' : '−'}${((Math.abs(diff) / oldPrice) * 100).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} %)` : '';
+  return `${diff >= 0 ? 'Tăng' : 'Giảm'} ${money(Math.abs(diff))}${pct}`;
+}
+
 function facts(a) {
   const d = a.detail ?? {};
   if (a.kind === 'COST_RISE') return costFacts(d);
@@ -165,6 +173,11 @@ function facts(a) {
     lines.push(
       `Đơn #${d.orderCode}: ${(d.issues ?? []).map((i) => `${i.label} — ${i.text}`).join('; ')}`,
       'Danh sách đủ ở máy quầy → Ca & hoàn tiền → Đơn bán lúc mất mạng',
+    );
+  else if (a.kind === 'PRICE_CHANGE')
+    lines.push(
+      d.oldPrice === null ? 'Món mới thêm vào thực đơn' : priceDelta(d.oldPrice, d.newPrice),
+      `Người đổi: ${d.by} (quản lý cửa hàng) — chưa đúng thì đổi lại ở Thực đơn & định lượng`,
     );
   else if (a.kind === 'CASH_VOID')
     lines.push(

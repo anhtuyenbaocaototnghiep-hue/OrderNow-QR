@@ -56,7 +56,7 @@ export const list = (filter) => attendanceRepo.list(filter);
 export const mine = (user) => attendanceRepo.openFor(user.userId);
 
 function assertCanEdit(user, clockIns) {
-  if (user.role === 'ADMIN') return;
+  if (user.role === 'ADMIN' || user.role === 'STORE_MGR') return; // F-077: quản lý cửa hàng sửa mọi ngày (không tự sửa của mình)
   const today = todayVn();
   if (clockIns.some((d) => vnDate(d) !== today)) {
     throw forbidden('Trưởng ca chỉ sửa chấm công trong ngày hôm nay — ngày khác nhờ quản lý', 'ATTENDANCE_NOT_TODAY');

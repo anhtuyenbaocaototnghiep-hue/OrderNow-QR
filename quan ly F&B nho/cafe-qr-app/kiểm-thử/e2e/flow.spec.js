@@ -2802,3 +2802,72 @@ test('quy trình 1 chạm: quản lý bật ở Cài đặt → màn Đơn hàng
   await expect(P.locator('#col-COMPLETED')).toContainText(`#${sale.order.orderCode}`);
   await apiAs(request, 'put', '/api/admin/settings', { oneTap: false }); // trả lại 3 cột cho các test sau
 });
+
+test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở Tài khoản (có bảng "Mỗi vai trò làm được gì?"); quản lý cửa hàng đăng nhập → máy quầy có "Quản lý" → trang Quản lý chỉ có mục vận hành (không Lãi / lỗ, Lương, Tài khoản, Cài đặt); đổi giá món → chủ quán thấy cảnh báo đổi giá; mở thẳng Lãi / lỗ → về quầy (F-077, AC-077-08)', async ({
+  request,
+}) => {
+  await P.goto('/admin/users');
+  const guide = P.locator('.role-guide');
+  await guide.locator('summary').click();
+  await expect(guide).toContainText('Quản lý cửa hàng');
+  await expect(guide).toContainText('Chủ quán');
+  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  const form = P.getByRole('dialog');
+  await form.locator('input[name="username"]').fill('store-e2e');
+  await form.locator('input[name="password"]').fill('Store@123');
+  await form.locator('input[name="fullName"]').fill('Quản lý E2E');
+  await form.locator('select[name="role"]').selectOption({ label: 'Quản lý cửa hàng' });
+  await form.getByRole('button', { name: 'Tạo tài khoản' }).click();
+  await expect(P.locator('tr', { hasText: 'store-e2e' })).toContainText('Quản lý cửa hàng');
+
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  const S = await ctx.newPage();
+  watch(S, 'store');
+  await S.goto('/pos/login');
+  await S.fill('#username', 'store-e2e');
+  await S.fill('#password', 'Store@123');
+  await S.click('#submit');
+  await expect(S).toHaveURL(/\/pos$/);
+  await S.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click(); // tài khoản mới → hướng dẫn lần đầu
+  await expect(S.locator('.pos-top')).toContainText('Quản lý cửa hàng');
+  await S.locator('.pos-nav').getByRole('link', { name: 'Quản lý' }).click();
+  await expect(S).toHaveURL(/\/admin\/today$/);
+  await expect(S.locator('.today-grid')).toBeVisible();
+  const side = S.locator('#side');
+  for (const href of ['/admin/menu', '/admin/ingredients', '/admin/reports', '/admin/shifts', '/admin/cash', '/admin/alerts', '/admin/tables']) {
+    await expect(side.locator(`a[href="${href}"]`), href).toHaveCount(1);
+  }
+  for (const href of ['/admin/pnl', '/admin/payroll', '/admin/users', '/admin/settings', '/admin/audit', '/admin/analytics', '/admin/api-docs']) {
+    await expect(side.locator(`a[href="${href}"]`), href).toHaveCount(0);
+  }
+  await expect(side).toContainText('Quản lý cửa hàng');
+
+  // Đổi giá Latte ở Thực đơn → chủ quán được báo
+  const latte = (await apiAs(request, 'get', '/api/admin/menu-items')).find((m) => m.name === 'Latte');
+  await S.goto(`/admin/menu?edit=${latte.menuItemId}`);
+  const dlg = S.getByRole('dialog');
+  await dlg.locator('#price').fill(String(latte.price + 2000));
+  await dlg.getByRole('button', { name: 'Lưu' }).click();
+  await expect(dlg).toHaveCount(0);
+
+  // Sổ quỹ: không có tab Danh mục thu chi; Lãi / lỗ mở thẳng → về quầy
+  await S.goto('/admin/cash');
+  await expect(S.locator('.tabs')).toContainText('Sổ quỹ');
+  await expect(S.locator('.tabs')).not.toContainText('Danh mục thu chi');
+  await S.goto('/admin/pnl');
+  await expect(S).toHaveURL(/\/pos\?denied=admin/);
+  await ctx.close();
+
+  await P.goto('/admin/alerts');
+  const alert = P.locator('.alert-card', { hasText: 'đổi giá "Latte"' });
+  await expect(alert).toBeVisible();
+  await expect(alert).toContainText('Quản lý E2E');
+  await apiAs(request, 'put', `/api/admin/menu-items/${latte.menuItemId}`, {
+    categoryId: latte.categoryId,
+    name: latte.name,
+    price: latte.price,
+    imageUrl: latte.imageUrl ?? '',
+    isAvailable: latte.isAvailable,
+    isActive: latte.isActive,
+  }); // trả giá cũ
+});

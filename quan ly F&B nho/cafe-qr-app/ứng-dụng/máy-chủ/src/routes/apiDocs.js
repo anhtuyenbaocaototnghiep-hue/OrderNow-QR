@@ -1,21 +1,30 @@
 // Tra cứu API (F-052, ADR-011 D-49…D-51): đọc router Express lúc chạy → method, đường dẫn đầy đủ, mức quyền theo middleware.
-// Gắn dưới /api/admin (requireAdmin ở adminRouter) — chỉ ADMIN. Mô tả request / response ghép ở apiDocsService từ api-contract.md.
+// Gắn dưới /api/admin (requireAdminArea ở adminRouter) — chỉ Chủ quán (không nằm trong STORE_MGR_AREAS). Mô tả request / response ghép ở apiDocsService từ api-contract.md.
 import express from 'express';
-import { PERMISSIONS } from '../auth/permissions.js';
+import { PERMISSIONS, ROLES, storeManagerMay } from '../auth/permissions.js';
 import { optionalStaff, requireAdmin, requireStaff } from '../middleware/auth.js';
 import * as apiDocsService from '../services/apiDocsService.js';
 
 export const apiDocsRouter = express.Router();
 
-const ROLES = ['STAFF', 'MANAGER', 'ADMIN'];
+const ADMIN_PREFIX = '/api/admin';
 
-/** Mức quyền từ các middleware chạy trước handler. requireAdmin > requirePermission(p) > requireStaff > optionalStaff > công khai. */
-export function accessOf(handlers) {
+/**
+ * Mức quyền từ các middleware chạy trước handler. requireAdmin / requireAdminArea > requirePermission(p) > requireStaff > optionalStaff > công khai.
+ * requireAdminArea (F-077): Chủ quán; thêm Quản lý cửa hàng nếu `method path` nằm trong STORE_MGR_AREAS.
+ */
+export function accessOf(handlers, route = null) {
   if (handlers.includes(requireAdmin)) return { access: 'ADMIN', roles: ['ADMIN'], permission: null };
+  if (handlers.some((h) => h.adminArea)) {
+    const sub = route?.path.startsWith(ADMIN_PREFIX) ? route.path.slice(ADMIN_PREFIX.length) : null;
+    return sub !== null && storeManagerMay(route.method, sub)
+      ? { access: 'STORE_MGR', roles: ['STORE_MGR', 'ADMIN'], permission: null }
+      : { access: 'ADMIN', roles: ['ADMIN'], permission: null };
+  }
   const permission = handlers.find((h) => typeof h.permission === 'string')?.permission;
   if (permission) {
     const roles = ROLES.filter((r) => PERMISSIONS[permission]?.includes(r));
-    const access = roles.includes('STAFF') ? 'STAFF' : roles.includes('MANAGER') ? 'MANAGER' : 'ADMIN';
+    const access = roles.find((r) => r !== 'ADMIN') ?? 'ADMIN';
     return { access, roles, permission };
   }
   if (handlers.includes(requireStaff)) return { access: 'STAFF', roles: ROLES, permission: null };
@@ -40,7 +49,8 @@ export function listRoutes(mounts) {
         const handlers = [...before, ...layer.route.stack.map((l) => l.handle)];
         const routePath = String(layer.route.path);
         for (const method of Object.keys(layer.route.methods).filter((m) => m !== '_all')) {
-          out.push({ method: method.toUpperCase(), path: prefix + (routePath === '/' ? '' : routePath), ...accessOf(handlers) });
+          const route = { method: method.toUpperCase(), path: prefix + (routePath === '/' ? '' : routePath) };
+          out.push({ ...route, ...accessOf(handlers, route) });
         }
       } else if (layer.slash && Array.isArray(layer.handle?.stack)) {
         before = walk(layer.handle, prefix, before);

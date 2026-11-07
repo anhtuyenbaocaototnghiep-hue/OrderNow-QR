@@ -12,10 +12,11 @@ const ACCESS = {
   PUBLIC: { label: 'Công khai', badge: '', hint: 'Không cần đăng nhập (khách dùng cookie cf_client)' },
   CLIENT_OR_STAFF: { label: 'Khách hoặc quầy', badge: 'preparing', hint: 'Khách dùng cookie; quầy gửi kèm Bearer để xem rộng hơn' },
   STAFF: { label: 'Nhân viên', badge: 'ok', hint: 'Mọi tài khoản quầy' },
-  MANAGER: { label: 'Trưởng ca', badge: 'pending', hint: 'Trưởng ca hoặc quản lý' },
-  ADMIN: { label: 'Quản lý', badge: 'primary', hint: 'Chỉ quản lý' },
+  MANAGER: { label: 'Trưởng ca', badge: 'pending', hint: 'Trưởng ca trở lên' },
+  STORE_MGR: { label: 'Quản lý cửa hàng', badge: 'unpaid', hint: 'Quản lý cửa hàng hoặc chủ quán' }, // F-077
+  ADMIN: { label: 'Chủ quán', badge: 'primary', hint: 'Chỉ chủ quán' },
 };
-const ROLE_NAMES = { STAFF: 'nhân viên', MANAGER: 'trưởng ca', ADMIN: 'quản lý' };
+const ROLE_NAMES = { STAFF: 'nhân viên', MANAGER: 'trưởng ca', STORE_MGR: 'quản lý cửa hàng', ADMIN: 'chủ quán' };
 const PURPOSE_FIELDS = ['Mục đích', 'Ghi chú', 'Kết quả']; // cột dùng làm dòng tóm tắt, theo thứ tự ưu tiên
 
 /** Bỏ dấu tiếng Việt: gõ "thu tien" cũng ra "thu tiền". */

@@ -2,7 +2,9 @@
 import { staffApi } from './api.js';
 import { clear, dateTime, el, errorMessage, modal, time, toast } from './ui.js';
 
-export const ROLE_LABEL = { STAFF: 'Nhân viên', MANAGER: 'Trưởng ca', ADMIN: 'Quản lý' };
+import { ROLE_LABEL } from './roles.js';
+
+export { ROLE_LABEL }; // F-077: tên vai trò dùng chung (roles.js)
 const VN = 7 * 3600e3;
 /** Date → 'YYYY-MM-DDTHH:MM' giờ VN cho <input type=datetime-local>. */
 export const toLocalInput = (d) => (d ? new Date(new Date(d).getTime() + VN).toISOString().slice(0, 16) : '');

@@ -1,13 +1,14 @@
-// Bảo vệ trang quầy/quản lý: chưa đăng nhập → /pos/login; trang admin cần vai trò ADMIN.
+// Bảo vệ trang quầy/quản lý: chưa đăng nhập → /pos/login; trang admin cần Chủ quán, hoặc Quản lý cửa hàng với trang được mở (F-077).
 // Đây chỉ là trải nghiệm — quyền thật được kiểm ở server cho mọi endpoint.
 import { staffApi } from './api.js';
 import { clearStaffSession, getToken } from './auth-store.js';
 import { confirmDialog } from './ui.js';
+import { canOpenAdminPage } from './roles.js';
 
 /** Thông tin phiên hiện tại sau requireStaffPage(): { user, shop, modules } — modules: nhóm menu nâng cao đang bật (F-061). */
 export const current = { user: null, shop: null, modules: [], attendance: { mode: 'LOGIN', moneyPin: false }, pos: { oneTap: false } };
 
-export async function requireStaffPage({ admin = false } = {}) {
+export async function requireStaffPage({ admin = false, page = '' } = {}) {
   if (!getToken()) {
     location.replace(`/pos/login?next=${encodeURIComponent(location.pathname + location.search)}`);
     return new Promise(() => {}); // dừng trang trong lúc chuyển hướng
@@ -18,7 +19,7 @@ export async function requireStaffPage({ admin = false } = {}) {
   current.modules = modules ?? [];
   current.attendance = attendance ?? { mode: 'LOGIN', moneyPin: false }; // F-072
   current.pos = pos ?? { oneTap: false }; // F-076
-  if (admin && user.role !== 'ADMIN') {
+  if (admin && !canOpenAdminPage(user, page)) {
     location.replace('/pos?denied=admin');
     return new Promise(() => {});
   }

@@ -18,6 +18,7 @@ import { invalidateCatalog } from './pricingService.js';
 import { addDays, eachDay, todayVn, vnDayStartUtc } from '../utils/time.js';
 import { invalidateItems as invalidateEtaItems } from './etaService.js';
 import { invalidateSchedules } from './scheduleService.js';
+import { onPriceChange } from './alertService.js';
 
 const isDuplicate = (err) => [2627, 2601].includes(sqlErrorNumber(err));
 
@@ -104,23 +105,32 @@ async function assertGroups(groupIds) {
   }
 }
 
-export async function createItem(d) {
+/** F-077 (ADR-035 D-159): Quản lý cửa hàng thêm món / đổi giá → báo chủ quán (lỗi báo không làm hỏng việc lưu). */
+async function notePriceChange(user, item, oldPrice) {
+  if (user?.role !== 'STORE_MGR' || (oldPrice !== null && Number(oldPrice) === Number(item.price))) return;
+  await onPriceChange({ item, oldPrice, user }).catch((err) => console.error('price alert:', err?.message ?? err));
+}
+
+export async function createItem(d, user = null) {
   await assertCategory(d.categoryId);
   await assertGroups(d.groupIds);
   const item = await menuRepo.createItem(d);
   catalogChanged();
   refreshAvailability();
+  await notePriceChange(user, item, null);
   return item;
 }
 
-export async function updateItem(id, d) {
+export async function updateItem(id, d, user = null) {
   await assertCategory(d.categoryId);
   await assertGroups(d.groupIds);
+  const before = user?.role === 'STORE_MGR' ? await menuRepo.getItem(id) : null;
   const item = await menuRepo.updateItem(id, d);
   if (!item) throw notFound('Không tìm thấy món');
   invalidateEtaItems();
   catalogChanged();
   refreshAvailability();
+  if (before) await notePriceChange(user, item, before.price);
   return item;
 }
 
