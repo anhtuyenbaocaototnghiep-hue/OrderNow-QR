@@ -214,6 +214,7 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-079-2 | Should | ACT-STAFF, ACT-LEAD, ACT-STORE, ACT-ADMIN | Là nhân viên, tôi muốn xin quyền ngay khi bị chặn và được chủ quán duyệt từ xa, để làm tiếp việc mà không phải gọi điện hay chờ chủ quán tới quán. | AC-079-04, AC-079-05, AC-079-07 | BR-117 | UC-17 | MOD-AUTH | SCR-20, SCR-42, SCR-10 | F-079 | DONE |
 | US-080-1 | Should | ACT-ADMIN, ACT-STORE | Là chủ quán, tôi muốn trang Quản lý có địa chỉ và đăng nhập riêng, tách khỏi màn hình quầy, để mở thẳng trên điện thoại / máy tính mà không đụng tới máy quầy và không bị tính là vào ca. | AC-080-01, AC-080-02, AC-080-03 | BR-118 | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | F-080 | DONE |
 | US-081-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách, tôi muốn bấm món là chọn ngay size, topping, ghi chú và số lượng ở một chỗ, để không phải vào giỏ hàng mới chỉnh được, giỏ chỉ để xem lại và gửi. | AC-081-01, AC-081-02 | BR-119 | UC-02 | MOD-MENU, MOD-ORDER | SCR-57, SCR-02, SCR-03 | F-081 | DONE |
+| US-082-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách, tôi muốn giỏ hàng chỉ liệt kê gọn các món đã chọn và bấm vào món nào thì sửa món đó, để xem lại nhanh và gửi đơn mà không bị rối. | AC-082-01, AC-082-02 | BR-120 | UC-02 | MOD-ORDER | SCR-03, SCR-57 | F-082 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

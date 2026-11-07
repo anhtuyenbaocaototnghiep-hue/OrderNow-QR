@@ -15,7 +15,7 @@
 ## Phương án đã cân nhắc
 
 - **Giữ "+" thêm theo mặc định, chỉ làm dòng "Chọn size" to hơn:** khách vẫn hay bỏ qua, vẫn phải vào giỏ ghi chú.
-- **Gọn giỏ hàng (bỏ ô ghi chú trong giỏ, sửa bằng nút "Sửa"):** đã đề xuất (mục 2) — chủ quán chưa chọn; để sau.
+- **Gọn giỏ hàng (bỏ ô ghi chú trong giỏ, sửa bằng nút "Sửa"):** đã đề xuất (mục 2) — chủ quán chưa chọn lúc này; làm ngay sau đó ở [ADR-040](ADR-040-gio-hang-gon.md).
 - **Mở bảng chọn cả với món không tùy chọn:** thêm 1 chạm cho món phổ biến (nước suối, bánh) mà không có gì để chọn — không đáng.
 
 ## Hệ quả

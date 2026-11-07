@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 465 test, sửa lúc 2026-11-07 15:30 UTC
-- `npm run test:e2e` (JSON): 74 test, sửa lúc 2026-11-07 15:41 UTC
+- `npm test` (JUnit): 466 test, sửa lúc 2026-11-07 16:04 UTC
+- `npm run test:e2e` (JSON): 75 test, sửa lúc 2026-11-07 16:08 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 180 |
-| Acceptance Criteria | 493 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 493 |
+| User Story | 181 |
+| Acceptance Criteria | 495 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 495 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -588,4 +588,6 @@
 | AC-080-03 | TC-080-03 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | E2E: `flow.spec.js` › trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Quản lý" → vào thẳng Hôm nay; phiên riêng với máy quầy (mở /pos vẫn phải đăng nhập quầy); Đăng xuất chỉ thoát trang Quản lý; nhân viên không có quyền thì được mời Xin quyền; máy đang đăng nhập quầy bằng chủ quán thì "Vào bằng tài khoản này" (F-080, AC-080-03) — **PASS** | **PASS** |
 | AC-081-01 | TC-081-01 | F-081 | US-081-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-MENU, MOD-ORDER | SCR-57, SCR-02, SCR-03 | BR-119 | Integration: `item-sheet.test.js` › AC-081-01: hai dòng cùng món + cùng tùy chọn nhưng khác ghi chú (và số lượng chọn sẵn) → báo giá đủ 2 dòng; gửi đơn giữ 2 dòng với đúng ghi chú, số lượng, tùy chọn; tổng = đơn giá có tùy chọn × số lượng — **PASS** | **PASS** |
 | AC-081-02 | TC-081-02 | F-081 | US-081-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-MENU, MOD-ORDER | SCR-57, SCR-02, SCR-03 | BR-119 | E2E: `flow.spec.js` › bảng chọn món: khách bấm "+" món có tùy chọn → bảng trượt lên ngay (chưa vào giỏ), chọn Size L + "Ít đá" + số lượng 2 → "Thêm vào giỏ · …"; bấm tên món không tùy chọn mở bảng ghi chú; "+" món không tùy chọn vẫn thêm ngay; giỏ có đủ tùy chọn, ghi chú, số lượng; điện thoại không cuộn ngang (F-081, AC-081-02) — **PASS** | **PASS** |
+| AC-082-01 | TC-082-01 | F-082 | US-082-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-ORDER | SCR-03, SCR-57 | BR-120 | Unit: `cart-unit.test.js` › AC-082-01: thêm từ bảng chọn — cùng món + tùy chọn + ghi chú cộng dồn, ghi chú khác thành dòng riêng (khóa key~n); quầy không truyền ghi chú vẫn cộng vào dòng cũ; sửa dòng giữ vị trí + khóa, đổi tùy chọn đổi khóa, trùng dòng khác thì gộp, tối đa 50, không còn dòng thì thêm mới — **PASS** | **PASS** |
+| AC-082-02 | TC-082-02 | F-082 | US-082-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-ORDER | SCR-03, SCR-57 | BR-120 | E2E: `flow.spec.js` › giỏ gọn: giỏ không còn ô ghi chú / nút nhanh, mỗi món một dòng tóm tắt (tùy chọn, "Ghi chú: …", "Sửa ›"); bấm món trong giỏ → bảng chọn mở với lựa chọn cũ (Size L, "Ít đá", 2) → đổi Size M + "Mang về" + 3 → "Cập nhật · …" → dòng đổi tại chỗ, tổng đổi theo (F-082, AC-082-02) — **PASS** | **PASS** |
 

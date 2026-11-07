@@ -15,7 +15,7 @@
 
 1. Món có tùy chọn: "+", tên món, ảnh → bảng chọn (chưa vào giỏ); mặc định chọn sẵn; nhóm bắt buộc phải đủ mới thêm được.
 2. Món không tùy chọn: "+" thêm ngay (≤ 3 chạm); tên / ảnh → bảng chọn (ghi chú, số lượng). Combo: không có ghi chú.
-3. Cùng món + tùy chọn + ghi chú → cộng dồn; ghi chú khác → dòng riêng; máy chủ nhận đủ từng dòng.
+3. Cùng món + tùy chọn + ghi chú → cộng dồn; ghi chú khác → dòng riêng; máy chủ nhận đủ từng dòng. _Từ F-082 (ADR-040): giỏ không còn ô ghi chú — bấm món trong giỏ để sửa ở bảng chọn._
 4. Chỉ màn của khách; máy quầy không đổi.
 
 ## API

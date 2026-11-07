@@ -45,3 +45,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-096-plan.md](TASK-096-plan.md) — quyền riêng từng tài khoản + xin quyền / duyệt (F-079, ADR-037).
 - [TASK-097-plan.md](TASK-097-plan.md) — trang Quản lý riêng: đăng nhập riêng, phiên riêng (F-080, ADR-038).
 - [TASK-098-plan.md](TASK-098-plan.md) — bảng chọn món của khách (F-081, ADR-039).
+- [TASK-099-plan.md](TASK-099-plan.md) — giỏ hàng gọn: bấm món trong giỏ để sửa (F-082, ADR-040).
