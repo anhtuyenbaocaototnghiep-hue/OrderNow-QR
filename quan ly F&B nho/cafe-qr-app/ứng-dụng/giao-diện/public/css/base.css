@@ -1358,3 +1358,42 @@ body:has(.tour-layer) .toasts {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
+/* F-075 (ADR-033): dải "Nên mời khách hôm nay" (món dùng nguyên liệu sắp hết hạn), ô hạn sau khi mở, hộp đang mở */
+.banner.push-items {
+  background: var(--c-info-50);
+  color: var(--c-info);
+  border-bottom: 1px solid #c3d5e8;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  justify-content: center;
+}
+.push-items .push-text {
+  text-align: left;
+}
+.push-items .btn {
+  flex: none;
+}
+fieldset.open-pack {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  margin: 0;
+}
+fieldset.open-pack legend {
+  font-weight: 600;
+  padding: 0 0.3rem;
+}
+fieldset.open-pack p {
+  margin: 0.4rem 0 0;
+}
+.open-pack-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--c-border);
+}

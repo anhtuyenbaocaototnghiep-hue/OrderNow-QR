@@ -83,6 +83,7 @@ const RULES = [
   ['POST', /^\/splits\/(\d+)\/settle$/, 'split.settle', 'SessionSplit'],
   ['POST', /^\/orders\/takeaway$/, 'order.takeaway', 'Order'],
   ['POST', /^\/offline-sales$/, 'order.offline-sale', 'Order'], // F-074: gửi bù đơn bán lúc mất mạng / phiếu bán tay
+  ['POST', /^\/ingredients\/(\d+)\/discard-open$/, 'inventory.discard-open', 'Ingredient'], // F-075: bỏ phần hộp đã mở
   ['POST', /^\/orders\/(\d+)\/cancel$/, 'order.cancel', 'Order'],
   ['POST', /^\/order-items\/(\d+)\/void$/, 'order.item-void', 'OrderItem'], // F-046
   ['POST', /^\/orders\/(\d+)\/void$/, 'order.void', 'Order'],

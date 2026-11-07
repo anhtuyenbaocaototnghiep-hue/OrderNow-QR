@@ -1,9 +1,10 @@
 // S-42 Hôm nay — dashboard chủ quán (FEATURE-043, ADR-006 D-32). Đọc số tính sẵn (job 00:30) → mở nhanh trên điện thoại.
 // Quản lý: đủ thẻ (kể cả lãi gộp). Trưởng ca: bản rút gọn, không có giá vốn / lãi (server đã bỏ). Nhân viên → về quầy.
+// F-075 (ADR-033): thẻ "Sắp hết hạn (2 ngày)" tính trực tiếp — quản lý thấy số tiền sẽ phải bỏ + tiền đã hủy vì hết hạn tháng này.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { logout, requireStaffPage } from '../auth.js';
-import { $, clear, dateTime, el, errorMessage, money, toast } from '../ui.js';
+import { $, clear, dateTime, el, errorMessage, money, num, toast } from '../ui.js';
 import { brandMark, icon } from '../icons.js';
 
 const user = await requireStaffPage();
@@ -88,6 +89,7 @@ function render(d) {
             )
           : el('p', { class: 'muted' }, 'Không có nguyên liệu sắp hết / sắp hết hạn.'),
       ),
+      expiryCard(d.expiry, d.full),
       card(
         'Top 3 món hôm qua',
         y.topItems.length
@@ -128,5 +130,44 @@ function render(d) {
 }
 
 const todo = (show, text, href) => (show ? el('li', {}, el('a', { href }, text)) : null);
+
+/** F-075: nguyên liệu sắp / đã hết hạn trong 2 ngày (hộp đang mở + lô), món nên mời, tiền đã hủy vì hết hạn tháng này. */
+function expiryCard(x, full) {
+  if (!x) return null;
+  const w = x.wasteThisMonth;
+  return card(
+    'Sắp hết hạn (2 ngày tới)',
+    x.items.length
+      ? [
+          full ? el('div', { class: 'big down' }, money(x.totalValue)) : null,
+          full ? el('div', { class: 'small muted' }, 'giá vốn phần sẽ phải bỏ nếu không dùng kịp') : null,
+          el(
+            'ul',
+            { class: 'small' },
+            x.items.slice(0, 5).map((i) => el('li', {}, `${i.name}: ${num(i.qty)} ${i.unit}, ${i.when}${full ? ` (${money(i.value)})` : ''}`)),
+          ),
+          x.pushItems.length ? el('p', { class: 'small' }, el('strong', {}, 'Nên mời khách: '), x.pushItems.map((p) => p.name).join(', ')) : null,
+        ]
+      : el('p', { class: 'muted' }, 'Không có nguyên liệu sắp hết hạn.'),
+    full && w
+      ? el(
+          'details',
+          { class: 'small' },
+          el('summary', {}, `Tháng này đã hủy vì hết hạn: ${money(w.total)}`),
+          w.byIngredient.length
+            ? el(
+                'ul',
+                {},
+                w.byIngredient.slice(0, 3).map((i) => el('li', {}, `${i.name}: ${num(i.qty)} ${i.unit} — ${money(i.cost)}`)),
+                w.bySupplier
+                  .filter((s) => s.cost > 0)
+                  .slice(0, 3)
+                  .map((s) => el('li', { class: 'muted' }, `Từ ${s.name ?? 'nguồn không rõ (không theo lô)'}: ${money(s.cost)}`)),
+              )
+            : el('p', { class: 'muted' }, 'Chưa hủy gì vì hết hạn.'),
+        )
+      : null,
+  );
+}
 
 await load();

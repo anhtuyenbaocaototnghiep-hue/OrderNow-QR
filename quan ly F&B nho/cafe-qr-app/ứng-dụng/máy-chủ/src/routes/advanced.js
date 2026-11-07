@@ -3,6 +3,7 @@ import express from 'express';
 import { z } from 'zod';
 import { paramId, parse, parseUtcRange, zId, zText, zTime } from '../middleware/validate.js';
 import * as etaService from '../services/etaService.js';
+import * as expiryService from '../services/expiryService.js';
 import * as forecastService from '../services/forecastService.js';
 import * as inventoryService from '../services/inventoryService.js';
 import * as purchasingService from '../services/purchasingService.js';
@@ -91,15 +92,29 @@ advancedRouter.delete('/units/:code', async (req, res) => res.json(await invento
 // ---- Thuộc tính kho nâng cao của nguyên liệu (F-027 loại, F-028 theo lô, F-032 hao hụt định mức) ----
 advancedRouter.put('/ingredients/:id/advanced', async (req, res) => {
   const body = parse(
-    z.object({
-      kind: z.enum(['RAW', 'SEMI']),
-      shelfLifeHours: z.coerce.number().int().min(1).max(8760).nullable().optional(),
-      wastePercent: z.coerce.number().min(0).max(100).default(0),
-      trackLots: z.boolean().optional(),
-    }),
+    z
+      .object({
+        kind: z.enum(['RAW', 'SEMI']),
+        shelfLifeHours: z.coerce.number().int().min(1).max(8760).nullable().optional(),
+        wastePercent: z.coerce.number().min(0).max(100).default(0),
+        trackLots: z.boolean().optional(),
+        // F-075: hạn sau khi mở — dung tích một hộp / gói (đơn vị gốc) + dùng được bao nhiêu giờ sau khi mở; cả hai hoặc không
+        packSize: z.coerce.number().positive('Dung tích phải lớn hơn 0').max(1_000_000).nullable().optional(),
+        openShelfHours: z.coerce.number().int().min(1, 'Từ 1 giờ').max(8760, 'Tối đa 8760 giờ (1 năm)').nullable().optional(),
+      })
+      .refine((b) => (b.packSize === null || b.packSize === undefined) === (b.openShelfHours === null || b.openShelfHours === undefined), {
+        message: 'Nhập cả dung tích một hộp / gói và số giờ dùng được sau khi mở (hoặc để trống cả hai)',
+        path: ['openShelfHours'],
+      }),
     req.body,
   );
   res.json(await inventoryService.setAdvanced(paramId(req), body));
+});
+
+// ---- F-075: tiền hủy vì hết hạn theo tháng (theo nguyên liệu, nhà cung cấp) ----
+advancedRouter.get('/expiry/waste', async (req, res) => {
+  const { month } = parse(z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Tháng phải có dạng YYYY-MM') }), req.query);
+  res.json(await expiryService.expiredWaste(month));
 });
 
 // ---- F-027 Công thức sơ chế ----

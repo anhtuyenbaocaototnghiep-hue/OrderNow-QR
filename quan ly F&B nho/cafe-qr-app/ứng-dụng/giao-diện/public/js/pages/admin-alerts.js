@@ -21,6 +21,7 @@ const KIND = {
   COST_RISE: 'Giá vốn tăng',
   AUTH_LOCK: 'Sai mật khẩu nhiều lần',
   OFFLINE_SALE: 'Bán lúc mất mạng cần kiểm', // F-074
+  EXPIRY_RISK: 'Nguyên liệu sắp hết hạn', // F-075
 };
 const STATUS = { NEW: 'Mới', SEEN: 'Đã xem', RESOLVED: 'Đã xử lý' };
 const state = { status: 'NEW' };
@@ -153,6 +154,12 @@ function facts(a) {
     lines.push(
       `${{ LOGIN: 'Đăng nhập', APPROVAL: 'Tài khoản duyệt ở quầy', PIN: 'PIN ở quầy' }[d.kind]} "${d.username}": sai ${d.count} lần trong ${d.windowMinutes} phút — tạm khóa`,
       d.kind === 'LOGIN' ? `Máy gửi: ${d.ip ?? '?'}` : `Người đứng quầy nhập: ${d.actor ?? '?'}`,
+    );
+  else if (a.kind === 'EXPIRY_RISK')
+    lines.push(
+      `Trị giá ${money(d.totalValue)} (giá vốn) — trong 2 ngày tới`,
+      ...(d.items ?? []).slice(0, 5).map((i) => `${i.name}: ${Number(i.qty).toLocaleString('vi-VN')} ${i.unit}, ${i.when} — ${money(i.value)}`),
+      d.pushItems?.length ? `Nên mời khách: ${d.pushItems.join(', ')}` : 'Bỏ phần đã hết hạn ở máy quầy → Kho & sơ chế → Hạn dùng',
     );
   else if (a.kind === 'OFFLINE_SALE')
     lines.push(

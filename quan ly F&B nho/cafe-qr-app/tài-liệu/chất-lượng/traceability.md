@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 438 test, sửa lúc 2026-11-06 11:26 UTC
-- `npm run test:e2e` (JSON): 67 test, sửa lúc 2026-11-06 11:31 UTC
+- `npm test` (JUnit): 442 test, sửa lúc 2026-11-07 07:34 UTC
+- `npm run test:e2e` (JSON): 68 test, sửa lúc 2026-11-07 07:38 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 169 |
-| Acceptance Criteria | 459 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 459 |
+| User Story | 171 |
+| Acceptance Criteria | 464 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 464 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -554,4 +554,9 @@
 | AC-074-03 | TC-074-03 | F-074 | US-074-2 | ACT-ADMIN, ACT-LEAD | UC-05, UC-11 | MOD-BILLING, MOD-SHIFT, MOD-INVENTORY | SCR-13, SCR-15, SCR-47, SCR-54 | BR-112 | Integration: `offline-sales.test.js` › AC-074-03: kho thiếu → vẫn ghi, chỉ trừ phần còn có (không âm), báo "Chưa trừ"; giá khác bảng giá → ghi đúng số đã thu + báo; một cảnh báo cho cả ca; chuyển khoản → cần đối chiếu; SĐT hội viên → cộng điểm, SĐT lạ → báo — **PASS** | **PASS** |
 | AC-074-04 | TC-074-04 | F-074 | US-074-2 | ACT-ADMIN, ACT-LEAD | UC-05, UC-11 | MOD-BILLING, MOD-SHIFT, MOD-INVENTORY | SCR-13, SCR-15, SCR-47, SCR-54 | BR-112 | Integration: `offline-sales.test.js` › AC-074-04: chặn dữ liệu sai — tổng không khớp, giờ bán tương lai, quá 72 giờ, tiền khách đưa thiếu, món đã xóa; phiếu bán tay chỉ trưởng ca / quản lý (7 ngày); ca lúc bán đã đóng → ghi vào ca mới + báo; chưa mở ca → 409 giữ lại gửi sau — **PASS** | **PASS** |
 | AC-074-05 | TC-074-05 | F-074 | US-074-1, US-074-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-05, UC-11 | MOD-ORDER, MOD-BILLING, MOD-INVENTORY, MOD-SHIFT | SCR-13, SCR-12, SCR-15, SCR-47, SCR-54 | BR-112 | E2E: `flow.spec.js` › bán khi mất mạng: máy quầy mất kết nối → tự chuyển "bán tạm" (giá niêm yết), thu tiền lưu đơn tạm T-… + in bill; có mạng lại tự gửi bù → đơn vào hệ thống, Ca & hoàn tiền có "Đơn bán lúc mất mạng"; quản lý nhập đơn từ phiếu bán tay (F-074, AC-074-05) — **PASS** | **PASS** |
+| AC-075-01 | TC-075-01 | F-075 | US-075-1 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-03, UC-13 | MOD-INVENTORY | SCR-23, SCR-17, SCR-55 | BR-113 | Integration: `expiry.test.js` › AC-075-01: đặt dung tích hộp + hạn sau khi mở (cả hai hoặc không); bán → tự mở hộp, trừ dần phần còn trong hộp, dùng hết hộp thì không còn hộp mở, dùng vượt thì mở thêm hộp; tắt → xóa trạng thái — **PASS** | **PASS** |
+| AC-075-02 | TC-075-02 | F-075 | US-075-1 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-03, UC-13 | MOD-INVENTORY | SCR-23, SCR-17, SCR-55 | BR-113 | Integration: `expiry.test.js` › AC-075-02: hộp mở quá hạn sau khi mở → phần còn không tính là còn hàng; nhân viên bỏ phần đó → phiếu hủy EXPIRED, trừ kho đúng phần còn, có nhật ký; bỏ lần nữa → 409 NO_OPEN_PACK — **PASS** | **PASS** |
+| AC-075-03 | TC-075-03 | F-075 | US-075-2 | ACT-ADMIN, ACT-STAFF | UC-13, UC-16 | MOD-INVENTORY, MOD-REPORT | SCR-42, SCR-47, SCR-10 | BR-113 | Integration: `expiry.test.js` › AC-075-03: hộp mở sắp quá hạn + lô hết hạn ngày mai → danh sách rủi ro có số tiền (chỉ quản lý), món nên mời là món đang bán dùng các nguyên liệu đó; lô đã hết hạn không gợi ý mời; trang Hôm nay có rủi ro + tiền đã hủy tháng này — **PASS** | **PASS** |
+| AC-075-04 | TC-075-04 | F-075 | US-075-2 | ACT-ADMIN, ACT-STAFF | UC-13, UC-16 | MOD-INVENTORY, MOD-REPORT | SCR-42, SCR-47, SCR-10 | BR-113 | Integration: `expiry.test.js` › AC-075-04: 06:00 có cảnh báo EXPIRY_RISK (một lần mỗi ngày); tiền hủy vì hết hạn trong tháng theo nguyên liệu và nhà cung cấp (lô từ phiếu nhập; không theo lô → không rõ); tháng sai → 400 — **PASS** | **PASS** |
+| AC-075-05 | TC-075-05 | F-075 | US-075-1, US-075-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-03, UC-13, UC-16 | MOD-INVENTORY, MOD-REPORT | SCR-23, SCR-17, SCR-55, SCR-42, SCR-47, SCR-10 | BR-113 | E2E: `flow.spec.js` › hạn dùng nguyên liệu: quản lý đặt "hộp 100 ml, mở rồi dùng 24 giờ" ở Kho nâng cao; bán món → máy quầy hiện "Nên mời khách hôm nay"; Kho & sơ chế → Hạn dùng có hộp đang mở → "Bỏ phần còn"; trang Hôm nay có thẻ Sắp hết hạn (F-075, AC-075-05) — **PASS** | **PASS** |
 

@@ -242,6 +242,32 @@ async function checkOfflineSale({ shiftId, user, orderCode, issues }) {
   return { alert, email: await enqueueImmediate(s, alert, rows, 'Xem đủ danh sách ở Ca & hoàn tiền → Đơn bán lúc mất mạng. ' + DISCLAIMER) };
 }
 
+/**
+ * F-075 (ADR-033 D-150): 06:00 còn nguyên liệu sắp / đã hết hạn trong 2 ngày có giá trị → một cảnh báo mỗi ngày (khóa theo ngày),
+ * ghi số tiền sẽ phải bỏ + món nên mời khách để dùng kịp.
+ */
+export const onExpiryRisk = (info) => withDeadlockRetry(() => checkExpiryRisk(info));
+
+async function checkExpiryRisk({ date, totalValue, items, pushItems }) {
+  const s = await getSettings();
+  const top = items.slice(0, 8).map((i) => ({ name: i.name, qty: i.qty, unit: i.unit, when: i.when, value: i.value, kind: i.kind }));
+  const alert = await immediateAlert({
+    kind: 'EXPIRY_RISK',
+    severity: 'MEDIUM',
+    shiftId: null,
+    userId: null,
+    title: `Nguyên liệu sắp / đã hết hạn trị giá ${vnd(totalValue)} — xử lý trong 2 ngày`,
+    detail: { date, totalValue, items: top, pushItems: pushItems.map((p) => p.name) },
+    dedupeKey: `EXPIRY:${date}`,
+  });
+  if (!alert) return { alert: null, email: null };
+  const rows = [
+    ...top.map((i) => [`${i.name} (${i.when})`, `${Number(i.qty).toLocaleString('vi-VN')} ${i.unit} · ${vnd(i.value)}`, i.when.includes('đã')]),
+    ['Nên mời khách', pushItems.map((p) => p.name).join(', ') || '—', false],
+  ];
+  return { alert, email: await enqueueImmediate(s, alert, rows, 'Bỏ phần đã hết hạn ở máy quầy → Kho & sơ chế → Hạn dùng. ' + DISCLAIMER) };
+}
+
 /** Hoàn tiền từ mức "lớn" trở lên → cảnh báo tức thì. refund: bản ghi vừa tạo; user: người thao tác. */
 export const onRefund = (refund, opts) => withDeadlockRetry(() => checkRefund(refund, opts));
 

@@ -4,6 +4,7 @@ import * as dashboardRepo from '../repositories/dashboardRepo.js';
 import * as ingredientsRepo from '../repositories/ingredientsRepo.js';
 import * as pnlRepo from '../repositories/pnlRepo.js';
 import { pctChange } from '../domain/analytics.js';
+import * as expiryService from './expiryService.js';
 import * as inventoryService from './inventoryService.js';
 import { addDays, todayVn, vnDayStartUtc } from '../utils/time.js';
 
@@ -57,11 +58,13 @@ const forRole = (s, full) => (s && !full ? { ...s, cogs: undefined, grossProfit:
 export async function today(user) {
   const full = user.role === 'ADMIN';
   const day = addDays(todayVn(), -1);
-  const [yesterday, lastWeek, shift, todo] = await Promise.all([
+  const [yesterday, lastWeek, shift, todo, expiry, expiredWaste] = await Promise.all([
     summaryOf(day),
     summaryOf(addDays(day, -7)),
     dashboardRepo.lastClosedShift(),
     dashboardRepo.todos(todayVn()),
+    expiryService.risk(), // F-075: tính trực tiếp (hộp mở thay đổi theo giờ)
+    full ? expiryService.expiredWaste(expiryService.thisMonth()) : null,
   ]);
   const todaySoFar = await dashboardRepo.get(todayVn());
   const stocktakeAgeDays = todo.lastStocktakeAt ? Math.floor((Date.now() - new Date(todo.lastStocktakeAt).getTime()) / 86400e3) : null;
@@ -73,6 +76,8 @@ export async function today(user) {
     revenueChange: pctChange(yesterday.revenueNet, lastWeek.revenueNet),
     today: forRole(todaySoFar, full),
     lastShift: shift,
+    // F-075: hạn dùng — quản lý thấy số tiền + tiền đã hủy tháng này; trưởng ca thấy danh sách + món nên mời
+    expiry: full ? { ...expiry, wasteThisMonth: expiredWaste } : expiryService.withoutMoney(expiry),
     todos: {
       ...todo,
       pendingCashAmount: full ? todo.pendingCashAmount : undefined,

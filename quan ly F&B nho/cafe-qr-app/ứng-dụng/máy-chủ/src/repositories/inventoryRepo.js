@@ -40,13 +40,25 @@ export async function deleteUnit(code) {
 }
 
 // ---------- Thuộc tính kho nâng cao của nguyên liệu ----------
-export async function setIngredientAdvanced(id, { kind, shelfLifeHours, wastePercent }) {
-  const r = await query(`UPDATE dbo.Ingredients SET Kind = @k, ShelfLifeHours = @s, WastePercent = @w WHERE IngredientId = @id AND DeletedAt IS NULL`, {
-    id: [sql.Int, id],
-    k: [sql.VarChar(5), kind],
-    s: [sql.Int, shelfLifeHours ?? null],
-    w: [sql.Decimal(5, 2), wastePercent ?? 0],
-  });
+export async function setIngredientAdvanced(id, { kind, shelfLifeHours, wastePercent, open }) {
+  const r = await query(
+    `UPDATE dbo.Ingredients SET Kind = @k, ShelfLifeHours = @s, WastePercent = @w,
+       -- F-075: hạn sau khi mở; tắt → bỏ trạng thái hộp mở; đổi dung tích → phần còn không vượt một hộp
+       PackSize = CASE WHEN @setOpen = 1 THEN @ps ELSE PackSize END,
+       OpenShelfHours = CASE WHEN @setOpen = 1 THEN @oh ELSE OpenShelfHours END,
+       OpenLeft = CASE WHEN @setOpen = 0 THEN OpenLeft WHEN @ps IS NULL THEN 0 WHEN OpenLeft > @ps THEN @ps ELSE OpenLeft END,
+       OpenedAt = CASE WHEN @setOpen = 1 AND @ps IS NULL THEN NULL ELSE OpenedAt END
+     WHERE IngredientId = @id AND DeletedAt IS NULL`,
+    {
+      id: [sql.Int, id],
+      k: [sql.VarChar(5), kind],
+      s: [sql.Int, shelfLifeHours ?? null],
+      w: [sql.Decimal(5, 2), wastePercent ?? 0],
+      setOpen: [sql.Bit, open !== undefined],
+      ps: [sql.Decimal(18, 3), open?.packSize ?? null],
+      oh: [sql.Int, open?.openShelfHours ?? null],
+    },
+  );
   return r.rowsAffected[0] > 0;
 }
 

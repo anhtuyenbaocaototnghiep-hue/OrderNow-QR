@@ -25,6 +25,11 @@ const mapIngredient = (r) =>
     wastePercent: Number(r.WastePercent ?? 0), // F-032
     trackLots: Boolean(r.TrackLots), // F-028
     hasRecipe: Boolean(r.HasRecipe),
+    // F-075: hạn sau khi mở — hộp / gói đang mở
+    packSize: r.PackSize === null || r.PackSize === undefined ? null : Number(r.PackSize),
+    openShelfHours: r.OpenShelfHours ?? null,
+    openedAt: r.OpenedAt ?? null,
+    openLeft: r.OpenLeft ? Math.min(Number(r.OpenLeft), Number(r.StockQty)) : 0,
   };
 
 const SELECT = `SELECT i.*, (SELECT COUNT(*) FROM dbo.BomItems b JOIN dbo.MenuItems m ON m.MenuItemId = b.MenuItemId

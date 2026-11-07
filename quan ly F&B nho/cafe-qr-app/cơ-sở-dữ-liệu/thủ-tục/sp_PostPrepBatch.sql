@@ -65,6 +65,10 @@ BEGIN
   UPDATE ing SET StockQty = ing.StockQty - x.Need
   OUTPUT inserted.IngredientId, inserted.StockQty INTO @AfterIn
   FROM dbo.Ingredients ing JOIN @Ing x ON x.IngredientId = ing.IngredientId WHERE x.Need IS NOT NULL;
+  -- F-075 (ADR-033 D-147): sơ chế cũng mở hộp nguyên liệu đầu vào
+  CREATE TABLE #PackUse (IngredientId INT NOT NULL, Qty DECIMAL(18,3) NOT NULL);
+  INSERT #PackUse (IngredientId, Qty) SELECT IngredientId, Need FROM @Ing WHERE Need IS NOT NULL;
+  EXEC dbo.sp_TrackOpenPacks;
 
   INSERT dbo.InventoryTransactions (IngredientId, Type, Delta, BalanceAfter, Reason, CreatedBy, PrepBatchId, UnitCost, CostAmount)
   SELECT x.IngredientId, 'PREP_OUT', -x.Need, a.StockQty, LEFT(N'Sơ chế #' + CAST(@BatchId AS NVARCHAR(10)), 200), @UserId, @BatchId,

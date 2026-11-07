@@ -1,6 +1,7 @@
 // Khung trang quầy: kiểm đăng nhập, thanh trên (điều hướng, ca, nhận đơn QR, kết nối, âm thanh, đăng xuất).
 // ADR-005: thu tiền cần ca đang mở (F-018); ADR-017 (F-055): tiếp nhận / xử lý đơn cũng cần ca — banner "Chưa mở ca" + nút mở ca; công tắc nhận đơn QR (F-020).
 // ADR-031 D-136: dải nhắc chấm công (chế độ màn chung) — tải lại mỗi phút và sau khi đóng hộp Chấm công.
+// F-075 (ADR-033 D-151): dải "Nên mời khách hôm nay" — món dùng nguyên liệu sắp hết hạn (tải lại mỗi 10 phút, ẩn được).
 import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, moneyValue, playSound, time, toast, unlockAudio } from './ui.js';
@@ -128,6 +129,8 @@ export async function mountPosShell(active) {
     if (noPin) alerts.prepend(noPin);
   } else document.body.prepend(header, ...(noPin ? [noPin] : []), noShift);
   noShift.after(remind);
+  const pushBanner = el('div', { class: 'banner push-items', id: 'push-items', role: 'status', hidden: true });
+  remind.after(pushBanner);
   // Thanh trên một hàng khi đủ chỗ; không thì đưa điều hướng xuống hàng hai (không để nút xuống dòng lộn xộn)
   const fitHeader = () => {
     header.classList.remove('stacked');
@@ -336,6 +339,60 @@ export async function mountPosShell(active) {
     );
     remind.hidden = false;
   }
+  // F-075: món nên mời — ẩn theo "chữ ký" danh sách (danh sách đổi thì hiện lại)
+  const PUSH_KEY = 'push-items-hidden';
+  async function loadPushItems() {
+    if (document.visibilityState === 'hidden') return;
+    let pushItems;
+    try {
+      ({ pushItems } = await staffApi('/api/expiry/risk'));
+    } catch {
+      return;
+    }
+    const sig = pushItems.map((p) => p.menuItemId).join(',');
+    let hiddenSig = null;
+    try {
+      hiddenSig = sessionStorage.getItem(PUSH_KEY);
+    } catch {
+      /* bỏ qua */
+    }
+    if (!pushItems.length || hiddenSig === sig) {
+      pushBanner.hidden = true;
+      return;
+    }
+    const causes = [...new Map(pushItems.flatMap((p) => p.because).map((b) => [b.ingredientId, b])).values()];
+    clear(
+      pushBanner,
+      icon('utensils'),
+      el(
+        'div',
+        { class: 'push-text' },
+        el('strong', {}, 'Nên mời khách hôm nay: '),
+        pushItems.map((p) => p.name).join(', '),
+        el('div', { class: 'small' }, causes.map((c) => `${c.name} ${c.when}`).join(' · ')),
+      ),
+      el(
+        'button',
+        {
+          class: 'btn btn-sm',
+          type: 'button',
+          onclick: () => {
+            try {
+              sessionStorage.setItem(PUSH_KEY, sig);
+            } catch {
+              /* bỏ qua */
+            }
+            pushBanner.hidden = true;
+          },
+        },
+        'Ẩn',
+      ),
+    );
+    pushBanner.hidden = false;
+  }
+  setInterval(loadPushItems, 10 * 60_000);
+  loadPushItems();
+
   if (current.attendance.mode === 'KIOSK') {
     setInterval(loadReminders, 60_000);
     document.addEventListener('visibilitychange', loadReminders);

@@ -1,6 +1,7 @@
 // Đăng ký mọi job nền vào bộ lập lịch chung (ADR-006 — skill advanced-features mục 6). Chỉ đăng ký, không tự chạy.
 import { registerJob } from './scheduler.js';
 import * as etaService from '../services/etaService.js';
+import * as expiryService from '../services/expiryService.js';
 import { invalidateSuggestions } from '../services/menuService.js';
 import * as forecastService from '../services/forecastService.js';
 import * as attendanceService from '../services/attendanceService.js';
@@ -30,7 +31,8 @@ registerJob('lot-expiry', { label: 'Cảnh báo lô hết hạn', at: '06:00' },
   const expiring = lots.filter((l) => l.daysLeft >= 0);
   if (expiring.length) publish([ROOMS.staff], 'inventory.expiring', { lots: expiring });
   if (expired.length) publish([ROOMS.staff], 'inventory.expired', { lots: expired });
-  return { expiring: expiring.length, expired: expired.length };
+  const risk = await expiryService.dailyAlert(); // F-075: hộp mở + lô quy ra tiền → cảnh báo chủ quán (một lần mỗi ngày)
+  return { expiring: expiring.length, expired: expired.length, riskValue: risk.value };
 });
 
 // 06:05: nguyên liệu sẽ hết trước ngày giao kế tiếp — F-029

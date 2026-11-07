@@ -2738,3 +2738,42 @@ test('bán khi mất mạng: máy quầy mất kết nối → tự chuyển "b�
   await P.locator('label', { hasText: 'Nhập đơn từ phiếu bán tay' }).click();
   await expect(P.locator('#pay')).toHaveText('Thu tiền & In bill');
 });
+
+test('hạn dùng nguyên liệu: quản lý đặt "hộp 100 ml, mở rồi dùng 24 giờ" ở Kho nâng cao; bán món → máy quầy hiện "Nên mời khách hôm nay"; Kho & sơ chế → Hạn dùng có hộp đang mở → "Bỏ phần còn"; trang Hôm nay có thẻ Sắp hết hạn (F-075, AC-075-05)', async ({
+  request,
+}) => {
+  const ingredients = await apiAs(request, 'get', '/api/admin/ingredients');
+  const coffee = ingredients.find((i) => i.name === 'Cà phê cốt');
+  await P.goto('/admin/ingredients');
+  await P.locator('tr', { hasText: 'Cà phê cốt' }).getByRole('button', { name: 'Kho nâng cao' }).click();
+  const dlg = P.locator('.modal', { hasText: 'Kho nâng cao: Cà phê cốt' });
+  await dlg.locator('#adv-pack').fill('100');
+  await dlg.locator('#adv-open').fill('24');
+  await dlg.getByRole('button', { name: 'Lưu' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu' })).toBeVisible();
+  await expect(P.locator('tr', { hasText: 'Cà phê cốt' })).toContainText('hộp 100 ml, mở rồi dùng trong 24 giờ');
+
+  // Bán một ly dùng cà phê cốt → app tự "mở hộp"
+  const sale = await apiAs(request, 'post', '/api/orders/takeaway', { items: [{ menuItemId: ids['Cà phê đen'], quantity: 1 }], amountReceived: 100_000 });
+  await apiAs(request, 'post', `/api/orders/${sale.order.orderId}/complete`);
+  expect((await apiAs(request, 'get', '/api/admin/ingredients')).find((i) => i.ingredientId === coffee.ingredientId).openLeft).toBeGreaterThan(0);
+
+  await P.goto('/pos/stock');
+  const push = P.locator('#push-items');
+  await expect(push).toContainText('Nên mời khách hôm nay');
+  await expect(push).toContainText('Cà phê đen');
+  await expect(push).toContainText('Cà phê cốt hộp đang mở còn');
+  await P.getByRole('tab', { name: 'Hạn dùng' }).click();
+  const packs = P.locator('.open-packs');
+  await expect(packs).toContainText('Cà phê cốt');
+  await packs.locator('li', { hasText: 'Cà phê cốt' }).getByRole('button', { name: 'Bỏ phần còn' }).click();
+  await P.locator('.modal').getByRole('button', { name: 'Bỏ phần còn' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã ghi hủy' })).toBeVisible();
+  await expect(P.locator('.open-packs')).toHaveCount(0);
+
+  await P.goto('/admin/today');
+  const exp = P.locator('.today-card', { hasText: 'Sắp hết hạn (2 ngày tới)' });
+  await expect(exp).toBeVisible();
+  await expect(exp).toContainText('Tháng này đã hủy vì hết hạn');
+  await apiAs(request, 'put', `/api/admin/ingredients/${coffee.ingredientId}/advanced`, { kind: 'RAW', wastePercent: 0, packSize: null, openShelfHours: null }); // trả lại
+});

@@ -8,7 +8,7 @@ import { receivePoDialog } from '../receive-po.js';
 import { connectRealtime } from '../socket.js';
 import { adjustDialog } from '../stock-adjust.js';
 import { stocktakeUi } from '../stocktake.js';
-import { $, clear, dateTime, el, errorMessage, money, num, setBusy, toast, todayVn } from '../ui.js';
+import { $, clear, confirmDialog, dateTime, el, errorMessage, money, num, setBusy, toast, todayVn } from '../ui.js';
 import { icon } from '../icons.js';
 
 const shell = await mountPosShell('stock');
@@ -291,11 +291,70 @@ async function renderWaste() {
   );
 }
 
-// ---------- Hạn dùng (F-028) ----------
+// ---------- Hạn dùng (F-028) + hộp đang mở (F-075) ----------
+function openPackCard(packs) {
+  if (!packs.length) return null;
+  return el(
+    'section',
+    { class: 'card open-packs', style: { marginBottom: '1rem' } },
+    el('h2', { style: { fontSize: '1rem', margin: 0 } }, 'Hộp / gói đang mở sắp hoặc đã quá hạn'),
+    el(
+      'p',
+      { class: 'small muted' },
+      'Tính từ lúc app thấy hộp mới được mở (khi bán / sơ chế). Đã quá hạn: phần còn không tính là còn hàng — đổ bỏ rồi bấm "Bỏ phần còn".',
+    ),
+    el(
+      'ul',
+      { class: 'plain-list open-pack-list' },
+      packs.map((p) =>
+        el(
+          'li',
+          { class: p.expired ? 'loss-flag' : '' },
+          el(
+            'div',
+            {},
+            el('strong', {}, p.name),
+            ` — còn khoảng ${num(p.qty)} ${p.unit} · mở lúc ${dateTime(p.openedAt)} · `,
+            el('span', { class: `badge ${p.expired ? 'danger' : 'pending'}` }, p.expired ? 'Đã quá hạn' : p.when.replace('hộp đang mở ', '')),
+          ),
+          el(
+            'button',
+            {
+              class: `btn btn-sm ${p.expired ? 'btn-danger' : ''}`,
+              type: 'button',
+              onclick: async (e) => {
+                if (
+                  !(await confirmDialog('Bỏ phần còn của hộp đang mở?', `${p.name}: ghi hủy khoảng ${num(p.qty)} ${p.unit} (lý do: hết hạn).`, {
+                    okLabel: 'Bỏ phần còn',
+                    danger: true,
+                  }))
+                )
+                  return;
+                setBusy(e.currentTarget, true);
+                try {
+                  const r = await staffApi(`/api/ingredients/${p.ingredientId}/discard-open`, { method: 'POST', body: {} });
+                  toast(`Đã ghi hủy ${num(r.qty)} ${p.unit} ${p.name}`, 'success');
+                  load();
+                } catch (err) {
+                  toast(errorMessage(err), 'error', 6000);
+                  setBusy(e.currentTarget, false);
+                }
+              },
+            },
+            'Bỏ phần còn',
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 async function renderExpiry() {
-  const lots = await staffApi('/api/lots/expiring?days=3');
+  const [lots, risk] = await Promise.all([staffApi('/api/lots/expiring?days=3'), staffApi('/api/expiry/risk')]);
+  const packs = risk.items.filter((i) => i.kind === 'OPEN');
   clear(
     body,
+    openPackCard(packs),
     el(
       'p',
       { class: 'small muted' },

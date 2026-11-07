@@ -5,6 +5,7 @@
 -- Lỗi: 50001 ALREADY_PROCESSED, 50002 OUT_OF_STOCK, 50003 INVALID_STATE, 50004 ORDER_NOT_FOUND, 50122 LOT_SHORT.
 -- Trả về result set: nguyên liệu đã trừ + khả dụng sau trừ (để app phát inventory.low).
 -- F-074 (ADR-032 D-142): @CompletedAt = giờ bán thật khi gửi bù đơn đã bán lúc mất mạng (mặc định: bây giờ).
+-- F-075 (ADR-033 D-147): sau khi trừ kho cập nhật "hộp đang mở" (sp_TrackOpenPacks) — mở hộp lúc bán, không cần nhân viên bấm.
 CREATE OR ALTER PROCEDURE dbo.sp_CompleteOrder
   @OrderId     INT,
   @UserId      INT,
@@ -69,6 +70,11 @@ BEGIN
            CASE WHEN @Method = 'FIFO' THEN u.UnitCost ELSE d.AvgCost END,
            ROUND(u.Qty * CASE WHEN @Method = 'FIFO' THEN u.UnitCost ELSE d.AvgCost END, 2), u.LotId
     FROM #LotUse u JOIN @Done d ON d.IngredientId = u.IngredientId;
+
+    -- 3c. F-075: hộp đang mở (nguyên liệu có dung tích hộp + hạn sau khi mở)
+    CREATE TABLE #PackUse (IngredientId INT NOT NULL, Qty DECIMAL(18,3) NOT NULL);
+    INSERT #PackUse (IngredientId, Qty) SELECT IngredientId, Qty FROM dbo.OrderIngredients WHERE OrderId = @OrderId;
+    EXEC dbo.sp_TrackOpenPacks @At = @CompletedAt;
 
     -- 4. Giá vốn dòng món (F-031): chia tổng giá vốn đơn theo trọng số định lượng × giá vốn hiện tại.
     --    Có nguyên liệu chưa biết giá (giá vốn 0) → để NULL (báo cáo tự ước tính / gắn cờ).

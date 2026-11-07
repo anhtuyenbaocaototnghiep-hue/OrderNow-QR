@@ -23,6 +23,9 @@ export function costLine(i) {
     `Giá vốn bình quân: ${i.avgCost ? `${num(i.avgCost)}đ/${i.unit}` : 'chưa có'}`,
     i.wastePercent ? ` · hao hụt định mức ${num(i.wastePercent)}%` : '',
     i.shelfLifeHours ? ` · dùng trong ${i.shelfLifeHours} giờ` : '',
+    // F-075: hạn sau khi mở
+    i.packSize && i.openShelfHours ? ` · hộp ${num(i.packSize)} ${i.unit}, mở rồi dùng trong ${i.openShelfHours} giờ` : '',
+    i.openLeft > 0 ? ` · hộp đang mở còn ${num(i.openLeft)} ${i.unit}` : '',
   );
 }
 
@@ -44,7 +47,8 @@ export function advancedDialog(i, onDone) {
     el(
       'div',
       { class: 'field' },
-      el('label', {}, 'Dùng trong (giờ, sau khi pha / mở) — trống = không hạn'),
+      // F-075: tách rõ với "hạn sau khi mở" bên dưới — ô này là hạn tính từ lúc nhập kho / sơ chế (tự điền hạn của lô)
+      el('label', {}, 'Hạn dùng tính từ lúc nhập / sơ chế (giờ) — trống = không hạn'),
       el('input', { class: 'input', name: 'shelfLifeHours', type: 'number', min: 1, max: 8760, value: i.shelfLifeHours ?? '' }),
     ),
     el(
@@ -52,6 +56,33 @@ export function advancedDialog(i, onDone) {
       { class: 'field' },
       el('label', {}, 'Hao hụt định mức (% tiêu thụ) — dùng cho báo cáo thất thoát và dự báo nhập hàng'),
       el('input', { class: 'input', name: 'wastePercent', type: 'number', min: 0, max: 100, step: 'any', value: i.wastePercent ?? 0 }),
+    ),
+    // F-075 (ADR-033): hạn sau khi mở — một lô nhiều hộp nên theo dõi "hộp đang mở" (app tự biết lúc bán / sơ chế)
+    el(
+      'fieldset',
+      { class: 'field open-pack' },
+      el('legend', {}, 'Hạn sau khi mở hộp / gói (sữa, kem, siro…)'),
+      el(
+        'div',
+        { class: 'time-pair' },
+        el(
+          'div',
+          { class: 'stack' },
+          el('label', { for: 'adv-pack' }, `Một hộp / gói bao nhiêu ${i.unit}`),
+          el('input', { class: 'input', id: 'adv-pack', name: 'packSize', type: 'number', min: 0, step: 'any', value: i.packSize ?? '' }),
+        ),
+        el(
+          'div',
+          { class: 'stack' },
+          el('label', { for: 'adv-open' }, 'Mở rồi dùng được (giờ)'),
+          el('input', { class: 'input', id: 'adv-open', name: 'openShelfHours', type: 'number', min: 1, max: 8760, value: i.openShelfHours ?? '' }),
+        ),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Ví dụ sữa tươi: hộp 1000 ml, dùng trong 72 giờ sau khi mở. App tự biết lúc nào mở hộp mới (khi bán / sơ chế); quá hạn thì phần còn trong hộp không tính là còn hàng và quầy được nhắc bỏ. Để trống cả hai = không theo dõi.',
+      ),
     ),
     el(
       'label',
@@ -79,6 +110,8 @@ export function advancedDialog(i, onDone) {
                 shelfLifeHours: f('shelfLifeHours').value ? Number(f('shelfLifeHours').value) : null,
                 wastePercent: Number(f('wastePercent').value || 0),
                 trackLots: f('trackLots').checked,
+                packSize: f('packSize').value ? Number(f('packSize').value) : null,
+                openShelfHours: f('openShelfHours').value ? Number(f('openShelfHours').value) : null,
               },
             });
             toast('Đã lưu', 'success');

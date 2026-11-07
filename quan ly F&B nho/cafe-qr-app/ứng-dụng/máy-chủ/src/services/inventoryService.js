@@ -76,10 +76,12 @@ export async function toBaseLines(lines) {
 }
 
 // ---------- Thuộc tính kho nâng cao ----------
-export async function setAdvanced(id, { kind, shelfLifeHours, wastePercent, trackLots }) {
+export async function setAdvanced(id, { kind, shelfLifeHours, wastePercent, trackLots, packSize, openShelfHours }) {
   const ing = await ingredientOr404(id);
   if (kind === 'RAW' && ing.hasRecipe) throw conflict('HAS_RECIPE', 'Nguyên liệu đang có công thức sơ chế — xóa công thức trước khi chuyển về nguyên liệu thô');
-  await inventoryRepo.setIngredientAdvanced(id, { kind, shelfLifeHours, wastePercent });
+  // F-075: không gửi hai ô hạn sau khi mở (bản giao diện cũ) → giữ nguyên
+  const open = packSize === undefined && openShelfHours === undefined ? undefined : { packSize: packSize ?? null, openShelfHours: openShelfHours ?? null };
+  await inventoryRepo.setIngredientAdvanced(id, { kind, shelfLifeHours, wastePercent, open });
   if (trackLots !== undefined && trackLots !== ing.trackLots) await withDeadlockRetry(() => inventoryRepo.setTrackLots(id, trackLots));
   refreshAvailability();
   return ingredientsRepo.getById(id);

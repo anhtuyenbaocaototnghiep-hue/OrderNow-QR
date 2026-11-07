@@ -1550,3 +1550,7 @@ body.pos .tc-main .btn {
   padding: 0.35rem 0;
   border-bottom: 1px dashed #efd5a6;
 }
+/* F-075: dải "Nên mời khách hôm nay" trong vùng "Cần xử lý ngay" */
+.pos-alerts > .banner.push-items {
+  border-color: #c3d5e8;
+}

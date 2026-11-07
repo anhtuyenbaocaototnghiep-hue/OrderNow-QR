@@ -70,6 +70,7 @@ const SQL_ERRORS = {
   50121: [400, 'WASTE_INVALID', 'Phiếu hủy không hợp lệ (số lượng / lô / lý do)'],
   50122: [409, 'LOT_SHORT', 'Số lượng theo lô không khớp tồn kho — liên hệ quản lý'],
   50123: [404, 'NO_RECIPE', 'Bán thành phẩm chưa có công thức sơ chế'],
+  50124: [409, 'NO_OPEN_PACK', 'Nguyên liệu này không có hộp / gói đang mở'], // F-075
   50130: [404, 'NOT_FOUND', 'Không tìm thấy đơn đặt hàng'],
   50131: [409, 'OVER_RECEIPT', 'Nhận vượt số lượng đã đặt'],
   50132: [409, 'PO_HAS_RECEIPTS', 'Đơn đặt hàng đã nhận một phần — không hủy được'],
