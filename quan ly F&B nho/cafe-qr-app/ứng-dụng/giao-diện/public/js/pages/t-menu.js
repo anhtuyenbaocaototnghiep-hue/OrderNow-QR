@@ -25,7 +25,7 @@ import {
 import { mountMemberBox } from '../member-box.js';
 import { groupsOf, pickItem } from '../options.js';
 import { connectRealtime } from '../socket.js';
-import { $, clear, el, errorMessage, modal, money, setBusy, thumb, toast } from '../ui.js';
+import { $, announce, clear, el, errorMessage, modal, money, reducedMotion, setBusy, thumb, toast } from '../ui.js';
 import { followTable, getSessionId, goEntry, isLeaving, qrToken, setFlash, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
 
@@ -290,8 +290,9 @@ function itemCard(item, { badge = null } = {}) {
   state.controls.get(item.id).add(control);
   const hasOptions = groupsOf(item, state.menu.modifierGroups).length > 0;
   const isCombo = item.itemType === 'COMBO';
-  const pic = thumb(item.name, item.imageUrl);
-  pic.addEventListener('click', () => openItem(item)); // F-081: bấm ảnh = bấm tên món
+  // ADR-042 D-193: chỉ hiện ảnh thật — món chưa có ảnh không còn ô chữ cái; bấm ảnh / cả dòng = bấm tên món (F-081)
+  const pic = item.imageUrl ? thumb(item.name, item.imageUrl) : null;
+  pic?.addEventListener('click', () => openItem(item));
   const card = el(
     'div',
     { class: `c-item ${item.isAvailable ? '' : 'soldout'}`, dataset: { id: item.id } },
@@ -359,17 +360,19 @@ function renderMenu() {
         {
           class: `chip ${i === 0 ? 'active' : ''} ${s.kind !== 'cat' ? 'special' : ''}`,
           type: 'button',
+          dataset: { target: s.id },
+          'aria-current': i === 0 ? 'true' : null,
           onclick: (e) => {
-            tabs.querySelectorAll('.chip').forEach((b) => b.classList.remove('active'));
-            e.currentTarget.classList.add('active');
+            setActiveTab(e.currentTarget);
+            spyPausedUntil = Date.now() + 900; // đang cuộn tới nhóm vừa bấm: không để thanh tự đổi theo các nhóm lướt qua
             // Người tắt chuyển động (prefers-reduced-motion) → nhảy thẳng tới nhóm, không cuộn mượt (review G3 TASK-066)
-            const still = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-            document.getElementById(s.id)?.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+            document.getElementById(s.id)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
           },
         },
         s.name,
       ),
     ),
+    el('span', { class: 'tab-ink', 'aria-hidden': 'true' }),
   );
   clear(
     menu,
@@ -378,17 +381,8 @@ function renderMenu() {
       el(
         'section',
         { class: `c-section ${s.kind}`, id: s.id },
-        el(
-          'h2',
-          {},
-          s.kind === 'suggest'
-            ? [icon('sparkles'), 'Gợi ý cho bạn']
-            : s.kind === 'promo'
-              ? [icon('gift'), 'Ưu đãi hôm nay']
-              : s.kind === 'combo'
-                ? [icon('utensils'), 'Combo']
-                : s.name,
-        ),
+        // ADR-042 D-194: tiêu đề nhóm là chữ — bỏ biểu tượng lấp lánh / quà / dao nĩa trước tên nhóm
+        el('h2', {}, s.kind === 'suggest' ? 'Gợi ý cho bạn' : s.kind === 'promo' ? 'Ưu đãi hôm nay' : s.name),
         s.kind === 'promo'
           ? state.menu.promotions.map((p) =>
               el('div', { class: 'promo-card' }, el('strong', {}, p.badgeText || p.name), el('div', { class: 'small' }, p.description)),
@@ -398,7 +392,55 @@ function renderMenu() {
       ),
     ),
   );
+  moveInk(tabs.querySelector('.chip.active'), { instant: true });
+  spyOnScroll(); // vẽ lại menu khi đang cuộn giữa trang (menu theo lịch, hết món…) → thanh nhóm theo đúng nhóm đang xem
 }
+
+// ---------- Thanh nhóm món: vạch đồng trượt tới nhóm đang chọn, tự đổi theo nhóm đang xem khi cuộn (ADR-042 D-193) ----------
+let spyPausedUntil = 0;
+let spyFrame = 0;
+
+/** Đặt vạch dưới nút nhóm (dịch + giãn một vạch 1 px — chỉ đổi transform nên trượt mượt). */
+function moveInk(btn, { instant = false } = {}) {
+  const ink = $('#tabs .tab-ink');
+  if (!ink || !btn) return;
+  if (instant) ink.style.transition = 'none';
+  ink.style.transform = `translateX(${btn.offsetLeft}px) scaleX(${btn.offsetWidth})`;
+  if (instant) requestAnimationFrame(() => (ink.style.transition = ''));
+}
+
+function setActiveTab(btn) {
+  const tabs = $('#tabs');
+  if (!btn || !tabs) return;
+  for (const b of tabs.querySelectorAll('.chip')) {
+    b.classList.toggle('active', b === btn);
+    if (b === btn) b.setAttribute('aria-current', 'true');
+    else b.removeAttribute('aria-current');
+  }
+  moveInk(btn);
+  // Nhóm đang chọn luôn nằm trong tầm nhìn của thanh (thanh cuộn ngang khi nhiều nhóm)
+  tabs.scrollTo({ left: btn.offsetLeft - (tabs.clientWidth - btn.offsetWidth) / 2, behavior: reducedMotion() ? 'auto' : 'smooth' });
+}
+
+/** Nhóm đang xem = nhóm cuối cùng có đầu đã cuộn qua mép dưới thanh nhóm món; cuộn chạm đáy trang → nhóm cuối. */
+function spyOnScroll() {
+  if (spyFrame) return;
+  spyFrame = requestAnimationFrame(() => {
+    spyFrame = 0;
+    if (Date.now() < spyPausedUntil) return;
+    const sections = [...document.querySelectorAll('#menu .c-section')];
+    if (!sections.length) return;
+    const line = parseFloat(getComputedStyle(document.documentElement).fontSize) * 7.25 + 24;
+    let current = sections[0];
+    for (const s of sections) if (s.getBoundingClientRect().top <= line) current = s;
+    if (globalThis.innerHeight + globalThis.scrollY >= document.documentElement.scrollHeight - 4) current = sections.at(-1);
+    const btn = document.querySelector(`#tabs .chip[data-target="${current.id}"]`);
+    if (btn && !btn.classList.contains('active')) setActiveTab(btn);
+  });
+}
+globalThis.addEventListener('scroll', spyOnScroll, { passive: true });
+globalThis.addEventListener('resize', () => moveInk($('#tabs .chip.active'), { instant: true }));
+document.fonts?.ready.then(() => moveInk($('#tabs .chip.active'), { instant: true })); // web font tải xong → bề ngang chữ đổi
 
 function renderControl(itemId) {
   const item = state.itemsById.get(itemId);
@@ -418,12 +460,13 @@ function renderControl(itemId) {
       clear(
         control,
         qty ? el('span', { class: 'qty-badge', 'aria-label': `${qty} trong giỏ` }, qty) : null,
-        el('button', { class: 'add-btn', type: 'button', 'aria-label': `Thêm ${item.name}`, onclick: () => quickAdd(item) }, '+'),
+        el('button', { class: 'add-btn', type: 'button', 'aria-label': `Thêm ${item.name}`, onclick: () => quickAdd(item) }, icon('plus')),
       );
       continue;
     }
     const line = lines[0];
-    if (!line) clear(control, el('button', { class: 'add-btn', type: 'button', 'aria-label': `Thêm ${item.name}`, onclick: () => quickAdd(item) }, '+'));
+    if (!line)
+      clear(control, el('button', { class: 'add-btn', type: 'button', 'aria-label': `Thêm ${item.name}`, onclick: () => quickAdd(item) }, icon('plus')));
     else
       clear(
         control,
@@ -450,24 +493,21 @@ async function quickAdd(item) {
   if (!item.isAvailable) return toast(`${item.name} đã hết món`, 'warning');
   if (sheetAll() || groupsOf(item, state.menu.modifierGroups).length) return openItem(item);
   addItem(state.cart, item, {});
+  announce(`Đã thêm 1 ${item.name} vào giỏ`);
   changed(item.id);
 }
 
-/** Đầu bảng chọn món: ảnh, giá (giá gạch khi khuyến mãi), nhãn khuyến mãi, thành phần combo. */
+/** Đầu bảng chọn món: ảnh lớn khi quán có ảnh thật (ADR-042), giá (giá gạch khi khuyến mãi), nhãn khuyến mãi, thành phần combo. */
 function itemHead(item) {
   return el(
     'div',
     { class: 'item-sheet-head' },
-    thumb(item.name, item.imageUrl),
-    el(
-      'div',
-      { class: 'grow' },
-      priceNode(item),
-      item.promotionBadge ? el('span', { class: 'tag promo' }, item.promotionBadge) : null,
-      item.itemType === 'COMBO'
-        ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity > 1 ? `${c.quantity}× ` : ''}${c.name}`).join(' + '))
-        : null,
-    ),
+    item.imageUrl ? el('img', { class: 'item-photo', src: item.imageUrl, alt: '' }) : null,
+    priceNode(item),
+    item.promotionBadge ? el('span', { class: 'tag promo' }, item.promotionBadge) : null,
+    item.itemType === 'COMBO'
+      ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity > 1 ? `${c.quantity}× ` : ''}${c.name}`).join(' + '))
+      : null,
   );
 }
 
@@ -482,8 +522,9 @@ async function openItem(item) {
   });
   if (!choice) return;
   addItem(state.cart, item, choice, { quantity: choice.quantity, note: choice.note });
+  // ADR-042 D-192: không hiện thông báo xanh — thanh giỏ nảy, số món / tổng đổi ngay; trình đọc màn hình vẫn được đọc
   const extra = [...choice.optionLabels, choice.note].filter(Boolean).join(', ');
-  toast(`Đã thêm ${choice.quantity} × ${item.name}${extra ? ` (${extra})` : ''}`, 'success', 2500);
+  announce(`Đã thêm ${choice.quantity} ${item.name}${extra ? ` (${extra})` : ''} vào giỏ`);
   changed(item.id);
 }
 
@@ -548,11 +589,20 @@ async function fetchEta() {
 }
 
 // ---------- Thanh giỏ + sheet giỏ hàng ----------
+let shownCount = null;
 function renderCartBar() {
   const count = cartCount(state.cart);
-  $('#cartbar').hidden = count === 0;
+  const bar = $('#cartbar');
+  bar.hidden = count === 0;
   $('#cart-count').textContent = `${count} món`;
   $('#cart-total').textContent = money(shownTotal());
+  // ADR-042 D-192: thêm món → thanh giỏ nảy nhẹ ngay chỗ khách nhìn (thay thông báo xanh)
+  if (shownCount !== null && count > shownCount && !bar.hidden && !reducedMotion()) {
+    bar.classList.remove('bump');
+    void bar.offsetWidth; // thêm liên tiếp → chạy lại hiệu ứng
+    bar.classList.add('bump');
+  }
+  shownCount = count;
 }
 
 function openCart() {
@@ -609,7 +659,7 @@ function lineNode(line) {
   );
   return el(
     'div',
-    { class: `cart-line ${unavailable ? 'unavailable' : ''}` },
+    { class: `cart-line ${unavailable ? 'unavailable' : ''} ${state.flash?.key === line.key && Date.now() < state.flash.until ? 'updated' : ''}` },
     el(
       'div',
       { class: 'row between' },
@@ -634,8 +684,12 @@ async function editLine(key) {
     confirmLabel: 'Cập nhật',
   });
   if (!choice) return;
+  const at = state.cart.findIndex((l) => l.key === key);
   replaceLine(state.cart, key, item, choice, { quantity: choice.quantity, note: choice.note });
-  toast(`Đã cập nhật ${item.name}`, 'success', 2000);
+  // ADR-042 D-192: dòng vừa sửa sáng lên rồi nhạt dần ngay trong giỏ (thay thông báo); trình đọc màn hình vẫn được đọc
+  const updated = state.cart[at]?.menuItemId === item.id ? state.cart[at] : state.cart.find((l) => l.menuItemId === item.id);
+  state.flash = updated ? { key: updated.key, until: Date.now() + 1200 } : null;
+  announce(`Đã cập nhật ${item.name}`);
   changed(item.id);
 }
 
@@ -671,7 +725,13 @@ function renderTotals() {
       : null,
     el('div', { class: 'cart-total' }, el('span', {}, 'Tổng đơn này'), el('span', {}, money(shownTotal()))),
     state.eta
-      ? el('p', { class: 'small eta', id: 'cart-eta' }, icon('timer'), `Dự kiến có món sau khoảng ${state.eta.minMinutes}–${state.eta.maxMinutes} phút`)
+      ? el(
+          'p',
+          { class: 'small eta', id: 'cart-eta' },
+          icon('timer'),
+          'Dự kiến có món sau khoảng ',
+          el('span', { class: 'nowrap' }, `${state.eta.minMinutes}–${state.eta.maxMinutes} phút`),
+        )
       : null,
     m ? el('p', { class: 'small save' }, `Ưu đãi hội viên (${m.maskedName}) được trừ khi thanh toán.`) : null,
     holdPicker(),

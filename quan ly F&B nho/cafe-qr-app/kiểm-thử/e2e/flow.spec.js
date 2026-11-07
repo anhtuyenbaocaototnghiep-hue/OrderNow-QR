@@ -352,7 +352,7 @@ test('tùy chọn món + combo: khách chọn Size L (+5k); quầy bán combo �
   const card = C.locator('.c-section.cat .c-item', { hasText: 'Bạc xỉu' });
   await card.getByRole('button', { name: /Chọn size/ }).click();
   await C.locator('.opt-row', { hasText: 'Size L' }).click();
-  await expect(C.locator('.opt-total')).toContainText('37.000đ');
+  await expect(C.getByRole('dialog').locator('.modal-foot .btn-primary')).toContainText('37.000đ'); // ADR-042: giá 1 phần nằm trên nút thêm
   await C.getByRole('button', { name: 'Thêm vào giỏ' }).click();
   await expect(card.locator('.qty-badge')).toHaveText('1');
   await expect(C.locator('.c-section.combo')).toContainText('Tiết kiệm 9.000đ');
@@ -3029,7 +3029,7 @@ test('bảng chọn món: khách bấm "+" món có tùy chọn → bảng trư�
     await sheet.locator('.opt-row', { hasText: 'Size L' }).click();
     await sheet.locator('.chip', { hasText: 'Ít đá' }).click();
     await expect(G.locator('#item-note')).toHaveValue('Ít đá');
-    await sheet.getByRole('button', { name: 'Thêm Bạc xỉu' }).click();
+    await G.getByRole('dialog').getByRole('button', { name: 'Thêm Bạc xỉu' }).click(); // ADR-042: số lượng ở chân bảng
     await expect(G.locator('#item-qty')).toHaveText('2');
     const add = G.getByRole('dialog').locator('.modal-foot .btn-primary');
     await expect(add).toHaveText(/^Thêm vào giỏ · [\d.]+đ$/);
@@ -3075,7 +3075,9 @@ test('giỏ gọn: giỏ không còn ô ghi chú / nút nhanh, mỗi món một 
     await bx.locator('.add-btn').click();
     await G.locator('.item-sheet .opt-row', { hasText: 'Size L' }).click();
     await G.locator('.item-sheet .chip', { hasText: 'Ít đá' }).click();
-    await G.locator('.item-sheet').getByRole('button', { name: 'Thêm Bạc xỉu' }).click();
+    await G.locator('[role="dialog"]', { has: G.locator('.item-sheet') })
+      .getByRole('button', { name: 'Thêm Bạc xỉu' })
+      .click();
     await G.locator('[role="dialog"]', { has: G.locator('.item-sheet') })
       .locator('.modal-foot .btn-primary')
       .click();
@@ -3142,7 +3144,7 @@ test('"+" mở bảng chọn cho mọi món: chủ quán bật ở Cài đặt �
     await expect(sheet).toBeVisible();
     await expect(sheet.locator('.opt-group')).toHaveCount(0);
     await expect(G.locator('#item-note')).toBeVisible();
-    await sheet.getByRole('button', { name: 'Thêm Nước suối' }).click();
+    await G.locator('[role="dialog"]', { has: sheet }).getByRole('button', { name: 'Thêm Nước suối' }).click(); // ADR-042: số lượng ở chân bảng
     await expect(G.locator('#item-qty')).toHaveText('2');
     await G.locator('[role="dialog"]', { has: sheet }).locator('.modal-foot .btn-primary').click();
     await expect(water.locator('.qty-badge')).toHaveText('2');

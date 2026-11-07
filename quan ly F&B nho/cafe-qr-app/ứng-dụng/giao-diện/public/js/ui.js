@@ -96,16 +96,44 @@ export const statusBadge = (status, label) => el('span', { class: `badge ${statu
 export const paymentBadge = (paymentStatus) =>
   el('span', { class: `badge ${paymentStatus === 'PAID' ? 'paid' : 'unpaid'}` }, paymentStatus === 'PAID' ? 'Đã thu' : 'Chưa thu');
 
+// ---------- Chuyển động (ADR-042 D-191) ----------
+export const reducedMotion = () => Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+
+/** Gắn lớp hiệu ứng "ra" rồi mới bỏ phần tử khỏi trang; người tắt chuyển động → bỏ ngay. */
+function removeAfter(node, leavingClass, fallbackMs = 400) {
+  if (!node.isConnected || node.classList.contains(leavingClass)) return;
+  if (reducedMotion()) return node.remove();
+  node.classList.add(leavingClass);
+  const done = () => node.remove();
+  node.addEventListener('animationend', (e) => e.target === node && done());
+  setTimeout(done, fallbackMs);
+}
+
 // ---------- Toast ----------
+// ADR-042 D-192: thông báo gọn màu mực, thành công có dấu ✓; tối đa 3 cái — cái cũ nhất lùi ra khi có cái thứ 4
 let toastBox;
+const MAX_TOASTS = 3;
 export function toast(message, type = 'info', ms = 3500) {
   if (!toastBox) {
     toastBox = el('div', { class: 'toasts', role: 'status', 'aria-live': 'polite' });
     document.body.append(toastBox);
   }
-  const t = el('div', { class: `toast ${type}` }, message);
+  const t = el('div', { class: `toast ${type}` }, type === 'success' ? icon('circle-check') : null, el('span', {}, message));
   toastBox.append(t);
-  setTimeout(() => t.remove(), ms);
+  const shown = [...toastBox.children].filter((n) => !n.classList.contains('leaving'));
+  if (shown.length > MAX_TOASTS) removeAfter(shown[0], 'leaving');
+  setTimeout(() => removeAfter(t, 'leaving'), ms);
+}
+
+// Vùng đọc cho trình đọc màn hình (không hiện chữ): phản hồi đã thể hiện ngay tại chỗ (thanh giỏ nảy, số món đổi) — ADR-042 D-192
+let liveBox;
+export function announce(message) {
+  if (!liveBox) {
+    liveBox = el('div', { class: 'sr-only', role: 'status', 'aria-live': 'polite', id: 'live-status' });
+    document.body.append(liveBox);
+  }
+  liveBox.textContent = '';
+  setTimeout(() => (liveBox.textContent = message), 60); // đổi chữ sau một nhịp để trình đọc đọc cả khi câu trùng câu trước
 }
 
 export const errorMessage = (err) => err?.message || 'Có lỗi xảy ra, vui lòng thử lại';
@@ -113,53 +141,90 @@ export const errorMessage = (err) => err?.message || 'Có lỗi xảy ra, vui l�
 // ---------- Modal / drawer ----------
 /**
  * Mở modal. actions: [{ label, class, value, onClick }]. onClick(close) trả false để giữ modal mở.
+ * `foot` (tùy chọn): node chân hộp thoại tự dựng thay cho hàng nút `actions` (ví dụ bảng chọn món: số lượng + nút thêm — ADR-042).
  * Trả { close, root, result } với result là Promise giá trị của action được bấm (null nếu đóng).
+ * ADR-042 D-191: đóng có hiệu ứng ra nhưng hộp thoại rời trang ngay — hiệu ứng chạy trên ảnh chụp của View Transitions
+ * (không để lại bản sao trong trang cho trình đọc màn hình / bộ chọn bắt nhầm); focus trở về nút đã mở hộp thoại;
+ * sheet kéo đầu bảng xuống để đóng.
  */
-export function modal({ title, body, actions = [], drawer = false, sheet = false, dismissable = true, onClose }) {
+export function modal({ title, body, actions = [], foot: customFoot = null, drawer = false, sheet = false, dismissable = true, onClose }) {
   const kind = drawer ? 'drawer' : sheet ? 'sheet' : 'modal';
+  const opener = document.activeElement;
   let resolveResult;
+  let closed = false;
   const result = new Promise((r) => (resolveResult = r));
   const close = (value = null) => {
-    overlay.remove();
+    if (closed) return;
+    closed = true;
     document.removeEventListener('keydown', onKey);
+    leave();
+    if (opener && opener !== document.body && opener.isConnected && !overlay.contains(opener)) opener.focus?.({ preventScroll: true });
     onClose?.(value);
     resolveResult(value);
+  };
+  /**
+   * Ra khỏi trang: thôi là hộp thoại ngay (bỏ role, id, nhận chạm), gỡ khỏi trang ở khung hình kế tiếp trong View Transition —
+   * ảnh chụp của khung trượt xuống / mờ đi (CSS `::view-transition-old(vt-dialog)`). Trình duyệt chưa hỗ trợ / giảm chuyển động → gỡ ngay.
+   */
+  const leave = () => {
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.inert = true;
+    box.removeAttribute('role');
+    box.removeAttribute('aria-modal');
+    box.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+    const gone = () => overlay.isConnected && overlay.remove();
+    if (reducedMotion() || typeof document.startViewTransition !== 'function' || document.documentElement.dataset.vtLeave) return gone();
+    box.style.viewTransitionName = 'vt-dialog';
+    overlay.style.viewTransitionName = 'vt-scrim';
+    const root = document.documentElement;
+    root.dataset.vtLeave = kind; // sheet | drawer | modal → CSS chọn kiểu ra
+    const t = document.startViewTransition(gone);
+    // Bị hủy (tab ẩn, trang đang chuyển đi khi gửi đơn…) → không báo lỗi trang; hộp thoại vẫn được gỡ (đường lùi bên dưới)
+    const done = () => delete root.dataset.vtLeave;
+    t.ready.catch(() => {});
+    t.updateCallbackDone.catch(() => {});
+    t.finished.then(done, done);
+    setTimeout(() => (gone(), done()), 600);
   };
   const onKey = (e) => {
     if (e.key === 'Escape' && dismissable) close(null);
   };
-  const foot = actions.length
-    ? el(
-        'div',
-        { class: 'modal-foot' },
-        actions.map((a) =>
-          el(
-            'button',
-            {
-              type: 'button',
-              class: `btn ${a.class ?? ''}`,
-              onclick: async (e) => {
-                if (a.onClick) {
-                  const keep = await a.onClick(close, e);
-                  if (keep === false) return;
-                }
-                close(a.value ?? a.label);
+  const foot = customFoot
+    ? el('div', { class: 'modal-foot' }, customFoot)
+    : actions.length
+      ? el(
+          'div',
+          { class: 'modal-foot' },
+          actions.map((a) =>
+            el(
+              'button',
+              {
+                type: 'button',
+                class: `btn ${a.class ?? ''}`,
+                onclick: async (e) => {
+                  if (a.onClick) {
+                    const keep = await a.onClick(close, e);
+                    if (keep === false) return;
+                  }
+                  close(a.value ?? a.label);
+                },
               },
-            },
-            a.label,
+              a.label,
+            ),
           ),
-        ),
-      )
-    : null;
+        )
+      : null;
+  const head = el(
+    'div',
+    { class: 'modal-head' },
+    el('h2', {}, title),
+    dismissable ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Đóng', onclick: () => close(null) }, icon('x')) : null,
+  );
   const box = el(
     'div',
     { class: kind, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
-    el(
-      'div',
-      { class: 'modal-head' },
-      el('h2', {}, title),
-      dismissable ? el('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Đóng', onclick: () => close(null) }, icon('x')) : null,
-    ),
+    kind === 'sheet' && dismissable ? el('div', { class: 'sheet-grabber', 'aria-hidden': 'true' }) : null,
+    head,
     el('div', { class: 'modal-body' }, body),
     foot,
   );
@@ -167,10 +232,52 @@ export function modal({ title, body, actions = [], drawer = false, sheet = false
   overlay.addEventListener('mousedown', (e) => {
     if (e.target === overlay && dismissable) close(null);
   });
+  if (kind === 'sheet' && dismissable) dragToDismiss(box, [head, box.firstElementChild], () => close(null));
   document.addEventListener('keydown', onKey);
   document.body.append(overlay);
   box.querySelector('input, select, textarea, .btn-primary')?.focus();
   return { close, root: box, result };
+}
+
+/**
+ * Kéo đầu bảng trượt xuống để đóng (ADR-042 D-191): theo ngón tay; thả khi đã kéo > 90 px hoặc vuốt nhanh → đóng, không thì bật về.
+ * Chỉ bắt đầu ở tay nắm / đầu bảng (không phải nút "×") nên không tranh với cuộn nội dung.
+ */
+function dragToDismiss(box, handles, onDismiss) {
+  let startY = 0;
+  let startT = 0;
+  let dy = 0;
+  let pointer = null;
+  const onDown = (e) => {
+    if (e.button > 0 || e.target.closest('button, a, input, select, textarea')) return;
+    pointer = e.pointerId;
+    startY = e.clientY;
+    startT = performance.now();
+    dy = 0;
+    box.classList.add('dragging');
+    e.currentTarget.setPointerCapture?.(pointer);
+  };
+  const onMove = (e) => {
+    if (e.pointerId !== pointer) return;
+    dy = Math.max(0, e.clientY - startY);
+    box.style.transform = dy ? `translateY(${dy}px)` : '';
+  };
+  const onUp = (e) => {
+    if (e.pointerId !== pointer) return;
+    pointer = null;
+    box.classList.remove('dragging');
+    const fast = dy > 30 && dy / Math.max(1, performance.now() - startT) > 0.6;
+    if (dy > 90 || fast) return onDismiss();
+    box.style.transition = 'transform var(--dur-2) var(--ease-out)';
+    box.style.transform = '';
+    box.addEventListener('transitionend', () => (box.style.transition = ''), { once: true });
+  };
+  for (const h of handles.filter(Boolean)) {
+    h.addEventListener('pointerdown', onDown);
+    h.addEventListener('pointermove', onMove);
+    h.addEventListener('pointerup', onUp);
+    h.addEventListener('pointercancel', onUp);
+  }
 }
 
 export function confirmDialog(title, message, { okLabel = 'Đồng ý', cancelLabel = 'Hủy', danger = false } = {}) {

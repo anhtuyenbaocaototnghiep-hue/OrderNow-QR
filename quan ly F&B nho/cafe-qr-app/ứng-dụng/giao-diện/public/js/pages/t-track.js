@@ -176,12 +176,14 @@ function notifyCompleted() {
   prevStatuses = now;
 }
 
+/** ADR-042 D-193: 3 bước có chữ (trạng thái đọc từ nhãn ở đầu thẻ nên phần này chỉ để nhìn — aria-hidden). */
+const STEPS = ['Đã gửi', 'Đang chuẩn bị', 'Xong'];
 function progress(status) {
   const step = { PENDING: 1, PREPARING: 2, COMPLETED: 3 }[status] ?? 0;
   return el(
     'div',
     { class: 'progress', 'aria-hidden': 'true' },
-    [1, 2, 3].map((i) => el('span', { class: i <= step ? 'on' : '' })),
+    STEPS.map((label, k) => el('span', { class: [k < step ? 'on' : '', k + 1 === step ? 'now' : ''].join(' ').trim() }, label)),
   );
 }
 
@@ -417,7 +419,13 @@ function paymentStatus() {
 /** F-025: "Món của bạn dự kiến xong sau khoảng 8–12 phút" (hàng chờ trước bạn + món của bạn). */
 function etaLine() {
   if (!eta) return null;
-  return el('div', { class: 'alert info eta', id: 'eta' }, icon('timer'), `Món của bạn dự kiến xong sau khoảng ${eta.minMinutes}–${eta.maxMinutes} phút`);
+  return el(
+    'div',
+    { class: 'alert info eta', id: 'eta' },
+    icon('timer'),
+    'Món của bạn dự kiến xong sau khoảng ',
+    el('span', { class: 'nowrap' }, `${eta.minMinutes}–${eta.maxMinutes} phút`),
+  );
 }
 
 /** F-026: tóm tắt các phần khi bàn đã chia bill. */

@@ -12,9 +12,9 @@ body.customer .toasts {
   bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
-/* Đầu trang espresso, viền caramel (ADR-012). Cao cố định (rem — phóng chữ thì đầu trang và thanh danh mục cùng lớn) để thanh danh mục dính ngay bên dưới */
+/* Đầu trang sáng, mảnh (ADR-042 D-193 — thay thanh espresso viền caramel của ADR-012): tên quán chữ có chân, tên bàn ngay dưới,
+   đường kẻ mảnh. Cao cố định (rem — phóng chữ thì đầu trang và thanh nhóm món cùng lớn) để thanh nhóm món dính ngay bên dưới */
 .c-header {
-  --c-focus: var(--c-focus-dark); /* nền tối → viền focus sáng (TASK-057) */
   position: sticky;
   top: 0;
   z-index: 30;
@@ -24,28 +24,30 @@ body.customer .toasts {
   gap: 0.75rem;
   height: 4.125rem; /* 66px */
   padding: 0 1rem;
-  background: var(--c-espresso);
-  color: #fff;
-  border-bottom: 3px solid var(--c-accent);
+  background: var(--c-bg);
+  color: var(--c-text);
+  border-bottom: 1px solid var(--c-border);
 }
 .c-header > div:first-child {
   min-width: 0;
 }
 .c-shop {
   font-family: var(--font-display);
-  font-size: 0.9rem;
+  font-variant-numeric: lining-nums;
+  font-size: 1.35rem;
   font-weight: 600;
-  line-height: 1.25;
-  color: var(--c-on-dark-muted);
+  line-height: 1.1;
+  color: var(--c-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Tên bàn là chỗ khách xác nhận đúng bàn: tên dài xuống tối đa 2 dòng (cỡ chữ co theo bề ngang) thay vì bị cắt (review G3) */
+/* Tên bàn là chỗ khách xác nhận đúng bàn: chữ đậm vừa, tên dài xuống tối đa 2 dòng thay vì bị cắt (review G3 TASK-065) */
 .c-table {
-  font-size: clamp(1rem, 4.6vw, 1.2rem);
-  font-weight: 800;
-  line-height: 1.15; /* 2 dòng + tên quán vừa trong 66px */
+  margin-top: 0.1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -55,12 +57,12 @@ body.customer .toasts {
 }
 .c-header .btn {
   flex: none;
-  background: var(--c-espresso-2);
-  border-color: rgba(234, 220, 203, 0.35);
-  color: #fff;
+  background: transparent;
+  border-color: var(--c-input-border);
+  color: var(--c-text);
 }
 .c-header .btn:hover {
-  background: #45311f;
+  background: var(--c-surface-2);
 }
 
 .c-tabs {
@@ -79,12 +81,39 @@ body.customer .toasts {
 .c-tabs .chip {
   flex: none;
 }
-/* Bóng dưới thanh danh mục chỉ ở trang khách (quầy dùng lại .c-tabs dạng tĩnh ở Bán mang đi / Gọi món tại bàn) */
-body.customer .c-tabs {
-  box-shadow: 0 6px 12px -10px rgba(42, 27, 18, 0.35);
-}
 .c-tabs::-webkit-scrollbar {
   display: none;
+}
+/* Khách: nhóm món là chữ, vạch đồng trượt theo nhóm đang xem (ADR-042 D-193). Quầy (Bán mang đi / Gọi món tại bàn) vẫn dùng chip */
+body.customer .c-tabs {
+  gap: 1.4rem;
+  padding: 0 1rem;
+}
+body.customer .c-tabs .chip {
+  position: relative;
+  min-height: 2.75rem; /* 44px */
+  padding: 0 0.1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--c-muted);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+body.customer .c-tabs .chip:hover,
+body.customer .c-tabs .chip.active {
+  color: var(--c-text);
+}
+.tab-ink {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 2px;
+  background: var(--c-accent);
+  transform-origin: 0 0;
+  transition: transform var(--dur-3) var(--ease-out);
+  pointer-events: none;
 }
 .c-menu {
   padding: 0.25rem 1rem 1rem;
@@ -92,92 +121,97 @@ body.customer .c-tabs {
   margin: 0 auto;
 }
 .c-section {
-  scroll-margin-top: 8.25rem;
+  scroll-margin-top: 7.25rem; /* đầu trang 66 px + thanh nhóm món 45 px */
 }
-/* Tiêu đề nhóm món: chữ có chân + đường kẻ mảnh */
+/* Tiêu đề nhóm món: chữ có chân lớn, không biểu tượng, không gạch trang trí */
 .c-section h2 {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
   font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-variant-numeric: lining-nums;
+  font-size: 1.7rem;
+  font-weight: 600;
+  line-height: 1.15;
   letter-spacing: 0;
-  margin: 1.35rem 0 0.7rem;
+  margin: 1.75rem 0 0.15rem;
 }
-.c-section h2::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--c-border);
-}
-.c-section h2 .ic {
-  margin: 0;
-  color: var(--c-accent-600);
-}
-/* Thẻ món nổi bằng bóng, không viền (độ nổi khai báo một lần — ADR-013 D-56) */
+/* Món: dòng phẳng như thực đơn in — tên, giá, đường kẻ mảnh; ảnh chỉ khi quán có ảnh thật, không còn ô chữ cái (ADR-042 D-193).
+   Bấm vào đâu trên dòng cũng mở bảng chọn (lớp phủ của nút tên món); "+", tim, "Chọn size" nằm trên lớp phủ */
 .c-item {
+  position: relative;
   display: flex;
-  gap: 0.85rem;
+  gap: 0.9rem;
   align-items: center;
-  background: var(--c-surface);
-  border-radius: 16px;
-  padding: 0.75rem 0.8rem 0.75rem 0.75rem;
-  margin-bottom: 0.7rem;
-  box-shadow: var(--shadow);
+  padding: 0.95rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.c-section .c-item:last-child {
+  border-bottom: 0;
 }
 .c-item .thumb {
-  width: 72px;
-  height: 72px;
-  border-radius: 14px;
-  background: linear-gradient(145deg, #f4e4d0, #e7d0b3);
-  color: var(--c-primary-600);
-  font-size: 1.65rem;
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+  background: var(--c-surface-2);
 }
 .c-item.soldout {
   opacity: 0.55;
 }
 .c-item-name {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 500;
+  font-size: 1.02rem;
   line-height: 1.35;
 }
 .c-item-price {
-  margin-top: 0.15rem;
-  color: var(--c-primary);
-  font-weight: 800;
-  font-size: 1rem;
+  margin-top: 0.2rem;
+  color: var(--c-text);
+  font-weight: 400;
+  font-size: 0.95rem;
   font-variant-numeric: tabular-nums;
 }
+.c-item .c-control,
+.c-item .fav-btn,
+.c-item .link-btn {
+  position: relative;
+  z-index: 1;
+}
 .add-btn {
+  display: inline-grid;
+  place-items: center;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: none;
-  background: var(--c-primary);
-  color: #fff;
-  font-size: 1.55rem;
+  border: 1px solid var(--c-input-border);
+  background: var(--c-surface);
+  color: var(--c-text);
   line-height: 1;
   cursor: pointer;
   flex: none;
-  box-shadow: 0 4px 10px -4px rgba(95, 52, 28, 0.6);
   transition:
-    background 0.15s,
-    transform 0.05s;
+    background var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
   touch-action: manipulation;
 }
+.add-btn .ic {
+  width: 1.3rem;
+  height: 1.3rem;
+  margin: 0;
+  stroke-width: 1.75;
+}
 .add-btn:hover {
-  background: var(--c-primary-600);
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
 }
 .add-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.92);
 }
 .stepper {
   display: inline-flex;
   align-items: center;
-  border: 1px solid var(--c-border);
-  border-radius: 999px;
-  background: var(--c-primary-50);
+  border: 1px solid var(--c-input-border);
+  border-radius: 10px;
+  background: var(--c-surface);
   flex: none;
 }
 .stepper button {
@@ -185,19 +219,29 @@ body.customer .c-tabs {
   height: 40px;
   border: none;
   background: transparent;
-  font-size: 1.3rem;
+  font: inherit;
+  font-size: 1.25rem;
   cursor: pointer;
-  color: var(--c-primary);
-  border-radius: 50%;
+  color: var(--c-text);
+  border-radius: 9px;
   touch-action: manipulation;
+  transition: background var(--dur-1) var(--ease-out);
+}
+.stepper button:hover:not(:disabled) {
+  background: var(--c-surface-2);
+}
+.stepper button:disabled {
+  color: var(--c-input-border);
+  cursor: default;
 }
 .stepper span {
   min-width: 26px;
   text-align: center;
-  font-weight: 800;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Thanh giỏ nổi: nút espresso, số món trên nền caramel nhạt */
+/* Thanh giỏ nổi màu mực; thêm món → thanh nảy nhẹ, số món / tổng tiền đổi ngay (thay thông báo xanh — ADR-042 D-192) */
 .c-cartbar {
   position: fixed;
   left: 0;
@@ -205,37 +249,54 @@ body.customer .c-tabs {
   bottom: 0;
   z-index: 40;
   padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-  background: linear-gradient(rgba(246, 239, 229, 0), var(--c-bg) 35%);
+  background: linear-gradient(rgba(247, 246, 243, 0), var(--c-bg) 40%);
+  animation: cartbar-in var(--dur-3) var(--ease-sheet); /* chạy mỗi lần thanh hiện lại (bỏ [hidden]) */
 }
 .c-cartbar .btn {
   max-width: 640px;
   min-height: 56px;
   margin: 0 auto;
   justify-content: space-between;
-  border-radius: 16px;
-  background: var(--c-espresso);
-  border-color: var(--c-espresso);
+  gap: 0.75rem;
+  border-radius: 14px;
+  background: var(--c-text);
+  border-color: var(--c-text);
   box-shadow: var(--shadow-lg);
+  font-weight: 500;
 }
 .c-cartbar .btn:hover {
-  background: var(--c-espresso-2);
+  background: #2e2a26;
+}
+.c-cartbar.bump .btn {
+  animation: cart-bump var(--dur-3) var(--ease-out);
+}
+@keyframes cartbar-in {
+  from {
+    transform: translateY(120%);
+  }
+}
+@keyframes cart-bump {
+  35% {
+    transform: scale(1.03);
+  }
 }
 .cart-count {
   min-width: 1.9rem;
-  border-radius: 999px;
-  padding: 0.1rem 0.6rem;
-  background: var(--c-accent-100);
-  color: var(--c-espresso);
-  font-weight: 800;
+  border-radius: 6px;
+  padding: 0.1rem 0.5rem;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-weight: 600;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 #cart-total {
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 .cart-line {
-  padding: 0.75rem 0;
+  padding: 0.85rem 0;
   border-bottom: 1px solid var(--c-border);
 }
 .cart-line:last-child {
@@ -244,24 +305,34 @@ body.customer .c-tabs {
 .cart-line.unavailable {
   background: var(--c-danger-50);
   margin: 0 -1.25rem;
-  padding: 0.75rem 1.25rem;
+  padding: 0.85rem 1.25rem;
+}
+/* Sửa xong một món trong giỏ: dòng sáng lên rồi nhạt dần (phản hồi tại chỗ thay thông báo) */
+.cart-line.updated {
+  animation: line-flash 1.2s var(--ease-out);
+}
+@keyframes line-flash {
+  from {
+    background: var(--c-primary-50);
+  }
 }
 .note-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.4rem;
   margin-top: 0.4rem;
 }
 .note-chips .chip {
-  font-size: 0.8rem;
-  padding: 0.2rem 0.6rem;
+  min-height: 36px;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
 }
 .cart-total {
   display: flex;
   justify-content: space-between;
   font-size: 1.15rem;
-  font-weight: 800;
-  padding-top: 0.75rem;
+  font-weight: 600;
+  padding-top: 0.85rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -275,52 +346,53 @@ body.customer .c-tabs {
   text-align: center;
   margin-bottom: 1.5rem;
 }
-/* Biểu tượng trong khung tròn như miệng tách */
+/* Biểu tượng nét mảnh trong vòng tròn viền tóc (ADR-042: bỏ khung kép kiểu "miệng tách") */
 .c-hero .logo {
   display: grid;
   place-items: center;
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 0.9rem;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1rem;
   border-radius: 50%;
-  background: var(--c-primary-50);
-  box-shadow:
-    inset 0 0 0 6px var(--c-surface),
-    0 0 0 1px var(--c-border);
-  color: var(--c-primary);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  color: var(--c-text);
   line-height: 1;
 }
 .c-hero .logo .ic {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 1.75rem;
+  height: 1.75rem;
   margin: 0;
-  stroke-width: 1.75;
+  stroke-width: 1.5;
 }
 .c-hero .logo.warn {
-  background: var(--c-warning-50);
   color: var(--c-warning-text);
 }
 .c-hero h1 {
-  font-size: 1.6rem;
+  font-size: 2.2rem;
 }
 .c-choice {
   display: block;
   width: 100%;
   text-align: left;
-  border: 2px solid var(--c-primary);
+  border: 1px solid var(--c-text);
   background: var(--c-surface);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 1rem 1.1rem;
   margin-bottom: 0.8rem;
   font: inherit;
   cursor: pointer;
   color: var(--c-text);
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
 }
 .c-choice:hover {
-  background: var(--c-primary-50);
+  background: var(--c-surface-2);
+}
+.c-choice:active {
+  transform: scale(0.99);
 }
 .c-choice strong,
 .c-choice span {
@@ -328,7 +400,8 @@ body.customer .c-tabs {
 }
 .c-choice strong {
   font-size: 1.05rem;
-  color: var(--c-primary);
+  font-weight: 600;
+  color: var(--c-text);
 }
 .c-choice.alt {
   border-color: var(--c-border);
@@ -360,14 +433,13 @@ body.customer .c-tabs {
   margin: 0 auto;
   padding: 1rem;
 }
-/* Thẻ đơn nổi bằng bóng; viền chỉ hiện khi mang trạng thái (đã xong = viền xanh) */
+/* Thẻ đơn phẳng, viền tóc (ADR-042 — bỏ bóng); đã xong = viền xanh */
 .order-card {
   background: var(--c-surface);
-  border: 1px solid transparent;
-  border-radius: 16px;
-  padding: 0.9rem 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.05rem;
   margin-bottom: 0.8rem;
-  box-shadow: var(--shadow);
 }
 .order-card.completed {
   border-color: #bcd8c0;
@@ -391,25 +463,36 @@ body.customer .c-tabs {
   font-size: 0.82rem;
   color: var(--c-warning-text);
 }
+/* Tiến trình đơn thành 3 bước có chữ (ADR-042 D-193): Đã gửi → Đang chuẩn bị → Xong; bước đã qua vạch xanh, bước hiện tại chữ đậm */
 .progress {
-  display: flex;
-  gap: 0.35rem;
-  margin-top: 0.6rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin-top: 0.75rem;
 }
 .progress span {
-  flex: 1;
-  height: 6px;
-  border-radius: 99px;
-  background: var(--c-border);
+  padding-top: 0.4rem;
+  border-top: 3px solid var(--c-border);
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--c-muted);
+  transition:
+    border-color var(--dur-3) var(--ease-out),
+    color var(--dur-3) var(--ease-out);
 }
 .progress span.on {
-  background: var(--c-success);
+  border-top-color: var(--c-success);
+  color: var(--c-text);
+}
+.progress span.now {
+  font-weight: 600;
 }
 .c-summary {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-weight: 800;
+  font-weight: 600;
   font-size: 1.2rem;
   padding: 0.6rem 0.25rem 1rem;
   font-variant-numeric: tabular-nums;
@@ -425,7 +508,7 @@ body.customer .c-tabs {
   padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom));
   background: var(--c-surface);
   border-top: 1px solid var(--c-border);
-  box-shadow: 0 -8px 24px -16px rgba(42, 27, 18, 0.45);
+  box-shadow: 0 -10px 28px -20px rgba(29, 26, 23, 0.35);
 }
 .c-actions .btn {
   flex: 1;
@@ -434,8 +517,8 @@ body.customer .c-tabs {
   border-radius: var(--radius);
   padding: 1rem;
   margin-bottom: 1rem;
-  background: var(--c-info-50);
-  border: 1px solid #c3d5e8;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
 }
 .pay-status .timer {
   font-family: var(--mono);
@@ -472,19 +555,21 @@ body.customer .c-tabs {
 .chip.special {
   border-color: var(--c-accent);
 }
+/* Nhãn nhỏ trên tên món ("Bán chạy", khuyến mãi): viền tóc, chữ nhỏ — không tô khối màu (ADR-042) */
 .tag {
   display: inline-block;
-  margin-left: 0.35rem;
-  padding: 0.05rem 0.45rem;
-  border-radius: 999px;
-  background: var(--c-primary-50);
-  color: var(--c-primary);
+  margin-left: 0.4rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  color: var(--c-muted);
   font-size: 0.72rem;
-  font-weight: 700;
-  vertical-align: middle;
+  font-weight: 600;
+  line-height: 1.5;
+  vertical-align: 0.1em;
 }
 .tag.promo {
-  background: var(--c-danger-50);
+  border-color: #efc9c3;
   color: var(--c-danger);
 }
 .save {
@@ -492,23 +577,32 @@ body.customer .c-tabs {
   font-weight: 600;
 }
 .promo-card {
-  border: 1px dashed var(--c-accent);
-  background: var(--c-warning-50);
-  border-radius: 12px;
-  padding: 0.7rem 0.9rem;
-  margin-bottom: 0.7rem;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.95rem;
+  margin: 0.6rem 0;
 }
 .qty-badge {
   display: inline-grid;
   place-items: center;
-  min-width: 1.6rem;
-  height: 1.6rem;
-  margin-right: 0.35rem;
+  min-width: 1.55rem;
+  height: 1.55rem;
+  padding: 0 0.35rem;
+  margin-right: 0.5rem;
   border-radius: 999px;
-  background: var(--c-primary);
+  background: var(--c-text);
   color: #fff;
-  font-weight: 800;
-  font-size: 0.85rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  animation: badge-pop var(--dur-2) var(--ease-out);
+}
+@keyframes badge-pop {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
 }
 .c-control {
   display: flex;
@@ -517,26 +611,38 @@ body.customer .c-tabs {
 .opt-labels,
 .line-opts {
   display: block;
-  color: var(--c-primary);
+  color: var(--c-muted);
   font-size: 0.82rem;
 }
 .opt-picker .opt-group {
   border: 0;
-  margin: 0 0 0.9rem;
+  margin: 0 0 1.1rem;
   padding: 0;
 }
 .opt-picker legend {
-  font-weight: 800;
-  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: baseline;
+  width: 100%;
+  padding: 0;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
 }
 .opt-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.55rem 0.2rem;
+  gap: 0.7rem;
+  min-height: 3rem;
+  padding: 0.35rem 0.2rem;
   border-bottom: 1px solid var(--c-border);
-  font-weight: 500;
+  font-weight: 400;
   cursor: pointer;
+  transition: background var(--dur-1) var(--ease-out);
+}
+.opt-row:hover {
+  background: var(--c-bg);
+}
+.opt-row:has(input:checked) {
+  font-weight: 500;
 }
 .opt-row input {
   width: 1.15rem;
@@ -555,14 +661,21 @@ body.customer .c-tabs {
   gap: 0.6rem;
   width: 100%;
   text-align: left;
-  border: 1px dashed var(--c-accent);
-  background: var(--c-warning-50);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
   border-radius: var(--radius);
-  padding: 0.7rem 0.9rem;
+  padding: 0.75rem 0.95rem;
   margin-bottom: 0.9rem;
   font: inherit;
   color: var(--c-text);
   cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease-out);
+}
+.member-box:hover {
+  border-color: var(--c-input-border);
+}
+.member-box > .ic-star {
+  color: var(--c-accent);
 }
 .member-box.on {
   border-style: solid;
@@ -586,10 +699,10 @@ body.customer .c-tabs {
   grid-template-columns: 1fr auto;
   gap: 0.25rem 0.6rem;
   align-items: center;
-  background: var(--c-primary-50);
-  border: 1px solid #e8d3bd;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
   border-radius: var(--radius);
-  padding: 0.75rem 0.9rem;
+  padding: 0.75rem 0.95rem;
   margin: 0.75rem 0;
 }
 .recall-card > .small.muted {
@@ -616,12 +729,22 @@ body.customer .c-tabs {
   height: 1.35rem;
   margin: 0;
 }
+/* Thời gian chờ: chữ mực + đồng hồ màu đồng (ADR-042 — bỏ hộp / chữ xanh dương) */
 .eta {
-  color: var(--c-info);
-  font-weight: 600;
+  color: var(--c-text);
+  font-weight: 500;
+}
+.eta > .ic {
+  color: var(--c-accent);
 }
 .alert.eta {
   margin-bottom: 0.6rem;
+}
+/* Hộp thông tin ở màn khách (thời gian chờ, đã gọi nhân viên, phần chia bill của bạn): nền trắng viền tóc, chữ mực */
+body.customer .alert.info {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
 }
 .split-summary {
   margin-top: 0.6rem;
@@ -691,7 +814,9 @@ body.customer .c-tabs {
 }
 .review-box h2 {
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-variant-numeric: lining-nums;
+  font-size: 1.4rem;
+  font-weight: 600;
   letter-spacing: 0;
   margin: 0 0 0.5rem;
 }
@@ -748,10 +873,21 @@ body.customer .c-tabs {
   color: var(--c-muted);
 }
 
-/* Giảm chuyển động (ADR-013 D-56): nút "+" không co lại khi bấm */
+/* Giảm chuyển động (ADR-013 D-56, ADR-042): nút không co khi bấm; vạch nhóm món nhảy thẳng; thanh giỏ / số lượng / dòng vừa sửa không nảy, không sáng */
 @media (prefers-reduced-motion: reduce) {
-  .add-btn:active {
+  .add-btn:active,
+  .c-choice:active {
     transform: none;
+  }
+  .tab-ink,
+  .progress span {
+    transition: none;
+  }
+  .qty-badge,
+  .c-cartbar,
+  .c-cartbar.bump .btn,
+  .cart-line.updated {
+    animation: none;
   }
 }
 
@@ -762,7 +898,7 @@ body.customer .c-tabs {
   padding: 1rem 1rem 3rem;
 }
 .policy h1 {
-  font-size: 1.35rem;
+  font-size: 1.9rem;
   margin: 0.5rem 0;
 }
 .policy h2 {
@@ -810,7 +946,8 @@ body.customer .c-tabs {
 }
 .spin-page h1 {
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-variant-numeric: lining-nums;
+  font-size: 1.7rem;
   margin: 0.5rem 0 0.25rem;
 }
 .wheel-wrap {
@@ -896,7 +1033,9 @@ body.customer .c-tabs {
 }
 .spin-result h2 {
   font-family: var(--font-display);
-  font-size: 1.2rem;
+  font-variant-numeric: lining-nums;
+  font-size: 1.5rem;
+  font-weight: 600;
   margin: 0.25rem 0 0.5rem;
 }
 .spin-result .big {
@@ -911,10 +1050,10 @@ body.customer .c-tabs {
   display: inline-block;
   margin: 0.25rem 0 0.5rem;
   padding: 0.45rem 1rem;
-  border: 2px dashed var(--c-accent);
+  border: 1px dashed var(--c-input-border);
   border-radius: var(--radius-sm);
-  background: var(--c-primary-50);
-  color: var(--c-primary-600);
+  background: var(--c-surface);
+  color: var(--c-text);
   font-family: var(--mono);
   font-size: 1.6rem;
   font-weight: 800;
@@ -946,31 +1085,72 @@ body.customer .c-tabs {
   outline-offset: 2px;
   border-radius: 4px;
 }
-.c-item:not(.soldout) > .thumb {
+/* ADR-042 D-193: lớp phủ của nút tên món trùm cả dòng món → bấm vào đâu trên dòng cũng mở bảng chọn */
+.c-item .c-name-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.c-item .c-name-btn {
   cursor: pointer;
 }
+.c-item .link-btn {
+  margin-top: 0.1rem;
+  color: var(--c-muted);
+  font-weight: 500;
+  white-space: nowrap; /* "Chọn size / tùy chọn ›" không rớt dấu "›" xuống dòng riêng */
+}
+.c-item .link-btn:hover {
+  color: var(--c-text);
+}
+/* Đầu bảng chọn: ảnh lớn khi quán có ảnh thật; giá, nhãn khuyến mãi, thành phần combo */
 .item-sheet-head {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.6rem;
+}
+.item-photo {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: var(--radius);
+  background: var(--c-surface-2);
+  margin-bottom: 0.75rem;
 }
 .item-sheet-head .c-item-price {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
 }
 .item-note {
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
+}
+.item-note label {
+  font-weight: 600;
+  font-size: 1rem;
 }
 .item-note .note-chips {
-  margin: 0.15rem 0 0.4rem;
+  margin: 0.15rem 0 0.5rem;
 }
-.item-qty {
+/* Chân bảng chọn món: số lượng nằm cạnh nút "Thêm vào giỏ · tổng" — một vùng cho ngón cái, bỏ nút "Hủy" thừa (ADR-042 D-193) */
+.item-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.5rem 0;
-  font-weight: 600;
+  gap: 0.75rem;
+  width: 100%;
+}
+.item-foot .btn-primary {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  padding-inline: 0.75rem;
+  white-space: nowrap;
+}
+.item-foot .stepper button {
+  width: 40px;
+  height: 50px;
+}
+/* Màn rất hẹp (≤ 360 px): chữ nút được xuống dòng thay vì tràn */
+@media (max-width: 360px) {
+  .item-foot .btn-primary {
+    white-space: normal;
+  }
 }
 
 /* F-082 (ADR-040): giỏ gọn — bấm vào món để sửa (mở lại bảng chọn), không còn ô ghi chú / nút nhanh trong giỏ */

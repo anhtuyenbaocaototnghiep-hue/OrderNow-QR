@@ -297,7 +297,9 @@ describe('Tính lương từ chấm công (F-073)', () => {
     const week = ok(await call(admin, 'get', `/api/admin/payroll-week?from=${monday}`));
     const ha = week.people.find((p) => p.userId === users.thuha);
     assert.ok(ha && ha.scheduledMinutes >= 360 && ha.paidMinutes >= 360, JSON.stringify(week.people));
-    const today = ok(await call(admin, 'get', `/api/admin/payroll-week?from=${todayVn()}`));
+    // Báo cáo tính từ ngày (giờ VN) mở ca — ca mở 5 giờ trước: chạy test lúc 0–5 giờ sáng thì ca thuộc hôm qua (TASK-101 sửa test phụ thuộc giờ chạy)
+    const shiftDay = new Date(Date.now() - 5 * 3600e3 + 7 * 3600e3).toISOString().slice(0, 10);
+    const today = ok(await call(admin, 'get', `/api/admin/payroll-week?from=${shiftDay}`));
     assert.ok(
       today.edits.some((e) => e.userId === users.admin && e.count >= 2),
       'sửa / thêm tay tính theo ngày sửa',

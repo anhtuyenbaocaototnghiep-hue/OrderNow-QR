@@ -41,7 +41,7 @@ function optionGroups(item, modifierGroups, { initial = null, errorEl, onChange 
     return el(
       'fieldset',
       { class: 'opt-group' },
-      el('legend', {}, g.name, ' ', el('span', { class: 'muted small' }, `(${hint})`)),
+      el('legend', {}, el('span', {}, g.name), el('span', { class: `opt-hint${g.minSelect > 0 ? ' req' : ''}` }, hint)),
       g.options.map((o) => {
         const input = el('input', {
           type: single ? 'radio' : 'checkbox',
@@ -120,7 +120,8 @@ export function pickOptions(item, modifierGroups, { initial = null, sheet = true
  * tùy chọn (size, topping… — lựa chọn mặc định chọn sẵn), ghi chú nhanh (nút) + ô ghi chú, số lượng; nút "Thêm vào giỏ · tổng".
  * `head` = phần đầu (ảnh, giá, mô tả combo…) do trang dựng. Không tự đưa bàn phím lên (nút chính được focus, không phải ô ghi chú).
  * F-082 (ADR-040): sửa món trong giỏ → `initial` = { optionIds, note, quantity } của dòng, `confirmLabel` = 'Cập nhật'.
- * → Promise { optionIds, optionLabels, optionDelta, note, quantity } | null (đóng / Hủy).
+ * ADR-042 D-193: số lượng nằm ở chân bảng cạnh nút xác nhận; không còn nút "Hủy" / dòng "Giá 1 phần" (nút đã ghi tổng).
+ * → Promise { optionIds, optionLabels, optionDelta, note, quantity } | null (đóng).
  */
 export function pickItem(
   item,
@@ -128,12 +129,10 @@ export function pickItem(
   { head = null, noteChips = [], allowNote = true, maxQty = 50, initial = null, confirmLabel = 'Thêm vào giỏ' } = {},
 ) {
   const errorEl = el('div', { class: 'field-error', hidden: true });
-  const unitEl = el('strong');
   let qty = Math.min(maxQty, Math.max(1, Math.floor(initial?.quantity ?? 1)));
   let confirmBtn = null;
   const unitPrice = () => item.price + opts.chosen().reduce((s, o) => s + o.priceDelta, 0);
   const refresh = () => {
-    unitEl.textContent = money(unitPrice());
     qtyEl.textContent = String(qty);
     minus.disabled = qty <= 1;
     plus.disabled = qty >= maxQty;
@@ -196,35 +195,28 @@ export function pickItem(
           note,
         )
       : null,
-    el('div', { class: 'item-qty' }, el('span', {}, 'Số lượng'), el('div', { class: 'stepper' }, minus, qtyEl, plus)),
-    el('div', { class: 'opt-total' }, el('span', {}, 'Giá 1 phần'), unitEl),
   );
 
-  const m = modal({
-    title: item.name,
-    sheet: true,
-    body,
-    actions: [
-      { label: 'Hủy', value: null },
-      {
-        label: confirmLabel,
-        class: 'btn-primary',
-        onClick: (close) => {
-          const g = opts.missing();
-          if (g) {
-            errorEl.textContent = `Vui lòng chọn ${g.name}`;
-            errorEl.hidden = false;
-            errorEl.scrollIntoView({ block: 'nearest' });
-            return false;
-          }
-          close({ ...describe(opts.chosen()), note: allowNote ? note.value.trim().slice(0, 200) : '', quantity: qty });
-          return false;
-        },
-      },
-    ],
+  // ADR-042 D-193: chân bảng = số lượng + "Thêm vào giỏ · tổng" trên một hàng (vùng ngón cái); đóng bằng "×", vuốt xuống hoặc bấm ra ngoài
+  let m = null;
+  confirmBtn = el('button', {
+    class: 'btn btn-primary',
+    type: 'button',
+    onclick: () => {
+      const g = opts.missing();
+      if (g) {
+        errorEl.textContent = `Vui lòng chọn ${g.name}`;
+        errorEl.hidden = false;
+        errorEl.scrollIntoView({ block: 'nearest' });
+        return;
+      }
+      m.close({ ...describe(opts.chosen()), note: allowNote ? note.value.trim().slice(0, 200) : '', quantity: qty });
+    },
   });
-  confirmBtn = m.root.querySelector('.modal-foot .btn-primary');
+  const foot = el('div', { class: 'item-foot' }, el('div', { class: 'stepper', role: 'group', 'aria-label': 'Số lượng' }, minus, qtyEl, plus), confirmBtn);
+
+  m = modal({ title: item.name, sheet: true, body, foot });
   refresh();
-  confirmBtn?.focus(); // không mở bàn phím điện thoại bằng ô ghi chú
+  confirmBtn.focus(); // không mở bàn phím điện thoại bằng ô ghi chú
   return m.result.then((v) => (v && typeof v === 'object' ? v : null));
 }
