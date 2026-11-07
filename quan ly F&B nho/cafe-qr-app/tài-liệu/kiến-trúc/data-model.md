@@ -1316,3 +1316,9 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Thành phần | Nội dung |
 | --- | --- |
 | Migration `0053_quan_ly_cua_hang.sql` | `CK_Users_Role`: `STAFF`, `MANAGER`, `STORE_MGR`, `ADMIN`. `Alerts.Kind` thêm `PRICE_CHANGE` (`UserId` = người đổi, `Detail` = `{ menuItemId, name, oldPrice, newPrice, by }`) |
+
+### Vị trí và cấp nhân viên (FEATURE-078, ADR-036, TASK-095, 07/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0054_vi_tri_cap_nhan_vien.sql` | `Users.Positions VARCHAR(40) NULL` (`'CASHIER,BARISTA'` — chỉ chữ hoa và dấu phẩy; NULL = mọi vị trí), `Users.StaffLevel VARCHAR(10) NOT NULL DEFAULT 'OFFICIAL'` (`PROBATION` / `OFFICIAL`). Vai khác STAFF luôn lưu NULL / `OFFICIAL` (`usersRepo`) |

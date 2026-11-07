@@ -94,6 +94,12 @@ Bằng chứng: `members.test.js` (giảm tay vượt ngưỡng), `finance.test.
 - Cài đặt: `PUT /api/admin/settings` của STORE_MGR chỉ nhận `STORE_MGR_SETTINGS`; `GET` để trống `alertEmails`.
 - Cảnh báo: STORE_MGR không thấy `OWNER_ONLY_ALERTS` (`AUTH_LOCK`, `PRICE_CHANGE`), không xử lý cảnh báo có `UserId` = mình (`403 SELF_ALERT`); realtime phòng `store`.
 
+### 3.6. Bổ sung F-078 — vị trí và cấp nhân viên (ADR-036, 07/11/2026)
+
+- `requirePosition(...positions)` (sau `requireStaff` / `requirePermission`) — `hasPosition`: vai khác STAFF hoặc `positions` rỗng → qua; không thì cần một vị trí trong danh sách, sai → `403 POSITION_REQUIRED`. Mang `.positions` → Tra cứu API ghi `positions` từng dòng.
+- Gắn ở: `staff.js` (bán mang đi, thu tiền bàn / chia bill, mở / đóng ca, hoàn tiền — CASHIER; tiếp nhận / hoàn tất — BARISTA; mở bàn, gọi món tại bàn, chuyển bàn — SERVER), `finance.js` (ghi thu chi — CASHIER), `giftDrinks.js` (bán ly treo — CASHIER), `ops.js` (sơ chế, hủy hàng, hủy lô, nhận hàng — BARISTA). Không gắn ở gửi bù đơn mất mạng.
+- Thử việc (`isProbation`): `discountRole` → `discountLimits('PROBATION')` = 0; `cashService.create` ngưỡng 0; `voidService.approverFor` luôn cần người duyệt.
+
 ## 4. Sở hữu tài nguyên và dữ liệu chỉ dành cho nhân viên
 
 | Dữ liệu | Khách (`ACT-GUEST` / `ACT-MEMBER`) | Nhân viên | Cơ chế |

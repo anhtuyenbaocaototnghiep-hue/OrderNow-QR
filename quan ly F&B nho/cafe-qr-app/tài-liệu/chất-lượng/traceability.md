@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 451 test, sửa lúc 2026-11-07 08:22 UTC
-- `npm run test:e2e` (JSON): 70 test, sửa lúc 2026-11-07 08:32 UTC
+- `npm test` (JUnit): 456 test, sửa lúc 2026-11-07 08:44 UTC
+- `npm run test:e2e` (JSON): 71 test, sửa lúc 2026-11-07 08:53 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 174 |
-| Acceptance Criteria | 475 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 475 |
+| User Story | 176 |
+| Acceptance Criteria | 481 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 481 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -570,4 +570,10 @@
 | AC-077-06 | TC-077-06 | F-077 | US-077-2 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-NOTIFY | SCR-47, SCR-21 | BR-115 | Integration: `store-manager.test.js` › AC-077-06: cảnh báo — quản lý cửa hàng không thấy khóa đăng nhập (AUTH_LOCK), không xử lý cảnh báo về chính mình (SELF_ALERT), xử lý được cảnh báo khác; số "Mới" tính theo phần được thấy — **PASS** | **PASS** |
 | AC-077-07 | TC-077-07 | F-077 | US-077-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-42, SCR-10 | BR-115 | Integration: `store-manager.test.js` › AC-077-07: chấm công — quản lý cửa hàng sửa chấm công ngày cũ của người khác (trưởng ca bị ATTENDANCE_NOT_TODAY), không sửa của mình; trang Hôm nay bản đủ; Tra cứu API ghi đúng vai được gọi — **PASS**<br>Integration: `api-docs.test.js` › AC-052-01 (review G3): quyền ghi trên trang khớp server ở mọi endpoint — không token → 401 (Nhân viên / Trưởng ca / Quản lý); nhân viên → 403 (Trưởng ca / Quản lý); trưởng ca → 403 (Quản lý) — **PASS** | **PASS** |
 | AC-077-08 | TC-077-08 | F-077 | US-077-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-42, SCR-10 | BR-115 | E2E: `flow.spec.js` › phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở Tài khoản (có bảng "Mỗi vai trò làm được gì?"); quản lý cửa hàng đăng nhập → máy quầy có "Quản lý" → trang Quản lý chỉ có mục vận hành (không Lãi / lỗ, Lương, Tài khoản, Cài đặt); đổi giá món → chủ quán thấy cảnh báo đổi giá; mở thẳng Lãi / lỗ → về quầy (F-077, AC-077-08) — **PASS** | **PASS** |
+| AC-078-01 | TC-078-01 | F-078 | US-078-1 | ACT-ADMIN, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ORDER, MOD-BILLING | SCR-20, SCR-10 | BR-116 | Integration: `staff-positions.test.js` › AC-078-01: chủ quán đặt vị trí + cấp khi tạo / sửa tài khoản; tài khoản cũ = mọi vị trí, chính thức; vai khác nhân viên bỏ qua vị trí / cấp; vị trí sai / rỗng → 400; sửa không gửi vị trí → giữ nguyên; /auth/me trả vị trí — **PASS** | **PASS** |
+| AC-078-02 | TC-078-02 | F-078 | US-078-1 | ACT-ADMIN, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ORDER, MOD-BILLING | SCR-20, SCR-10 | BR-116 | Integration: `staff-positions.test.js` › AC-078-02: Pha chế — tiếp nhận / hoàn tất đơn, sơ chế, hủy hàng, nhận hàng được; thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi chi quỹ, mở bàn / gọi món tại bàn → 403 POSITION_REQUIRED — **PASS** | **PASS** |
+| AC-078-03 | TC-078-03 | F-078 | US-078-1 | ACT-ADMIN, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ORDER, MOD-BILLING | SCR-20, SCR-10 | BR-116 | Integration: `staff-positions.test.js` › AC-078-03: Phục vụ — mở bàn, gọi món tại bàn, chuyển bàn được; tiếp nhận / hoàn tất, thu tiền, bán mang đi → 403 — **PASS** | **PASS** |
+| AC-078-04 | TC-078-04 | F-078 | US-078-1 | ACT-ADMIN, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ORDER, MOD-BILLING | SCR-20, SCR-10 | BR-116 | Integration: `staff-positions.test.js` › AC-078-04: Thu ngân — bán mang đi, thu tiền, ghi chi quỹ được; tiếp nhận / hoàn tất, mở bàn → 403; nhân viên chưa đặt vị trí và trưởng ca làm được mọi việc; Tra cứu API ghi vị trí — **PASS** | **PASS** |
+| AC-078-05 | TC-078-05 | F-078 | US-078-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-17 | MOD-AUTH, MOD-BILLING, MOD-SHIFT | SCR-20, SCR-14, SCR-15 | BR-116 | Integration: `staff-positions.test.js` › AC-078-05: Thử việc — giảm giá tay bất kỳ cần trưởng ca duyệt (chính thức 5 % tự giảm được), khoản chi nhỏ vẫn chờ duyệt, xóa món của đơn chưa tiếp nhận cần người duyệt — **PASS** | **PASS** |
+| AC-078-06 | TC-078-06 | F-078 | US-078-1, US-078-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-17 | MOD-AUTH, MOD-ORDER, MOD-BILLING, MOD-SHIFT | SCR-20, SCR-10, SCR-14, SCR-15 | BR-116 | E2E: `flow.spec.js` › vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", cấp "Thử việc" ở Tài khoản; người đó đăng nhập → máy quầy chỉ có Đơn hàng, Kho & sơ chế, Giờ công + nhãn "Thử việc"; mở thẳng Bán mang đi → về Đơn hàng kèm lời nhắc (F-078, AC-078-06) — **PASS** | **PASS** |
 

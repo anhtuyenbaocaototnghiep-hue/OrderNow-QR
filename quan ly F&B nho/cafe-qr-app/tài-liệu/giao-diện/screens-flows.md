@@ -473,3 +473,10 @@ flowchart LR
 - **Trang Quản lý (Quản lý cửa hàng):** thanh bên chỉ mục được mở (Hôm nay, Báo cáo & lịch sử, Thực đơn, Kho hàng, Khách hàng, Ca & hoàn tiền, Sổ quỹ, Cảnh báo, Nhân sự & chấm công, Bàn & QR); dưới tên ghi vai. Mở thẳng trang khác → `/pos?denied=admin`. Sổ quỹ không có tab Danh mục thu chi; Nhân sự không có thẻ Cách chấm công, số "chờ duyệt" không thành link Lương; Hội viên không có nút Ẩn danh; mục đang ẩn (chế độ cơ bản) nhắc "Nhờ chủ quán hiện lại".
 - **SCR-47 Cảnh báo:** loại **Quản lý cửa hàng đổi giá món** — giá cũ → mới, người đổi (chỉ chủ quán thấy).
 - **SCR-46 Tra cứu API:** nhãn quyền **Quản lý cửa hàng**, **Chủ quán**.
+
+## F-078 — Vị trí và cấp nhân viên (TASK-095, ADR-036, 07/11/2026)
+
+- **SCR-20 Tài khoản:** hộp Thêm / Sửa có nhóm **Vị trí (để trống = mọi việc)** — ô Thu ngân, Pha chế, Phục vụ — và **Cấp** (Chính thức / Thử việc), chỉ hiện khi vai trò là Nhân viên quầy; cột Vai trò thêm dòng vị trí ("Mọi vị trí" / "Thu ngân, Pha chế") và nhãn vàng **Thử việc**; thẻ "Mỗi vai trò làm được gì?" thêm danh sách vị trí.
+- **Máy quầy:** menu chỉ trang của vị trí (Pha chế: Đơn hàng, Kho & sơ chế, Giờ công; Phục vụ: Đơn hàng, Gọi món tại bàn, Giờ công; Thu ngân: Đơn hàng, Bán mang đi, Ca & hoàn tiền, Giờ công); mở thẳng trang khác → `/pos?denied=position` + lời nhắc; nhãn **Thử việc** cạnh tên; chưa mở ca mà không phải thu ngân → dải ghi "Nhờ thu ngân mở ca", nút Ca báo "việc của thu ngân".
+- **SCR-10 Đơn hàng:** không phải Pha chế → phiếu chỉ xem (đơn mới vẫn Hủy); không phải Thu ngân → thẻ bàn "Xem bill", nút thu tiền trong hộp bill khóa; không phải Phục vụ → thẻ bàn không có "Gọi món".
+- **SCR-46 Tra cứu API:** dòng chi tiết thêm "nhân viên cần vị trí …".

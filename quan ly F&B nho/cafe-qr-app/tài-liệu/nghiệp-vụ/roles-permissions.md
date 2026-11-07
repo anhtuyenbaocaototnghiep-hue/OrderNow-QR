@@ -148,3 +148,21 @@ Thứ bậc mới: **Nhân viên** (STAFF) < **Trưởng ca** (MANAGER) < **Qu�
 | Tài khoản & vai, danh mục thu chi, lương / hồ sơ lương / ngày lễ / duyệt giờ công, cách chấm công, chi phí cố định, lãi / lỗ, phân tích, nhật ký, email cảnh báo, Tra cứu API | — | — | — (403 `OWNER_ONLY`) | Có |
 
 Test: `store-manager.test.js` (AC-077-01…07), `api-docs.test.js` "quyền ghi trên trang khớp server" (mọi endpoint chỉ chủ quán → quản lý cửa hàng 403), E2E AC-077-08.
+
+## 4.7. Bổ sung F-078 — vị trí và cấp của nhân viên (ADR-036, 07/11/2026)
+
+Chỉ áp cho vai **Nhân viên** (STAFF). Để trống vị trí = mọi việc (tài khoản cũ). Trưởng ca, quản lý cửa hàng, chủ quán không bị giới hạn. Kiểm ở server: `requirePosition` (`403 POSITION_REQUIRED`).
+
+| Việc ở quầy | Thu ngân | Pha chế | Phục vụ |
+| --- | --- | --- | --- |
+| Bán mang đi, thu tiền bàn / chia bill, mở / đóng ca, hoàn tiền, ghi thu chi quỹ, bán ly treo | Có | — | — |
+| Tiếp nhận / hoàn tất đơn ("Xong"), sơ chế, hủy hàng, hủy lô, nhận hàng theo PO | — | Có | — |
+| Mở bàn, gọi món tại bàn, chuyển bàn | — | — | Có |
+| Xem đơn / bàn / bill, hủy đơn mới, sửa / xóa món (theo luật duyệt), đóng bàn trống, ghi chú bàn, gọi nhân viên, đánh giá thấp, chấm công, Giờ công, bật / tắt nhận đơn QR, gửi bù đơn lúc mất mạng | Có | Có | Có |
+
+| Cấp | Giảm giá tay tự duyệt | Khoản chi quỹ | Sửa / xóa món |
+| --- | --- | --- | --- |
+| Chính thức | ≤ 10 % và ≤ 20.000đ | Chờ duyệt khi vượt ngưỡng / danh mục cần duyệt | Đơn chưa tiếp nhận: tự làm |
+| Thử việc | Không — luôn cần trưởng ca trở lên | Luôn chờ duyệt | Luôn cần người duyệt |
+
+Test: `staff-positions.test.js` (AC-078-01…05), E2E AC-078-06.

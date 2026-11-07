@@ -756,3 +756,11 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `POST /api/cash-transactions/{id}/approve` · `…/reject` · `…/void`: STORE_MGR tự duyệt / duyệt hộ khi số tiền ≤ 3 × `managerCashApproveMax`; quá → `403 ADMIN_APPROVAL_REQUIRED` (chủ quán).
 - `GET /api/dashboard/today`, `GET /api/expiry/risk`: STORE_MGR nhận bản đủ (có tiền) như ADMIN.
 - `GET /api/admin/api-docs`: `access` thêm `STORE_MGR`; `roles` có `STORE_MGR`.
+
+## Bổ sung F-078 — vị trí và cấp nhân viên (ADR-036, TASK-095, 07/11/2026)
+
+- `POST /api/admin/users`, `PUT /api/admin/users/{id}`: thêm `positions` (mảng `CASHIER` / `BARISTA` / `SERVER`, ≥ 1 phần tử, không trùng; `null` = mọi vị trí; vắng khi sửa = giữ nguyên) và `level` (`PROBATION` / `OFFICIAL`). Vai khác STAFF: bỏ qua. Sai → 400.
+- `GET /api/admin/users`, `GET /api/auth/me`: mỗi tài khoản thêm `positions` (mảng hoặc `null`), `level`.
+- Việc theo vị trí (vai STAFF): `POST /api/orders/takeaway`, `…/sessions/{id}/settle`, `…/splits/{id}/settle`, `…/shifts/open`, `…/shifts/{id}/close`, `…/payments/{id}/refunds`, `…/cash-transactions`, `…/gift-drinks` — CASHIER; `POST /api/orders/{id}/accept`, `…/complete`, `…/prep/batches`, `…/waste`, `…/lots/{id}/write-off`, `…/receiving/purchase-orders/{id}/receive` — BARISTA; `POST /api/tables/{id}/sessions`, `…/sessions/{id}/orders`, `…/sessions/{id}/move` — SERVER. Sai → `403 POSITION_REQUIRED`.
+- Nhân viên thử việc: báo giá / thu tiền có giảm tay > 0 → `needsApproval = true`; ghi chi luôn `PENDING`; sửa / xóa món luôn cần `adminUsername` + `adminPassword` (thiếu → `403 ADMIN_APPROVAL_REQUIRED`).
+- `GET /api/admin/api-docs`: mỗi dòng thêm `positions` (`null` = mọi vị trí).
