@@ -1,6 +1,7 @@
 // S-02 Menu + S-03 Giỏ hàng. Luồng chuẩn ≤ 3 chạm (NFR-003/Q-016): "+" món → "Xem giỏ · Gửi đơn" → "Gửi đơn".
 // F-081 (ADR-039): bấm món có tùy chọn ("+" hoặc tên món) → bảng chọn trượt lên ngay (tùy chọn + ghi chú + số lượng) → "Thêm vào giỏ";
 // món không tùy chọn: "+" vẫn thêm ngay (3 chạm), bấm tên món mở bảng chọn để ghi chú / chọn số lượng. Giỏ hàng để xem và gửi.
+// F-082 (ADR-040): giỏ không còn ô ghi chú / nút nhanh — bấm vào món trong giỏ để sửa (mở lại bảng chọn, "Cập nhật").
 // Lỗi hết món (BR-009/Q-005): server từ chối cả đơn → bỏ món đó khỏi giỏ và báo khách.
 // ADR-005: mục Ưu đãi / Gợi ý / Combo, tùy chọn món (món có lựa chọn mặc định vẫn thêm 1 chạm), hội viên SĐT, báo giá từ server.
 // ADR-006: "Lần trước bạn gọi — Gọi lại?" + món yêu thích ♥ (F-045), thời gian chờ ước tính (F-025), menu theo lịch tự tải lại (F-040).
@@ -14,6 +15,7 @@ import {
   loadCart,
   MAX_QTY,
   removeItem,
+  replaceLine,
   saveCart,
   setQuantity,
   syncWithMenu,
@@ -447,11 +449,9 @@ async function quickAdd(item) {
   changed(item.id);
 }
 
-/** F-081 (ADR-039): bảng chọn món trượt lên — tùy chọn, ghi chú, số lượng → "Thêm vào giỏ". */
-async function openItem(item) {
-  if (!item.isAvailable) return toast(`${item.name} đã hết món`, 'warning');
-  const isCombo = item.itemType === 'COMBO';
-  const head = el(
+/** Đầu bảng chọn món: ảnh, giá (giá gạch khi khuyến mãi), nhãn khuyến mãi, thành phần combo. */
+function itemHead(item) {
+  return el(
     'div',
     { class: 'item-sheet-head' },
     thumb(item.name, item.imageUrl),
@@ -460,10 +460,22 @@ async function openItem(item) {
       { class: 'grow' },
       priceNode(item),
       item.promotionBadge ? el('span', { class: 'tag promo' }, item.promotionBadge) : null,
-      isCombo ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity > 1 ? `${c.quantity}× ` : ''}${c.name}`).join(' + ')) : null,
+      item.itemType === 'COMBO'
+        ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity > 1 ? `${c.quantity}× ` : ''}${c.name}`).join(' + '))
+        : null,
     ),
   );
-  const choice = await pickItem(item, state.menu.modifierGroups, { head, noteChips: NOTE_CHIPS, allowNote: !isCombo, maxQty: MAX_QTY });
+}
+
+/** F-081 (ADR-039): bảng chọn món trượt lên — tùy chọn, ghi chú, số lượng → "Thêm vào giỏ". */
+async function openItem(item) {
+  if (!item.isAvailable) return toast(`${item.name} đã hết món`, 'warning');
+  const choice = await pickItem(item, state.menu.modifierGroups, {
+    head: itemHead(item),
+    noteChips: NOTE_CHIPS,
+    allowNote: item.itemType !== 'COMBO',
+    maxQty: MAX_QTY,
+  });
   if (!choice) return;
   addItem(state.cart, item, choice, { quantity: choice.quantity, note: choice.note });
   const extra = [...choice.optionLabels, choice.note].filter(Boolean).join(', ');
@@ -566,75 +578,61 @@ function openCart() {
   renderSheet();
 }
 
+/**
+ * Dòng giỏ (F-082, ADR-040): tên, tùy chọn, ghi chú (chữ), giá + bước số lượng. Không còn ô ghi chú / nút nhanh trong giỏ —
+ * bấm vào món ("Sửa ›") mở lại bảng chọn với lựa chọn cũ, "Cập nhật" thay dòng tại chỗ.
+ */
 function lineNode(line) {
   const item = state.itemsById.get(line.menuItemId);
   const unavailable = !item?.isAvailable;
   const quoted = state.quote?.lines.find((q) => q.menuItemId === line.menuItemId && sameOptions(q.options, line.optionIds));
-  const note = el('input', {
-    class: 'input',
-    maxlength: 200,
-    placeholder: 'Ghi chú (ít đường, nhiều đá…)',
-    value: line.note || '',
-    'aria-label': `Ghi chú cho ${line.name}`,
-    oninput: (e) => {
-      line.note = e.target.value;
-      persist();
-    },
-  });
+  const main = el(
+    'button',
+    { class: 'cart-line-main', type: 'button', 'aria-label': `Sửa ${line.name}`, onclick: () => editLine(line.key) },
+    el('strong', {}, line.name),
+    line.optionLabels?.length ? el('span', { class: 'small opt-labels' }, line.optionLabels.join(', ')) : null,
+    item?.itemType === 'COMBO' ? el('span', { class: 'small muted' }, item.components.map((c) => `${c.quantity}× ${c.name}`).join(' + ')) : null,
+    line.note ? el('span', { class: 'small line-note' }, `Ghi chú: ${line.note}`) : null,
+    el(
+      'span',
+      { class: 'muted small' },
+      quoted && quoted.lineDiscount > 0 ? el('s', {}, money(quoted.listPrice)) : null,
+      quoted && quoted.lineDiscount > 0 ? ' ' : null,
+      money(quoted?.unitPrice ?? line.price),
+      quoted?.promotionName ? el('span', { class: 'tag promo' }, quoted.promotionName) : null,
+    ),
+    unavailable ? el('span', { class: 'field-error' }, 'Món này vừa hết — vui lòng bỏ khỏi giỏ') : el('span', { class: 'edit-hint small' }, 'Sửa ›'),
+  );
   return el(
     'div',
     { class: `cart-line ${unavailable ? 'unavailable' : ''}` },
     el(
       'div',
       { class: 'row between' },
-      el(
-        'div',
-        { class: 'grow' },
-        el('strong', {}, line.name),
-        line.optionLabels?.length ? el('div', { class: 'small opt-labels' }, line.optionLabels.join(', ')) : null,
-        item?.itemType === 'COMBO' ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity}× ${c.name}`).join(' + ')) : null,
-        el(
-          'div',
-          { class: 'muted small' },
-          quoted && quoted.lineDiscount > 0 ? el('s', {}, money(quoted.listPrice)) : null,
-          quoted && quoted.lineDiscount > 0 ? ' ' : null,
-          money(quoted?.unitPrice ?? line.price),
-          quoted?.promotionName ? el('span', { class: 'tag promo' }, quoted.promotionName) : null,
-        ),
-        unavailable ? el('div', { class: 'field-error' }, 'Món này vừa hết — vui lòng bỏ khỏi giỏ') : null,
-      ),
+      main,
       stepper(line.quantity, (d) => changeLine(line.key, d), line.name),
     ),
-    item?.itemType === 'COMBO' ? null : el('div', { style: { marginTop: '0.4rem' } }, note),
-    item?.itemType === 'COMBO'
-      ? null
-      : el(
-          'div',
-          { class: 'note-chips' },
-          NOTE_CHIPS.map((chip) =>
-            el(
-              'button',
-              {
-                class: 'chip',
-                type: 'button',
-                'aria-pressed': String((line.note || '').includes(chip)),
-                onclick: (e) => {
-                  const parts = (line.note || '')
-                    .split(',')
-                    .map((s) => s.trim())
-                    .filter(Boolean);
-                  const next = parts.includes(chip) ? parts.filter((p) => p !== chip) : [...parts, chip];
-                  line.note = next.join(', ').slice(0, 200);
-                  note.value = line.note;
-                  e.currentTarget.setAttribute('aria-pressed', String(next.includes(chip)));
-                  persist();
-                },
-              },
-              chip,
-            ),
-          ),
-        ),
   );
+}
+
+/** F-082: bấm món trong giỏ → bảng chọn (tùy chọn, ghi chú, số lượng của dòng) → "Cập nhật" thay dòng tại chỗ. */
+async function editLine(key) {
+  const line = state.cart.find((l) => l.key === key);
+  const item = line && state.itemsById.get(line.menuItemId);
+  if (!item) return;
+  if (!item.isAvailable) return toast(`${line.name} đã hết món — bấm − để bỏ khỏi giỏ`, 'warning');
+  const choice = await pickItem(item, state.menu.modifierGroups, {
+    head: itemHead(item),
+    noteChips: NOTE_CHIPS,
+    allowNote: item.itemType !== 'COMBO',
+    maxQty: MAX_QTY,
+    initial: { optionIds: line.optionIds, note: line.note, quantity: line.quantity },
+    confirmLabel: 'Cập nhật',
+  });
+  if (!choice) return;
+  replaceLine(state.cart, key, item, choice, { quantity: choice.quantity, note: choice.note });
+  toast(`Đã cập nhật ${item.name}`, 'success', 2000);
+  changed(item.id);
 }
 
 const sameOptions = (quotedOptions, optionIds = []) => {

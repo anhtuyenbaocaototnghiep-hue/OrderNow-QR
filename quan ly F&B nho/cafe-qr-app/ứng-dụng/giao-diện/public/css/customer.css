@@ -972,3 +972,36 @@ body.customer .c-tabs {
   padding: 0.5rem 0;
   font-weight: 600;
 }
+
+/* F-082 (ADR-040): giỏ gọn — bấm vào món để sửa (mở lại bảng chọn), không còn ô ghi chú / nút nhanh trong giỏ */
+.cart-line-main {
+  appearance: none;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 0.25rem 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cart-line-main:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.cart-line-main .line-note {
+  color: var(--c-text);
+  overflow-wrap: anywhere;
+}
+.cart-line-main .edit-hint {
+  color: var(--c-primary);
+  font-weight: 600;
+}

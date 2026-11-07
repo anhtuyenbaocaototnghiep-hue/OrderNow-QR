@@ -921,13 +921,19 @@ test('giỏ còn sau khi tải lại trang; khách rớt mạng lúc đơn hoàn
   await G.getByRole('button', { name: 'Thêm vào giỏ' }).click();
   await G.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).locator('.add-btn').click();
   await G.click('#open-cart');
-  await G.locator('.sheet input[aria-label="Ghi chú cho Nước suối"]').fill('không lạnh');
+  // F-082: ghi chú sửa bằng cách bấm vào món trong giỏ → bảng chọn → Cập nhật
+  await G.locator('.sheet .cart-line', { hasText: 'Nước suối' }).locator('.cart-line-main').click();
+  await G.locator('#item-note').fill('không lạnh');
+  await G.locator('[role="dialog"]', { has: G.locator('.item-sheet') })
+    .locator('.modal-foot .btn-primary')
+    .click();
+  await expect(G.locator('.item-sheet')).toHaveCount(0);
   const total = (await G.locator('.sheet .cart-total').innerText()).match(/[\d.]+đ/)[0];
   await G.keyboard.press('Escape');
   await G.reload();
   await G.click('#open-cart');
   await expect(G.locator('.sheet .cart-line', { hasText: 'Bạc xỉu' })).toContainText('Size L');
-  await expect(G.locator('.sheet input[aria-label="Ghi chú cho Nước suối"]')).toHaveValue('không lạnh');
+  await expect(G.locator('.sheet .cart-line', { hasText: 'Nước suối' })).toContainText('Ghi chú: không lạnh');
   await expect(G.locator('.sheet .cart-total')).toContainText(total);
   await G.locator('.sheet .modal-foot .btn-primary').click();
   await expect(G).toHaveURL(/\/track$/);
@@ -3047,8 +3053,67 @@ test('bảng chọn món: khách bấm "+" món có tùy chọn → bảng trư�
     const line = G.locator('.sheet .cart-line', { hasText: 'Bạc xỉu' });
     await expect(line).toContainText('Size L');
     await expect(line.locator('.stepper span')).toHaveText('2');
-    await expect(G.locator('.sheet input[aria-label="Ghi chú cho Bạc xỉu"]')).toHaveValue('Ít đá');
-    await expect(G.locator('.sheet input[aria-label="Ghi chú cho Nước suối"]')).toHaveValue('không lạnh');
+    await expect(line).toContainText('Ghi chú: Ít đá'); // F-082: giỏ ghi ghi chú dạng chữ
+    await expect(G.locator('.sheet .cart-line', { hasText: 'Nước suối' })).toContainText('Ghi chú: không lạnh');
+  } finally {
+    await phone.close();
+  }
+});
+
+test('giỏ gọn: giỏ không còn ô ghi chú / nút nhanh, mỗi món một dòng tóm tắt (tùy chọn, "Ghi chú: …", "Sửa ›"); bấm món trong giỏ → bảng chọn mở với lựa chọn cũ (Size L, "Ít đá", 2) → đổi Size M + "Mang về" + 3 → "Cập nhật · …" → dòng đổi tại chỗ, tổng đổi theo (F-082, AC-082-02)', async ({
+  request,
+}) => {
+  await apiAs(request, 'post', '/api/admin/tables', { code: 'GG', name: 'Bàn giỏ gọn' });
+  const t = (await apiAs(request, 'get', '/api/admin/tables')).find((x) => x.code === 'GG');
+  const phone = await browser.newContext(phoneOpts);
+  try {
+    const G = await phone.newPage();
+    watch(G, 'G');
+    await G.goto(`/t/${t.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    const bx = G.locator('.c-section.cat .c-item', { hasText: 'Bạc xỉu' });
+    await bx.locator('.add-btn').click();
+    await G.locator('.item-sheet .opt-row', { hasText: 'Size L' }).click();
+    await G.locator('.item-sheet .chip', { hasText: 'Ít đá' }).click();
+    await G.locator('.item-sheet').getByRole('button', { name: 'Thêm Bạc xỉu' }).click();
+    await G.locator('[role="dialog"]', { has: G.locator('.item-sheet') })
+      .locator('.modal-foot .btn-primary')
+      .click();
+    await G.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).locator('.add-btn').click();
+
+    await G.click('#open-cart');
+    const cart = G.locator('.sheet', { has: G.locator('.cart-line') });
+    await expect(cart.locator('.cart-line')).toHaveCount(2);
+    await expect(cart.locator('.cart-line input')).toHaveCount(0); // không còn ô ghi chú
+    await expect(cart.locator('.cart-line .note-chips')).toHaveCount(0); // không còn hàng nút nhanh
+    const line = cart.locator('.cart-line').first();
+    await expect(line).toContainText('Bạc xỉu');
+    await expect(line).toContainText('Size L');
+    await expect(line).toContainText('Ghi chú: Ít đá');
+    await expect(line).toContainText('Sửa ›');
+    const before = (await cart.locator('.cart-total').innerText()).match(/[\d.]+đ/)[0];
+
+    await line.locator('.cart-line-main').click();
+    const edit = G.locator('[role="dialog"]', { has: G.locator('.item-sheet') });
+    await expect(edit.locator('.opt-row', { hasText: 'Size L' }).locator('input')).toBeChecked();
+    await expect(G.locator('#item-note')).toHaveValue('Ít đá');
+    await expect(G.locator('#item-qty')).toHaveText('2');
+    await expect(edit.locator('.modal-foot .btn-primary')).toHaveText(/^Cập nhật · [\d.]+đ$/);
+    await edit.locator('.opt-row', { hasText: 'Size M' }).click();
+    await edit.locator('.chip', { hasText: 'Mang về' }).click();
+    await edit.getByRole('button', { name: 'Thêm Bạc xỉu' }).click();
+    await expect(G.locator('#item-qty')).toHaveText('3');
+    await edit.locator('.modal-foot .btn-primary').click();
+    await expect(G.locator('.item-sheet')).toHaveCount(0);
+
+    await expect(cart.locator('.cart-line')).toHaveCount(2);
+    const updated = cart.locator('.cart-line').first(); // vẫn ở vị trí cũ
+    await expect(updated).toContainText('Size M');
+    await expect(updated).toContainText('Ghi chú: Ít đá, Mang về');
+    await expect(updated.locator('.stepper span')).toHaveText('3');
+    await expect(cart.locator('.cart-total')).not.toContainText(before);
+    await expect(bx.locator('.qty-badge')).toHaveText('3');
+    expect(await G.evaluate(() => globalThis.document.documentElement.scrollWidth <= globalThis.innerWidth)).toBe(true);
   } finally {
     await phone.close();
   }

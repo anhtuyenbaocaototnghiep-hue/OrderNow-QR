@@ -119,12 +119,17 @@ export function pickOptions(item, modifierGroups, { initial = null, sheet = true
  * F-081 (ADR-039 D-178…D-181): bảng chọn món của khách — bấm món là trượt lên ngay, chọn hết ở một chỗ rồi mới vào giỏ:
  * tùy chọn (size, topping… — lựa chọn mặc định chọn sẵn), ghi chú nhanh (nút) + ô ghi chú, số lượng; nút "Thêm vào giỏ · tổng".
  * `head` = phần đầu (ảnh, giá, mô tả combo…) do trang dựng. Không tự đưa bàn phím lên (nút chính được focus, không phải ô ghi chú).
+ * F-082 (ADR-040): sửa món trong giỏ → `initial` = { optionIds, note, quantity } của dòng, `confirmLabel` = 'Cập nhật'.
  * → Promise { optionIds, optionLabels, optionDelta, note, quantity } | null (đóng / Hủy).
  */
-export function pickItem(item, modifierGroups, { head = null, noteChips = [], allowNote = true, maxQty = 50 } = {}) {
+export function pickItem(
+  item,
+  modifierGroups,
+  { head = null, noteChips = [], allowNote = true, maxQty = 50, initial = null, confirmLabel = 'Thêm vào giỏ' } = {},
+) {
   const errorEl = el('div', { class: 'field-error', hidden: true });
   const unitEl = el('strong');
-  let qty = 1;
+  let qty = Math.min(maxQty, Math.max(1, Math.floor(initial?.quantity ?? 1)));
   let confirmBtn = null;
   const unitPrice = () => item.price + opts.chosen().reduce((s, o) => s + o.priceDelta, 0);
   const refresh = () => {
@@ -132,12 +137,19 @@ export function pickItem(item, modifierGroups, { head = null, noteChips = [], al
     qtyEl.textContent = String(qty);
     minus.disabled = qty <= 1;
     plus.disabled = qty >= maxQty;
-    if (confirmBtn) confirmBtn.textContent = `Thêm vào giỏ · ${money(unitPrice() * qty)}`;
+    if (confirmBtn) confirmBtn.textContent = `${confirmLabel} · ${money(unitPrice() * qty)}`;
   };
-  const opts = optionGroups(item, modifierGroups, { errorEl, onChange: () => refresh() });
+  const opts = optionGroups(item, modifierGroups, { initial: initial?.optionIds ?? null, errorEl, onChange: () => refresh() });
 
   // Ghi chú: nút chọn nhanh ghép vào ô ghi chú (giống giỏ hàng)
-  const note = el('input', { class: 'input', id: 'item-note', maxlength: 200, placeholder: 'Ví dụ: ít ngọt, không đá…', autocomplete: 'off' });
+  const note = el('input', {
+    class: 'input',
+    id: 'item-note',
+    maxlength: 200,
+    placeholder: 'Ví dụ: ít ngọt, không đá…',
+    autocomplete: 'off',
+    value: initial?.note ?? '',
+  });
   const parts = () =>
     note.value
       .split(',')
@@ -155,6 +167,7 @@ export function pickItem(item, modifierGroups, { head = null, noteChips = [], al
   });
   const syncChips = () => chips.forEach((b) => b.setAttribute('aria-pressed', String(parts().includes(b.textContent))));
   note.addEventListener('input', syncChips);
+  syncChips();
 
   const qtyEl = el('span', { 'aria-live': 'polite', id: 'item-qty' });
   const minus = el('button', { type: 'button', 'aria-label': `Bớt ${item.name}` }, '−');
@@ -194,7 +207,7 @@ export function pickItem(item, modifierGroups, { head = null, noteChips = [], al
     actions: [
       { label: 'Hủy', value: null },
       {
-        label: 'Thêm vào giỏ',
+        label: confirmLabel,
         class: 'btn-primary',
         onClick: (close) => {
           const g = opts.missing();
