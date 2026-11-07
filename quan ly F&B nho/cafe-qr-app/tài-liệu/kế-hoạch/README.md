@@ -37,3 +37,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-088-plan.md](TASK-088-plan.md) — chống sửa / xóa dữ liệu trái phép (F-071, ADR-029).
 - [TASK-089-plan.md](TASK-089-plan.md) — chấm công nhiều người + tính lương (F-072, F-073, ADR-030).
 - [TASK-090-plan.md](TASK-090-plan.md) — quên PIN, nhắc chấm công, báo quên chấm công (F-072 bổ sung, ADR-031).
+- [TASK-091-plan.md](TASK-091-plan.md) — bán tiếp khi mất mạng (F-074, ADR-032).

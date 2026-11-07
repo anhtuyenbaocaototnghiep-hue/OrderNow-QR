@@ -201,6 +201,8 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-073-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn app tự tính lương tháng từ giờ chấm công thật theo luật rõ ràng và chỉ chốt khi đã xử lý hết việc chờ, để không phải tính tay và không trả thừa / thiếu. | AC-073-01, AC-073-02, AC-073-03, AC-073-05, AC-073-09 | BR-110 | UC-12 | MOD-FINANCE | SCR-51 | F-073 | DONE |
 | US-073-2 | Should | ACT-STAFF, ACT-LEAD | Là nhân viên, tôi muốn xem giờ công, ai sửa vì sao, lương tạm tính, phiếu lương của mình và báo sai ngay trong tháng, để cuối tháng không phải thắc mắc. | AC-073-04, AC-073-05, AC-072-07 | BR-110 | UC-12 | MOD-SHIFT, MOD-FINANCE | SCR-52 | F-073 | DONE |
 | US-073-3 | Should | ACT-ADMIN | Là chủ quán, tôi muốn tạm ứng có người nhận và không ai tự duyệt, trả lương bằng VietQR có đối chiếu tên, và thấy lương thật trong Lãi/lỗ, để tiền lương không bị lợi dụng hay tính hai lần. | AC-073-06, AC-073-07, AC-073-08 | BR-110 | UC-11, UC-16 | MOD-FINANCE | SCR-51, SCR-33 | F-073 | DONE |
+| US-074-1 | Should | ACT-STAFF, ACT-LEAD | Là nhân viên quầy, tôi muốn vẫn thu tiền và in bill khi máy chủ hay mạng gặp sự cố, rồi đơn tự về hệ thống khi có mạng lại, để quán không phải ngừng bán. | AC-074-02, AC-074-05 | BR-112 | UC-05 | MOD-ORDER, MOD-BILLING, MOD-INVENTORY | SCR-13, SCR-12 | F-074 | DONE |
+| US-074-2 | Should | ACT-ADMIN, ACT-LEAD | Là chủ quán, tôi muốn đơn bán lúc mất mạng không bị tính hai lần, không làm sai kho / ca, và tôi thấy rõ đơn nào cần kiểm, để sổ sách vẫn đúng sau sự cố. | AC-074-01, AC-074-03, AC-074-04, AC-074-05 | BR-112 | UC-05, UC-11 | MOD-BILLING, MOD-SHIFT, MOD-INVENTORY | SCR-13, SCR-15, SCR-47, SCR-54 | F-074 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

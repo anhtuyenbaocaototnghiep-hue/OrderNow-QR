@@ -715,3 +715,15 @@ Chi tiết: [FEATURE-072](../chức-năng/FEATURE-072.md) AC-072-08…12, BR-111
 - `GET /api/me/attendance`: thêm `missingDays: [{ workDate, startTime, endTime, reported, canReport }]` (lịch đã qua không có chấm công), `missedPunches: [{ requestId, clockIn, clockOut, note, status, resolvedBy, resolvedAt, resolution, attId }]`, `missedPunchDays` (7).
 - `GET /api/admin/payroll`: `pending` có thêm mục `{ code: MISSED_PUNCH, requestId, clockIn, clockOut, note, user }` — chặn chốt (`409 PAYROLL_PENDING`). `GET /api/admin/payroll-week`: `people[].pending` cộng báo quên đang chờ.
 - `POST /api/admin/users/{id}/pin-reset`, `POST /api/auth/pin`: xóa lần sai PIN cũ của người đó. `403 PIN_NOT_SET` nay chỉ cách đặt PIN ở màn Chấm công.
+
+## Bổ sung F-074 — bán tiếp khi mất mạng (ADR-032, TASK-091, 06/11/2026)
+
+Chi tiết: [FEATURE-074](../chức-năng/FEATURE-074.md), BR-112.
+
+| Method & path | Quyền | Kết quả |
+| --- | --- | --- |
+| `POST /api/offline-sales` | Nhân viên (`source: PAPER`: trưởng ca / quản lý) | `{ clientRef (UUID), source: OFFLINE \| PAPER, localCode?, soldAt, soldBy?, shiftId?, method: CASH \| TRANSFER, amountReceived?, total, memberPhone?, device?, note?, items: [{ menuItemId, quantity, note?, optionIds?, unitPrice }] }` → `201 { status: SYNCED, order, payment, issues: [{ code: PRICE_DIFF \| STOCK_SHORT \| SHIFT_LATE \| TRANSFER_CHECK \| MEMBER_NOT_FOUND, text }], offline }`; mã đã ghi → `200 { status: DUPLICATE, … }`. Lỗi: `400 VALIDATION_ERROR` (tổng không khớp, giờ tương lai, tiền khách đưa thiếu), `400 SALE_TOO_OLD` (quá 72 giờ / phiếu tay quá 7 ngày), `403 PAPER_SALE_FORBIDDEN`, `409 OFFLINE_ITEM_MISSING`, `409 NO_OPEN_SHIFT` |
+| `GET /api/offline-sales?shiftId=` | Nhân viên | Đơn gửi bù ghi vào ca, mới nhất trước: `[{ orderId, orderCode, localCode, source, soldAt, soldBy, syncedAt, syncedBy, device, method, amountDue, clientTotal, shiftIdAtSale, shiftIdRecorded, issues }]` |
+
+- `POST /api/orders/takeaway`: thêm `clientRef` (UUID, không bắt buộc) — đã có đơn với mã này → `200 { order, payment, totals: null, duplicate: true }` (không ghi thêm).
+- Đơn (`order`) có thêm `saleSource`: `null` | `OFFLINE` | `PAPER`. Cảnh báo thêm loại `OFFLINE_SALE`.

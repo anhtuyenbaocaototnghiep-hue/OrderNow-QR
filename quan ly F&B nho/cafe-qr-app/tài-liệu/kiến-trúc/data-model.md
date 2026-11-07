@@ -1294,3 +1294,11 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Migration `0050_bao_quen_cham_cong.sql` | Bảng `MissedPunches (RequestId PK, UserId, ClockIn, ClockOut (> ClockIn), Note, CreatedAt, Status PENDING / APPROVED / REJECTED, ResolvedBy, ResolvedAt, Resolution, AttId → Attendance)`; chỉ mục `(UserId, ClockIn)`, `(ClockIn) WHERE Status = 'PENDING'`. Trigger `TR_MissedPunches_NoDelete` (`THROW 50250 HISTORY_NO_DELETE`) |
 | Duyệt | Một giao dịch: `UPDATE MissedPunches … WHERE Status = 'PENDING'` (giữ phiếu) → `INSERT Attendance (Source 'MANUAL', EditedBy = người duyệt, EditReason 'Báo quên chấm công: …')` → gắn `AttId` |
 | Khóa PIN | `AuthFailures` dòng `Kind = 'PIN'` của người đó bị xóa khi đặt PIN mới / quản lý xóa PIN; sai mật khẩu ở `POST /api/auth/pin/kiosk` ghi `Kind = 'LOGIN'` (tên + IP) |
+
+### Bán tiếp khi mất mạng (FEATURE-074, ADR-032, TASK-091, 06/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0051_ban_khi_mat_mang.sql` | `Orders.ClientRef UNIQUEIDENTIFIER NULL` + `UX_Orders_ClientRef` (duy nhất, lọc NOT NULL); `Orders.SaleSource` (`OFFLINE` / `PAPER`). Bảng `OfflineSales (OrderId PK → Orders, ClientRef, Source, LocalCode, SoldAt, SoldBy, SyncedAt, SyncedBy, Device, ClientTotal, ShiftIdAtSale, ShiftIdRecorded → Shifts, IssuesJson)`, trigger `TR_OfflineSales_NoDelete`. `Alerts.Kind` thêm `OFFLINE_SALE` |
+| Thủ tục | `sp_SubmitOrder`: `@ClientRef`, `@SaleSource`, `@SoldAt`, `@StockShort OUTPUT` — gửi bù: bỏ kiểm món / tùy chọn đang tắt, kho thiếu thì chỉ giữ phần còn có (bỏ nguyên liệu thiếu khỏi `OrderIngredients`), giờ đơn / lượt thu = `@SoldAt`. `sp_CompleteOrder`: `@CompletedAt` |
+| Trình duyệt máy quầy | `localStorage`: `cf_offline_sales` (hàng chờ gửi bù), `cf_offline_seq` (số mã tạm), `cf_takeaway_ref` (mã lượt thu của giỏ), `cf_device_name` |
