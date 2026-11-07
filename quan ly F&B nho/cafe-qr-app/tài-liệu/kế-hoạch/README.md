@@ -40,3 +40,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-091-plan.md](TASK-091-plan.md) — bán tiếp khi mất mạng (F-074, ADR-032).
 - [TASK-092-plan.md](TASK-092-plan.md) — hạn dùng nguyên liệu: hạn sau khi mở, tiền sắp mất, món nên mời (F-075, ADR-033).
 - [TASK-093-plan.md](TASK-093-plan.md) — quy trình 1 chạm ở màn Đơn hàng (F-076, ADR-034).
+- [TASK-094-plan.md](TASK-094-plan.md) — phân quyền rõ ràng, đợt 1: vai Quản lý cửa hàng (F-077, ADR-035).

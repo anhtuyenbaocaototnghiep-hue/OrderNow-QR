@@ -465,3 +465,11 @@ flowchart LR
 
 - **SCR-10 Đơn hàng (bật):** cột đầu tiêu đề **Cần làm** (đếm đơn mới + đang pha), cột "Đang pha" ẩn, phiếu xếp lưới (17rem / phiếu); mỗi phiếu nút xanh lớn **Xong** (+ **Hủy** với đơn mới); phiếu đang giữ (hẹn giờ) giữ "Làm ngay" như cũ; hộp chi tiết đơn có nút **Xong**. Trống: "Không có đơn cần làm". Dải "Đã xong hôm nay" như cũ.
 - **SCR-33 Cài đặt:** thẻ **Màn Đơn hàng ở quầy** — ô **Quy trình 1 chạm** + giải thích (quán nhỏ 1–2 người pha; quán đông tắt để dùng 3 cột).
+
+## F-077 — Quản lý cửa hàng (TASK-094, ADR-035, 07/11/2026)
+
+- **SCR-20 Tài khoản:** ô Vai trò có **Quản lý cửa hàng**; ADMIN hiện **Chủ quán**; thẻ thu gọn **Mỗi vai trò làm được gì?** (4 vai, nhãn màu).
+- **SCR-10 máy quầy:** cạnh tên có nhãn **Quản lý cửa hàng**; mục **Quản lý** → `/admin/today`.
+- **Trang Quản lý (Quản lý cửa hàng):** thanh bên chỉ mục được mở (Hôm nay, Báo cáo & lịch sử, Thực đơn, Kho hàng, Khách hàng, Ca & hoàn tiền, Sổ quỹ, Cảnh báo, Nhân sự & chấm công, Bàn & QR); dưới tên ghi vai. Mở thẳng trang khác → `/pos?denied=admin`. Sổ quỹ không có tab Danh mục thu chi; Nhân sự không có thẻ Cách chấm công, số "chờ duyệt" không thành link Lương; Hội viên không có nút Ẩn danh; mục đang ẩn (chế độ cơ bản) nhắc "Nhờ chủ quán hiện lại".
+- **SCR-47 Cảnh báo:** loại **Quản lý cửa hàng đổi giá món** — giá cũ → mới, người đổi (chỉ chủ quán thấy).
+- **SCR-46 Tra cứu API:** nhãn quyền **Quản lý cửa hàng**, **Chủ quán**.

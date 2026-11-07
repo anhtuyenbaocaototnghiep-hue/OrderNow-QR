@@ -124,3 +124,27 @@ Ngưỡng chỉnh ở Quản lý → Cài đặt → thẻ **"Trưởng ca & s�
 | Sổ quỹ tổng + CSV, danh mục thu chi, lịch làm, năng suất, nhật ký thao tác, lãi/lỗ & chi phí cố định, phân tích, chạy job thủ công | — | — | — | Có |
 
 Test: `member-card.test.js` → AC-047-01/02 (quầy đăng ký nhanh + gắn ở Gọi món tại bàn), AC-047-04 (thiết bị khác 403, chưa gắn hội viên 404, phiên đóng 409); `void.test.js` → AC-046-02 (nhân viên không / sai người duyệt → 403, trưởng ca duyệt → OK), AC-046-05 (hủy bàn cần duyệt khi có đơn đã tiếp nhận), "đua với tiếp nhận đơn"; `finance.test.js` → "ma trận actor × endpoint sinh từ PERMISSIONS" (mỗi quyền × mỗi vai: vai được phép không nhận 401/403, vai khác nhận 403) và "khách (không token) … → 401"; `finance-unit.test.js` → ngưỡng giảm tay theo vai, `can`.
+
+## 4.6. Bổ sung F-077 — Quản lý cửa hàng (STORE_MGR) và tên Chủ quán (ADR-035, 07/11/2026)
+
+Thứ bậc mới: **Nhân viên** (STAFF) < **Trưởng ca** (MANAGER) < **Quản lý cửa hàng** (STORE_MGR) < **Chủ quán** (ADMIN — trước hiển thị "Quản lý"). Tài khoản cũ giữ nguyên. Kiểm ở server: `PERMISSIONS` (quầy) + `STORE_MGR_AREAS` (trang Quản lý, `requireAdminArea`).
+
+| Việc | Nhân viên | Trưởng ca | Quản lý cửa hàng | Chủ quán |
+| --- | --- | --- | --- | --- |
+| Bán, thu tiền, mở / đóng ca, ghi chi quỹ, sơ chế, hủy hàng, nhận hàng | Có | Có | Có | Có |
+| Giảm giá tay tự duyệt | ≤ 10 % và ≤ 20.000đ | ≤ 20 % và ≤ 50.000đ | Không giới hạn | Không giới hạn |
+| Hoàn tiền tự duyệt | — | Lượt thu ca đang mở | Mọi ca | Mọi ca |
+| Duyệt chi quỹ | — | ≤ ngưỡng trưởng ca (2.000.000đ) | ≤ 3 × ngưỡng trưởng ca | Mọi khoản |
+| Sửa / thêm chấm công (không của mình) | — | Hôm nay | Mọi ngày | Mọi ngày (kể cả của mình) |
+| Kiểm kê, điều chỉnh kho | — | Có | Có | Có |
+| Hôm nay | — | Bản gọn | Bản đủ (giá vốn, lãi gộp) | Bản đủ |
+| Thực đơn & giá, tùy chọn, combo, lịch thực đơn | — | — | Có (đổi giá → chủ quán được báo) | Có |
+| Nguyên liệu, nhập kho, kiểm kê, nhà cung cấp, đặt hàng, lô | — | — | Có | Có |
+| Khuyến mãi, gợi ý, đánh giá, hội viên, tích điểm / voucher / chiến dịch / quà | — | — | Có (trừ ẩn danh hội viên) | Có |
+| Bàn & QR, xếp lịch làm | — | — | Có | Có |
+| Báo cáo bán hàng / marketing / giá vốn / hao hụt / nhà cung cấp / năng suất, ca & hoàn tiền, sổ quỹ, giờ công tuần, danh sách tài khoản | — | — | Xem | Có |
+| Cảnh báo | — | — | Xem + xử lý (trừ khóa đăng nhập, đổi giá, cảnh báo về mình) | Có |
+| Cài đặt | — | — | Xem; đổi nhận đơn QR, cài đặt bếp, 1 chạm | Có |
+| Tài khoản & vai, danh mục thu chi, lương / hồ sơ lương / ngày lễ / duyệt giờ công, cách chấm công, chi phí cố định, lãi / lỗ, phân tích, nhật ký, email cảnh báo, Tra cứu API | — | — | — (403 `OWNER_ONLY`) | Có |
+
+Test: `store-manager.test.js` (AC-077-01…07), `api-docs.test.js` "quyền ghi trên trang khớp server" (mọi endpoint chỉ chủ quán → quản lý cửa hàng 403), E2E AC-077-08.

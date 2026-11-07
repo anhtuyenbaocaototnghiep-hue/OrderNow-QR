@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 444 test, sửa lúc 2026-11-07 07:59 UTC
-- `npm run test:e2e` (JSON): 69 test, sửa lúc 2026-11-07 08:02 UTC
+- `npm test` (JUnit): 451 test, sửa lúc 2026-11-07 08:22 UTC
+- `npm run test:e2e` (JSON): 70 test, sửa lúc 2026-11-07 08:32 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 172 |
-| Acceptance Criteria | 467 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 467 |
+| User Story | 174 |
+| Acceptance Criteria | 475 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 475 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -562,4 +562,12 @@
 | AC-076-01 | TC-076-01 | F-076 | US-076-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03 | MOD-ORDER, MOD-INVENTORY | SCR-10, SCR-33 | BR-114 | Integration: `one-tap.test.js` › AC-076-01: cài đặt "Quy trình 1 chạm" (mặc định bật; dữ liệu cũ của test để tắt) — quản lý bật / tắt, máy quầy đọc qua /auth/me; nhân viên không đổi được — **PASS** | **PASS** |
 | AC-076-02 | TC-076-02 | F-076 | US-076-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03 | MOD-ORDER, MOD-INVENTORY | SCR-10, SCR-33 | BR-114 | Integration: `one-tap.test.js` › AC-076-02: thời gian làm món — đơn nhận + xong cùng lúc (1 chạm) tính từ lúc có thể bắt đầu (đơn tới / đơn trước vừa xong) tới lúc xong, không ra 0 giây; đơn 3 bước vẫn tính từ lúc tiếp nhận — **PASS** | **PASS** |
 | AC-076-03 | TC-076-03 | F-076 | US-076-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03 | MOD-ORDER, MOD-INVENTORY | SCR-10, SCR-33 | BR-114 | E2E: `flow.spec.js` › quy trình 1 chạm: quản lý bật ở Cài đặt → màn Đơn hàng chỉ còn cột "Cần làm" (không còn "Đang pha"), mỗi đơn một nút "Xong" → đơn sang "Đã xong hôm nay" (F-076, AC-076-03) — **PASS** | **PASS** |
+| AC-077-01 | TC-077-01 | F-077 | US-077-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-42, SCR-10 | BR-115 | Integration: `store-manager.test.js` › AC-077-01: chủ quán tạo tài khoản Quản lý cửa hàng; trưởng ca / nhân viên / quản lý cửa hàng không tạo được tài khoản; /auth/me trả STORE_MGR; vai cũ giữ nguyên; ma trận quyền quầy đúng PERMISSIONS — **PASS** | **PASS** |
+| AC-077-02 | TC-077-02 | F-077 | US-077-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-42, SCR-10 | BR-115 | Integration: `store-manager.test.js` › AC-077-02: phạm vi trang Quản lý — được thực đơn / kho / khuyến mãi / hội viên / bàn / lịch làm; chỉ xem báo cáo bán hàng, sổ quỹ, ca, tài khoản; chặn lãi / lỗ, chi phí cố định, lương, nhật ký, phân tích, tài khoản (sửa), ẩn danh hội viên, email cảnh báo, Tra cứu API; mọi khóa trong bảng đều khớp route thật — **PASS** | **PASS** |
+| AC-077-03 | TC-077-03 | F-077 | US-077-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-42, SCR-10 | BR-115 | Integration: `store-manager.test.js` › AC-077-03: cài đặt — quản lý cửa hàng xem được (không thấy email nhận cảnh báo), đổi được cài đặt bếp / 1 chạm / nhận đơn QR; đổi giảm giá, ngưỡng duyệt, Wi-Fi, tên quán → 403 OWNER_ONLY kèm tên ô — **PASS** | **PASS** |
+| AC-077-04 | TC-077-04 | F-077 | US-077-2 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-NOTIFY | SCR-47, SCR-21 | BR-115 | Integration: `store-manager.test.js` › AC-077-04: quản lý cửa hàng đổi giá / thêm món → chủ quán thấy cảnh báo PRICE_CHANGE (quản lý cửa hàng không thấy); chỉ đổi tên hoặc chủ quán tự đổi giá → không báo — **PASS** | **PASS** |
+| AC-077-05 | TC-077-05 | F-077 | US-077-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-42, SCR-10 | BR-115 | Integration: `store-manager.test.js` › AC-077-05: duyệt chi quỹ — quản lý cửa hàng tự duyệt khoản tới 3 × ngưỡng trưởng ca (trưởng ca thì không); quá mức → cần chủ quán; không tự duyệt khoản của mình; duyệt bằng tài khoản quản lý cửa hàng ở quầy theo cùng ngưỡng — **PASS** | **PASS** |
+| AC-077-06 | TC-077-06 | F-077 | US-077-2 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-NOTIFY | SCR-47, SCR-21 | BR-115 | Integration: `store-manager.test.js` › AC-077-06: cảnh báo — quản lý cửa hàng không thấy khóa đăng nhập (AUTH_LOCK), không xử lý cảnh báo về chính mình (SELF_ALERT), xử lý được cảnh báo khác; số "Mới" tính theo phần được thấy — **PASS** | **PASS** |
+| AC-077-07 | TC-077-07 | F-077 | US-077-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-42, SCR-10 | BR-115 | Integration: `store-manager.test.js` › AC-077-07: chấm công — quản lý cửa hàng sửa chấm công ngày cũ của người khác (trưởng ca bị ATTENDANCE_NOT_TODAY), không sửa của mình; trang Hôm nay bản đủ; Tra cứu API ghi đúng vai được gọi — **PASS**<br>Integration: `api-docs.test.js` › AC-052-01 (review G3): quyền ghi trên trang khớp server ở mọi endpoint — không token → 401 (Nhân viên / Trưởng ca / Quản lý); nhân viên → 403 (Trưởng ca / Quản lý); trưởng ca → 403 (Quản lý) — **PASS** | **PASS** |
+| AC-077-08 | TC-077-08 | F-077 | US-077-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-42, SCR-10 | BR-115 | E2E: `flow.spec.js` › phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở Tài khoản (có bảng "Mỗi vai trò làm được gì?"); quản lý cửa hàng đăng nhập → máy quầy có "Quản lý" → trang Quản lý chỉ có mục vận hành (không Lãi / lỗ, Lương, Tài khoản, Cài đặt); đổi giá món → chủ quán thấy cảnh báo đổi giá; mở thẳng Lãi / lỗ → về quầy (F-077, AC-077-08) — **PASS** | **PASS** |
 

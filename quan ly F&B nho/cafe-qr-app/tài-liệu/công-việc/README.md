@@ -109,6 +109,7 @@
 | [TASK-091](TASK-091.md) | Bán tiếp khi mất mạng (F-074), ADR-032 | FEATURE-074 | TASK-090 | Agent | — | chủ dự án 06/11 | READY_FOR_REVIEW |
 | [TASK-092](TASK-092.md) | Hạn dùng nguyên liệu: hạn sau khi mở, tiền sắp mất, món nên mời (F-075), ADR-033 | FEATURE-075 | TASK-091 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
 | [TASK-093](TASK-093.md) | Quy trình 1 chạm ở màn Đơn hàng (F-076), ADR-034 | FEATURE-076 | TASK-092 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
+| [TASK-094](TASK-094.md) | Phân quyền rõ ràng, đợt 1 — vai Quản lý cửa hàng, tên Chủ quán (F-077), ADR-035 | FEATURE-077 | TASK-093 | Agent | — | chủ dự án 07/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

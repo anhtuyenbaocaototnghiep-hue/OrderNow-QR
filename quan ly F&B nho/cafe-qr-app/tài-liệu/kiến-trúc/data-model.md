@@ -1310,3 +1310,9 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Migration `0052_han_sau_khi_mo.sql` | `Ingredients.PackSize DECIMAL(18,3) NULL (> 0)`, `OpenShelfHours INT NULL (1–8760)`, `OpenedAt DATETIME2(0) NULL`, `OpenLeft DECIMAL(18,3) NOT NULL DEFAULT 0 (≥ 0)`. `Alerts.Kind` thêm `EXPIRY_RISK` |
 | Thủ tục | `sp_OpenPacks.sql`: `sp_TrackOpenPacks @At` (đọc `#PackUse` của thủ tục gọi; gọi từ `sp_CompleteOrder`, `sp_PostPrepBatch`), `sp_DiscardOpenPack` (→ `sp_LogWaste` lý do `EXPIRED`, lỗi `50124 NO_OPEN_PACK`). `tvf_ExpiredLotQty` = MAX(lô hết hạn, phần còn hộp mở quá hạn ≤ tồn) theo nguyên liệu |
 | Báo cáo | Tiền hủy vì hết hạn: `WasteLogs (Reason = 'EXPIRED')` ⨝ `InventoryTransactions.WasteId` (CostAmount) → `IngredientLots (Source RECEIPT, SourceId = ReceiptId)` → `StockReceipts.SupplierId` / `Supplier` |
+
+### Quản lý cửa hàng (FEATURE-077, ADR-035, TASK-094, 07/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0053_quan_ly_cua_hang.sql` | `CK_Users_Role`: `STAFF`, `MANAGER`, `STORE_MGR`, `ADMIN`. `Alerts.Kind` thêm `PRICE_CHANGE` (`UserId` = người đổi, `Detail` = `{ menuItemId, name, oldPrice, newPrice, by }`) |

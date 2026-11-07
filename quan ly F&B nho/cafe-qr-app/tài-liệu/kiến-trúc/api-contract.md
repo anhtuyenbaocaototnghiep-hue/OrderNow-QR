@@ -746,3 +746,13 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 
 - `GET` · `PUT /api/admin/settings`: thêm `oneTap` (boolean, mặc định `true`; khóa `pos.one_tap`).
 - `GET /api/auth/me`: thêm `pos: { oneTap }` — màn Đơn hàng đọc để gộp cột. Không thêm endpoint: "Xong" gọi `POST /api/orders/{id}/accept` rồi `…/complete` (đơn mới) hoặc `…/complete` (đơn đang pha).
+
+## Bổ sung F-077 — Quản lý cửa hàng (ADR-035, TASK-094, 07/11/2026)
+
+- `/api/admin/*`: thêm vai `STORE_MGR` theo `STORE_MGR_AREAS` (`src/auth/permissions.js`); ngoài phạm vi → `403 OWNER_ONLY` ("Chức năng này chỉ chủ quán dùng được").
+- `POST /api/admin/users`, `PUT /api/admin/users/{id}`: `role` thêm `STORE_MGR`.
+- `GET /api/admin/settings` (STORE_MGR): `alertEmails` = `[]`. `PUT` (STORE_MGR): chỉ `acceptingOrders`, `closedMessage`, `etaBaseSeconds`, `kitchenParallelism`, `etaSpreadPercent`, `etaDefaultItemSeconds`, `oneTap`; ô khác → `403 OWNER_ONLY` `details.fields`.
+- `GET /api/admin/alerts` (STORE_MGR): bỏ `AUTH_LOCK`, `PRICE_CHANGE`; `newCount` tính theo phần thấy. `PATCH /api/admin/alerts/{id}`: cảnh báo về chính mình → `403 SELF_ALERT`; loại chỉ chủ quán → 404. Loại mới `PRICE_CHANGE`.
+- `POST /api/cash-transactions/{id}/approve` · `…/reject` · `…/void`: STORE_MGR tự duyệt / duyệt hộ khi số tiền ≤ 3 × `managerCashApproveMax`; quá → `403 ADMIN_APPROVAL_REQUIRED` (chủ quán).
+- `GET /api/dashboard/today`, `GET /api/expiry/risk`: STORE_MGR nhận bản đủ (có tiền) như ADMIN.
+- `GET /api/admin/api-docs`: `access` thêm `STORE_MGR`; `roles` có `STORE_MGR`.

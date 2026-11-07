@@ -86,6 +86,14 @@ Bằng chứng: `members.test.js` (giảm tay vượt ngưỡng), `finance.test.
 - `api.test.js` — "ma trận quyền: khách → API quầy / admin 401; STAFF → admin 403".
 - `delete.test.js` — "STAFF không xóa được; khách không có token → 401".
 
+### 3.5. Bổ sung F-077 — Quản lý cửa hàng (ADR-035, 07/11/2026)
+
+- Vai thứ tư `STORE_MGR` (STAFF < MANAGER < STORE_MGR < ADMIN). `ROLES`, `PERMISSIONS`: có mọi quyền MANAGER, không có `admin.all`.
+- `/api/admin`: `adminRouter.use(requireAdminArea)` (thay `requireAdmin`). ADMIN qua hết; STORE_MGR qua khi `storeManagerMay(method, path)` theo `STORE_MGR_AREAS` (`full` / `read` / `only` / `deny`), không thì `403 OWNER_ONLY`; vai khác 403 như cũ. Tra cứu API đọc `.adminArea` để ghi vai từng dòng; `api-docs.test.js` gọi thử mọi dòng chỉ chủ quán bằng tài khoản STORE_MGR (phải 403).
+- `resolveApproval(..., { allowManager, allowStoreManager = true })`: STORE_MGR tự duyệt / duyệt hộ trừ chi quỹ > 3 × `manager.cash_out_approve_max` (`storeManagerCashMax`). Không tự duyệt khoản của mình (`SELF_APPROVAL`) như trưởng ca.
+- Cài đặt: `PUT /api/admin/settings` của STORE_MGR chỉ nhận `STORE_MGR_SETTINGS`; `GET` để trống `alertEmails`.
+- Cảnh báo: STORE_MGR không thấy `OWNER_ONLY_ALERTS` (`AUTH_LOCK`, `PRICE_CHANGE`), không xử lý cảnh báo có `UserId` = mình (`403 SELF_ALERT`); realtime phòng `store`.
+
 ## 4. Sở hữu tài nguyên và dữ liệu chỉ dành cho nhân viên
 
 | Dữ liệu | Khách (`ACT-GUEST` / `ACT-MEMBER`) | Nhân viên | Cơ chế |

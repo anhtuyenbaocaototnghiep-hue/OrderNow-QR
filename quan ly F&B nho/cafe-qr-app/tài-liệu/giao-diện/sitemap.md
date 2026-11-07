@@ -71,7 +71,7 @@ flowchart TD
 
 ### Quản lý (admin)
 
-Mọi trang dưới `/admin/*` gọi `mountAdminShell` (riêng trang in PO gọi `requireStaffPage({ admin: true })`) → chỉ `ACT-ADMIN`; `ACT-STAFF` / `ACT-LEAD` bị chuyển về `/pos?denied=admin`. Ngoại lệ duy nhất là SCR-42. `GET /admin` chuyển hướng tới `/admin/reports`.
+Mọi trang dưới `/admin/*` gọi `mountAdminShell` (riêng trang in PO gọi `requireStaffPage({ admin: true })`) → chỉ `ACT-ADMIN`; `ACT-STAFF` / `ACT-LEAD` bị chuyển về `/pos?denied=admin`. Ngoại lệ duy nhất là SCR-42. Từ F-077 (ADR-035): `ACT-STORE` (Quản lý cửa hàng) mở được các trang trong `STORE_MGR_PAGES` (`js/roles.js` — Hôm nay, Báo cáo, Thực đơn, Kho hàng, Khách hàng, Ca, Sổ quỹ, Cảnh báo, Nhân sự, Bàn & QR, trang in PO); trang khác → `/pos?denied=admin`. `GET /admin` chuyển hướng tới `/admin/reports`.
 
 Thanh bên (ADR-013 D-58, từ 23/10/2026): **Hôm nay** (SCR-42) luôn ở trên, rồi 6 nhóm thu gọn — **Tổng quan** (SCR-25, SCR-41, SCR-39), **Thực đơn** (SCR-21, SCR-30, SCR-27, SCR-34), **Kho hàng** (SCR-23, SCR-31, SCR-35), **Khách hàng** (SCR-26, SCR-40, SCR-28, SCR-29, SCR-45), **Thu chi & nhân sự** (SCR-32, SCR-36, SCR-47, SCR-37), **Hệ thống** (SCR-22, SCR-20, SCR-38, SCR-33, SCR-46). Nhóm của trang đang mở tự mở. Từ F-061 (ADR-021 D-79) 5 nhóm mục nâng cao chỉ hiện khi bật ở Cài đặt → Giao diện quản lý — quán mới chỉ thấy Hôm nay, Báo cáo, Thực đơn (trừ Lịch thực đơn), Ca & hoàn tiền, Cảnh báo, Bàn & QR, Tài khoản, Cài đặt.
 
