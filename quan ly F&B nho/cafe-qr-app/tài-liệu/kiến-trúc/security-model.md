@@ -106,6 +106,12 @@ Bằng chứng: `members.test.js` (giảm tay vượt ngưỡng), `finance.test.
 - `requireAdminArea`: không có quyền trang Quản lý nào → 403 `FORBIDDEN`; có nhưng thiếu → 403 `OWNER_ONLY`; đường dẫn thuộc quyền cấp được → `details.capability` (giao diện mời Xin quyền). `DENY_RULES` (ẩn danh hội viên, trạng thái email cảnh báo) chặn mọi người trừ chủ quán. Tài khoản, cài đặt chung (ô ngoài `STORE_MGR_SETTINGS`), `access-requests`, Tra cứu API: không thuộc quyền nào → chỉ chủ quán.
 - Đặt / duyệt quyền: `PUT /api/admin/users/{id}/grants`, `POST /api/admin/access-requests/{id}/approve` — chỉ chủ quán (ghi Nhật ký thao tác như mọi thay đổi `/api/admin`); cho phép quyền `money` → cảnh báo `ACCESS_GRANT`.
 
+### 3.8. Bổ sung F-080 — trang Quản lý riêng (ADR-038, 07/11/2026)
+
+- Máy chủ không đổi cách xác thực (cùng JWT Bearer). `POST /api/auth/login` `area = 'admin'` chỉ bỏ bước chấm công vào; khóa tạm khi sai mật khẩu (F-071) vẫn áp.
+- Trình duyệt: phiên trang Quản lý (`localStorage cf_admin_session`) tách với máy quầy (`cf_staff_token`). Phiên đi theo máy quầy (`adopted`) bỏ ngay khi token máy quầy đổi. Đăng xuất trang Quản lý ghi `cf_admin_skip` = token máy quầy hiện tại để không tự dùng lại. Đây chỉ là tiện ích trên máy — quyền thật vẫn kiểm ở máy chủ mỗi request.
+- Máy quầy dùng chung: phiên Quản lý đăng nhập riêng không hết khi máy quầy đổi người → chủ quán bấm Đăng xuất trang Quản lý khi rời máy (ghi trong hướng dẫn).
+
 ## 4. Sở hữu tài nguyên và dữ liệu chỉ dành cho nhân viên
 
 | Dữ liệu | Khách (`ACT-GUEST` / `ACT-MEMBER`) | Nhân viên | Cơ chế |

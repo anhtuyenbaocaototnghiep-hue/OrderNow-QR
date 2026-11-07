@@ -787,3 +787,9 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `GET /api/auth/me`: `user.caps` (quyền đang có), `user.grants`.
 - Bị chặn ở việc thuộc quyền cấp được: 403 (`FORBIDDEN` / `OWNER_ONLY` / `POSITION_REQUIRED`) kèm `details: { capability, capabilityLabel }`.
 - `GET /api/admin/users`: thêm `grantCount`. `GET /api/dashboard/today` (chủ quán): `todos.pendingAccess`. `GET /api/admin/api-docs`: dòng `/api/admin` thêm `capability`. Cảnh báo loại mới `ACCESS_GRANT`.
+
+## Bổ sung F-080 — trang Quản lý riêng (ADR-038, TASK-097, 07/11/2026)
+
+- `POST /api/auth/login`: thêm `area` = `pos` (mặc định — chấm công vào như cũ) / `admin` (đăng nhập trang Quản lý — không chấm công). Giá trị khác → 400.
+- Trang: `GET /admin` → 302 `/admin/today`; `GET /admin/login` → Đăng nhập Quản lý (SCR-56).
+- Giao diện trang Quản lý không gọi `POST /api/auth/logout` khi Đăng xuất (chỉ xóa phiên Quản lý trên máy).

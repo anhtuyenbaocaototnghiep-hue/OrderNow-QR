@@ -487,3 +487,10 @@ flowchart LR
 - **SCR-42 Hôm nay (chủ quán):** việc cần làm "n yêu cầu xin quyền chờ duyệt" → `/admin/users#xin-quyen`.
 - **Mọi trang quầy / Quản lý:** thanh nổi cuối màn hình **Bạn chưa có quyền: … [Xin quyền] [Đóng]** khi máy chủ chặn ở quyền cấp được hoặc bị chuyển về (`?cap=`); hộp **Xin quyền** (lý do) → "Đã gửi — chờ chủ quán duyệt"; kết quả: thanh xanh "Chủ quán đã cho phép … [Tải lại]" hoặc thanh "chưa cho phép …".
 - **Máy quầy:** mục **Quản lý** hiện khi có bất kỳ quyền trang Quản lý nào (đích = trang đầu tiên được mở); chỉ có Hôm nay → mục **Hôm nay**.
+
+## F-080 — Trang Quản lý riêng (TASK-097, ADR-038, 07/11/2026)
+
+- **SCR-56 Đăng nhập Quản lý** (`/admin/login`): nền sáng của trang Quản lý, logo quán, tiêu đề **Đăng nhập Quản lý**, dòng "Dành cho chủ quán và người được giao quản lý. Đăng nhập ở đây không tính là vào ca."; nếu máy đang đăng nhập quầy bằng người có quyền → thẻ "Máy này đang đăng nhập màn hình quầy: Tên (vai) [Vào bằng tài khoản này]"; ô Tên đăng nhập, Mật khẩu, nút **Vào trang Quản lý**; không có quyền → cảnh báo vàng + ô **Cần quyền** (phần trang Quản lý) + lý do + **Xin quyền**; liên kết "Nhân viên đứng quầy? Mở màn hình quầy". Thông báo theo `reason`: hết phiên, bị khóa, chưa có quyền.
+- **Thanh bên Quản lý:** "Màn hình quầy" → **Mở màn hình quầy** (tab mới); **Đăng xuất** chỉ thoát trang Quản lý → SCR-56.
+- **Máy quầy:** nút **Quản lý** → trang Quản lý đầu tiên được mở, dùng phiên người đang đứng máy.
+- **Mở trang Quản lý không được phép:** còn trang Quản lý khác → về trang đó kèm thanh Xin quyền; không còn → máy quầy (`/pos?denied=admin`) hoặc SCR-56.
