@@ -1,6 +1,7 @@
 # ADR-012 — Làm mới giao diện theo chủ đề quán "Mộc"
 
 - **Trạng thái:** PROPOSED (23/10/2026) — chờ chủ dự án xem giao diện mới rồi duyệt gộp `main`.
+- **Một phần thay bởi [ADR-042](ADR-042-giao-dien-tinh-gon.md) (08/11/2026):** D-52 (bảng màu kem → giấy – mực – cà phê), phông tiêu đề của D-53 (Lora → Cormorant Garamond). D-54 (vùng chạm ≥ 44 px) giữ nguyên.
 - **Bối cảnh:**
   - Chủ dự án yêu cầu ngày 23/10/2026: "rà soát trên gg và trên các thư viện liên quan tới chủ đề project … sửa lại giao diện bố cục và màu sắc phù hợp với đề tài project … không được đụng đến dữ liệu project".
   - Giao diện hiện tại (design-system bước 09) đã dùng tông nâu / kem nhưng còn phông hệ thống, bố cục phẳng, chưa có nét riêng của quán. Tên quán trong dữ liệu là "Cà phê Mộc" (mộc = gỗ, tự nhiên, mộc mạc).

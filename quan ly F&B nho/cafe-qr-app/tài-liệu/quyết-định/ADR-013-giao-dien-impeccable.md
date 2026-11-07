@@ -1,6 +1,7 @@
 # ADR-013 — Nâng chất lượng giao diện theo Impeccable (biểu tượng SVG, độ nổi, bề mặt trình duyệt)
 
 - **Trạng thái:** PROPOSED (23/10/2026) — chờ chủ dự án xem giao diện rồi duyệt gộp `main` (cùng ADR-012).
+- **Một phần thay bởi [ADR-042](ADR-042-giao-dien-tinh-gon.md) (08/11/2026):** D-56 (thẻ món / thẻ đơn của khách thành danh sách phẳng viền tóc, đóng hộp thoại có hiệu ứng ra), D-57 (bỏ ngoại lệ nền kem). D-55 (biểu tượng SVG), D-58 (menu quản lý) giữ nguyên.
 - **Bối cảnh:**
   - Chủ dự án hỏi ngày 23/10/2026 skill / model làm đẹp frontend nào hợp nhất, được đề xuất **Impeccable** ([pbakaus/impeccable](https://github.com/pbakaus/impeccable), Apache-2.0); rồi yêu cầu "dựa vào đó và biến trang web tôi trở nên tuyệt vời".
   - Không cài Impeccable vào repo (nó tải chương trình chạy trên máy và cài hook): chạy bộ dò `npx impeccable@4.7.0 detect` từ thư mục tạm và áp dụng hướng dẫn `audit`, `polish`, `craft-floor`, chế độ **Operate** (quầy, quản lý, menu gọi món: người dùng đến để làm xong việc — rõ ràng, nhất quán hơn phô trương).

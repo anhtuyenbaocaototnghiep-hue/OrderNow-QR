@@ -47,3 +47,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-098-plan.md](TASK-098-plan.md) — bảng chọn món của khách (F-081, ADR-039).
 - [TASK-099-plan.md](TASK-099-plan.md) — giỏ hàng gọn: bấm món trong giỏ để sửa (F-082, ADR-040).
 - [TASK-100-plan.md](TASK-100-plan.md) — "+" mở bảng chọn cho mọi món (F-083, ADR-041).
+- [TASK-101-plan.md](TASK-101-plan.md) — giao diện tinh gọn, đợt 1 nền tảng + đợt 2 màn khách (ADR-042).

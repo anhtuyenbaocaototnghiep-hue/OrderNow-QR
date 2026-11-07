@@ -1,6 +1,6 @@
 # Design system — bước 09
 
-> **Nguồn:** CSS và JS thật trong `ứng-dụng/giao-diện/public/` (`css/base.css`, `css/customer.css`, `css/pos.css`, `css/admin.css`, `css/print.css`, `js/ui.js`, `js/admin-shell.js`), đối chiếu ngày 20/10/2026; **cập nhật 23/10/2026 theo chủ đề "Mộc"** ([ADR-012](../quyết-định/ADR-012-giao-dien-moc.md), [TASK-065](../công-việc/TASK-065.md)). **Trạng thái tài liệu:** BẢN NHÁP — chờ chủ dự án duyệt ở Gate G2. Mọi giá trị dưới đây **lấy từ code**. Phần nào chỉ là đề xuất thì ghi PROPOSED.
+> **Nguồn:** CSS và JS thật trong `ứng-dụng/giao-diện/public/` (`css/base.css`, `css/customer.css`, `css/pos.css`, `css/admin.css`, `css/print.css`, `js/ui.js`, `js/admin-shell.js`), đối chiếu ngày 20/10/2026; **cập nhật 23/10/2026 theo chủ đề "Mộc"** ([ADR-012](../quyết-định/ADR-012-giao-dien-moc.md), [TASK-065](../công-việc/TASK-065.md)); **cập nhật 08/11/2026 theo bảng màu "giấy – mực – cà phê"** ([ADR-042](../quyết-định/ADR-042-giao-dien-tinh-gon.md), [TASK-101](../công-việc/TASK-101.md) — đợt 1 nền tảng + đợt 2 màn khách; máy quầy / trang Quản lý mới nhận màu + phông, bố cục riêng làm ở đợt 3 / 4). **Trạng thái tài liệu:** BẢN NHÁP — chờ chủ dự án duyệt ở Gate G2. Mọi giá trị dưới đây **lấy từ code**. Phần nào chỉ là đề xuất thì ghi PROPOSED.
 
 FE là HTML/CSS/JS thuần, không framework, không thư viện UI (ADR-002, D-4). Phông chữ tự lưu trong `public/fonts/` (ADR-012 D-53). Mỗi khu vực gắn một class trên `<body>` và nạp `base.css` cùng một file riêng:
 
@@ -15,33 +15,34 @@ Màn hình và route: [sitemap.md](sitemap.md). Trạng thái giao diện từng
 
 ## Token (`:root` trong `css/base.css`)
 
-### Màu — chủ đề "Mộc" (ADR-012 D-52)
+### Màu — "giấy – mực – cà phê" (ADR-042 D-188; trước đó chủ đề "Mộc" — ADR-012 D-52)
 
-Ý tưởng lấy từ tên quán "Cà phê Mộc" và nghiên cứu bảng màu quán cà phê (nguồn trong ADR-012): **espresso** (chữ, thanh tối), **nâu rang** (màu chính), **kem sữa** (nền), **caramel** (màu nhấn duy nhất), **xanh lá** (thành công — gợi "mộc", tự nhiên). Giá trị trước 23/10/2026 ghi trong ngoặc.
+Nền ngà trung tính, chữ màu mực, màu chính cà phê rang đậm, **một màu nhấn** (đồng) chỉ dùng cho điểm nhỏ; xanh / vàng / đỏ chỉ cho trạng thái. Ở màn khách không tô khối màu lớn (hộp thông tin, ô hội viên, ưu đãi: nền trắng viền tóc). Giá trị "Mộc" (23/10/2026) ghi trong ngoặc.
 
 | Token | Giá trị | Dùng cho |
 | --- | --- | --- |
-| `--c-bg` | `#f6efe5` kem sữa (`#f7f3ef`) | Nền trang (khách, quản lý) |
-| `--c-surface` | `#fffdf9` (`#ffffff`) | Nền thẻ, modal, nút thường, ô nhập |
-| `--c-surface-2` | `#f0e6d8` bọt latte (`#f2ece6`) | Nền hover nút, tiêu đề bảng, badge mặc định |
-| `--c-border` | `#e2d3bf` (`#e4dad0`) | Viền thẻ, nút, dòng bảng |
-| `--c-text` | `#2a1b12` espresso (`#2b2118`) | Chữ chính |
-| `--c-muted` | `#68533f` (`#6f6053`) | Chữ phụ (`.muted`), tiêu đề bảng, nút biểu tượng |
-| `--c-primary` | `#7a4527` nâu rang (`#8a4b2a`) | Nút chính, link, chip đang chọn, nút "+", giá món |
-| `--c-primary-600` | `#5f341c` (`#733d21`) | Hover nút chính |
-| `--c-primary-50` | `#f5e9dc` (`#f6ebe4`) | Nền badge `primary`, nền ảnh thu nhỏ, stepper |
-| `--c-accent` | `#c8873f` caramel (`#d98c3b`) | Viền nhấn (đầu trang khách, thanh quầy, thanh bên quản lý, vạch trên thẻ KPI), viền chip khi rê chuột, biểu đồ — không làm nền có chữ trắng |
-| `--c-accent-600` | `#8c5220` (`#9d5a1a`) | Nền có chữ trắng: mục menu đang chọn (quầy, quản lý) — 6,28:1 |
-| `--c-accent-100` | `#f3dcb8` (mới) | Nền có chữ espresso: số món trên thanh giỏ khách — 13,07:1 |
-| `--c-focus` | `#8c5220`; trên nền tối đặt lại `--c-focus-dark` | Viền `:focus-visible` (≥ 3:1 với nền — WCAG 1.4.11) |
-| `--c-espresso` / `--c-espresso-2` | `#24170f` / `#33231a` (mới; trước dùng thẳng `#2b2118`) | Nền tối: `.c-header` (khách), `.pos-top`, `.admin-side`, toast mặc định, nút giỏ nổi / nút trên nền tối |
-| `--c-on-dark` / `--c-on-dark-muted` | `#eadccb` / `#cdb59a` (mới; trước `#e9dccf` + `opacity`) | Chữ / chữ phụ trên nền espresso — 12,95:1 / 8,86:1 |
-| `--c-focus-dark` | `#ffd38a` | Viền focus trên nền espresso — 12,40:1 |
-| `--c-success` / `--c-success-50` | `#2f6a45` xanh lá / `#e6f0e6` (`#2b7349` / `#e6f3eb`) | Nút / badge / alert / toast thành công; cột "Đã xong"; chấm "Đã kết nối" |
-| `--c-warning` / `--c-warning-50` | `#b7791f` / `#fbf0dc` (`#fdf3e1`) | Viền / biểu đồ cảnh báo (không dùng làm màu chữ) |
-| `--c-warning-text` | `#85550f` (`#8f5d12`) | Chữ cảnh báo, ghi chú món / ghi chú bàn ở quầy (thay `#b4530a` — review G3), cột "Mới" của quầy, nền banner "đơn trễ" / toast cảnh báo có chữ trắng |
-| `--c-danger` / `--c-danger-50` | `#b3261e` / `#fbeae6` (`#b42318` / `#fdecea`) | Nút xóa, lỗi, banner mất kết nối, ô nhập sai |
-| `--c-info` / `--c-info-50` | `#2c5d88` / `#e6eef6` (`#2563a8` / `#e8f0fa`) | Badge `preparing`, cột "Đang pha", alert thông tin, dải "gọi nhân viên" |
+| `--c-bg` | `#f7f6f3` giấy ngà (`#f6efe5` kem sữa) | Nền trang khách, quản lý; nền đầu trang khách |
+| `--c-surface` | `#ffffff` (`#fffdf9`) | Nền thẻ, hộp thoại, nút thường, ô nhập, "+" khách |
+| `--c-surface-2` | `#f0eee9` (`#f0e6d8`) | Hover nút, tiêu đề bảng, badge mặc định |
+| `--c-border` | `#e4e0d8` (`#e2d3bf`) | Đường kẻ tóc: dòng món, thẻ, bảng, viền chip |
+| `--c-input-border` | `#cfc9c0` (mới; trước `#d9c8b2` viết thẳng) | Viền ô nhập, nút "+", bước số lượng, tay nắm sheet |
+| `--c-text` | `#1d1a17` mực (`#2a1b12`) | Chữ chính; nền thanh giỏ, số trong giỏ, thông báo |
+| `--c-muted` | `#665f57` (`#68533f`) | Chữ phụ, tùy chọn trong giỏ, nhóm món chưa chọn, "Chọn size / tùy chọn ›" |
+| `--c-primary` | `#3b2a1f` cà phê rang (`#7a4527`) | Nút chính, link, chip đang chọn, "+" khi rê chuột |
+| `--c-primary-600` | `#2a1d15` (`#5f341c`) | Hover nút chính |
+| `--c-primary-50` | `#f2ede7` (`#f5e9dc`) | Nền ảnh thu nhỏ, dòng giỏ vừa sửa (sáng rồi nhạt), đầu thẻ thành viên |
+| `--c-accent` | `#a07444` đồng (`#c8873f` caramel) | Điểm nhấn nhỏ: vạch dưới nhóm món đang xem, đồng hồ thời gian chờ, sao ô hội viên, biểu đồ — ≥ 3,8:1 với nền, không làm chữ nhỏ |
+| `--c-accent-600` | `#8c5220` | Nền có chữ trắng: mục menu đang chọn (quầy, quản lý) — 6,28:1 |
+| `--c-accent-100` | `#f3dcb8` | Bôi chọn chữ, vòng dấu hiệu quán (quầy / quản lý) |
+| `--c-focus` | `#8c5220`; trên nền tối đặt lại `--c-focus-dark` | Viền `:focus-visible` 2 px (trước 3 px), ≥ 3:1 với nền (WCAG 1.4.11) |
+| `--c-espresso` / `--c-espresso-2` | `#24170f` / `#33231a` | Nền tối: `.pos-top`, `.admin-side` (đầu trang khách đã chuyển sang nền sáng) |
+| `--c-on-dark` / `--c-on-dark-muted` | `#eadccb` / `#cdb59a` | Chữ / chữ phụ trên nền espresso |
+| `--c-focus-dark` | `#ffd38a` | Viền focus trên nền espresso |
+| `--c-success` / `--c-success-50` | `#2f6a45` / `#e6f0e6` | Trạng thái thành công; vạch bước đã qua ở theo dõi đơn; dấu ✓ trong thông báo (bản sáng `#9fd8b0` trên nền mực) |
+| `--c-warning` / `--c-warning-50` | `#b7791f` / `#fbf0dc` | Viền / biểu đồ cảnh báo |
+| `--c-warning-text` | `#85550f` | Chữ cảnh báo, ghi chú món, nền thông báo cảnh báo |
+| `--c-danger` / `--c-danger-50` | `#b3261e` / `#fbeae6` | Nút xóa, lỗi, nhãn khuyến mãi (chữ đỏ viền nhạt), nền thông báo lỗi |
+| `--c-info` / `--c-info-50` | `#2c5d88` / `#e6eef6` | Badge `preparing`, cột "Đang pha" ở quầy, alert thông tin ở quầy / quản lý (màn khách: hộp thông tin nền trắng) |
 
 ### Màu dữ liệu biểu đồ (ADR-015 D-60 — chủ dự án chọn)
 
@@ -56,48 +57,57 @@ Chỉ tô nét / cột / điểm, **không làm màu chữ** (nhãn, số, chú 
 
 Validator dataviz trên nền thẻ `#fffdf9`: phân biệt mù màu ΔE 29,3, mắt thường ΔE 34,7 (đạt); xanh 2,76 : 1, cam 2,01 : 1 với nền (< 3 : 1) → luôn có bảng số liệu + hộp số liệu khi rê chuột / bàn phím. Đồ nghề chung: `js/chart-kit.js` (`svg`, `niceScale`, `compact`, `barPath`, `attachHover`). Nét vẽ: cột ≤ 24 px bo đầu 4 px chân vuông, khe 2 px; đường 2 px; điểm 8 px viền nền 2 px; ngưỡng (hòa vốn) nét đứt màu mực; nhãn trục ngày thưa (≤ 16 nhãn / dự báo mỗi 7 ngày) để không chồng chữ. Hộp số liệu: nền espresso, chữ `--c-on-dark` / trắng `#fff`, viền ô màu `rgba(255, 255, 255, 0.5)`. Lãi / lỗ kỳ dài (> ~45 kỳ) đổi sang 3 đường. Màn hẹp: biểu đồ giữ ≥ 80 % cỡ thiết kế, cuộn ngang trong khung. Biểu đồ cũ (giờ cao điểm, menu engineering, dự báo nhập hàng) giữ màu `.chart .bar` / `.grid` chung.
 
-Màu cố định ngoài token (dùng trực tiếp trong CSS): viền alert / dải (`#efd5a6`, `#f1c4bc`, `#c3d5e8`, `#bcd8c0`), chữ alert cảnh báo `#7a4f10`, viền ô nhập `#d9c8b2`, viền thẻ "Lần trước bạn gọi" `#e8d3bd`, công tắc đang tắt `#c4af97`, nền / viền cột bảng đơn quầy (`#fbf1df` / `#efd9b4`, `#edf2f8` / `#cfdcea`, `#ecf3ec` / `#cadfcd`), viền phiếu đơn khi rê chuột `#d5c2aa`, thanh cuộn `#94795a` (nền sáng) / `#9a7d62` (thanh bên tối) — ≥ 3:1, hover dòng bảng `#fbf6ef`, hover nút trên nền tối `#45311f`, nền `body.pos` `#efe6da`, nền ảnh món khách (dải `#f4e4d0` → `#e7d0b3`), nền đăng nhập (espresso → `#4a2a17` + vầng sáng caramel), nền trang in `#e9e4de`, chữ / viền ô màu trong hộp số liệu biểu đồ `#fff` / `rgba(255, 255, 255, 0.5)`, skeleton `#ece1d3` / `#f6efe5`, overlay `rgba(36, 23, 15, 0.5)`.
+Màu cố định ngoài token (dùng trực tiếp trong CSS): nền `body.pos` `#efeeea` (ADR-042), hover dòng bảng `#faf9f7`, hover thanh giỏ `#2e2a26`, số món trên thanh giỏ `rgba(255, 255, 255, 0.16)` trên nền mực, viền nhãn khuyến mãi `#efc9c3`, lớp phủ hộp thoại `rgba(29, 26, 23, 0.42)`, skeleton `#ecebe7` / `#f5f4f1`, thanh cuộn `#8a8279` (nền sáng) / `#9a7d62` (thanh bên tối); còn từ "Mộc" (đợt 3 / 4 sẽ xem lại): viền alert / dải (`#efd5a6`, `#f1c4bc`, `#c3d5e8`, `#bcd8c0`), chữ alert cảnh báo `#7a4f10`, công tắc đang tắt `#c4af97`, nền / viền cột bảng đơn quầy (`#fbf1df` / `#efd9b4`, `#edf2f8` / `#cfdcea`, `#ecf3ec` / `#cadfcd`), viền phiếu đơn khi rê chuột `#d5c2aa`, hover nút trên nền tối `#45311f`, nền đăng nhập quầy (espresso → `#4a2a17` + vầng sáng caramel), nền trang in `#e9e4de`, chữ / viền ô màu trong hộp số liệu biểu đồ `#fff` / `rgba(255, 255, 255, 0.5)`.
+
+Tương phản (cập nhật 08/11/2026, ADR-042 — tính bằng công thức WCAG, kiểm lại bằng `a11y.spec.js`): chữ chính / nền 16,03:1, / bề mặt 17,32:1, / `--c-surface-2` 14,94:1; `--c-muted` / nền 5,82:1, / bề mặt 6,29:1, / `--c-surface-2` 5,42:1, / `--c-primary-50` 5,40:1, / `--c-accent-100` 4,71:1 (thấp nhất — lần chạy a11y đầu với `#6a635b` báo 4,44:1 ở thẻ quà); chữ trắng / `--c-primary` 13,66:1; `--c-accent` (chỉ đồ họa) / nền 3,83:1, / bề mặt 4,14:1; viền focus `#8c5220` / nền 5,81:1, / bề mặt 6,28:1; chữ cảnh báo / nền 5,88:1; thành công 5,95:1; lỗi 6,05:1; thông tin 6,42:1; chữ trắng / thông báo nền mực 17:1.
 
 Tương phản (cập nhật 23/10/2026, ADR-012 — tính trước bằng công thức WCAG và kiểm tự động bằng `kiểm-thử/e2e/a11y.spec.js` trên trang thật): chữ chính / nền 14,55:1; `--c-muted` trên `--c-surface` 7,13:1 (trên `#fff` 7,25:1), trên `--c-surface-2` 5,87:1; chữ trắng / `--c-primary` 7,75:1; `--c-primary` trên `--c-primary-50` 6,49:1; menu đang chọn 6,28:1; badge `pending` 5,63:1; badge `completed` / `paid` 5,50:1; badge `preparing` 5,92:1; badge lỗi 5,61:1; banner "đơn trễ" 6,36:1; chữ trên nền espresso 12,95:1, nhãn nhóm thanh bên 8,86:1; viền focus 5,09–6,18:1 trên nền sáng, 12,40:1 trên nền tối. Lịch sử: 20/10/2026 (DEF-006) đã nâng `pending` từ 3,31:1, `completed` 4,41:1, menu đang chọn 2,70:1, viền focus 2,45:1 lên ≥ ngưỡng.
 
-### Bo góc, bóng, phông
+### Bo góc, bóng, phông, khoảng cách, chuyển động
 
 | Token | Giá trị | Dùng cho |
 | --- | --- | --- |
-| `--radius` | `14px` (`12px`) | `.card`, `.modal`, `.table-wrap`, ô món quầy (`.tile`, `.table-chip`); thẻ món / đơn khách dùng `16px` |
-| `--radius-sm` | `10px` (`8px`) | `.btn`, `.input`, `.alert`, `.toast`, `.skeleton`; `.btn-lg` `12px`, nút giỏ nổi `16px` |
-| (không token) | `999px` | Dạng viên thuốc: `.badge`, `.chip`, `.stepper`, `.switch`, mục menu quầy |
-| (không token) | `22px 22px 0 0` (`18px`) | `.sheet` (bottom sheet khách) |
-| (không token) | `12px` (`10px`); thẻ món khách `14px` | `.thumb` (ảnh món 64 × 64; trên menu khách 72 × 72) |
-| `--shadow` | `0 1px 2px rgba(42,27,18,.05), 0 6px 18px -6px rgba(42,27,18,.12)` | Thẻ món / thẻ đơn khách, phiếu đơn và ô món quầy khi rê chuột, trang in (`.card` không còn bóng — ADR-013 D-56) |
-| `--shadow-lg` | `0 18px 48px -12px rgba(42,27,18,.32)` | `.modal`, `.drawer`, `.sheet`, `.toast`, nút giỏ nổi, thẻ đăng nhập |
-| `--font` | `'Be Vietnam Pro', system-ui, …` (`system-ui, …` — không tải web font) | Toàn bộ chữ giao diện — phông thiết kế cho dấu tiếng Việt (ADR-012 D-53) |
-| `--font-display` | `'Lora', Georgia, 'Times New Roman', serif` (mới) | Tiêu đề có chân: `h1`, tên quán (đầu trang khách, thanh quầy, thanh bên quản lý), tiêu đề nhóm món, tiêu đề hộp thoại, chữ cái ảnh món, tên bàn trên thẻ QR |
+| `--radius` | `12px` (`14px`) | `.card`, `.modal`, `.table-wrap`, thẻ đơn khách, hộp thông tin, ô hội viên |
+| `--radius-sm` | `8px` (`10px`) | `.btn`, `.input`, `.chip` (trước viên thuốc), `.alert`, `.skeleton`; `.btn-lg` `10px`; thanh giỏ `14px` |
+| `--radius-lg` | `18px` (mới; trước `22px` viết thẳng) | Góc trên của `.sheet` |
+| (không token) | `999px` | Chỉ còn: số trong giỏ (`.qty-badge`), `.switch`, nút tròn "+" khách |
+| (không token) | `6px` / `4px` | `.badge` / `.tag`, nhãn "Bắt buộc chọn 1" (`.opt-hint.req`) |
+| `--shadow` | `0 1px 2px rgba(29,26,23,.04), 0 4px 14px -6px rgba(29,26,23,.1)` | Phiếu đơn / ô món quầy khi rê chuột, trang in (thẻ món / thẻ đơn khách **không còn bóng** — ADR-042 D-190) |
+| `--shadow-lg` | `0 24px 60px -18px rgba(29,26,23,.34)` | `.modal`, `.drawer`, `.sheet`, `.toast`, thanh giỏ, thẻ đăng nhập |
+| `--space-1…6` | `0.25 / 0.5 / 0.75 / 1 / 1.5 / 2rem` (mới) | Khoảng cách cho CSS mới (CSS cũ còn giá trị `rem` rời) |
+| `--ease-out` / `--ease-in` / `--ease-sheet` | `cubic-bezier(.22,1,.36,1)` / `(.55,0,1,.45)` / `(.32,.72,0,1)` | Vào (chậm dần) / ra / bảng trượt kiểu iOS — xem mục Chuyển động |
+| `--dur-1` / `--dur-2` / `--dur-3` | `140 / 220 / 380 ms` | Bấm, rê chuột / hộp thoại, thông báo, đóng / sheet, ngăn kéo, vạch nhóm món |
+| `--font` | `'Be Vietnam Pro', system-ui, …` | Toàn bộ chữ thường, số tiền, mã — phông thiết kế cho dấu tiếng Việt (ADR-012 D-53) |
+| `--font-display` | `'Cormorant Garamond', 'Times New Roman', Georgia, serif` (ADR-042 D-189; trước `'Lora'`) | Chỉ chữ lớn: `h1`, tên quán (đầu trang khách, thanh quầy, thanh bên quản lý), tiêu đề nhóm món, tiêu đề hộp thoại, tên bàn trên thẻ QR, chữ cái ảnh món ở quầy / quản lý. **Không dùng cho số tiền / mã** (số kiểu cổ) — mã quà `.gift-code` dùng `--font`; mọi quy tắc dùng phông này bật `font-variant-numeric: lining-nums` (số lẫn trong tiêu đề không ra "ı") |
 | `--mono` | `ui-monospace, 'Cascadia Mono', Consolas, monospace` | `.mono`, hóa đơn in |
 
-**Phông tự lưu** (`public/fonts/`, giấy phép `OFL-BeVietnamPro.txt`, `OFL-Lora.txt` — SIL OFL 1.1, lấy từ gói `@fontsource/be-vietnam-pro@5.3.0`, `@fontsource/lora@5.3.0`): Be Vietnam Pro 400 / 500 / 600 / 700 / 800, Lora 600 / 700; mỗi độ đậm hai tệp `.woff2` — phần latin và phần tiếng Việt, khai báo `unicode-range` nên trình duyệt chỉ tải phần cần (tổng 14 tệp, ≈ 230 KB). `font-display: swap`: chữ hiện ngay bằng phông hệ thống rồi đổi khi tải xong. Không gọi CDN — chạy được khi LAN của quán không có Internet.
+**Phông tự lưu** (`public/fonts/`, SIL OFL 1.1 — `OFL-BeVietnamPro.txt`, `OFL-CormorantGaramond.txt`; gói `@fontsource/be-vietnam-pro@5.3.0`, `@fontsource/cormorant-garamond@5.3.0`): Be Vietnam Pro 400 / 500 / 600 / 700 / 800, Cormorant Garamond 500 (khai báo 400–500) / 600 (khai báo 600–900, nên `font-weight: 700` cũ vẫn ra 600, không đậm giả); mỗi độ đậm hai tệp `.woff2` — latin và tiếng Việt, khai báo `unicode-range` nên trình duyệt chỉ tải phần cần (14 tệp). Cormorant đã kiểm dấu chồng tiếng Việt (ầ ẩ ẫ ổ ữ…) ở 20–40 px. Lora đã gỡ (TASK-101). `font-display: swap`; không gọi CDN — chạy được khi LAN của quán không có Internet.
 
 Token cục bộ: `--w` (`print.css`: `80mm` / `58mm` — bề rộng hóa đơn), `--heat` (`admin.css`: độ đậm ô bản đồ nhiệt giờ cao điểm).
 
 ## Chữ (typography)
 
-Không đặt cỡ chữ gốc cho `html`, nên `1rem` theo trình duyệt (thường 16 px). `body` đặt `font-size: 15px`, `line-height: 1.5` (`1.45` trước 23/10); `h1`–`h4` có `line-height: 1.25`, `margin: 0 0 0.5rem`, `letter-spacing: -0.01em`; `h1` dùng `--font-display` đậm 700.
+Không đặt cỡ chữ gốc cho `html`, nên `1rem` theo trình duyệt (thường 16 px). `body` đặt `font-size: 15px`, `line-height: 1.5` (`1.45` trước 23/10); `h1`–`h4` có `line-height: 1.25`, `margin: 0 0 0.5rem`, `letter-spacing: -0.01em`; `h1` dùng `--font-display` đậm 600, `line-height: 1.15` (ADR-042: Cormorant thấp chữ hơn Lora nên cỡ tiêu đề tăng ~1,2 lần).
 
 | Vai trò | Cỡ / độ đậm | Ở đâu |
 | --- | --- | --- |
-| Tiêu đề trang | `1.65rem` quản lý, `1.6rem` khách, `1.55rem` đăng nhập — Lora | `.admin-head h1`, `.c-hero h1`, `.login-card h1` |
-| Tiêu đề nhóm món (khách) | `1.25rem`, Lora 700, kèm đường kẻ mảnh | `.c-section h2` |
-| Tiêu đề hộp thoại | `1.2rem`, Lora 700 | `.modal-head h2` |
-| Tên quán | Lora: `0.95rem` (đầu trang khách), `1.15rem` (thanh quầy), `1.2rem` (thanh bên quản lý) | `.c-shop`, `.pos-top .brand`, `.admin-side .brand` |
-| Tên bàn ở đầu trang khách | `clamp(1rem, 4.6vw, 1.2rem)`, đậm 800, tối đa 2 dòng (không cắt tên — review G3) | `.c-table` |
+| Tiêu đề trang | `2.05rem` quản lý, `2.2rem` vào bàn (khách), `1.95rem` đăng nhập quầy, `1.9rem` đăng nhập quản lý / chính sách dữ liệu — Cormorant 600 | `.admin-head h1`, `.c-hero h1`, `.login-card h1`, `.admin-login-card h1`, `.policy h1` |
+| Tiêu đề nhóm món (khách) | `1.7rem`, Cormorant 600, không biểu tượng, không gạch trang trí | `.c-section h2` |
+| Tiêu đề hộp thoại / bảng trượt | `1.5rem`, Cormorant 600 | `.modal-head h2` |
+| Tên quán | Cormorant 600: `1.35rem` (đầu trang khách), `1.4rem` (thanh quầy), `1.45rem` (thanh bên quản lý) | `.c-shop`, `.pos-top .brand`, `.admin-side .brand` |
+| Tên bàn ở đầu trang khách | `0.9rem`, đậm 600, tối đa 2 dòng (không cắt tên — review G3 TASK-065) | `.c-table` |
+| Nhóm món (thanh dính) | `0.95rem`, đậm 500, chữ phụ → mực khi đang chọn | `body.customer .c-tabs .chip` |
+| Tên món / giá (khách) | `1.02rem` đậm 500 / `0.95rem` đậm 400, số thẳng cột | `.c-item-name` / `.c-item-price` |
 | Số lớn (KPI) | `1.65rem` (quản lý), `1.45rem` (quầy), `1.7rem` (`.today-card .big`) | `.kpi .value` |
 | Ô nhập tiền | `1.4rem`, đậm 700 | `.money-input` (S-13, S-14) |
 | Thân bài | `15px` | `body` |
 | Nhãn form | `0.9rem`, đậm 600 | `label` |
-| Nút | kế thừa, đậm 600; `.btn-sm` `0.875rem`; `.btn-lg` `1.05rem` | `.btn` |
+| Nút | kế thừa, đậm 600, giãn chữ `0.005em`; `.btn-sm` `0.875rem`; `.btn-lg` `1.05rem` | `.btn` |
+| Chip | `0.9rem`, đậm 500 (trước 600) | `.chip` |
 | Chữ nhỏ | `0.85rem` | `.small`, `.field-error` |
+| Gợi ý nhóm tùy chọn | `0.78rem`, đậm 500; "Bắt buộc…" có viền | `.opt-hint`, `.opt-hint.req` |
 | Tiêu đề cột bảng | `0.8rem`, IN HOA, `letter-spacing: 0.03em` | `.table th` |
-| Badge | `0.78rem`, đậm 700 | `.badge` |
+| Badge | `0.78rem`, đậm 600 (trước 700) | `.badge` |
 | Hóa đơn in | `12px`, `--mono`, `line-height: 1.35` | `.receipt` |
 | Chữ trên biểu đồ SVG | `11px` (trục `10px`) | `svg.chart text` |
 
@@ -105,7 +115,7 @@ Cột số trong bảng (`td.num`, `th.num`) căn phải và dùng `font-variant
 
 ## Khoảng cách
 
-Chưa có token khoảng cách: CSS dùng trực tiếp giá trị `rem`. Các giá trị lặp lại: `0.25rem`, `0.4rem`, `0.5rem`, `0.75rem`, `0.85rem`, `1rem`, `1.25rem`.
+Token `--space-1…6` có từ ADR-042 (dùng cho CSS mới); CSS cũ còn giá trị `rem` rời: `0.25rem`, `0.4rem`, `0.5rem`, `0.75rem`, `0.85rem`, `1rem`, `1.25rem`.
 
 | Mẫu | Giá trị |
 | --- | --- |
@@ -117,7 +127,7 @@ Chưa có token khoảng cách: CSS dùng trực tiếp giá trị `rem`. Các g
 | `.table th, td` | `0.6rem 0.75rem` |
 | `.admin-main` ở ≤ 480 px | lề ngang `16px` |
 
-PROPOSED: gom thành token `--space-1…6` khi có task sửa CSS (không làm trong TASK-057).
+Gom hết CSS cũ sang `--space-*`: làm dần khi sửa từng màn (đợt 3 / 4 của ADR-042).
 
 ## Thành phần (components)
 
@@ -126,7 +136,7 @@ PROPOSED: gom thành token `--space-1…6` khi có task sửa CSS (không làm t
 | Class | Mô tả | Kích thước |
 | --- | --- | --- |
 | `.btn` | Nút thường: nền `--c-surface`, viền `--c-border`, chữ đậm 600; hover `--c-surface-2`; `:disabled` / `[aria-disabled='true']` mờ 50 % | `min-height: 42px` (quầy, khách: `44px` — ADR-012 D-54), `padding: 0.5rem 1.05rem` |
-| `.btn-primary` | Nền `--c-primary`, chữ trắng, bóng nâu nhẹ; hover `--c-primary-600` | — |
+| `.btn-primary` | Nền `--c-primary` (cà phê rang đậm), chữ trắng, **không bóng** (ADR-042); hover `--c-primary-600`; mọi `.btn` lún nhẹ khi bấm (`scale(0.98)`, tắt khi giảm chuyển động) | — |
 | `.btn-success` | Nền `--c-success`, chữ trắng (ví dụ "Đã thu tiền & In bill") | — |
 | `.btn-danger` | **Nút viền đỏ** (nền trắng, chữ / viền `--c-danger`); hover `--c-danger-50` — nút Xóa, Hủy bàn | — |
 | `.btn-ghost` | Trong suốt, không viền | — |
@@ -134,9 +144,9 @@ PROPOSED: gom thành token `--space-1…6` khi có task sửa CSS (không làm t
 | `.btn.loading` | Ẩn chữ, hiện vòng quay 18 px; bật bằng `setBusy(button, true)` (đồng thời `disabled`) | — |
 | `.icon-btn` | Nút tròn chỉ có ký hiệu (ví dụ "×" đóng hộp thoại, kèm `aria-label`) | 40 × 40 px (trước 36) |
 | `.link-btn` | Nút trông như link (ví dụ "Xem thẻ thành viên ›") | — |
-| `.add-btn` (khách) | Nút tròn "+" thêm món, bóng nâu | 44 × 44 px (trước 40) |
-| `.stepper` (khách) | Nhóm − số lượng +, nền `--c-primary-50` | nút 40 × 40 px (trước 36) |
-| `.c-cartbar .btn` (khách) | Nút giỏ nổi espresso; số món trên nền `--c-accent-100` | cao 56 px |
+| `.add-btn` (khách) | Nút tròn viền mảnh `--c-input-border`, nền trắng, biểu tượng `plus` nét 1.75; rê chuột → nền `--c-primary` chữ trắng; co `0.92` khi bấm (ADR-042 — trước: nâu đặc có bóng) | 44 × 44 px |
+| `.stepper` (khách) | Nhóm − số lượng +, viền mảnh, góc 10 px, nền trắng (trước viên thuốc nền nâu nhạt); nút đang khóa chữ nhạt | nút 40 × 40 px; ở chân bảng chọn món 40 × 50 px |
+| `.c-cartbar .btn` (khách) | Thanh giỏ nổi nền mực, góc 14 px; số món trên nền trắng 16 % (trước caramel nhạt); thanh trượt lên khi hiện, **nảy nhẹ khi thêm món** (`.c-cartbar.bump`) | cao 56 px |
 | `.qty-ctl` (quầy) | − / + trong giỏ mang đi, gọi món tại bàn | nút 38 × 38 px (trước 30) |
 | `.line-edit` (quầy) | Nút ✎ sửa món trong drawer Thu tiền bàn | ≥ 38 × 38 px (trước 32) |
 | `.tile`, `.table-chip` (quầy) | Ô món (viền đáy caramel nhạt) / ô bàn bấm được; `.in-cart` hiện số lượng trong giỏ | ô món cao ≥ 96 px; ô bàn: lưới `minmax(132px, 1fr)`, cao ≥ 68 px |
@@ -161,8 +171,8 @@ PROPOSED: gom thành token `--space-1…6` khi có task sửa CSS (không làm t
 
 ### Chip, badge, tag
 
-- `.chip` (`base.css` — trước 23/10 nằm ở `customer.css`, nên chip danh mục ở Quản lý → Thực đơn hiện như nút trình duyệt): viên thuốc viền, cao ≥ 38 px, `padding: 0.4rem 0.95rem`, chữ `0.9rem`; hover viền caramel. Đang chọn: `.active` hoặc `[aria-pressed='true']` → nền `--c-primary`, chữ trắng. Dùng cho tab danh mục (`.c-tabs`, cuộn ngang, dính ngay dưới đầu trang 66 px), ghi chú nhanh (`.note-chips`), chip lý do sửa món (`.reason-chips .chip`, cao ≥ 38 px).
-- `.badge`: viên thuốc chữ `0.78rem` đậm. Biến thể trạng thái:
+- `.chip` (`base.css`): góc bo `8px` (ADR-042 D-190 — trước viên thuốc), viền `--c-border`, cao ≥ 38 px, `padding: 0.4rem 0.9rem`, chữ `0.9rem` đậm 500; hover viền `--c-input-border`. Đang chọn: `.active` hoặc `[aria-pressed='true']` → nền `--c-primary`, chữ trắng. Dùng cho chip danh mục ở quầy (Bán mang đi / Gọi món tại bàn dùng lại `.c-tabs`), ghi chú nhanh (`.note-chips`, cao ≥ 36 px), chọn lúc làm món, chip lý do sửa món. **Thanh nhóm món của khách** (`body.customer .c-tabs`) là chữ không khung, cao 44 px, dính dưới đầu trang 66 px; vạch đồng 2 px (`.tab-ink`) trượt tới nhóm đang chọn (`transform`, `--dur-3`) và tự đổi theo nhóm đang xem khi cuộn (`t-menu.js` `spyOnScroll`); nhóm đang chọn có `aria-current="true"`.
+- `.badge`: góc bo `6px` (ADR-042 — trước viên thuốc), chữ `0.78rem` đậm 600. Biến thể trạng thái:
 
 | Class | Màu | Nhãn (JS) |
 | --- | --- | --- |
@@ -174,9 +184,11 @@ PROPOSED: gom thành token `--space-1…6` khi có task sửa CSS (không làm t
 | `.badge.primary` | màu chủ đạo | nhãn chung (ví dụ "Trưởng ca") |
 
   `statusBadge(status)` và `paymentBadge(paymentStatus)` trong `js/ui.js` tạo badge từ trạng thái API, nhãn lấy từ `ORDER_STATUS`.
-- `.tag`, `.tag.promo` (khách): nhãn nhỏ `0.72rem` trên thẻ món (khuyến mãi, "Bán chạy"). `.pill` (quản lý): nhãn trong bảng.
+- `.tag`, `.tag.promo` (khách): nhãn nhỏ `0.72rem` trên tên món (khuyến mãi, "Bán chạy") — viền tóc góc 4 px, chữ phụ (khuyến mãi: chữ đỏ, viền `#efc9c3`), không tô nền (ADR-042). `.pill` (quản lý): nhãn trong bảng.
 
 ### Thẻ (card)
+
+**Màn khách (ADR-042 D-190 / D-193):** món là **dòng phẳng** (`.c-item`: không nền, không bóng, đường kẻ tóc giữa các món), ảnh 76 × 76 px góc 10 px chỉ khi có ảnh thật (không còn ô chữ cái); lớp phủ `.c-name-btn::after` trùm cả dòng → bấm vào đâu cũng mở bảng chọn, còn `.c-control`, `.fav-btn`, "Chọn size / tùy chọn ›" (`.link-btn`, chữ phụ, không xuống dòng) nằm trên lớp phủ. Thẻ đơn (`.order-card`), ô hội viên (`.member-box`), "Lần trước bạn gọi" (`.recall-card`), thẻ ưu đãi (`.promo-card`), hộp thông tin (`body.customer .alert.info`) đều nền trắng viền tóc — bỏ viền gạch caramel / nền vàng / nền xanh dương.
 
 `.card` (nền `--c-surface`, viền 1 px, `--radius`, `padding: 1.05rem 1.1rem`, **không bóng**). **Độ nổi khai báo một lần** (ADR-013 D-56): thẻ ở quầy / quản lý phẳng có viền; thẻ món và thẻ đơn của khách (`.c-item`, `.order-card`) có bóng `--shadow` không viền; lớp nổi (hộp thoại, ngăn kéo, sheet, toast, thanh giỏ) có bóng; phiếu đơn / ô món quầy chỉ nổi bóng khi rê chuột. **Không vạch màu dày một bên, không vạch nhấn dày trên góc bo** (trước 23/10 có ở phiếu đơn, cột bảng đơn, ô món, KPI, khung duyệt, thanh bên quản lý). Bảng đơn quầy: mỗi cột (`.column.col-pending` / `col-preparing` / `col-completed`) đặt biến `--col` (`--c-warning-text` / `--c-info` / `--c-success`) cho chấm + chữ tiêu đề và ô đếm (chữ trắng), nền tô nhạt `#fbf1df` / `#edf2f8` / `#ecf3ec` (chữ trên nền ≥ 5,6:1); phiếu đơn `.ticket` có chấm trạng thái (`--dot`) trước tên bàn. Khung cần duyệt `.approval`: nền `--c-warning-50` bo góc. Biến thể theo khu vực: `.order-card` (khách — đơn trong phiên; `.completed` viền xanh, `.cancelled`), `.ticket` (quầy — phiếu đơn trong cột), `.pay-card` (dải Gọi thanh toán), `.call-card` (gọi nhân viên), `.split-card` (chia bill; `.selected`), `.kpi`, `.today-card`, `.qr-card`, `.promo-card`, `.recall-card`.
 
@@ -190,11 +202,13 @@ Một hàm `modal({ title, body, actions, drawer, sheet, dismissable, onClose })
 | Ngăn kéo bên phải | `.drawer-overlay` + `.drawer` | rộng `min(560px, 100%)`, cao 100 % | Chi tiết đơn (SCR-11), Thu tiền bàn (SCR-14) |
 | Sheet trượt từ dưới | `.sheet-overlay` + `.sheet` | rộng `min(640px, 100%)`, cao tối đa `92vh`, chừa `safe-area-inset-bottom` | Giỏ hàng (SCR-03), tùy chọn món, chia bill, Thẻ thành viên |
 
-Hành vi chung: `role="dialog"`, `aria-modal="true"`, `aria-label` = tiêu đề; nút "×" có `aria-label="Đóng"`; Esc hoặc bấm ra ngoài thì đóng (trừ khi `dismissable: false`); khi mở, focus vào ô nhập / nút chính đầu tiên. Chưa giữ focus trong hộp thoại (focus trap). `confirmDialog(title, message, { okLabel, danger })` là hộp xác nhận hai nút ("Hủy" / nút đồng ý — đỏ nếu `danger`).
+**Chuyển động + thao tác (ADR-042 D-191):** `.modal` mờ + phóng nhẹ khi mở (`--dur-2`), `.sheet` trượt lên từ đáy (`--dur-3`, `--ease-sheet`), `.drawer` trượt từ phải. **Đóng:** hộp thoại thôi là `dialog` ngay (bỏ `role`, `aria-modal`, mọi `id`; `inert`, `aria-hidden`), rồi được gỡ khỏi trang trong `document.startViewTransition` — ảnh chụp của khung trượt xuống (sheet) / sang phải (ngăn kéo) / lùi ra (hộp thoại), lớp phủ mờ đi (`::view-transition-old(vt-dialog | vt-scrim)`, chọn kiểu theo `html[data-vt-leave]`); không hỗ trợ / giảm chuyển động / đang có hộp thoại khác đóng → gỡ ngay; đường lùi 600 ms. **Sheet có tay nắm** (`.sheet-grabber`, trang trí) — kéo tay nắm / đầu bảng xuống > 90 px hoặc vuốt nhanh (> 0,6 px/ms) thì đóng, ít hơn thì bật về (`dragToDismiss` trong `ui.js`). Đóng xong focus trở về nút đã mở hộp thoại. `modal({ foot })` nhận chân hộp thoại tự dựng thay hàng nút `actions` — bảng chọn món dùng: số lượng + "Thêm vào giỏ · tổng" trên một hàng, không còn nút "Hủy" / dòng "Giá 1 phần".
+
+Hành vi chung: `role="dialog"`, `aria-modal="true"`, `aria-label` = tiêu đề; nút "×" có `aria-label="Đóng"`; Esc hoặc bấm ra ngoài thì đóng (trừ khi `dismissable: false`); khi mở, focus vào ô nhập / nút chính đầu tiên. Chưa giữ focus trong hộp thoại (focus trap); đã trả focus khi đóng (ADR-042). `confirmDialog(title, message, { okLabel, danger })` là hộp xác nhận hai nút ("Hủy" / nút đồng ý — đỏ nếu `danger`).
 
 ### Toast, alert, banner
 
-- `toast(message, type = 'info', ms = 3500)`: hộp `.toasts` ở giữa đáy màn hình (rộng `min(440px, 100% − 2rem)`), có `role="status"` và `aria-live="polite"`. Loại: mặc định (nền `--c-text`), `success`, `error`, `warning`.
+- `toast(message, type = 'info', ms = 3500)`: hộp `.toasts` ở giữa đáy màn hình (rộng tối đa `min(440px, 100% − 2rem)`, thông báo co theo chữ), `role="status"`, `aria-live="polite"`. Kiểu ADR-042 D-192: nền mực, chữ trắng đậm 500, góc 12 px; `success` thêm dấu ✓ (`circle-check`, xanh sáng `#9fd8b0`); `error` nền `--c-danger`, `warning` nền `--c-warning-text`. **Tối đa 3** — cái cũ nhất lùi ra khi có cái thứ 4; vào / ra có hiệu ứng (`toast-in` / `.leaving`). Màn khách **không dùng thông báo cho việc thành công thường ngày** (thêm món, sửa món trong giỏ): phản hồi ngay tại chỗ + `announce(message)` (vùng `#live-status` chỉ cho trình đọc màn hình).
 - `.alert` + `info` / `success` / `warning` / `danger`: thông báo trong trang hoặc trong hộp thoại. Lỗi API hiển thị bằng `el('div', { class: 'alert danger' }, errorMessage(err))`. Hiện `.alert` **không** có `role="alert"`.
 - `.banner` (dính đầu trang): `.offline` (đỏ — "Mất kết nối…"), `.late` (cảnh báo — "Có đơn hàng bị trễ…"), `.closed` (khách — quán tạm ngưng nhận đơn, có `role="status"`).
 - `.conn` (quầy): chấm xanh "Đã kết nối" / chấm đỏ nhấp nháy "Mất kết nối".
@@ -231,6 +245,22 @@ Hành vi chung: `role="dialog"`, `aria-modal="true"`, `aria-label` = tiêu đề
 
 `.receipt` rộng `var(--w)` (80 mm mặc định, 58 mm khi chọn), chữ `--mono` 12 px; `body.receipt-page` đặt lại `--font` / `--font-display` về phông hệ thống (trang tự in sau 150 ms, không chờ web font — TASK-065), nền trắng chữ đen. Khổ giấy đặt động bằng `@page { size: <w>mm auto; margin: 0 }` ghi vào thẻ `#page-size`, lựa chọn khổ nhớ theo máy. Thanh công cụ `.receipt-toolbar.no-print` ẩn khi in (`.no-print { display: none }` trong `@media print`). Phiếu tạm tính có watermark "TẠM TÍNH" (`.watermark`, `aria-hidden`) và tiêu đề "PHIẾU TẠM TÍNH"; bill đã thu có tiêu đề "HÓA ĐƠN THANH TOÁN". Trang in QR bàn (`admin/qr-print.html`) và đơn đặt hàng (`admin/po-print.html`, `.po-print`) dùng `@media print` trong `admin.css`.
 
+## Chuyển động (ADR-042 D-191)
+
+| Chỗ | Hiệu ứng | Thời lượng / đường cong |
+| --- | --- | --- |
+| Nút `.btn`, `.add-btn`, `.c-choice` | Lún nhẹ khi bấm (`scale` 0.98 / 0.92 / 0.99) | `--dur-1`, `--ease-out` |
+| Hộp thoại / sheet / ngăn kéo | Vào: mờ + phóng / trượt lên / trượt ngang; ra: trên ảnh chụp View Transition | vào `--dur-2` / `--dur-3` (`--ease-sheet`); ra `--dur-2`, `--ease-in` |
+| Sheet | Theo ngón tay khi kéo tay nắm; bật về nếu thả sớm | `--dur-2`, `--ease-out` |
+| Thông báo | Nhích lên + hiện dần; ra mờ dần | `--dur-2` / `--dur-1` |
+| Thanh nhóm món khách | Vạch đồng trượt + giãn tới nhóm đang chọn | `--dur-3`, `--ease-out` |
+| Thanh giỏ khách | Trượt lên khi hiện; nảy `scale(1.03)` khi thêm món | `--dur-3` |
+| Số trong giỏ trên dòng món | Bật ra (`badge-pop`) mỗi lần đổi | `--dur-2` |
+| Dòng giỏ vừa sửa | Nền `--c-primary-50` nhạt dần | 1,2 s |
+| Bước tiến trình đơn | Đổi màu vạch / chữ | `--dur-3` |
+
+**Không dùng (đã thử, ghi ở ADR-042):** View Transitions giữa các trang (`@view-transition { navigation: auto }` — Chromium 156 hủy ở trang mới, báo lỗi trang) và hiện dần nội dung khi mở trang (làm Chrome hoãn khung hình đầu). Chuyển trang dựa vào việc trình duyệt giữ khung hình trang cũ tới khi trang mới sẵn sàng. **Giảm chuyển động** (`prefers-reduced-motion: reduce`): tắt mọi hiệu ứng trên; `reducedMotion()` trong `ui.js` cho JS biết để đóng hộp thoại ngay, không nảy thanh giỏ, cuộn tới nhóm món không mượt.
+
 ## Vùng chạm (touch target)
 
 Lấy từ CSS khai báo (chưa đo trên trang đã render — xem NFR-A11Y-05):
@@ -238,7 +268,7 @@ Lấy từ CSS khai báo (chưa đo trên trang đã render — xem NFR-A11Y-05)
 | Thành phần | Kích thước |
 | --- | --- |
 | `.btn-lg`, nút giỏ nổi khách | cao 52 px / 56 px |
-| `.btn` ở quầy và khách, `.add-btn`, `.tabs button` | cao 44 px (`.add-btn` 44 × 44) |
+| `.btn` ở quầy và khách, `.add-btn`, `.tabs button`, nhóm món khách | cao 44 px (`.add-btn` 44 × 44) |
 | `.btn` ở quản lý, `.input` | cao 42 px |
 | `.stepper button`, `.icon-btn`, `.stars .star`, mục menu quầy | 40 × 40 px |
 | `.qty-ctl button`, `.line-edit`, `.reason-chips .chip`, `.chip` | 38 px |
@@ -281,7 +311,7 @@ Một bộ biểu tượng SVG vẽ cùng nét, thay emoji / ký tự Unicode (t
 | `coffee` | Dấu hiệu quán, màn cảm ơn | Thanh quầy / quản lý, đăng nhập, trang chủ, vào bàn (SCR-01) |
 | `star` (rỗng / đặc) | Hội viên; chấm sao; nhà cung cấp ưu tiên | Ô hội viên, quầy, báo cáo; màn đánh giá; menu khách; nhà cung cấp |
 | `ticket`, `stamp`, `gift`, `award` | Voucher, thẻ tem, quà đổi điểm, điểm | Thẻ thành viên, khung hội viên quầy, quản lý hội viên |
-| `sparkles`, `utensils` | Nhóm "Gợi ý cho bạn", "Combo" | Menu khách |
+| `sparkles` | Kết quả vòng quay may mắn — **không** dùng trước tiêu đề nhóm món nữa (ADR-042 D-194: tiêu đề "Gợi ý cho bạn", "Ưu đãi hôm nay", "Combo" là chữ) | Trang vòng quay |
 | `timer` | Thời gian chờ | Giỏ, theo dõi đơn |
 | `receipt` | Chia bill / ảnh hóa đơn | Theo dõi đơn, quầy, sổ quỹ |
 | `hand` | Gọi nhân viên | Theo dõi đơn, dải quầy |
@@ -292,7 +322,7 @@ Một bộ biểu tượng SVG vẽ cùng nét, thay emoji / ký tự Unicode (t
 | `triangle-alert`, `wifi-off` | Cảnh báo ("Chưa mở ca", đánh giá thấp, mã bàn sai), lỗi mạng | Quầy, SCR-01 |
 | `corner-down-right` | Chuyển từ bàn khác | Panel bàn quầy |
 | `printer` | In QR | Bàn & mã QR |
-| `check`, `circle-check`, `x`, `pencil`, `party-popper`, `arrow-up` / `arrow-down`, `chevron-right` | Đạt / có / không có việc tồn; bỏ dòng, đóng hộp thoại; sửa món; món đã xong; đổi thứ tự ghim; mở ô hội viên | Nhiều nơi |
+| `check`, `circle-check`, `x`, `pencil`, `party-popper`, `arrow-up` / `arrow-down`, `chevron-right`, `plus` | Đạt / có / không có việc tồn, dấu ✓ trong thông báo thành công; bỏ dòng, đóng hộp thoại; sửa món; món đã xong; đổi thứ tự ghim; mở ô hội viên; nút "+" thêm món của khách (ADR-042) | Nhiều nơi |
 | `house`, `chart-column`, `utensils-crossed`, `package`, `users`, `wallet`, `settings`, `chevron-down`, `monitor`, `log-out` | Menu quản lý: Hôm nay, 6 nhóm, mũi tên nhóm, sang màn quầy, đăng xuất | Thanh bên quản lý (D-58) |
 
 Giữ dạng chữ: ký hiệu trong số liệu (`5★`, "Bạc xỉu 4★" trong bảng đánh giá / dải quầy), mũi tên trong câu (`▲ ▼ → ←`) và ký tự trong nhãn chữ của nút / link ("+ Thêm …", "← Về …", "Sau ›"). Biểu đồ (lãi / lỗ, phân tích, dự báo) là SVG vẽ bằng JS (`svg.chart`), không dùng thư viện biểu đồ.
@@ -328,5 +358,6 @@ Nhãn trạng thái đơn tiếng Việt lấy từ `ORDER_STATUS` (xem bảng b
 - Nền gradient chỉ đặt ở lớp trang trí (khung đăng nhập, ảnh món, lớp mờ dưới thanh giỏ); chữ luôn nằm trên nền màu đặc để kiểm tra tự động đo được.
 - Biểu tượng: chỉ dùng `icon()` / SVG trong `js/icons.js`, không dùng emoji; biểu tượng đứng một mình phải có `label` (ADR-013 D-55).
 - **Bề mặt trình duyệt** theo bảng màu (ADR-013 D-56): `::selection` nền `--c-accent-100`; `accent-color` / `caret-color` `--c-primary`; `scrollbar-color` `#94795a` (thanh bên tối `#9a7d62`) — ≥ 3:1 với nền; link gạch chân cách chữ `0.2em`, dày 1 px (rê chuột 2 px).
-- **Giảm chuyển động** (`prefers-reduced-motion: reduce`): bỏ hiệu ứng mở hộp thoại / ngăn kéo / sheet / toast, nhấp nháy "Mất kết nối", shimmer khung chờ, nảy nút (`.btn`, ô món quầy, nút "+" khách), xoay mũi tên nhóm menu; bấm tab danh mục khách thì nhảy thẳng tới nhóm món thay vì cuộn mượt; dải "Gọi thanh toán" và đơn mới dùng vòng viền tĩnh thay nhịp đập / bật nảy. Vòng quay chờ vẫn quay (là phản hồi đang tải).
-- Bộ dò Impeccable (`npx impeccable@4.7.0 detect <thư-mục public>`) không được báo `side-tab`, `border-accent-on-rounded`; `cream-palette` là ngoại lệ có chủ đích (ADR-013 D-57), `cramped-padding` ở `po-print.html` là báo nhầm (trang in bỏ lề, lề giấy thay).
+- **Giảm chuyển động** (`prefers-reduced-motion: reduce`): bỏ hiệu ứng mở / đóng hộp thoại / ngăn kéo / sheet / thông báo, nhấp nháy "Mất kết nối", shimmer khung chờ, lún nút (`.btn`, `.add-btn`, `.c-choice`, ô món quầy), xoay mũi tên nhóm menu, vạch nhóm món trượt, thanh giỏ trượt / nảy, số trong giỏ bật ra, dòng giỏ sáng; hộp thoại đóng là gỡ ngay (`reducedMotion()`); bấm tab danh mục khách thì nhảy thẳng tới nhóm món thay vì cuộn mượt; dải "Gọi thanh toán" và đơn mới dùng vòng viền tĩnh thay nhịp đập / bật nảy. Vòng quay chờ vẫn quay (là phản hồi đang tải).
+- Bộ dò Impeccable (`npx impeccable@4.7.0 detect <thư-mục public>`, chạy từ thư mục ngoài repo vì `npx` lỗi với đường dẫn có `&`) không được báo `side-tab`, `border-accent-on-rounded`, `cream-palette` — ngoại lệ nền kem (ADR-013 D-57) đã bỏ ở ADR-042; lần quét 08/11/2026 (77 tệp CSS / JS): 0 phát hiện. `cramped-padding` ở `po-print.html` là báo nhầm (trang in bỏ lề, lề giấy thay).
+- **Không AI hóa (ADR-042 D-194):** không biểu tượng trang trí trước tiêu đề; không ô chữ cái thay ảnh ở màn khách; không gradient / vầng sáng / kính mờ ở phần mới; không hộp viền gạch kiểu phiếu giảm giá; một màu nhấn (đồng); chữ đậm có chủ đích (tên món 500, giá 400); thành công thường ngày phản hồi tại chỗ, không bằng thông báo.
