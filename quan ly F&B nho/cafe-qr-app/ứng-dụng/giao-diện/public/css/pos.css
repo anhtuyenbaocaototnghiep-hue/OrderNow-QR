@@ -1,6 +1,6 @@
 /* Màn hình quầy (POS) — máy tính 1366–1920 px và máy tính bảng (ADR-018 D-70). */
 body.pos {
-  background: #efeeea; /* nền ngà xám nhạt hơn nền khách để thẻ trắng nổi rõ (ADR-042 D-188) */
+  background: #efe6da;
   min-height: 100vh;
 }
 /* Vùng chạm ở quầy ≥ 44 px (ADR-012 D-54 — WCAG 2.5.5 / Apple HIG) */
@@ -30,9 +30,8 @@ body.pos .btn:not(.btn-sm):not(.btn-lg) {
   display: flex;
   align-items: center;
   font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-weight: 600;
-  font-size: 1.4rem;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 .pos-nav {
   display: flex;
@@ -573,9 +572,7 @@ body.pos .btn:not(.btn-sm):not(.btn-lg) {
 .tp-head h2 {
   margin: 0;
   font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-size: 1.45rem;
-  font-weight: 600;
+  font-size: 1.15rem;
   letter-spacing: 0;
 }
 .tp-actions {
@@ -1072,7 +1069,7 @@ body.pos .tc-main .btn {
   box-shadow: var(--shadow-lg);
 }
 .login-card h1 {
-  font-size: 1.95rem;
+  font-size: 1.55rem;
 }
 .login-card .logo {
   display: grid;
@@ -1179,9 +1176,7 @@ body.pos .tc-main .btn {
 }
 .pos-page h2 {
   font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-size: 1.45rem;
-  font-weight: 600;
+  font-size: 1.15rem;
   letter-spacing: 0;
 }
 .pos-page .kpis {

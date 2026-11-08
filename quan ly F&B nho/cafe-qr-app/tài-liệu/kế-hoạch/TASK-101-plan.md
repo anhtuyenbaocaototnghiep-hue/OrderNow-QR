@@ -13,6 +13,7 @@
 
 ## Thiết kế
 - Token mới (D-188), Cormorant Garamond (D-189), bo góc / độ nổi (D-190), chuyển động + đóng qua View Transition + kéo để đóng (D-191), phản hồi tại chỗ (D-192), màn khách (D-193), quy tắc không AI hóa (D-194).
+- **Vòng sửa 08/11 (D-195)** sau khi chủ dự án xem trên máy tính 1920 px ("khó nhìn quá làm lại đi"): bỏ Cormorant → Be Vietnam Pro đậm 700; màu chính về nâu rang `#7a4527`, nền xám ấm `#f3f2ef`; đầu trang khách nền espresso; nhóm món nút tròn; thẻ món trắng viền mảnh, nút "+" đặc, giá đậm nâu rang, chấm số gắn góc nút; `--page` / `--gutter` căn đầu trang + nhóm món + thực đơn một cột, ≥ 1024 px thẻ 2 cột, thanh giỏ giữa; `pos.css` / `admin.css` về cỡ tiêu đề trước ADR-042. Giữ nguyên chuyển động, phản hồi tại chỗ, bảng chọn, điểm bám E2E.
 - Giữ các điểm bám E2E: `.c-section.cat .c-item`, `.add-btn` (aria-label "Thêm …"), `.qty-badge`, `.stepper span`, `#open-cart`, `.opt-row`, `#item-qty`, `#item-note`, `.item-sheet`, `.modal-foot .btn-primary`, nút "Chọn size / tùy chọn ›", `#cart-eta`, `#eta`, `.member-box(.on)`, `.recall-card`, chữ "tiền mặt hoặc chuyển khoản".
 
 ## Rủi ro
