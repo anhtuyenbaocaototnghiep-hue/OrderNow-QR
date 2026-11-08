@@ -525,3 +525,11 @@ flowchart LR
   - lô hết hạn → Nguyên liệu;
   - kiểm kê → Kho.
 - **SCR-25 Báo cáo → Đơn → In lại hóa đơn**: trang in mở với `?area=admin` (phiên Quản lý).
+
+## ADR-045 — Từ trang Quản lý mở máy quầy không đăng nhập lại (TASK-102, 08/11/2026)
+
+- **"Mở màn hình quầy"** (thanh bên Quản lý, tab mới) và **"← Màn hình quầy"** (Hôm nay bản gọn) mở `/pos?from=admin`:
+  - máy quầy chưa có ai (hoặc phiên quầy cũ hết hạn / đứng tên chủ quán) → vào thẳng màn quầy bằng người vừa đăng nhập trang Quản lý, chấm công vào, không hỏi mật khẩu;
+  - máy quầy đang có người khác đăng nhập → giữ người đó;
+  - thanh địa chỉ bỏ `?from=admin`.
+- **Máy quầy → "Quản lý":** đã đăng nhập trang Quản lý thì vào thẳng; chưa thì trang Đăng nhập Quản lý (ADR-044).

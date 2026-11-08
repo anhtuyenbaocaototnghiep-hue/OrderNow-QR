@@ -1,6 +1,6 @@
 # ADR-044 — Trang Quản lý luôn phải đăng nhập bằng mật khẩu
 
-- **Trạng thái:** ACCEPTED (08/11/2026).
+- **Trạng thái:** ACCEPTED (08/11/2026). Bổ sung bởi [ADR-045](ADR-045-mo-quay-tu-trang-quan-ly.md): chiều ngược lại (trang Quản lý → máy quầy) không phải đăng nhập lại.
 - **Nguồn:** chủ dự án gửi ảnh trang Đăng nhập Quản lý có thẻ "Máy này đang đăng nhập màn hình quầy: Quản lý (Chủ quán) [Vào bằng tài khoản này]": "sao bấm nó vào luôn vậy phải đăng nhập hay j chứ bạn làm vậy còn gì là bảo mật nữa".
 - **Bối cảnh:**
   - [ADR-038](ADR-038-trang-quan-ly-rieng.md) D-174 cho phiên trang Quản lý **đi theo phiên máy quầy** để đỡ gõ lại mật khẩu, qua ba lối:

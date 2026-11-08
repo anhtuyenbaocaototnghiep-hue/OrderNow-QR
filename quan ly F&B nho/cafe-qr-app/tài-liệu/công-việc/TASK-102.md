@@ -1,6 +1,6 @@
 # TASK-102 — Tài khoản Chủ quán chỉ dùng trang Quản lý (F-084)
 Status: READY_FOR_REVIEW (08/11/2026)
-Quyết định: [ADR-043](../quyết-định/ADR-043-chu-quan-chi-quan-ly.md) D-196…D-198 (thay một dòng bảng ADR-035 §4.6) · vòng sửa: [ADR-044](../quyết-định/ADR-044-quan-ly-luon-dang-nhap.md) D-199, D-200 · Feature: [FEATURE-084](../chức-năng/FEATURE-084.md) (US-084-1, AC-084-01…03) · BR-122
+Quyết định: [ADR-043](../quyết-định/ADR-043-chu-quan-chi-quan-ly.md) D-196…D-198 (thay một dòng bảng ADR-035 §4.6) · vòng sửa: [ADR-044](../quyết-định/ADR-044-quan-ly-luon-dang-nhap.md) D-199, D-200; [ADR-045](../quyết-định/ADR-045-mo-quay-tu-trang-quan-ly.md) D-201, D-202 · Feature: [FEATURE-084](../chức-năng/FEATURE-084.md) (US-084-1, AC-084-01…03) · BR-122
 Module: MOD-AUTH, MOD-ADMIN · Màn hình: SCR-09 (Đăng nhập quầy), SCR-42 (Hôm nay), SCR-32 (Lịch sử ca), SCR-25 (Báo cáo), SCR-56 (Đăng nhập Quản lý)
 Nguồn: chủ dự án 08/11/2026 "với sao admin vẫn có thể vào màn hình quầy vậy" → agent giải thích + đề xuất → chủ dự án (kèm ảnh Hôm nay) "tài khoản admin chỉ ở trong này thôi không có ra màn hình quầy cố định luôn". · Agent: Claude · Reviewer: chủ dự án
 Nhánh: `task/TASK-102-chu-quan-chi-quan-ly` chồng lên `task/TASK-101-giao-dien-tinh-gon` (chưa gộp `main`) · Kế hoạch: [TASK-102-plan.md](../kế-hoạch/TASK-102-plan.md)
@@ -72,3 +72,40 @@ Chưa có review G3 độc lập; chưa gộp `main`; chưa đẩy GitHub. Máy 
 - Tài liệu: ADR-044; ghi chú ADR-038 / ADR-043; FEATURE-080 (BR-118, AC-080-03), FEATURE-084 (AC-084-02); BR-122, roles §4.8, sitemap, screens-flows, security-model, tc-map, UAT-54; skill `trang-quan-ly-rieng` và `chu-quan-chi-quan-ly` (+ bản ở thư mục gốc).
 
 **Kết quả thực chạy sau vòng sửa (08/11/2026):** `npm test` **469/469 PASS** · `npm run test:e2e` **78/78 PASS** (4,5 phút) · `npm run trace -- --check` **183 US, 500 AC — PASS 500, GAP 0** · lint, định dạng PASS.
+
+## Vòng sửa 2 — đăng nhập một lần khi đi từ trang Quản lý sang máy quầy (08/11/2026, ADR-045)
+
+**Phản hồi chủ dự án:** đăng nhập bằng tài khoản Quản lý cửa hàng (`nhatanh` trong dữ liệu thử) vào trang Quản lý, bấm sang màn hình quầy thì bị đòi đăng nhập lại: "rất mất thời gian làm một lần thôi". Chủ dự án nhắc thêm: "coi lại cách làm việc… thiếu logic, lướt qua cho xong việc".
+
+**Nhìn lại (vì sao lặp lỗi):**
+- Ở F-084 và ADR-044, agent chỉ sửa đúng câu vừa được nói.
+- Agent không liệt kê các luồng đăng nhập theo tài khoản thật của chủ dự án: `admin` chủ quán, `nhatanh` quản lý cửa hàng làm cả hai bên, `staff1` / `quangtuyen` nhân viên.
+- Agent chỉ dựa vào bộ test do chính mình viết.
+
+Lần này: liệt kê 8 luồng trước khi sửa, sửa theo một nguyên tắc chung (ADR-044 + ADR-045), rồi đi lại từng luồng trên trình duyệt 1920 px.
+
+**Luồng và kết quả mong muốn:**
+
+| # | Tài khoản | Thao tác | Kết quả |
+| --- | --- | --- | --- |
+| 1 | Quản lý cửa hàng | Đăng nhập trang Quản lý → "Mở màn hình quầy" | Vào quầy ngay, chấm công vào, không hỏi lại |
+| 2 | Quản lý cửa hàng | Ở quầy → "Quản lý" | Có phiên Quản lý thì vào ngay; chưa có thì hỏi mật khẩu một lần |
+| 3 | Quản lý cửa hàng | Đã có cả hai phiên | Đi qua lại tự do tới khi đăng xuất / hết hạn |
+| 4 | Trưởng ca | Hôm nay → "← Màn hình quầy" | Như luồng 1 |
+| 5 | Chủ quán | — | Chỉ trang Quản lý; `/pos?from=admin` → trang đăng nhập quầy |
+| 6 | Nhân viên | Gõ `/admin` | Trang Đăng nhập Quản lý; đăng nhập → chưa có quyền |
+| 7 | Máy quầy đang có người khác | Quản lý bấm "Mở màn hình quầy" | Giữ người đang đứng quầy |
+| 8 | Máy còn phiên quầy cũ hết hạn | Quản lý bấm "Mở màn hình quầy" | Vẫn vào thẳng, không bị đòi đăng nhập |
+
+**Sửa:**
+- Máy chủ: `POST /api/auth/pos-session` (`userService.startPosSession`).
+- Giao diện: `auth.js` (`openPosFromAdmin`, `whoIs`), `admin-shell.js`, `admin-today.js` (`?from=admin`).
+- Test: integration AC-080-04; E2E AC-080-05 (luồng 1, 2, 5, 7, 8 ở 1920 px).
+- Tài liệu: ADR-045; ghi chú ADR-044; FEATURE-080 (quy tắc 2, AC-080-04, 05), US-080-1, BR-118, tc-map, api-contract, screens-flows, security-model, UAT-54; skill `trang-quan-ly-rieng`.
+
+**Kết quả thực chạy sau vòng sửa 2 (08/11/2026):**
+- `npm test`: **470/470 PASS** (thêm AC-080-04).
+- `npm run test:e2e`: **79/79 PASS** (4,6 phút; thêm AC-080-05).
+- `npm run trace -- --check`: **183 US, 502 AC — PASS 502, GAP 0**.
+- Lint, định dạng: PASS.
+- **Đi lại 8 luồng trên trình duyệt 1920 px** (CafeQrTest; tài khoản giống dữ liệu thử: chủ quán, quản lý cửa hàng, trưởng ca, nhân viên — script `walk102.cjs` ngoài repo): **14/14 bước đúng** như bảng luồng, không lỗi trang. Chấm công vào khi mở quầy từ trang Quản lý kiểm bằng AC-080-04 (một bản ghi, gọi lại không thêm), không kiểm trong script.

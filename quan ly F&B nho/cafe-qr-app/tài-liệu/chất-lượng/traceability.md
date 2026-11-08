@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 469 test, sửa lúc 2026-11-08 06:52 UTC
-- `npm run test:e2e` (JSON): 78 test, sửa lúc 2026-11-08 06:47 UTC
+- `npm test` (JUnit): 470 test, sửa lúc 2026-11-08 07:17 UTC
+- `npm run test:e2e` (JSON): 79 test, sửa lúc 2026-11-08 07:12 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 183 |
-| Acceptance Criteria | 500 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 500 |
+| Acceptance Criteria | 502 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 502 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -587,6 +587,8 @@
 | AC-080-01 | TC-080-01 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | Integration: `admin-area.test.js` › AC-080-01: đăng nhập trang Quản lý (area = admin) không chấm công vào — kể cả quản lý cửa hàng, nhân viên; đăng nhập máy quầy vẫn chấm công như cũ; area lạ → 400 — **PASS** | **PASS** |
 | AC-080-02 | TC-080-02 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | Integration: `admin-area.test.js` › AC-080-02: /admin dẫn vào Hôm nay; /admin/login là trang Đăng nhập Quản lý riêng (không phải màn đăng nhập quầy) — **PASS** | **PASS** |
 | AC-080-03 | TC-080-03 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | E2E: `flow.spec.js` › trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Quản lý" → vào thẳng Hôm nay; phiên riêng với máy quầy (mở /pos vẫn phải đăng nhập quầy); Đăng xuất chỉ thoát trang Quản lý; nhân viên không có quyền thì được mời Xin quyền; máy đang đăng nhập quầy (quản lý cửa hàng) vẫn phải gõ mật khẩu ở trang Đăng nhập Quản lý — không có "Vào bằng tài khoản này", mở /admin không tự vào (F-080, AC-080-03) — **PASS** | **PASS** |
+| AC-080-04 | TC-080-04 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | Integration: `admin-area.test.js` › AC-080-04: đã đăng nhập trang Quản lý → mở máy quầy (POST /api/auth/pos-session) không cần gõ lại mật khẩu: quản lý cửa hàng được, chấm công vào một lần (gọi lại không tạo thêm), không cấp token mới; chủ quán → 403 OWNER_ADMIN_ONLY; không token → 401 — **PASS** | **PASS** |
+| AC-080-05 | TC-080-05 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | E2E: `flow.spec.js` › đăng nhập một lần: quản lý cửa hàng đăng nhập trang Quản lý (máy tính 1920 px) → "Mở màn hình quầy" vào thẳng máy quầy, không hỏi mật khẩu, kể cả khi máy còn phiên quầy cũ đã hết hạn → "Quản lý" ở máy quầy về lại trang Quản lý không hỏi; máy quầy đang có người khác đăng nhập thì giữ người đó; chủ quán không mở máy quầy theo lối này (F-080, AC-080-05) — **PASS** | **PASS** |
 | AC-081-01 | TC-081-01 | F-081 | US-081-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-MENU, MOD-ORDER | SCR-57, SCR-02, SCR-03 | BR-119 | Integration: `item-sheet.test.js` › AC-081-01: hai dòng cùng món + cùng tùy chọn nhưng khác ghi chú (và số lượng chọn sẵn) → báo giá đủ 2 dòng; gửi đơn giữ 2 dòng với đúng ghi chú, số lượng, tùy chọn; tổng = đơn giá có tùy chọn × số lượng — **PASS** | **PASS** |
 | AC-081-02 | TC-081-02 | F-081 | US-081-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-MENU, MOD-ORDER | SCR-57, SCR-02, SCR-03 | BR-119 | E2E: `flow.spec.js` › bảng chọn món: khách bấm "+" món có tùy chọn → bảng trượt lên ngay (chưa vào giỏ), chọn Size L + "Ít đá" + số lượng 2 → "Thêm vào giỏ · …"; bấm tên món không tùy chọn mở bảng ghi chú; "+" món không tùy chọn vẫn thêm ngay; giỏ có đủ tùy chọn, ghi chú, số lượng; điện thoại không cuộn ngang (F-081, AC-081-02) — **PASS** | **PASS** |
 | AC-082-01 | TC-082-01 | F-082 | US-082-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-ORDER | SCR-03, SCR-57 | BR-120 | Unit: `cart-unit.test.js` › AC-082-01: thêm từ bảng chọn — cùng món + tùy chọn + ghi chú cộng dồn, ghi chú khác thành dòng riêng (khóa key~n); quầy không truyền ghi chú vẫn cộng vào dòng cũ; sửa dòng giữ vị trí + khóa, đổi tùy chọn đổi khóa, trùng dòng khác thì gộp, tối đa 50, không còn dòng thì thêm mới — **PASS** | **PASS** |

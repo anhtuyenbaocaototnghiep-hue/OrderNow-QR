@@ -808,3 +808,10 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
   - `area = 'pos'` + vai ADMIN, đúng mật khẩu → `403 { code: 'OWNER_ADMIN_ONLY', message: 'Tài khoản Chủ quán chỉ dùng trang Quản lý — không đăng nhập máy quầy' }`, không token, không chấm công.
   - Sai mật khẩu vẫn `401` như mọi tài khoản.
 - Trang in `/pos/sessions/{id}/receipt`, `/pos/orders/{id}/receipt`, `/pos/payments/{id}/receipt` kèm `?area=admin` → giao diện dùng phiên Quản lý (API không đổi — `requireStaff`).
+
+## Bổ sung ADR-045 — từ trang Quản lý mở máy quầy (TASK-102, 08/11/2026)
+
+- `POST /api/auth/pos-session` (đã đăng nhập — `requireStaff`), không có body.
+  - Dùng khi người đã đăng nhập trang Quản lý bấm "Mở màn hình quầy": chấm công vào như đăng nhập quầy (chế độ theo đăng nhập; đã có bản ghi mở thì không tạo thêm).
+  - Trả `200 { user }`. **Không cấp token mới**: giao diện dùng lại token đang có làm phiên máy quầy.
+  - Chủ quán → `403 OWNER_ADMIN_ONLY`. Không token / hết hạn → `401`.
