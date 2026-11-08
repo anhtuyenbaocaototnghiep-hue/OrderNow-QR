@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 467 test, sửa lúc 2026-11-08 06:08 UTC
-- `npm run test:e2e` (JSON): 76 test, sửa lúc 2026-11-08 06:12 UTC
+- `npm test` (JUnit): 469 test, sửa lúc 2026-11-08 06:34 UTC
+- `npm run test:e2e` (JSON): 78 test, sửa lúc 2026-11-08 06:29 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 182 |
-| Acceptance Criteria | 497 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 497 |
+| User Story | 183 |
+| Acceptance Criteria | 500 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 500 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -34,13 +34,14 @@
 - **BR chưa gắn Story nào:** 0 — mọi BR đều có Story
 - **Màn hình (SCR trong sitemap) chưa gắn Story nào:** 0 — mọi màn hình đều có Story
 - **Test FAIL bất kỳ (kể cả test không gắn AC, file test không nạp được):** 0 — không có
-- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 55
+- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 56
   - kiểm-thử/e2e/a11y.spec.js › khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn nhóm, màn cảm ơn + đánh giá — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px
   - kiểm-thử/e2e/a11y.spec.js › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm
   - kiểm-thử/e2e/a11y.spec.js › quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính
   - kiểm-thử/e2e/flow.spec.js › bố cục quầy (ADR-018): lưới bàn hiện cả bàn trống; màn 1024 px lưới bàn là ngăn trượt — nút "Bàn" mở, Esc / nền mờ đóng, focus trả về nút (TASK-072)
   - kiểm-thử/e2e/flow.spec.js › chuyển giữa các mục quầy: rời trang không làm hiện "Mất kết nối" (app tự đóng kết nối, không phải mất mạng) (DEF-011, TASK-059)
   - kiểm-thử/e2e/flow.spec.js › gọi lại đơn lần trước + thời gian chờ: hội viên gắn SĐT → "Lần trước bạn gọi" → Gọi lại vào giỏ; giỏ + theo dõi hiện ETA (F-045, F-025)
+  - kiểm-thử/e2e/flow.spec.js › máy quầy P đứng bằng quản lý cửa hàng — chủ quán chỉ dùng trang Quản lý (F-084); trang Quản lý của P vẫn là chủ quán
   - kiểm-thử/e2e/flow.spec.js › nhân viên đăng nhập; sai mật khẩu báo lỗi (S-09)
   - kiểm-thử/e2e/flow.spec.js › quản lý: nút Xóa cho món, bàn, nguyên liệu, tài khoản (ADR-004)
   - kiểm-thử/e2e/flow.spec.js › đề xuất nhập hàng: nguyên liệu chưa gán nhà cung cấp — ô chọn khóa kèm lý do; "Gán nhà cung cấp" mở form có sẵn nguyên liệu, lưu xong dòng có nhà cung cấp (DEF-016)
@@ -585,11 +586,14 @@
 | AC-079-07 | TC-079-07 | F-079 | US-079-1, US-079-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47, SCR-42, SCR-10 | BR-117 | E2E: `flow.spec.js` › quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuyển về kèm thanh "Xin quyền" → gửi lý do; chủ quán thấy ở Hôm nay → Tài khoản → Duyệt "Hết hôm nay" → nhân viên vào được; chủ quán mở "Quyền" của người đó đặt lại "Theo vai trò" → hết vào được (F-079, AC-079-07) — **PASS** | **PASS** |
 | AC-080-01 | TC-080-01 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | Integration: `admin-area.test.js` › AC-080-01: đăng nhập trang Quản lý (area = admin) không chấm công vào — kể cả quản lý cửa hàng, nhân viên; đăng nhập máy quầy vẫn chấm công như cũ; area lạ → 400 — **PASS** | **PASS** |
 | AC-080-02 | TC-080-02 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | Integration: `admin-area.test.js` › AC-080-02: /admin dẫn vào Hôm nay; /admin/login là trang Đăng nhập Quản lý riêng (không phải màn đăng nhập quầy) — **PASS** | **PASS** |
-| AC-080-03 | TC-080-03 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | E2E: `flow.spec.js` › trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Quản lý" → vào thẳng Hôm nay; phiên riêng với máy quầy (mở /pos vẫn phải đăng nhập quầy); Đăng xuất chỉ thoát trang Quản lý; nhân viên không có quyền thì được mời Xin quyền; máy đang đăng nhập quầy bằng chủ quán thì "Vào bằng tài khoản này" (F-080, AC-080-03) — **PASS** | **PASS** |
+| AC-080-03 | TC-080-03 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | E2E: `flow.spec.js` › trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Quản lý" → vào thẳng Hôm nay; phiên riêng với máy quầy (mở /pos vẫn phải đăng nhập quầy); Đăng xuất chỉ thoát trang Quản lý; nhân viên không có quyền thì được mời Xin quyền; máy đang đăng nhập quầy bằng quản lý cửa hàng thì "Vào bằng tài khoản này" (F-080, AC-080-03) — **PASS** | **PASS** |
 | AC-081-01 | TC-081-01 | F-081 | US-081-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-MENU, MOD-ORDER | SCR-57, SCR-02, SCR-03 | BR-119 | Integration: `item-sheet.test.js` › AC-081-01: hai dòng cùng món + cùng tùy chọn nhưng khác ghi chú (và số lượng chọn sẵn) → báo giá đủ 2 dòng; gửi đơn giữ 2 dòng với đúng ghi chú, số lượng, tùy chọn; tổng = đơn giá có tùy chọn × số lượng — **PASS** | **PASS** |
 | AC-081-02 | TC-081-02 | F-081 | US-081-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-MENU, MOD-ORDER | SCR-57, SCR-02, SCR-03 | BR-119 | E2E: `flow.spec.js` › bảng chọn món: khách bấm "+" món có tùy chọn → bảng trượt lên ngay (chưa vào giỏ), chọn Size L + "Ít đá" + số lượng 2 → "Thêm vào giỏ · …"; bấm tên món không tùy chọn mở bảng ghi chú; "+" món không tùy chọn vẫn thêm ngay; giỏ có đủ tùy chọn, ghi chú, số lượng; điện thoại không cuộn ngang (F-081, AC-081-02) — **PASS** | **PASS** |
 | AC-082-01 | TC-082-01 | F-082 | US-082-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-ORDER | SCR-03, SCR-57 | BR-120 | Unit: `cart-unit.test.js` › AC-082-01: thêm từ bảng chọn — cùng món + tùy chọn + ghi chú cộng dồn, ghi chú khác thành dòng riêng (khóa key~n); quầy không truyền ghi chú vẫn cộng vào dòng cũ; sửa dòng giữ vị trí + khóa, đổi tùy chọn đổi khóa, trùng dòng khác thì gộp, tối đa 50, không còn dòng thì thêm mới — **PASS** | **PASS** |
 | AC-082-02 | TC-082-02 | F-082 | US-082-1 | ACT-GUEST, ACT-MEMBER | UC-02 | MOD-ORDER | SCR-03, SCR-57 | BR-120 | E2E: `flow.spec.js` › giỏ gọn: giỏ không còn ô ghi chú / nút nhanh, mỗi món một dòng tóm tắt (tùy chọn, "Ghi chú: …", "Sửa ›"); bấm món trong giỏ → bảng chọn mở với lựa chọn cũ (Size L, "Ít đá", 2) → đổi Size M + "Mang về" + 3 → "Cập nhật · …" → dòng đổi tại chỗ, tổng đổi theo (F-082, AC-082-02) — **PASS** | **PASS** |
 | AC-083-01 | TC-083-01 | F-083 | US-083-1 | ACT-ADMIN, ACT-STORE, ACT-GUEST | UC-02 | MOD-MENU, MOD-ORDER | SCR-02, SCR-57, SCR-33 | BR-121 | Integration: `item-sheet.test.js` › AC-083-01: cài đặt "bấm + mở bảng chọn cho mọi món" — chưa đặt thì bật; menu khách gửi ui.sheetAll theo cài đặt; chủ quán / quản lý cửa hàng đổi được, nhân viên → 403 — **PASS** | **PASS** |
 | AC-083-02 | TC-083-02 | F-083 | US-083-1 | ACT-ADMIN, ACT-STORE, ACT-GUEST | UC-02 | MOD-MENU, MOD-ORDER | SCR-02, SCR-57, SCR-33 | BR-121 | E2E: `flow.spec.js` › "+" mở bảng chọn cho mọi món: chủ quán bật ở Cài đặt → khách bấm "+" món không tùy chọn (Nước suối) cũng mở bảng chọn (không có nhóm tùy chọn, có ghi chú, số lượng) → chọn 2 → "Thêm vào giỏ" → thẻ món hiện 2, không còn nút −/+ trên thẻ → gửi đơn được (F-083, AC-083-02) — **PASS** | **PASS** |
+| AC-084-01 | TC-084-01 | F-084 | US-084-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-42, SCR-32, SCR-25, SCR-56 | BR-122 | Integration: `owner-admin-only.test.js` › AC-084-01: chủ quán đăng nhập màn quầy (area = pos) → 403 OWNER_ADMIN_ONLY, không có token, không chấm công; sai mật khẩu vẫn chỉ 401 (không lộ vai trò); trang Quản lý (area = admin) và công cụ gọi API (không gửi area) vẫn vào được; quản lý cửa hàng, nhân viên vẫn đăng nhập quầy và chấm công như cũ — **PASS**<br>Integration: `owner-admin-only.test.js` › AC-084-01: "Đổi người" ở máy quầy (nhập PIN) không đổi sang chủ quán được — như trước (chỉ nhân viên / trưởng ca) — **PASS** | **PASS** |
+| AC-084-02 | TC-084-02 | F-084 | US-084-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-42, SCR-32, SCR-25, SCR-56 | BR-122 | E2E: `flow.spec.js` › chủ quán chỉ dùng trang Quản lý: gõ tài khoản chủ quán ở màn quầy → vào thẳng Hôm nay của trang Quản lý, không có phiên máy quầy; phiên máy quầy cũ đứng tên chủ quán → chuyển sang trang Quản lý; không còn lối "Mở màn hình quầy" / "Mở trang ca ở quầy"; việc cần làm không dẫn về máy quầy; in lại hóa đơn mang đi bằng phiên Quản lý (F-084, AC-084-02, AC-084-03) — **PASS** | **PASS** |
+| AC-084-03 | TC-084-03 | F-084 | US-084-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-42, SCR-32, SCR-25, SCR-56 | BR-122 | E2E: `flow.spec.js` › chủ quán chỉ dùng trang Quản lý: gõ tài khoản chủ quán ở màn quầy → vào thẳng Hôm nay của trang Quản lý, không có phiên máy quầy; phiên máy quầy cũ đứng tên chủ quán → chuyển sang trang Quản lý; không còn lối "Mở màn hình quầy" / "Mở trang ca ở quầy"; việc cần làm không dẫn về máy quầy; in lại hóa đơn mang đi bằng phiên Quản lý (F-084, AC-084-02, AC-084-03) — **PASS** | **PASS** |
 

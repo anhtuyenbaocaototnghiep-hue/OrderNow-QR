@@ -1,6 +1,7 @@
 # ADR-038 — Trang Quản lý riêng: đăng nhập riêng, phiên riêng với máy quầy
 
 - **Trạng thái:** ACCEPTED (07/11/2026). Chủ dự án: "tôi muốn admin nó là một trang riêng biệt thì được không"; agent đề xuất "Trang Quản lý riêng"; chủ dự án: "duyệt".
+- **Bổ sung bởi [ADR-043](ADR-043-chu-quan-chi-quan-ly.md) (08/11/2026):** chủ quán không đăng nhập máy quầy → "đi theo phiên máy quầy" / "Vào bằng tài khoản này" chỉ còn cho quản lý cửa hàng và người được cấp trang Quản lý; chủ quán không có lối "Mở màn hình quầy".
 - **Bối cảnh:** chủ quán đăng nhập ở `/pos/login` (màn đăng nhập quầy), vào màn hình quầy trước rồi mới bấm "Quản lý". Trang Quản lý và máy quầy dùng chung một phiên trên máy: đăng xuất trang Quản lý là đăng xuất máy quầy (kèm kiểm đóng ca, chấm công ra); quản lý cửa hàng đăng nhập từ nhà để xem báo cáo bị tính là vào ca.
 
 ## Quyết định

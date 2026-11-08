@@ -131,7 +131,7 @@ Thứ bậc mới: **Nhân viên** (STAFF) < **Trưởng ca** (MANAGER) < **Qu�
 
 | Việc | Nhân viên | Trưởng ca | Quản lý cửa hàng | Chủ quán |
 | --- | --- | --- | --- | --- |
-| Bán, thu tiền, mở / đóng ca, ghi chi quỹ, sơ chế, hủy hàng, nhận hàng | Có | Có | Có | Có |
+| Bán, thu tiền, mở / đóng ca, ghi chi quỹ, sơ chế, hủy hàng, nhận hàng | Có | Có | Có | **Không** — chỉ trang Quản lý (ADR-043, 08/11/2026); duyệt hộ ở quầy bằng tài khoản |
 | Giảm giá tay tự duyệt | ≤ 10 % và ≤ 20.000đ | ≤ 20 % và ≤ 50.000đ | Không giới hạn | Không giới hạn |
 | Hoàn tiền tự duyệt | — | Lượt thu ca đang mở | Mọi ca | Mọi ca |
 | Duyệt chi quỹ | — | ≤ ngưỡng trưởng ca (2.000.000đ) | ≤ 3 × ngưỡng trưởng ca | Mọi khoản |
@@ -182,3 +182,17 @@ Ngoài vai trò / vị trí, chủ quán đặt riêng cho từng người (tr�
 | Tài khoản & phân quyền, cài đặt chung, cách chấm công, email cảnh báo, việc chạy nền khác, danh mục thu chi (sửa), ẩn danh hội viên, Tra cứu API, duyệt xin quyền | Chỉ chủ quán — **không cấp được** |
 
 Bị chặn ở quyền cấp được → thanh "Xin quyền" → chủ quán duyệt (hết hôm nay / 7 ngày / luôn) hoặc từ chối. Test: `access-grants.test.js` (AC-079-01…06), E2E AC-079-07.
+
+## 4.8. Bổ sung F-084 — Chủ quán chỉ dùng trang Quản lý (ADR-043, 08/11/2026)
+
+Chủ dự án: "tài khoản admin chỉ ở trong này thôi không có ra màn hình quầy cố định luôn".
+
+| Việc | Chủ quán (ADMIN) | Vai khác |
+| --- | --- | --- |
+| Đăng nhập màn quầy (`/pos/login`, `area = pos`) | **Không**: `403 OWNER_ADMIN_ONLY` sau khi đúng mật khẩu; màn quầy tự đăng nhập trang Quản lý → Hôm nay | Như cũ |
+| Trang quầy (`/pos…`) | Không: phiên quầy cũ đứng tên chủ quán → đổi thành phiên Quản lý, sang Hôm nay | Như cũ |
+| Lối "Mở màn hình quầy", "Mở trang ca ở quầy" | Không hiện | Hiện như cũ |
+| Duyệt chi quỹ / nhận đơn đặt hàng / hủy lô hết hạn | Ở trang Quản lý (Sổ quỹ / Đặt hàng / Nguyên liệu) | Như cũ |
+| In lại hóa đơn từ Báo cáo | Bằng phiên Quản lý (`?area=admin`) | Như cũ |
+| Duyệt hộ ở quầy (nhập tài khoản vào hộp duyệt) | **Có** (không mở phiên máy quầy) | Như cũ |
+| Gọi API không gửi `area` (công cụ, script) | Có | Có |

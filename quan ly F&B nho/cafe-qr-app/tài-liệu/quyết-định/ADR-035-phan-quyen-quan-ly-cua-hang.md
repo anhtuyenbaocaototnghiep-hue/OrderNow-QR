@@ -1,6 +1,7 @@
 # ADR-035 — Phân quyền rõ ràng, đợt 1: vai Quản lý cửa hàng, tên Chủ quán
 
 - **Trạng thái:** ACCEPTED (07/11/2026). Chủ dự án: "với phân quyền tôi muốn bạn đề xuất phân quyền rõ ràng giữa khi vào admin thì chỉ thấy và làm cái gì, quản lý cũng vậy, và nhân viên chia ra từng cấp…". Agent đề xuất 5 vai + vị trí + cấp, chia hai đợt; chủ dự án: "tiến hành làm những cái tôi vừa nhắn".
+- **Một phần thay bởi [ADR-043](ADR-043-chu-quan-chi-quan-ly.md) (08/11/2026):** Chủ quán không còn đứng quầy (bán, thu tiền, mở / đóng ca…) — chỉ trang Quản lý; vẫn duyệt hộ ở quầy bằng tài khoản.
 - **Bối cảnh:** app có ba vai STAFF < MANAGER (Trưởng ca) < ADMIN. ADMIN hiển thị là "Quản lý" nhưng thực chất là chủ quán (toàn quyền: lương, lãi / lỗ, tài khoản). Quán muốn thuê người quản lý cửa hàng điều hành hằng ngày (thực đơn, kho, khuyến mãi, lịch làm, duyệt chi) mà không phải đưa mật khẩu chủ quán — hiện chỉ có hai lựa chọn: cho trưởng ca (thiếu quyền) hoặc cho ADMIN (thấy lương từng người, lãi / lỗ, đổi tài khoản).
 
 ## Quyết định

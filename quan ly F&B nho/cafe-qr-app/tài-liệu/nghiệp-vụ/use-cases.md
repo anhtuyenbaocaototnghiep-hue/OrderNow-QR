@@ -31,7 +31,7 @@
 | UC-14 | Quản lý menu, BOM, tùy chọn, combo, khuyến mãi, lịch thực đơn | ACT-ADMIN | F-010, F-011, F-013, F-015, F-016, F-017, F-020, F-040 | SCR-21, SCR-22, SCR-24, SCR-27…SCR-30, SCR-34 |
 | UC-15 | Chiến dịch marketing | ACT-ADMIN, EXT-SCHEDULER, EXT-ZALO | F-037 (F-038) | SCR-40, SCR-26 |
 | UC-16 | Báo cáo, lãi lỗ, phân tích, dashboard Hôm nay | ACT-ADMIN, ACT-LEAD, EXT-SCHEDULER | F-012, F-034, F-041, F-042, F-043 | SCR-42, SCR-25, SCR-39, SCR-41 |
-| UC-17 | Tài khoản, phân quyền, nhật ký thao tác | ACT-ADMIN, ACT-STORE, ACT-STAFF | F-009, F-036, F-035 (F-052, F-053, F-077) | SCR-09, SCR-20, SCR-33, SCR-38, SCR-46 |
+| UC-17 | Tài khoản, phân quyền, nhật ký thao tác | ACT-ADMIN, ACT-STORE, ACT-STAFF | F-009, F-036, F-035 (F-052, F-053, F-077, F-084) | SCR-09, SCR-20, SCR-33, SCR-38, SCR-46 |
 | UC-18 | Khách gọi nhân viên | ACT-GUEST, ACT-STAFF | F-021 | SCR-05, SCR-10 |
 | UC-19 | Tạm ngưng nhận đơn QR / giờ bán | ACT-STAFF, ACT-ADMIN | F-020, F-040 | SCR-10, SCR-02, SCR-21, SCR-33, SCR-34 |
 

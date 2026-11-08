@@ -3,6 +3,7 @@
 > **Nguồn:** chủ dự án 07/11/2026 ("tôi muốn admin nó là một trang riêng biệt thì được không"; duyệt đề xuất: "duyệt"). Quyết định: [ADR-038](../quyết-định/ADR-038-trang-quan-ly-rieng.md) D-173…D-177. Nền: [F-009](FEATURE-009.md) đăng nhập, [F-079](FEATURE-079.md) quyền riêng.
 
 - **Status:** CONFIRMED (ADR-038) · Triển khai: [TASK-097](../công-việc/TASK-097.md)
+- **Bổ sung F-084 (ADR-043, 08/11/2026):** chủ quán chỉ dùng trang Quản lý — không đăng nhập máy quầy, không có lối "Mở màn hình quầy"; "Vào bằng tài khoản này" dành cho người khác có trang Quản lý.
 - **Actor:** **ACT-ADMIN**, **ACT-STORE** (dùng trang Quản lý); **ACT-STAFF / ACT-LEAD** (máy quầy — không đổi; xin quyền khi cần).
 - **Màn hình:** **Đăng nhập Quản lý** (SCR-56, `/admin/login`) — thẻ "Máy này đang đăng nhập màn hình quầy: … [Vào bằng tài khoản này]", ô tên đăng nhập / mật khẩu, nút **Vào trang Quản lý**, khung xin quyền khi chưa có quyền, liên kết "Nhân viên đứng quầy? Mở màn hình quầy"; thanh bên Quản lý: **Mở màn hình quầy** (tab mới), **Đăng xuất** (chỉ trang Quản lý).
 - **Dữ liệu:** không đổi bảng.

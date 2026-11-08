@@ -510,3 +510,18 @@ flowchart LR
 
 - **SCR-02 Menu (bật — mặc định):** "+" mọi món mở **SCR-57** (món không tùy chọn: chỉ ghi chú + số lượng; combo: chỉ số lượng); thẻ món chỉ hiện số trong giỏ + "+" (không còn −/+ trên thẻ). Tắt: như F-081.
 - **SCR-33 Cài đặt:** thẻ **Màn gọi món của khách** — ô **Bấm "+" mở bảng chọn cho mọi món** + giải thích (tắt: món không có tùy chọn bấm "+" là vào giỏ ngay, nhanh hơn 1 chạm).
+
+## F-084 — Chủ quán chỉ dùng trang Quản lý (TASK-102, ADR-043, 08/11/2026)
+
+- **SCR-09 Đăng nhập quầy:**
+  - gõ tài khoản Chủ quán (đúng mật khẩu) → máy chủ từ chối đăng nhập quầy → màn tự đăng nhập trang Quản lý bằng mật khẩu vừa gõ → **SCR-42 Hôm nay** (hoặc `next` trong `/admin`);
+  - không tạo phiên máy quầy;
+  - sai mật khẩu báo như cũ.
+- **Trang quầy bất kỳ** với phiên máy quầy cũ đứng tên chủ quán → đổi thành phiên Quản lý → Hôm nay.
+- **Khung trang Quản lý** (chủ quán): không có "Mở màn hình quầy". **SCR-32 Lịch sử ca**: không có "Mở trang ca ở quầy →".
+- **SCR-42 Hôm nay** (chủ quán), việc cần làm:
+  - khoản chi chờ duyệt → Sổ quỹ;
+  - đơn đặt hàng đến hạn → Đặt hàng;
+  - lô hết hạn → Nguyên liệu;
+  - kiểm kê → Kho.
+- **SCR-25 Báo cáo → Đơn → In lại hóa đơn**: trang in mở với `?area=admin` (phiên Quản lý).

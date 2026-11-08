@@ -798,3 +798,13 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 
 - `GET` · `PUT /api/admin/settings`: thêm `menuSheetAll` (boolean, mặc định `true`; khóa `menu.sheet_all`). Quản lý cửa hàng đổi được (`STORE_MGR_SETTINGS`).
 - `GET /api/menu`: thêm `ui: { sheetAll }` — màn gọi món của khách đọc để quyết định "+" mở bảng chọn cho mọi món hay chỉ món có tùy chọn.
+
+## Bổ sung F-084 — Chủ quán chỉ dùng trang Quản lý (ADR-043, TASK-102, 08/11/2026)
+
+- `POST /api/auth/login`:
+  - `area` thành **tùy chọn** (`'pos'` | `'admin'`).
+  - Màn đăng nhập quầy luôn gửi `'pos'`, trang Đăng nhập Quản lý gửi `'admin'`.
+  - Không gửi: như trước, chấm công theo vai, không chặn (công cụ / script / test).
+  - `area = 'pos'` + vai ADMIN, đúng mật khẩu → `403 { code: 'OWNER_ADMIN_ONLY', message: 'Tài khoản Chủ quán chỉ dùng trang Quản lý — không đăng nhập máy quầy' }`, không token, không chấm công.
+  - Sai mật khẩu vẫn `401` như mọi tài khoản.
+- Trang in `/pos/sessions/{id}/receipt`, `/pos/orders/{id}/receipt`, `/pos/payments/{id}/receipt` kèm `?area=admin` → giao diện dùng phiên Quản lý (API không đổi — `requireStaff`).
