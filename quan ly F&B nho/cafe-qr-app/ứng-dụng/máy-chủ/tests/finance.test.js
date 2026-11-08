@@ -394,9 +394,10 @@ describe('Chấm công, lịch làm, năng suất (F-035)', () => {
   test('quên đăng xuất: bản ghi mở quá 12 giờ được đóng tại +12 giờ khi đăng nhập lại; job đóng bản ghi quá thời hạn token (8 giờ)', async () => {
     await pool.request().query(`UPDATE dbo.Attendance SET ClockIn = DATEADD(HOUR, -13, SYSUTCDATETIME()) WHERE UserId = ${users.lead2} AND ClockOut IS NULL`);
     await login('lead2');
-    const rows = await q1(`SELECT ClockIn, ClockOut FROM dbo.Attendance WHERE UserId = ${users.lead2} ORDER BY AttId`);
+    const rows = await q1(`SELECT ClockIn, ClockOut, NeedsReview FROM dbo.Attendance WHERE UserId = ${users.lead2} ORDER BY AttId`);
     const stale = rows.at(-2);
     assert.equal((new Date(stale.ClockOut) - new Date(stale.ClockIn)) / 3600e3, 12);
+    assert.equal(stale.NeedsReview, true, 'máy tự đóng → chờ quản lý xem lại, không tự trả 12 giờ');
     assert.equal(rows.at(-1).ClockOut, null);
 
     const ttl = ttlHours(); // thời hạn token (JWT_EXPIRES_IN, mặc định 8 giờ)
@@ -407,8 +408,9 @@ describe('Chấm công, lịch làm, năng suất (F-035)', () => {
       );
     const job = await call(admin, 'post', '/api/admin/jobs/attendance-autoclose/run');
     assert.equal(job.status, 200, JSON.stringify(job.body));
-    const last = (await q1(`SELECT TOP 1 ClockIn, ClockOut FROM dbo.Attendance WHERE UserId = ${users.lead2} ORDER BY AttId DESC`))[0];
+    const last = (await q1(`SELECT TOP 1 ClockIn, ClockOut, NeedsReview FROM dbo.Attendance WHERE UserId = ${users.lead2} ORDER BY AttId DESC`))[0];
     assert.equal(Math.round((new Date(last.ClockOut) - new Date(last.ClockIn)) / 60e3), Math.round(ttl * 60));
+    assert.equal(last.NeedsReview, true, 'job đóng vì quên đăng xuất → chờ quản lý xem lại (trang Lương: "Quên chấm ra")');
   });
 
   test('sửa chấm công: thiếu lý do → 400; trưởng ca sửa trong ngày được, ngày trước → 403; quản lý sửa mọi ngày; chồng giờ → 409', async () => {

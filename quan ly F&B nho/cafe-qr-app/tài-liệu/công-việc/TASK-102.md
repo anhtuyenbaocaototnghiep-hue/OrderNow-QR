@@ -128,3 +128,43 @@ Tài khoản thật `staff1`, `quangtuyen` (nhân viên chính thức, mọi v�
 - Chụp và đo thanh trên với 4 loại tài khoản (nhân viên, nhân viên thử việc, trưởng ca, quản lý cửa hàng) ở 1920, 1366 và 1024 px: mác đúng 12/12, không cuộn ngang, không lỗi trang.
 - Ở 1366 px, tên dài kèm mác dài thì tên quán xuống hàng riêng (thanh 138 px thay vì 100 px). Trường hợp này vốn đã có với "Dương Nhật Anh – Quản lý cửa hàng". Nhân viên thử việc nay cũng vậy vì có hai mác. Đã thử gộp thành một mác "Nhân viên · Thử việc" nhưng vẫn 138 px, nên giữ hai mác rời. Thu gọn thanh trên máy quầy thuộc đợt 3 (ADR-042, chờ chủ dự án duyệt).
 - `npm test` 470/470 · `npm run test:e2e` 79/79 (a11y quầy kiểm tương phản bằng tài khoản nhân viên) · lint PASS.
+
+## Bổ sung cùng ngày — kiểm tra kỹ chấm công (08/11/2026, DEF-021)
+
+**Yêu cầu:** "bạn test cái chấm công kỹ chưa sài dc và không bị lỗi hay thiếu logic nào pk".
+
+**Cấu hình thật trong dữ liệu thử** (đọc, không sửa):
+- chưa đặt cài đặt nào → mặc định **màn chung + PIN**, **hỏi PIN thao tác tiền bật**;
+- chỉ `quangtuyen` đã có PIN;
+- chưa có hồ sơ lương, chưa có lịch làm;
+- lần chấm công gần nhất 29/10 (thời còn chấm theo đăng nhập), trong đó 4 lần dài đúng 8 giờ 00 phút 00 giây.
+
+**Đi lại trên trình duyệt 1920 px** (CafeQrTest, cấu hình giống bản thật; script `walk-attendance*.cjs`, `walk-pinlock*.cjs` ngoài repo) — các luồng **chưa có test**:
+
+| Luồng | Kết quả |
+| --- | --- |
+| Đăng nhập quầy ở chế độ màn chung | Không chấm công; người chưa có PIN thấy dải nhắc đặt PIN |
+| Màn Chấm công | Có mọi người kể cả Quản lý cửa hàng, không có Chủ quán; chạm tên chưa có PIN → đặt bằng mật khẩu → vào ca bằng PIN (ghi nguồn màn chung) |
+| Quản lý cửa hàng chi tiền | Hỏi PIN của chính mình → đúng PIN thì ghi khoản chi |
+| Đổi người sang người chưa có PIN | Đặt PIN ngay trong hộp Đổi người → đổi được; không tự chấm công |
+| Sai PIN 5 lần | Lần 6 báo đỏ "Nhập sai PIN quá nhiều lần — tạm khóa 15 phút, chủ quán đã được báo"; đang khóa thì PIN đúng cũng bị từ chối; "Quên PIN?" → đặt lại bằng mật khẩu → hết khóa, vào ca ngay |
+| Đóng ca | Liệt kê người trong ca; người khác được chấm ra hộ và **chờ quản lý xem lại**; người đóng ca được chấm ra luôn theo giờ thật (thiết kế của F-035, `sp_CloseShift`) |
+| Mở quầy từ trang Quản lý (ADR-045) ở chế độ màn chung | Không chấm công (chỉ chế độ theo đăng nhập mới chấm) |
+| Trang Lương | Việc chờ "Chưa có hồ sơ lương", "Quên chấm ra" |
+
+Lần chạy đầu của script có nhiều dòng "SAI" do script chờ sai cách (đọc thông báo không chờ, đọc chữ trên bàn phím đã đóng đứng chờ 30 giây). Đã kiểm lại từng dòng bằng API, ảnh chụp, đo kiểu hiển thị; không coi là lỗi app.
+
+**Lỗi thật — DEF-021 (Nghiêm trọng, đã sửa):** chế độ chấm công theo đăng nhập, quên đăng xuất thì máy tự đóng mà **không đánh dấu cần xem lại**:
+- job đóng ở + 8 giờ; `sp_ClockIn` đóng ở + 12 giờ khi đăng nhập lại;
+- hệ quả: bảng lương tính như giờ làm thật.
+
+Sửa:
+- `attendanceRepo.autoClose` và `sp_ClockIn` đặt `NeedsReview = 1` → trang Lương hiện "Quên chấm ra".
+- `finance.test.js` thêm kiểm tra: mã cũ **hỏng** đúng chỗ, mã mới đạt 31/31.
+
+4 bản ghi tháng 10 cũ trong dữ liệu thử **không sửa**. Vì chưa có lịch làm nên chúng hiện "Không có lịch — chờ xác nhận", không tự trả lương. Đã báo chủ dự án.
+
+**Chưa đi lại trên trình duyệt (chỉ có test tự động):**
+- chốt / mở lại bảng lương, trả lương VietQR, tạm ứng, phụ cấp đêm / lễ (AC-073-xx);
+- nhắc chấm công và báo quên (AC-072-08…12, E2E);
+- trang Giờ công trên điện thoại.

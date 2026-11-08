@@ -31,7 +31,7 @@
 
 1. **Chấm công tự động:**
    - đăng nhập (nhân viên, trưởng ca) → `ClockIn` nếu chưa có bản ghi mở. Quản lý không tự chấm — thêm tay nếu cần.
-   - Bản ghi mở quá 12 giờ (quên đăng xuất) → đóng tại `ClockIn + 12 giờ` rồi tạo bản ghi mới.
+   - Bản ghi mở quá 12 giờ (quên đăng xuất) → đóng tại `ClockIn + 12 giờ` rồi tạo bản ghi mới; job mỗi 15 phút đóng bản ghi mở quá thời hạn token tại `ClockIn + thời hạn`. Cả hai **đánh dấu `NeedsReview`** (từ 08/11/2026 — DEF-021): trang Lương hiện "Quên chấm ra", quản lý chọn giờ thật / theo lịch / không tính.
    - Đăng xuất (`POST /api/auth/logout`) hoặc đóng ca → `ClockOut`.
    - Token hết hạn (`JWT_EXPIRES_IN`, mặc định 8 giờ) → job đóng tại `ClockIn + thời hạn`.
 2. **Sửa tay:**

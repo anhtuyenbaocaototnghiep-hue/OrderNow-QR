@@ -22,7 +22,7 @@
 
 ## Quy tắc (BR-109)
 
-1. `attendance.mode`: `KIOSK` (mặc định) — chấm công ở màn chung bằng PIN, đăng nhập / đăng xuất không chấm công; `LOGIN` — như F-035. Màn chung khi đang ở `LOGIN` → `409 KIOSK_OFF`.
+1. `attendance.mode`: `KIOSK` (mặc định) — chấm công ở màn chung bằng PIN, đăng nhập / đăng xuất không chấm công; `LOGIN` — như F-035 (quên đăng xuất → máy tự đóng và đánh dấu cần xem lại, như màn chung — DEF-021, 08/11/2026). Màn chung khi đang ở `LOGIN` → `409 KIOSK_OFF`.
 2. PIN 4–6 số, tự đặt sau khi nhập mật khẩu (`403 PASSWORD_INVALID`), không dãy dễ đoán (`400 PIN_WEAK`), lưu bcrypt; quản lý chỉ xóa. Sai 5 lần / 15 phút cùng người bị thử + cùng người đứng quầy → `429 PIN_LOCKED` + cảnh báo `AUTH_LOCK`.
 3. Vào ca khi đang có lần mở → `409 ALREADY_IN`; ra ca khi không có → `409 NOT_IN`. Quản lý không có trên màn chung.
 4. Đổi người: PIN đúng → phiên mới của người đó (chỉ nhân viên / trưởng ca); không tạo chấm công ở chế độ màn chung.

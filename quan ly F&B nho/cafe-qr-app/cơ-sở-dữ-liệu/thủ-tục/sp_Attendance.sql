@@ -1,5 +1,6 @@
 -- Chấm công tự động (FEATURE-035, ADR-006 D-25): đăng nhập → ClockIn nếu chưa có bản ghi mở trong @StaleHours giờ.
--- Bản ghi mở cũ hơn (quên đăng xuất) được đóng tại ClockIn + @StaleHours (không vượt quá hiện tại). Khóa theo người dùng
+-- Bản ghi mở cũ hơn (quên đăng xuất) được đóng tại ClockIn + @StaleHours (không vượt quá hiện tại) và đánh dấu NeedsReview = 1 —
+-- giờ chưa xác nhận không tự trả lương, quản lý quyết định ở trang Lương (08/11/2026). Khóa theo người dùng
 -- (UPDLOCK, HOLDLOCK trên dải UserId) → hai lần đăng nhập cùng lúc không tạo hai bản ghi mở.
 CREATE OR ALTER PROCEDURE dbo.sp_ClockIn
   @UserId     INT,
@@ -12,7 +13,8 @@ BEGIN
   DECLARE @Now DATETIME2(0) = SYSUTCDATETIME();
   BEGIN TRAN;
   UPDATE dbo.Attendance WITH (UPDLOCK, HOLDLOCK)
-     SET ClockOut = CASE WHEN DATEADD(HOUR, @StaleHours, ClockIn) < @Now THEN DATEADD(HOUR, @StaleHours, ClockIn) ELSE @Now END
+     SET ClockOut = CASE WHEN DATEADD(HOUR, @StaleHours, ClockIn) < @Now THEN DATEADD(HOUR, @StaleHours, ClockIn) ELSE @Now END,
+         NeedsReview = 1
    WHERE UserId = @UserId AND ClockOut IS NULL AND ClockIn < DATEADD(HOUR, -@StaleHours, @Now);
 
   SELECT @AttId = AttId FROM dbo.Attendance WITH (UPDLOCK, HOLDLOCK) WHERE UserId = @UserId AND ClockOut IS NULL;

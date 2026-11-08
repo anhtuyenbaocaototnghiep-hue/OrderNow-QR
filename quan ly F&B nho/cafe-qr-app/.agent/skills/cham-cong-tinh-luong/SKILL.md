@@ -45,7 +45,7 @@ Nguồn chính là tài liệu trong repo; skill này tóm tắt và chỉ chỗ
 
 | Quy tắc | Chi tiết |
 | --- | --- |
-| Chế độ | `attendance.mode`: `KIOSK` (mặc định) — chấm công ở màn chung, đăng nhập / đăng xuất **không** chấm công, job mở > 14 giờ → đóng ở +8 giờ `NeedsReview`; `LOGIN` — như F-035 (token hết hạn → đóng) |
+| Chế độ | `attendance.mode`: `KIOSK` (mặc định) — chấm công ở màn chung, đăng nhập / đăng xuất **không** chấm công, job mở > 14 giờ → đóng ở +8 giờ `NeedsReview`; `LOGIN` — như F-035 (token hết hạn → đóng; quên đăng xuất / đăng nhập lại sau > 12 giờ cũng **đánh dấu `NeedsReview`** — DEF-021, trước 08/11/2026 thì không) |
 | PIN | 4–6 số, tự đặt sau mật khẩu (`PASSWORD_INVALID`), `pinProblem` chặn lặp / dãy liên tiếp (`PIN_WEAK`), bcrypt; quản lý chỉ `pin-reset`. Sai 5 / 15 phút theo (người bị thử, người đứng quầy) → `429 PIN_LOCKED` + `AUTH_LOCK` (kind `PIN`). Kiểm khóa **trước** bcrypt |
 | Đổi người | `POST /api/auth/switch` → token của người đó (nhân viên / trưởng ca). Ở `LOGIN` mode sẽ chấm vào như đăng nhập |
 | PIN thao tác tiền | `security.money_pin` (mặc định bật), quản lý miễn; người dùng phiên nhập **PIN của chính mình** mỗi lần — chống phiên bỏ quên bị người khác dùng, chống mạo danh. Thu thêm (khoản thu) không cần |

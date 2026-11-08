@@ -55,9 +55,11 @@ export async function clockOut(userId) {
 }
 
 /** Job: bản ghi mở quá `hours` giờ (token đã hết hạn, quên đăng xuất) → đóng tại ClockIn + hours. */
+// Chấm công theo đăng nhập: quên đăng xuất → đóng ở giờ vào + thời hạn token và ĐÁNH DẤU cần xem lại (như màn chung — ADR-030):
+// giờ chưa xác nhận không tự trả lương — trang Lương hiện "Quên chấm ra" chờ quản lý chọn giờ thật / theo lịch / không tính (08/11/2026)
 export async function autoClose(hours) {
   const r = await query(
-    `UPDATE dbo.Attendance SET ClockOut = DATEADD(MINUTE, @m, ClockIn)
+    `UPDATE dbo.Attendance SET ClockOut = DATEADD(MINUTE, @m, ClockIn), NeedsReview = 1
      WHERE ClockOut IS NULL AND ClockIn < DATEADD(MINUTE, -@m, SYSUTCDATETIME())`,
     { m: [sql.Int, Math.round(hours * 60)] },
   );
