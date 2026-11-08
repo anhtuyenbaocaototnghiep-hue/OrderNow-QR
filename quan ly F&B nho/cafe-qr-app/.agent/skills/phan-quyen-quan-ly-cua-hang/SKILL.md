@@ -20,6 +20,7 @@ Ghi lại **vai Quản lý cửa hàng** (07/11/2026, TASK-094) để agent sau 
 - **Thêm trang Quản lý:** khóa trang vào `STORE_MGR_PAGES` (`js/roles.js`) nếu quản lý cửa hàng được mở; trang đó không được gọi API chỉ chủ quán (hoặc ẩn phần đó bằng `isOwner(me)`).
 - **Thêm cài đặt vận hành** quản lý cửa hàng được đổi → `STORE_MGR_SETTINGS`. **Thêm loại cảnh báo** chỉ chủ quán xem → `OWNER_ONLY_ALERTS`.
 - **Đợt 2 (TASK-095):** vị trí Thu ngân / Pha chế / Phục vụ + cấp Thử việc / Chính thức — xây trên `ROLES` hiện có, không đổi nghĩa vai.
+- **Mác vai cạnh tên** ở thanh trên máy quầy (`pos-shell.js`) và trang Tài khoản dùng chung `ROLE_BADGE` / `ROLE_LABEL` (`js/roles.js`) — mọi vai đứng quầy đều có mác (Nhân viên trung tính, Trưởng ca xanh lá, Quản lý cửa hàng xanh dương; thử việc thêm "Thử việc"). Thêm vai mới → thêm vào hai bảng này, đừng viết điều kiện riêng từng vai (08/11/2026: máy quầy từng chỉ hiện mác cho Trưởng ca / Quản lý cửa hàng, nhân viên không có).
 
 # Quy tắc (BR-115)
 

@@ -183,9 +183,10 @@ Gom hết CSS cũ sang `--space-*`: làm dần khi sửa từng màn (đợt 3 /
 | `.badge.completed`, `.paid`, `.ok` | thành công | "Đã xong" (`COMPLETED`), "Đã thu" |
 | `.badge.cancelled`, `.danger`, `.voided` | lỗi | "Đã hủy" (`CANCELLED`), "Đã hoàn tiền" (`VOIDED`) |
 | `.badge.unpaid` | trung tính | "Chưa thu" |
-| `.badge.primary` | màu chủ đạo | nhãn chung (ví dụ "Trưởng ca") |
+| `.badge.primary` | màu chủ đạo | nhãn chung (ví dụ "Chủ quán" ở trang Tài khoản) |
 
   `statusBadge(status)` và `paymentBadge(paymentStatus)` trong `js/ui.js` tạo badge từ trạng thái API, nhãn lấy từ `ORDER_STATUS`.
+  **Mác vai cạnh tên** (thanh trên máy quầy `.pos-user .user-name` và trang Tài khoản) dùng chung `ROLE_BADGE` / `ROLE_LABEL` (`js/roles.js`): Nhân viên `.badge` trung tính, Trưởng ca `.ok`, Quản lý cửa hàng `.preparing`, Chủ quán `.primary` (chỉ ở trang Tài khoản — chủ quán không đứng quầy, F-084); nhân viên thử việc thêm `.badge.pending` "Thử việc" (08/11/2026: trước đó máy quầy không có mác cho nhân viên).
 - `.tag`, `.tag.promo` (khách): nhãn nhỏ `0.72rem` trên tên món (khuyến mãi, "Bán chạy") — viền tóc góc 4 px, chữ phụ (khuyến mãi: chữ đỏ, viền `#efc9c3`), không tô nền (ADR-042). `.pill` (quản lý): nhãn trong bảng.
 
 ### Thẻ (card)

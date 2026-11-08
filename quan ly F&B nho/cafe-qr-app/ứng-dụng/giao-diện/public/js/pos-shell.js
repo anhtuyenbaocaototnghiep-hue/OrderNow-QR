@@ -6,7 +6,7 @@ import { staffApi } from './api.js';
 import { current, logout, requireStaffPage } from './auth.js';
 import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, moneyValue, playSound, time, toast, unlockAudio } from './ui.js';
 import { brandMark, icon } from './icons.js';
-import { canOpenPosPage, firstAdminHref, hasAdminPages, hasCap, hasPosition, isProbation, posPageCap, positionsText, ROLE_LABEL } from './roles.js';
+import { canOpenPosPage, firstAdminHref, hasAdminPages, hasCap, hasPosition, isProbation, posPageCap, positionsText, ROLE_BADGE, ROLE_LABEL } from './roles.js';
 import { registerAccessPrompter } from './access.js';
 import { kioskDialog, registerPinPrompter, setPinDialog, switchUserDialog } from './staff-pin.js';
 
@@ -94,9 +94,9 @@ export async function mountPosShell(active) {
           'span',
           { class: 'user-name' },
           user.fullName,
-          ['MANAGER', 'STORE_MGR'].includes(user.role)
-            ? el('span', { class: `badge ${user.role === 'MANAGER' ? 'ok' : 'preparing'}` }, ROLE_LABEL[user.role])
-            : null,
+          // Mác vai cạnh tên cho mọi người đứng quầy (chủ dự án 08/11: nhân viên cũng có mác) — cùng màu với trang Tài khoản (ROLE_BADGE):
+          // Nhân viên trung tính, Trưởng ca xanh lá, Quản lý cửa hàng xanh dương. Chủ quán không đứng quầy (F-084)
+          user.role !== 'ADMIN' ? el('span', { class: `badge ${ROLE_BADGE[user.role] ?? ''}` }, ROLE_LABEL[user.role]) : null,
           isProbation(user) ? el('span', { class: 'badge pending', title: 'Giảm giá tay, chi quỹ, sửa / xóa món cần trưởng ca duyệt' }, 'Thử việc') : null,
         ),
         // F-072: màn chấm công chung (PIN riêng) + đổi người đứng máy

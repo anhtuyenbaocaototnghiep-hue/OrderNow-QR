@@ -109,3 +109,22 @@ Lần này: liệt kê 8 luồng trước khi sửa, sửa theo một nguyên t�
 - `npm run trace -- --check`: **183 US, 502 AC — PASS 502, GAP 0**.
 - Lint, định dạng: PASS.
 - **Đi lại 8 luồng trên trình duyệt 1920 px** (CafeQrTest; tài khoản giống dữ liệu thử: chủ quán, quản lý cửa hàng, trưởng ca, nhân viên — script `walk102.cjs` ngoài repo): **14/14 bước đúng** như bảng luồng, không lỗi trang. Chấm công vào khi mở quầy từ trang Quản lý kiểm bằng AC-080-04 (một bản ghi, gọi lại không thêm), không kiểm trong script.
+
+## Bổ sung cùng ngày — mác vai cho nhân viên ở máy quầy (08/11/2026)
+
+**Yêu cầu:** chủ dự án gửi ảnh thanh trên máy quầy "Dương Nhật Anh [Quản lý cửa hàng]": "bên nhân viên tôi không thấy cái mác giống vậy bạn làm thêm dc không".
+
+**Nguyên nhân:** `pos-shell.js` chỉ hiện mác cho Trưởng ca và Quản lý cửa hàng, nhân viên chỉ có mác "Thử việc" khi đang thử việc. Trang Tài khoản thì đã có mác cho mọi vai (`ROLE_BADGE`).
+
+**Sửa:** thanh trên máy quầy dùng chung `ROLE_BADGE` / `ROLE_LABEL` với trang Tài khoản cho mọi vai đứng quầy:
+- Nhân viên: mác trung tính;
+- Trưởng ca: xanh lá;
+- Quản lý cửa hàng: xanh dương;
+- thử việc: thêm "Thử việc".
+
+Tài khoản thật `staff1`, `quangtuyen` (nhân viên chính thức, mọi vị trí) sẽ hiện "Nhân viên". Đã ghi vào `design-system.md` (sửa luôn dòng cũ ghi sai "Trưởng ca" là `.badge.primary`), `screens-flows.md` và skill `phan-quyen-quan-ly-cua-hang`.
+
+**Kiểm tra đã làm:**
+- Chụp và đo thanh trên với 4 loại tài khoản (nhân viên, nhân viên thử việc, trưởng ca, quản lý cửa hàng) ở 1920, 1366 và 1024 px: mác đúng 12/12, không cuộn ngang, không lỗi trang.
+- Ở 1366 px, tên dài kèm mác dài thì tên quán xuống hàng riêng (thanh 138 px thay vì 100 px). Trường hợp này vốn đã có với "Dương Nhật Anh – Quản lý cửa hàng". Nhân viên thử việc nay cũng vậy vì có hai mác. Đã thử gộp thành một mác "Nhân viên · Thử việc" nhưng vẫn 138 px, nên giữ hai mác rời. Thu gọn thanh trên máy quầy thuộc đợt 3 (ADR-042, chờ chủ dự án duyệt).
+- `npm test` 470/470 · `npm run test:e2e` 79/79 (a11y quầy kiểm tương phản bằng tài khoản nhân viên) · lint PASS.
