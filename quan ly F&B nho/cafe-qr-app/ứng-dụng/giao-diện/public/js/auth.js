@@ -1,26 +1,15 @@
 // Bảo vệ trang quầy/quản lý: chưa đăng nhập → /pos/login (máy quầy) hoặc /admin/login (trang Quản lý — F-080, phiên riêng);
 // trang admin cần quyền trang đó (F-077, F-079). Đây chỉ là trải nghiệm — quyền thật được kiểm ở server cho mọi endpoint.
 import { staffApi } from './api.js';
-import { clearAdminSession, clearStaffSession, getPosToken, getToken, isAdminArea, saveAdminSession } from './auth-store.js';
+import { clearAdminSession, clearStaffSession, getPosToken, getToken, isAdminArea } from './auth-store.js';
 import { confirmDialog } from './ui.js';
 import { canOpenAdminPage, firstAdminHref, hasAdminPages, pageCap } from './roles.js';
 
 /** Thông tin phiên hiện tại sau requireStaffPage(): { user, shop, modules } — modules: nhóm menu nâng cao đang bật (F-061). */
 export const current = { user: null, shop: null, modules: [], attendance: { mode: 'LOGIN', moneyPin: false }, pos: { oneTap: false } };
 
-/** F-080: đi từ nút "Quản lý" của máy quầy (?from=pos) → trang Quản lý dùng phiên của người đang đứng máy quầy. */
-function followPosIfAsked() {
-  const params = new URLSearchParams(location.search);
-  if (!isAdminArea() || params.get('from') !== 'pos') return;
-  const pos = getPosToken();
-  if (pos) saveAdminSession(pos, null, { follow: true });
-  params.delete('from');
-  const q = params.toString();
-  history.replaceState(null, '', location.pathname + (q ? `?${q}` : '') + location.hash);
-}
-
 export async function requireStaffPage({ admin = false, page = '' } = {}) {
-  followPosIfAsked();
+  // ADR-044: trang Quản lý không dùng phiên máy quầy — chưa đăng nhập trang Quản lý thì phải gõ mật khẩu ở /admin/login
   if (!getToken()) {
     const login = isAdminArea() ? '/admin/login' : '/pos/login';
     location.replace(`${login}?next=${encodeURIComponent(location.pathname + location.search)}`);
@@ -32,12 +21,11 @@ export async function requireStaffPage({ admin = false, page = '' } = {}) {
   current.modules = modules ?? [];
   current.attendance = attendance ?? { mode: 'LOGIN', moneyPin: false }; // F-072
   current.pos = pos ?? { oneTap: false }; // F-076
-  // F-084 (ADR-043): chủ quán chỉ dùng trang Quản lý. Phiên máy quầy đứng tên chủ quán (đăng nhập trước khi có luật này) → chuyển
-  // thành phiên Quản lý riêng, bỏ phiên máy quầy, sang Hôm nay. Không gọi đăng xuất server (chủ quán không chấm công).
+  // F-084 (ADR-043) + ADR-044: chủ quán chỉ dùng trang Quản lý. Phiên máy quầy đứng tên chủ quán (đăng nhập trước khi có luật) → bỏ,
+  // sang trang Đăng nhập Quản lý — phải gõ mật khẩu, không đổi phiên quầy thành phiên Quản lý. Không gọi đăng xuất server.
   if (!isAdminArea() && user.role === 'ADMIN') {
-    saveAdminSession(getPosToken(), user);
     clearStaffSession();
-    location.replace('/admin/today');
+    location.replace('/admin/login?reason=owner');
     return new Promise(() => {});
   }
   if (admin && !canOpenAdminPage(user, page)) {

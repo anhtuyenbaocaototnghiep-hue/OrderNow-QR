@@ -55,9 +55,16 @@ test('nhân viên đăng nhập; sai mật khẩu báo lỗi (S-09)', async () =
   await expect(P.locator('#conn')).toHaveText('Đã kết nối');
 });
 
-test('STAFF mở trang quản lý → bị chuyển về quầy', async () => {
+test('STAFF mở trang quản lý → phải đăng nhập trang Quản lý (không dùng phiên máy quầy); đăng nhập bằng nhân viên → chưa có quyền, không vào được', async () => {
   await P.goto('/admin/menu');
-  await expect(P).toHaveURL(/\/pos\?denied=admin/);
+  await expect(P).toHaveURL(/\/admin\/login\?next=%2Fadmin%2Fmenu/);
+  await expect(P.locator('#follow-pos')).toHaveCount(0); // ADR-044: không có "Vào bằng tài khoản này"
+  await P.fill('#username', 'staff1');
+  await P.fill('#password', 'Staff@123');
+  await P.click('#submit');
+  await expect(P.locator('#msg')).toContainText('chưa có quyền vào trang Quản lý');
+  await expect(P).toHaveURL(/\/admin\/login/);
+  await P.goto('/pos');
   await expect(P.locator('#conn')).toHaveText('Đã kết nối');
 });
 
@@ -657,11 +664,11 @@ test('trưởng ca + sổ quỹ: trưởng ca chi tiền mua đá, duyệt kho�
   await expect(attendance.locator('tr', { hasText: 'Trưởng ca E2E' }).getByRole('button', { name: 'Sửa' })).toHaveCount(0);
   await expect(attendance.locator('tbody tr', { hasNotText: 'Trưởng ca E2E' }).getByRole('button', { name: 'Sửa' }).first()).toBeVisible();
 
-  // Trưởng ca có tab Kiểm kê ở Kho; không vào được trang quản lý
+  // Trưởng ca có tab Kiểm kê ở Kho; không vào được trang quản lý bằng phiên máy quầy (ADR-044: phải đăng nhập trang Quản lý)
   await L.goto('/pos/stock');
   await expect(L.locator('#tabs button', { hasText: 'Kiểm kê' })).toBeVisible();
   await L.goto('/admin/cash');
-  await expect(L).toHaveURL(/\/pos\?denied=admin/);
+  await expect(L).toHaveURL(/\/admin\/login\?next=%2Fadmin%2Fcash/);
 
   // Quản lý: sổ quỹ
   await P.goto('/admin/cash');
@@ -791,7 +798,7 @@ test('phân tích + dashboard: quản lý xem menu engineering, giờ cao điể
   const phone = await browser.newContext(phoneOpts);
   const M = await phone.newPage();
   watch(M, 'lead-phone');
-  await M.goto('/pos/login?next=/admin/today');
+  await M.goto('/admin/login'); // ADR-044: trang Quản lý đăng nhập riêng (không qua phiên máy quầy)
   await M.fill('#username', 'lead-e2e');
   await M.fill('#password', 'Lead@123');
   await M.click('#submit');
@@ -2853,6 +2860,11 @@ test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở
   await S.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click(); // tài khoản mới → hướng dẫn lần đầu
   await expect(S.locator('.pos-top')).toContainText('Quản lý cửa hàng');
   await S.locator('.pos-nav').getByRole('link', { name: 'Quản lý' }).click();
+  // ADR-044: không dùng phiên máy quầy — gõ mật khẩu ở trang Đăng nhập Quản lý rồi về đúng trang vừa bấm
+  await expect(S).toHaveURL(/\/admin\/login\?next=%2Fadmin%2Ftoday/);
+  await S.fill('#username', 'store-e2e');
+  await S.fill('#password', 'Store@123');
+  await S.click('#submit');
   await expect(S).toHaveURL(/\/admin\/today$/);
   await expect(S.locator('.today-grid')).toBeVisible();
   const side = S.locator('#side');
@@ -2985,7 +2997,7 @@ test('quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuy�
   await ctx.close();
 });
 
-test('trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Quản lý" → vào thẳng Hôm nay; phiên riêng với máy quầy (mở /pos vẫn phải đăng nhập quầy); Đăng xuất chỉ thoát trang Quản lý; nhân viên không có quyền thì được mời Xin quyền; máy đang đăng nhập quầy bằng quản lý cửa hàng thì "Vào bằng tài khoản này" (F-080, AC-080-03)', async () => {
+test('trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Quản lý" → vào thẳng Hôm nay; phiên riêng với máy quầy (mở /pos vẫn phải đăng nhập quầy); Đăng xuất chỉ thoát trang Quản lý; nhân viên không có quyền thì được mời Xin quyền; máy đang đăng nhập quầy (quản lý cửa hàng) vẫn phải gõ mật khẩu ở trang Đăng nhập Quản lý — không có "Vào bằng tài khoản này", mở /admin không tự vào (F-080, AC-080-03)', async () => {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
   const A2 = await ctx.newPage();
   watch(A2, 'admin-area');
@@ -3012,20 +3024,25 @@ test('trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Q
   await expect(A2.locator('#msg')).toContainText('chưa có quyền vào trang Quản lý');
   await expect(A2.locator('#ask-cap')).toBeVisible();
   await expect(A2).toHaveURL(/\/admin\/login$/);
-  // Máy quầy đăng nhập quản lý cửa hàng → trang đăng nhập Quản lý mời dùng luôn (F-084: chủ quán không đăng nhập máy quầy)
+  // Máy quầy đăng nhập quản lý cửa hàng → trang Quản lý vẫn đòi mật khẩu (ADR-044: không "Vào bằng tài khoản này", không tự đi theo)
   await A2.goto('/pos/login');
   await A2.fill('#username', 'quay-ql');
   await A2.fill('#password', 'Quay@123');
   await A2.click('#submit');
   await expect(A2).toHaveURL(/\/pos$/);
-  await A2.goto('/admin/login');
-  await A2.locator('#follow-pos').click();
+  await A2.goto('/admin');
+  await expect(A2).toHaveURL(/\/admin\/login\?next=%2Fadmin%2Ftoday/);
+  await expect(A2.locator('#follow-pos')).toHaveCount(0);
+  await expect(A2.getByRole('button', { name: 'Vào bằng tài khoản này' })).toHaveCount(0);
+  await A2.fill('#username', 'quay-ql');
+  await A2.fill('#password', 'Quay@123');
+  await A2.click('#submit');
   await expect(A2).toHaveURL(/\/admin\/today$/);
   await expect(A2.locator('#side .nav-pos')).toHaveAttribute('target', '_blank'); // người đứng quầy vẫn có lối mở máy quầy (tab mới)
   await ctx.close();
 });
 
-test('chủ quán chỉ dùng trang Quản lý: gõ tài khoản chủ quán ở màn quầy → vào thẳng Hôm nay của trang Quản lý, không có phiên máy quầy; phiên máy quầy cũ đứng tên chủ quán → chuyển sang trang Quản lý; không còn lối "Mở màn hình quầy" / "Mở trang ca ở quầy"; việc cần làm không dẫn về máy quầy; in lại hóa đơn mang đi bằng phiên Quản lý (F-084, AC-084-02, AC-084-03)', async ({
+test('chủ quán chỉ dùng trang Quản lý: gõ tài khoản chủ quán ở màn quầy → vào thẳng Hôm nay của trang Quản lý, không có phiên máy quầy; phiên máy quầy cũ đứng tên chủ quán → bị bỏ, phải gõ mật khẩu ở trang Đăng nhập Quản lý; không còn lối "Mở màn hình quầy" / "Mở trang ca ở quầy"; việc cần làm không dẫn về máy quầy; in lại hóa đơn mang đi bằng phiên Quản lý (F-084, AC-084-02, AC-084-03)', async ({
   request,
 }) => {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
@@ -3044,14 +3061,20 @@ test('chủ quán chỉ dùng trang Quản lý: gõ tài khoản chủ quán ở
   // Mở /pos: không có phiên máy quầy → màn đăng nhập quầy (không mượn phiên Quản lý)
   await O.goto('/pos');
   await expect(O).toHaveURL(/\/pos\/login/);
-  // Phiên máy quầy cũ đứng tên chủ quán (đăng nhập trước khi có luật) → thành phiên Quản lý, bỏ phiên máy quầy
+  // Phiên máy quầy cũ đứng tên chủ quán (đăng nhập trước khi có luật) → bị bỏ, sang trang Đăng nhập Quản lý — phải gõ mật khẩu (ADR-044)
   await O.evaluate((t) => {
     localStorage.removeItem('cf_admin_session');
     localStorage.setItem('cf_staff_token', t);
   }, adminToken);
   await O.goto('/pos/takeaway');
-  await expect(O).toHaveURL(/\/admin\/today$/);
+  await expect(O).toHaveURL(/\/admin\/login\?reason=owner$/);
+  await expect(O.locator('#msg')).toContainText('Tài khoản Chủ quán chỉ dùng trang Quản lý');
   expect(await O.evaluate(() => localStorage.getItem('cf_staff_token'))).toBeNull();
+  expect(await O.evaluate(() => localStorage.getItem('cf_admin_session'))).toBeNull();
+  await O.fill('#username', 'admin');
+  await O.fill('#password', 'Admin@123');
+  await O.click('#submit');
+  await expect(O).toHaveURL(/\/admin\/today$/);
   await expect(O.locator('#side .who')).toContainText('@admin');
   // Lịch sử ca: không còn nút sang trang ca ở quầy
   await O.goto('/admin/shifts');

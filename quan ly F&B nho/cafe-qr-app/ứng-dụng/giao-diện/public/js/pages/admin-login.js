@@ -1,10 +1,10 @@
 // S-56 Đăng nhập Quản lý (FEATURE-080, ADR-038 D-173…D-177): trang đăng nhập riêng của trang Quản lý.
 //  - Phiên Quản lý riêng với máy quầy (auth-store saveAdminSession); đăng nhập ở đây gửi area = 'admin' → không chấm công vào.
-//  - Máy này đang đăng nhập máy quầy bằng người có quyền Quản lý → nút "Vào bằng tài khoản này" (phiên đi theo máy quầy).
+//  - ADR-044: luôn phải gõ mật khẩu — không còn nút "Vào bằng tài khoản này" (dùng phiên máy quầy đang mở).
 //  - Người không có trang Quản lý nào → báo + "Xin quyền" (chọn phần trang Quản lý cần, gửi bằng phiên vừa đăng nhập, không lưu phiên).
 import { api, ApiError } from '../api.js';
-import { getAdminSession, getPosToken, saveAdminSession } from '../auth-store.js';
-import { canOpenAdminPage, firstAdminHref, hasAdminPages, ROLE_LABEL } from '../roles.js';
+import { getAdminSession, saveAdminSession } from '../auth-store.js';
+import { canOpenAdminPage, firstAdminHref, hasAdminPages } from '../roles.js';
 import { brandMark } from '../icons.js';
 import { $, clear, el, errorMessage, setBusy } from '../ui.js';
 
@@ -18,6 +18,7 @@ clear($('#brand'), brandMark());
 if (reason === 'expired') say('info', 'Phiên đăng nhập trang Quản lý đã hết hạn, vui lòng đăng nhập lại.');
 if (reason === 'locked') say('danger', 'Tài khoản đã bị khóa.');
 if (reason === 'noaccess') say('warning', 'Tài khoản này chưa có quyền vào trang Quản lý.');
+if (reason === 'owner') say('info', 'Tài khoản Chủ quán chỉ dùng trang Quản lý — đăng nhập để tiếp tục.'); // F-084 + ADR-044
 
 /** Gọi API bằng một token cụ thể (chưa lưu phiên). */
 async function withToken(token, path, { method = 'GET', body } = {}) {
@@ -34,41 +35,8 @@ async function withToken(token, path, { method = 'GET', body } = {}) {
 const mayEnter = (user) => hasAdminPages(user) || canOpenAdminPage(user, 'today');
 const landing = (user) => safeNext || (canOpenAdminPage(user, 'today') ? '/admin/today' : firstAdminHref(user));
 
-// Đã có phiên Quản lý riêng (đăng nhập ở đây trước đó) → vào luôn
-const own = getAdminSession();
-if (own && !own.adopted && !reason) location.replace(safeNext || '/admin/today');
-
-// Máy quầy đang đăng nhập người có quyền Quản lý → mời dùng luôn
-const pos = getPosToken();
-if (pos && reason !== 'locked') {
-  withToken(pos, '/api/auth/me')
-    .then(({ user }) => {
-      if (!mayEnter(user)) return;
-      clear(
-        $('#follow'),
-        el(
-          'div',
-          { class: 'admin-login-follow' },
-          el('div', {}, 'Máy này đang đăng nhập màn hình quầy: ', el('strong', {}, user.fullName), ` (${ROLE_LABEL[user.role] ?? user.role})`),
-          el(
-            'button',
-            {
-              class: 'btn btn-block',
-              type: 'button',
-              id: 'follow-pos',
-              onclick: () => {
-                saveAdminSession(pos, user, { follow: true });
-                location.replace(landing(user));
-              },
-            },
-            'Vào bằng tài khoản này',
-          ),
-          el('p', { class: 'small muted center' }, 'hoặc đăng nhập tài khoản khác'),
-        ),
-      );
-    })
-    .catch(() => {});
-}
+// Đã có phiên Quản lý (đăng nhập ở đây trước đó, chưa đăng xuất) → vào luôn. ADR-044: phiên máy quầy KHÔNG dùng được ở đây.
+if (getAdminSession() && !reason) location.replace(safeNext || '/admin/today');
 
 /** Không có quyền trang Quản lý → báo + xin quyền (dùng token vừa đăng nhập, không lưu). */
 async function showNoAccess(token, user) {

@@ -1,14 +1,11 @@
 // Lưu phiên đăng nhập nhân viên trong localStorage (token JWT + thông tin hiển thị).
-// F-080 (ADR-038): trang Quản lý (/admin/…) giữ phiên RIÊNG với máy quầy (/pos/…):
-//  - Đăng nhập ở /admin/login → phiên Quản lý độc lập (đăng xuất bên này không làm văng bên kia).
-//  - Đi từ máy quầy sang (nút "Quản lý", hoặc mở /admin khi chưa có phiên Quản lý) → phiên Quản lý "đi theo" phiên máy quầy
-//    (adopted): máy quầy đổi người / đăng xuất thì phiên Quản lý đi theo đó bỏ.
-//  - Đăng xuất trang Quản lý khi đang đi theo máy quầy → nhớ token máy quầy đó (SKIP) để không tự vào lại; máy quầy đăng nhập
-//    người khác (token mới) thì lại đi theo được.
+// F-080 (ADR-038): trang Quản lý (/admin/…) giữ phiên RIÊNG với máy quầy (/pos/…) — đăng xuất bên này không làm văng bên kia.
+// ADR-044 (08/11/2026): phiên Quản lý CHỈ có được bằng đăng nhập (gõ mật khẩu) — bỏ "đi theo phiên máy quầy" (nút "Vào bằng tài
+// khoản này", ?from=pos, tự dùng phiên máy quầy khi mở /admin). Phiên "đi theo" cũ còn trong máy (adopted) bị bỏ khi đọc.
 const TOKEN_KEY = 'cf_staff_token';
 const USER_KEY = 'cf_staff_user';
-const ADMIN_KEY = 'cf_admin_session'; // { token, user, adopted }
-const SKIP_KEY = 'cf_admin_skip';
+const ADMIN_KEY = 'cf_admin_session'; // { token, user }
+const OLD_SKIP_KEY = 'cf_admin_skip'; // F-080 cũ — chỉ còn để dọn
 
 const safe = (fn, fallback = null) => {
   try {
@@ -29,18 +26,11 @@ export const isAdminArea = () =>
 export const getPosToken = () => safe(() => localStorage.getItem(TOKEN_KEY));
 const getPosUser = () => readJson(USER_KEY);
 
-/** Phiên Quản lý hiện tại (tự đi theo máy quầy khi chưa đăng nhập riêng). */
+/** Phiên Quản lý hiện tại — chỉ phiên đăng nhập ở trang Quản lý (ADR-044); phiên "đi theo máy quầy" cũ bị bỏ. */
 export function getAdminSession() {
   const s = readJson(ADMIN_KEY);
-  const pos = getPosToken();
   if (s?.token && !s.adopted) return s;
-  if (s?.adopted && s.token === pos) return s;
-  if (s) safe(() => localStorage.removeItem(ADMIN_KEY)); // máy quầy đã đổi người / đăng xuất
-  if (pos && safe(() => localStorage.getItem(SKIP_KEY)) !== pos) {
-    const follow = { token: pos, user: getPosUser(), adopted: true };
-    safe(() => localStorage.setItem(ADMIN_KEY, JSON.stringify(follow)));
-    return follow;
-  }
+  if (s) safe(() => localStorage.removeItem(ADMIN_KEY));
   return null;
 }
 
@@ -55,20 +45,19 @@ export function saveStaffSession(token, user) {
   });
 }
 
-/** Đăng nhập ở /admin/login: phiên Quản lý riêng (follow = true: dùng phiên máy quầy đang mở trên máy này). */
-export function saveAdminSession(token, user, { follow = false } = {}) {
+/** Đăng nhập (gõ mật khẩu) ở /admin/login — hoặc chủ quán gõ ở màn quầy (F-084): phiên Quản lý riêng. */
+export function saveAdminSession(token, user) {
   safe(() => {
-    localStorage.setItem(ADMIN_KEY, JSON.stringify({ token, user, adopted: follow }));
-    localStorage.removeItem(SKIP_KEY);
+    localStorage.setItem(ADMIN_KEY, JSON.stringify({ token, user }));
+    localStorage.removeItem(OLD_SKIP_KEY);
   });
 }
 
-/** Thoát trang Quản lý; máy quầy (nếu có) giữ nguyên và không tự được dùng lại cho trang Quản lý. */
+/** Thoát trang Quản lý; máy quầy (nếu có) giữ nguyên. */
 export function clearAdminSession() {
   safe(() => {
     localStorage.removeItem(ADMIN_KEY);
-    const pos = getPosToken();
-    if (pos) localStorage.setItem(SKIP_KEY, pos);
+    localStorage.removeItem(OLD_SKIP_KEY);
   });
 }
 

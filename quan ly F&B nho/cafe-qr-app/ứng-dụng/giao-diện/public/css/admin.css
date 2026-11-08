@@ -1536,15 +1536,6 @@ ul.bday-tips {
   align-items: center;
   gap: 0.5rem;
 }
-.admin-login-follow {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid var(--c-border, #e8dccd);
-  border-radius: var(--radius-sm, 10px);
-  background: var(--c-surface-2, #f8f2ea);
-}
 .admin-login-ask {
   padding-top: 0.5rem;
   border-top: 1px solid var(--c-border, #e8dccd);
