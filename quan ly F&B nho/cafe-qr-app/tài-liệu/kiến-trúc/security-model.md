@@ -109,7 +109,7 @@ Bằng chứng: `members.test.js` (giảm tay vượt ngưỡng), `finance.test.
 ### 3.8. Bổ sung F-080 — trang Quản lý riêng (ADR-038, 07/11/2026)
 
 - Máy chủ không đổi cách xác thực (cùng JWT Bearer). `POST /api/auth/login` `area = 'admin'` chỉ bỏ bước chấm công vào; khóa tạm khi sai mật khẩu (F-071) vẫn áp.
-- Trình duyệt: phiên trang Quản lý (`localStorage cf_admin_session`) tách với máy quầy (`cf_staff_token`). Phiên đi theo máy quầy (`adopted`) bỏ ngay khi token máy quầy đổi. Đăng xuất trang Quản lý ghi `cf_admin_skip` = token máy quầy hiện tại để không tự dùng lại. Đây chỉ là tiện ích trên máy — quyền thật vẫn kiểm ở máy chủ mỗi request.
+- Trình duyệt: phiên trang Quản lý (`localStorage cf_admin_session`) tách với máy quầy (`cf_staff_token`). Phiên Quản lý **chỉ có được bằng đăng nhập** (ADR-044, 08/11/2026): không đi theo phiên máy quầy (bỏ "Vào bằng tài khoản này", `?from=pos`, tự dùng token máy quầy); phiên `adopted` cũ bị bỏ khi đọc, `cf_admin_skip` được dọn. Phiên máy quầy cũ đứng tên chủ quán bị bỏ (F-084). Đây chỉ là tiện ích trên máy — quyền thật vẫn kiểm ở máy chủ mỗi request.
 - Máy quầy dùng chung: phiên Quản lý đăng nhập riêng không hết khi máy quầy đổi người → chủ quán bấm Đăng xuất trang Quản lý khi rời máy (ghi trong hướng dẫn).
 
 ## 4. Sở hữu tài nguyên và dữ liệu chỉ dành cho nhân viên

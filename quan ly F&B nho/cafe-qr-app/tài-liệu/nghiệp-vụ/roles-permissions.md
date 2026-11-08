@@ -190,7 +190,7 @@ Chủ dự án: "tài khoản admin chỉ ở trong này thôi không có ra mà
 | Việc | Chủ quán (ADMIN) | Vai khác |
 | --- | --- | --- |
 | Đăng nhập màn quầy (`/pos/login`, `area = pos`) | **Không**: `403 OWNER_ADMIN_ONLY` sau khi đúng mật khẩu; màn quầy tự đăng nhập trang Quản lý → Hôm nay | Như cũ |
-| Trang quầy (`/pos…`) | Không: phiên quầy cũ đứng tên chủ quán → đổi thành phiên Quản lý, sang Hôm nay | Như cũ |
+| Trang quầy (`/pos…`) | Không: phiên quầy cũ đứng tên chủ quán → bỏ, sang trang Đăng nhập Quản lý (gõ mật khẩu — ADR-044) | Như cũ |
 | Lối "Mở màn hình quầy", "Mở trang ca ở quầy" | Không hiện | Hiện như cũ |
 | Duyệt chi quỹ / nhận đơn đặt hàng / hủy lô hết hạn | Ở trang Quản lý (Sổ quỹ / Đặt hàng / Nguyên liệu) | Như cũ |
 | In lại hóa đơn từ Báo cáo | Bằng phiên Quản lý (`?area=admin`) | Như cũ |

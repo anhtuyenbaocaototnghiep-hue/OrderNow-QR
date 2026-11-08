@@ -490,7 +490,7 @@ flowchart LR
 
 ## F-080 — Trang Quản lý riêng (TASK-097, ADR-038, 07/11/2026)
 
-- **SCR-56 Đăng nhập Quản lý** (`/admin/login`): nền sáng của trang Quản lý, logo quán, tiêu đề **Đăng nhập Quản lý**, dòng "Dành cho chủ quán và người được giao quản lý. Đăng nhập ở đây không tính là vào ca."; nếu máy đang đăng nhập quầy bằng người có quyền → thẻ "Máy này đang đăng nhập màn hình quầy: Tên (vai) [Vào bằng tài khoản này]"; ô Tên đăng nhập, Mật khẩu, nút **Vào trang Quản lý**; không có quyền → cảnh báo vàng + ô **Cần quyền** (phần trang Quản lý) + lý do + **Xin quyền**; liên kết "Nhân viên đứng quầy? Mở màn hình quầy". Thông báo theo `reason`: hết phiên, bị khóa, chưa có quyền.
+- **SCR-56 Đăng nhập Quản lý** (`/admin/login`): nền sáng của trang Quản lý, logo quán, tiêu đề **Đăng nhập Quản lý**, dòng "Dành cho chủ quán và người được giao quản lý. Đăng nhập ở đây không tính là vào ca."; luôn phải gõ mật khẩu (ADR-044 — bỏ thẻ "Vào bằng tài khoản này" dùng phiên máy quầy); ô Tên đăng nhập, Mật khẩu, nút **Vào trang Quản lý**; không có quyền → cảnh báo vàng + ô **Cần quyền** (phần trang Quản lý) + lý do + **Xin quyền**; liên kết "Nhân viên đứng quầy? Mở màn hình quầy". Thông báo theo `reason`: hết phiên, bị khóa, chưa có quyền, `owner` (F-084: "Tài khoản Chủ quán chỉ dùng trang Quản lý — đăng nhập để tiếp tục").
 - **Thanh bên Quản lý:** "Màn hình quầy" → **Mở màn hình quầy** (tab mới); **Đăng xuất** chỉ thoát trang Quản lý → SCR-56.
 - **Máy quầy:** nút **Quản lý** → trang Quản lý đầu tiên được mở, dùng phiên người đang đứng máy.
 - **Mở trang Quản lý không được phép:** còn trang Quản lý khác → về trang đó kèm thanh Xin quyền; không còn → máy quầy (`/pos?denied=admin`) hoặc SCR-56.
@@ -517,7 +517,7 @@ flowchart LR
   - gõ tài khoản Chủ quán (đúng mật khẩu) → máy chủ từ chối đăng nhập quầy → màn tự đăng nhập trang Quản lý bằng mật khẩu vừa gõ → **SCR-42 Hôm nay** (hoặc `next` trong `/admin`);
   - không tạo phiên máy quầy;
   - sai mật khẩu báo như cũ.
-- **Trang quầy bất kỳ** với phiên máy quầy cũ đứng tên chủ quán → đổi thành phiên Quản lý → Hôm nay.
+- **Trang quầy bất kỳ** với phiên máy quầy cũ đứng tên chủ quán → bỏ phiên đó → **SCR-56** `?reason=owner` (gõ mật khẩu — ADR-044).
 - **Khung trang Quản lý** (chủ quán): không có "Mở màn hình quầy". **SCR-32 Lịch sử ca**: không có "Mở trang ca ở quầy →".
 - **SCR-42 Hôm nay** (chủ quán), việc cần làm:
   - khoản chi chờ duyệt → Sổ quỹ;

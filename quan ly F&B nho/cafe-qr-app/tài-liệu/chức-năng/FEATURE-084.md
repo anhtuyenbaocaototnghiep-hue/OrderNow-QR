@@ -19,7 +19,7 @@
 ## Quy tắc (BR-122)
 
 1. Màn đăng nhập quầy gửi `area: 'pos'`; vai ADMIN → `403 OWNER_ADMIN_ONLY`. Lỗi chỉ trả khi đúng mật khẩu; không chấm công, không cấp token.
-2. Màn quầy nhận lỗi đó → đăng nhập trang Quản lý bằng mật khẩu vừa gõ → Hôm nay (hoặc `next` trong `/admin`). Phiên máy quầy cũ đứng tên chủ quán → đổi thành phiên Quản lý, bỏ phiên quầy.
+2. Màn quầy nhận lỗi đó → đăng nhập trang Quản lý bằng mật khẩu vừa gõ → Hôm nay (hoặc `next` trong `/admin`). Phiên máy quầy cũ đứng tên chủ quán → bỏ, sang trang Đăng nhập Quản lý (`?reason=owner`) — phải gõ mật khẩu ([ADR-044](../quyết-định/ADR-044-quan-ly-luon-dang-nhap.md) D-200).
 3. Trang Quản lý không có lối sang máy quầy cho chủ quán. Việc cần làm của chủ quán dẫn tới trang Quản lý. In lại hóa đơn dùng phiên Quản lý.
 4. Không đổi: chủ quán duyệt hộ ở quầy bằng cách nhập tài khoản vào hộp duyệt; API không gửi `area` vẫn đăng nhập được; ca chủ quán mở trước đó do nhân viên đóng ở quầy.
 
@@ -35,7 +35,7 @@
 - AC-084-02: Trên trình duyệt:
   - gõ tài khoản chủ quán ở `/pos/login` → vào `/admin/today`, máy không có phiên máy quầy;
   - mở `/pos` → màn đăng nhập quầy;
-  - máy còn phiên máy quầy cũ đứng tên chủ quán, mở trang quầy (`/pos/takeaway`) → sang `/admin/today` và phiên máy quầy bị bỏ.
+  - máy còn phiên máy quầy cũ đứng tên chủ quán, mở trang quầy (`/pos/takeaway`) → phiên máy quầy bị bỏ, sang `/admin/login?reason=owner` (không có phiên Quản lý) — gõ mật khẩu mới vào Hôm nay.
 - AC-084-03: Chủ quán ở trang Quản lý:
   - không thấy "Mở màn hình quầy" (thanh bên) và "Mở trang ca ở quầy" (Lịch sử ca);
   - việc cần làm ở Hôm nay không có link `/pos…`;

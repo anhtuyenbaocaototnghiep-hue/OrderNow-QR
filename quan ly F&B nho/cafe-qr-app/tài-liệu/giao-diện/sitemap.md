@@ -79,7 +79,7 @@ Thanh bên (ADR-013 D-58, từ 23/10/2026): **Hôm nay** (SCR-42) luôn ở trê
 | SCR | Route | File | Actor | FEATURE | Ghi chú |
 | --- | --- | --- | --- | --- | --- |
 | SCR-42 | `/admin/today` | `admin/today.html`, `js/pages/admin-today.js` | ACT-ADMIN; ACT-LEAD (bản rút gọn) | [F-043](../chức-năng/FEATURE-043.md) | Mục đầu thanh bên; STAFF → `/pos?denied=admin` |
-| SCR-56 | `/admin/login` | `admin/login.html`, `js/pages/admin-login.js` | ACT-ADMIN, ACT-STORE (ai cũng mở được trang; chỉ người có quyền vào tiếp) | [F-080](../chức-năng/FEATURE-080.md) | Đăng nhập Quản lý — phiên riêng với máy quầy, không chấm công; "Vào bằng tài khoản này" khi máy đang đăng nhập quầy |
+| SCR-56 | `/admin/login` | `admin/login.html`, `js/pages/admin-login.js` | ACT-ADMIN, ACT-STORE (ai cũng mở được trang; chỉ người có quyền vào tiếp) | [F-080](../chức-năng/FEATURE-080.md) | Đăng nhập Quản lý — phiên riêng với máy quầy, không chấm công; luôn gõ mật khẩu (ADR-044 — không dùng phiên máy quầy) |
 | SCR-25 | `/admin/reports` | `admin/reports.html`, `js/pages/admin-reports.js` | ACT-ADMIN | [F-012](../chức-năng/FEATURE-012.md), [F-016](../chức-năng/FEATURE-016.md), [F-019](../chức-năng/FEATURE-019.md) | Tab Doanh thu / Lịch sử đơn / Thu tiền / Marketing & khách hàng |
 | SCR-41 | `/admin/analytics` | `admin/analytics.html`, `js/pages/admin-analytics.js` | ACT-ADMIN | [F-041](../chức-năng/FEATURE-041.md), [F-042](../chức-năng/FEATURE-042.md) | |
 | SCR-21 | `/admin/menu` | `admin/menu.html`, `js/pages/admin-menu.js` | ACT-ADMIN | [F-010](../chức-năng/FEATURE-010.md), [F-013](../chức-năng/FEATURE-013.md), [F-020](../chức-năng/FEATURE-020.md), [F-025](../chức-năng/FEATURE-025.md) | |
