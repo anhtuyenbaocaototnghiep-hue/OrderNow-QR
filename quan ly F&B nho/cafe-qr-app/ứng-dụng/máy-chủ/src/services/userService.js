@@ -13,7 +13,7 @@ const BCRYPT_COST = 10;
 // Hash giả để so sánh khi không có user → thời gian phản hồi như nhau (không lộ username tồn tại hay không)
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', BCRYPT_COST);
 
-export async function login(username, password, { ip = null, area = 'pos' } = {}) {
+export async function login(username, password, { ip = null, area } = {}) {
   const who = { username, ip };
   await authGuard.assertNotLocked('LOGIN', who); // F-071: đang khóa → 429 kể cả khi gõ đúng
   const user = await usersRepo.findByUsernameWithHash(username);
@@ -24,6 +24,11 @@ export async function login(username, password, { ip = null, area = 'pos' } = {}
   }
   if (!user.isActive) throw forbidden('Tài khoản đã bị khóa', 'ACCOUNT_LOCKED');
   const { passwordHash: _omit, ...publicUser } = user;
+  // F-084 (ADR-043 D-196): tài khoản Chủ quán chỉ dùng trang Quản lý — màn đăng nhập quầy (area = 'pos') từ chối sau khi đúng mật khẩu
+  // (không lộ vai trò khi sai mật khẩu, không đếm là lần sai, không chấm công)
+  if (area === 'pos' && user.role === 'ADMIN') {
+    throw forbidden('Tài khoản Chủ quán chỉ dùng trang Quản lý — không đăng nhập máy quầy', 'OWNER_ADMIN_ONLY');
+  }
   // F-035: đăng nhập máy quầy → chấm công vào (không chặn đăng nhập nếu ghi chấm công lỗi). F-080: trang Quản lý thì không.
   if (area !== 'admin') {
     await onLogin(publicUser).catch((err) => {

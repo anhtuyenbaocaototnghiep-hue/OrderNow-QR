@@ -4,7 +4,7 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { adminLogout, requireStaffPage } from '../auth.js';
-import { canOpenAdminPage, firstAdminHref, hasAdminPages, hasCap, ROLE_LABEL } from '../roles.js';
+import { canOpenAdminPage, firstAdminHref, hasAdminPages, hasCap, isOwner, ROLE_LABEL } from '../roles.js';
 import { $, clear, dateTime, el, errorMessage, money, num, toast } from '../ui.js';
 import { brandMark, icon } from '../icons.js';
 
@@ -50,6 +50,7 @@ const delta = (pct) =>
     : el('span', { class: pct >= 0 ? 'up' : 'down' }, `${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct)}%`);
 
 function render(d) {
+  const owner = isOwner(user);
   const y = d.yesterday;
   const snap = d.today ?? y; // ảnh chụp kho mới nhất
   const t = d.todos;
@@ -118,10 +119,15 @@ function render(d) {
       el(
         'ul',
         {},
-        todo(t.pendingCash, `${t.pendingCash} khoản chi quỹ chờ duyệt${t.pendingCashAmount ? ` (${money(t.pendingCashAmount)})` : ''}`, '/pos/shift'),
+        // F-084: chủ quán không vào máy quầy → việc cần làm dẫn tới trang Quản lý tương ứng (Sổ quỹ, Đặt hàng, Nguyên liệu — hủy lô)
+        todo(
+          t.pendingCash,
+          `${t.pendingCash} khoản chi quỹ chờ duyệt${t.pendingCashAmount ? ` (${money(t.pendingCashAmount)})` : ''}`,
+          owner ? '/admin/cash' : '/pos/shift',
+        ),
         todo(t.pendingAccess, `${t.pendingAccess} yêu cầu xin quyền chờ duyệt`, '/admin/users#xin-quyen'), // F-079
-        todo(t.posDue, `${t.posDue} đơn đặt hàng đến hạn nhận`, '/pos/stock'),
-        todo(t.expiredLots, `${t.expiredLots} lô đã hết hạn còn hàng — cần hủy`, '/pos/stock'),
+        todo(t.posDue, `${t.posDue} đơn đặt hàng đến hạn nhận`, owner ? '/admin/purchasing' : '/pos/stock'),
+        todo(t.expiredLots, `${t.expiredLots} lô đã hết hạn còn hàng — cần hủy`, owner ? '/admin/ingredients' : '/pos/stock'),
         todo(
           t.stocktakeOverdue,
           t.stocktakeAgeDays === null ? 'Chưa từng chốt kiểm kê' : `${t.stocktakeAgeDays} ngày chưa kiểm kê (quá 7 ngày)`,

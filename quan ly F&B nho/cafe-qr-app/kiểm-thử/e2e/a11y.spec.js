@@ -239,6 +239,15 @@ async function ensureGuestOrder() {
   await ctx.close();
 }
 
+/** F-084: chủ quán chỉ dùng trang Quản lý — đăng nhập ở trang Đăng nhập Quản lý. */
+async function adminLogin(page) {
+  await page.goto('/admin/login');
+  await page.fill('#username', 'admin');
+  await page.fill('#password', 'Admin@123');
+  await page.click('#submit');
+  await expect(page).toHaveURL(/\/admin\/today$/);
+}
+
 async function login(page, username, password) {
   await page.goto('/pos/login');
   await page.fill('#username', username);
@@ -443,7 +452,7 @@ test('quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộ
 test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm', async ({ request }) => {
   const ctx = await browser.newContext(desk);
   const A = await ctx.newPage();
-  await login(A, 'admin', 'Admin@123');
+  await adminLogin(A);
   const items = await (await request.get('/api/admin/menu-items', { headers: { Authorization: `Bearer ${adminToken}` } })).json();
   const routes = [
     'reports',

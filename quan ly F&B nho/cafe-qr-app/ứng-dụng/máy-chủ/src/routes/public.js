@@ -34,7 +34,9 @@ publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
     z.object({
       username: zText(50).min(1, 'Nhập tên đăng nhập'),
       password: z.string().min(1, 'Nhập mật khẩu').max(100),
-      area: z.enum(['pos', 'admin']).default('pos'), // F-080: 'admin' = đăng nhập trang Quản lý — không chấm công vào
+      // F-080: 'admin' = đăng nhập trang Quản lý — không chấm công vào. F-084: 'pos' = màn đăng nhập quầy (luôn gửi) — chủ quán bị từ chối.
+      // Không gửi (công cụ / script gọi API) → như trước: chấm công theo vai, không chặn.
+      area: z.enum(['pos', 'admin']).optional(),
     }),
     req.body,
   );

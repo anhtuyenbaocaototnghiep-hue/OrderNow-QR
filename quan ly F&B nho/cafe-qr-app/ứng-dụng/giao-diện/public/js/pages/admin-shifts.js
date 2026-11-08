@@ -2,9 +2,10 @@
 // danh sách hoàn tiền (ai làm, ai duyệt, lý do). Thao tác hoàn tiền thực hiện ở Quầy → Ca & hoàn tiền.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
+import { isOwner } from '../roles.js';
 import { $, clear, dateTime, el, errorMessage, modal, money, toast, todayVn } from '../ui.js';
 
-await mountAdminShell('shifts');
+const user = await mountAdminShell('shifts');
 
 const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
 const state = { from: addDays(todayVn(), -6), to: todayVn() };
@@ -31,7 +32,7 @@ clear(
       },
       'Xem',
     ),
-    el('a', { class: 'btn', href: '/pos/shift' }, 'Mở trang ca ở quầy →'),
+    isOwner(user) ? null : el('a', { class: 'btn', href: '/pos/shift' }, 'Mở trang ca ở quầy →'), // F-084: chủ quán không vào máy quầy
   ),
   body,
 );

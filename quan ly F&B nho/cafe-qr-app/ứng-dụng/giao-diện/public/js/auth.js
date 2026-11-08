@@ -32,6 +32,14 @@ export async function requireStaffPage({ admin = false, page = '' } = {}) {
   current.modules = modules ?? [];
   current.attendance = attendance ?? { mode: 'LOGIN', moneyPin: false }; // F-072
   current.pos = pos ?? { oneTap: false }; // F-076
+  // F-084 (ADR-043): chủ quán chỉ dùng trang Quản lý. Phiên máy quầy đứng tên chủ quán (đăng nhập trước khi có luật này) → chuyển
+  // thành phiên Quản lý riêng, bỏ phiên máy quầy, sang Hôm nay. Không gọi đăng xuất server (chủ quán không chấm công).
+  if (!isAdminArea() && user.role === 'ADMIN') {
+    saveAdminSession(getPosToken(), user);
+    clearStaffSession();
+    location.replace('/admin/today');
+    return new Promise(() => {});
+  }
   if (admin && !canOpenAdminPage(user, page)) {
     const cap = pageCap(page); // F-079: quyền cấp riêng được → mời "Xin quyền"
     const home = hasAdminPages(user) ? firstAdminHref(user) : null;

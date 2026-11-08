@@ -412,9 +412,10 @@ async function loadHistory() {
 function showOrder(o) {
   const actions = [];
   if (o.paymentStatus === 'PAID' && o.type === 'TAKE_AWAY')
-    actions.push({ label: 'In lại hóa đơn', onClick: () => printUrl(`/pos/orders/${o.orderId}/receipt`) });
+    // F-084: trang in dùng phiên Quản lý (?area=admin) — chủ quán không có phiên máy quầy
+    actions.push({ label: 'In lại hóa đơn', onClick: () => printUrl(`/pos/orders/${o.orderId}/receipt?area=admin`) });
   if (o.paymentStatus === 'PAID' && o.sessionId)
-    actions.push({ label: 'In lại hóa đơn bàn', onClick: () => printUrl(`/pos/sessions/${o.sessionId}/receipt?mode=final`) });
+    actions.push({ label: 'In lại hóa đơn bàn', onClick: () => printUrl(`/pos/sessions/${o.sessionId}/receipt?mode=final&area=admin`) });
   actions.push({ label: 'Đóng', class: 'btn-primary' });
   modal({
     title: `Đơn #${o.orderCode}`,

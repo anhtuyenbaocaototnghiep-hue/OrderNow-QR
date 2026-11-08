@@ -155,7 +155,8 @@ export async function mountAdminShell(active) {
     el('div', { class: 'brand' }, brandMark(), current.shop?.name || 'Quản lý'),
     allowed('today') ? navLink(HOME, active, icon('house')) : null,
     NAV.map((g) => navGroup(g, active, open)),
-    el('a', { href: '/pos', class: 'nav-pos', target: '_blank', rel: 'noopener' }, icon('monitor'), 'Mở màn hình quầy'), // F-080: tab mới
+    // F-080: tab mới. F-084: chủ quán không dùng máy quầy → không có lối này
+    isOwner(user) ? null : el('a', { href: '/pos', class: 'nav-pos', target: '_blank', rel: 'noopener' }, icon('monitor'), 'Mở màn hình quầy'),
     el('div', { class: 'spacer' }),
     el(
       'div',

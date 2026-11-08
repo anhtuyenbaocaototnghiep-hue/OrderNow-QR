@@ -19,8 +19,11 @@ const safe = (fn, fallback = null) => {
 };
 const readJson = (key) => safe(() => JSON.parse(localStorage.getItem(key)));
 
-/** Đang ở trang Quản lý (đường dẫn /admin hoặc /admin/…)? */
-export const isAdminArea = () => location.pathname === '/admin' || location.pathname.startsWith('/admin/');
+/** Đang ở trang Quản lý (đường dẫn /admin hoặc /admin/…)? F-084: trang in hóa đơn mở từ trang Quản lý (`…/receipt?area=admin`) dùng phiên Quản lý. */
+export const isAdminArea = () =>
+  location.pathname === '/admin' ||
+  location.pathname.startsWith('/admin/') ||
+  (location.pathname.endsWith('/receipt') && new URLSearchParams(location.search).get('area') === 'admin');
 
 /** Token máy quầy trên máy này (không phụ thuộc trang đang mở). */
 export const getPosToken = () => safe(() => localStorage.getItem(TOKEN_KEY));
