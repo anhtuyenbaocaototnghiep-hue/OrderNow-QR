@@ -17,7 +17,7 @@ else if (hasCap(user, 'dashboard.view')) {
   clear(
     $('#side'),
     el('div', { class: 'brand' }, brandMark(), 'Hôm nay'),
-    el('a', { href: '/pos' }, '← Màn hình quầy'),
+    el('a', { href: '/pos?from=admin' }, '← Màn hình quầy'), // ADR-045: không đăng nhập lại
     el('div', { class: 'spacer' }),
     el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small' }, ROLE_LABEL[user.role])),
     el('button', { class: 'btn btn-sm', type: 'button', onclick: adminLogout }, 'Đăng xuất'), // F-080

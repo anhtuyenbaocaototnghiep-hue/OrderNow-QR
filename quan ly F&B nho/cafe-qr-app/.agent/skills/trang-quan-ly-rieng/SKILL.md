@@ -1,6 +1,6 @@
 ---
 name: trang-quan-ly-rieng
-description: Trang Quản lý riêng cho cafe-qr-app (FEATURE-080, ADR-038, TASK-097) — địa chỉ /admin → /admin/today, trang Đăng nhập Quản lý /admin/login (SCR-56, admin-login.js), phiên trang Quản lý tách khỏi máy quầy trong auth-store.js (cf_admin_session { token, user }, isAdminArea, getToken theo khu) và CHỈ có được bằng đăng nhập (ADR-044 08/11/2026: bỏ "Vào bằng tài khoản này", ?from=pos, tự dùng phiên máy quầy — vì bảo mật), POST /api/auth/login area = admin không chấm công, adminLogout chỉ xóa phiên Quản lý. Dùng khi task giao F-080 / ADR-038 / TASK-097 / AC-080-xx, khi sửa đăng nhập / đăng xuất / hết phiên / chuyển trang giữa máy quầy và trang Quản lý, hoặc nhắc "trang quản lý riêng", "đăng nhập quản lý", "admin login", "phiên riêng", "văng máy quầy", "không tính vào ca".
+description: Trang Quản lý riêng cho cafe-qr-app (FEATURE-080, ADR-038, TASK-097) — địa chỉ /admin → /admin/today, trang Đăng nhập Quản lý /admin/login (SCR-56, admin-login.js), phiên trang Quản lý tách khỏi máy quầy trong auth-store.js (cf_admin_session { token, user }, isAdminArea, getToken theo khu) và CHỈ có được bằng đăng nhập (ADR-044 08/11/2026: bỏ "Vào bằng tài khoản này", ?from=pos, tự dùng phiên máy quầy — vì bảo mật); chiều ngược lại "Mở màn hình quầy" /pos?from=admin vào thẳng máy quầy bằng phiên Quản lý (ADR-045: POST /api/auth/pos-session chấm công vào, dùng lại token, giữ người khác đang đứng quầy), POST /api/auth/login area = admin không chấm công, adminLogout chỉ xóa phiên Quản lý. Dùng khi task giao F-080 / ADR-038 / TASK-097 / AC-080-xx, khi sửa đăng nhập / đăng xuất / hết phiên / chuyển trang giữa máy quầy và trang Quản lý, hoặc nhắc "trang quản lý riêng", "đăng nhập quản lý", "admin login", "phiên riêng", "văng máy quầy", "không tính vào ca".
 ---
 
 # Mục đích
@@ -17,6 +17,7 @@ Ghi lại **trang Quản lý riêng** (07/11/2026, TASK-097) để agent sau s�
 
 - Thêm trang dưới `/admin/…` → tự dùng phiên Quản lý (`isAdminArea()` theo đường dẫn); gọi `mountAdminShell` / `requireStaffPage({ admin: true, page })` như cũ.
 - Thêm nút đi từ máy quầy sang trang Quản lý → chỉ cần link `/admin/…`; chưa đăng nhập trang Quản lý thì tự sang `/admin/login?next=…`. **Không** thêm lối dùng phiên máy quầy (ADR-044: chủ dự án coi là lỗ hổng bảo mật).
+- Nút từ trang Quản lý sang máy quầy → `/pos?from=admin` (ADR-045): `auth.js openPosFromAdmin` dùng phiên Quản lý khi máy quầy trống / phiên quầy hết hạn / đứng tên chủ quán, giữ nguyên nếu người khác đang đứng quầy. Nguyên tắc: vào trang Quản lý phải gõ mật khẩu; từ trang Quản lý sang quầy thì không hỏi lại.
 - Sửa đăng nhập: máy quầy gửi `area` mặc định (`pos` — chấm công vào); trang Quản lý gửi `area: 'admin'` (không chấm công).
 
 # Quy tắc (BR-118)

@@ -156,7 +156,8 @@ export async function mountAdminShell(active) {
     allowed('today') ? navLink(HOME, active, icon('house')) : null,
     NAV.map((g) => navGroup(g, active, open)),
     // F-080: tab mới. F-084: chủ quán không dùng máy quầy → không có lối này
-    isOwner(user) ? null : el('a', { href: '/pos', class: 'nav-pos', target: '_blank', rel: 'noopener' }, icon('monitor'), 'Mở màn hình quầy'),
+    // ADR-045: ?from=admin → máy quầy dùng luôn phiên Quản lý này (không đăng nhập lại)
+    isOwner(user) ? null : el('a', { href: '/pos?from=admin', class: 'nav-pos', target: '_blank', rel: 'noopener' }, icon('monitor'), 'Mở màn hình quầy'),
     el('div', { class: 'spacer' }),
     el(
       'div',

@@ -3042,6 +3042,70 @@ test('trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Q
   await ctx.close();
 });
 
+test('đăng nhập một lần: quản lý cửa hàng đăng nhập trang Quản lý (máy tính 1920 px) → "Mở màn hình quầy" vào thẳng máy quầy, không hỏi mật khẩu, kể cả khi máy còn phiên quầy cũ đã hết hạn → "Quản lý" ở máy quầy về lại trang Quản lý không hỏi; máy quầy đang có người khác đăng nhập thì giữ người đó; chủ quán không mở máy quầy theo lối này (F-080, AC-080-05)', async () => {
+  const desk = { viewport: { width: 1920, height: 1000 }, locale: 'vi-VN' };
+  const adminLogin = async (page, username, password) => {
+    await page.goto('/admin/login');
+    await page.fill('#username', username);
+    await page.fill('#password', password);
+    await page.click('#submit');
+    await expect(page).toHaveURL(/\/admin\/today$/);
+  };
+  // 1. Máy còn phiên quầy cũ đã hết hạn; quản lý cửa hàng đăng nhập trang Quản lý → "Mở màn hình quầy" (tab mới)
+  const ctx = await browser.newContext(desk);
+  try {
+    const Q = await ctx.newPage();
+    watch(Q, 'one-login');
+    await Q.goto('/admin/login');
+    await Q.evaluate(() => localStorage.setItem('cf_staff_token', 'phien-quay-cu-het-han'));
+    await adminLogin(Q, 'quay-ql', 'Quay@123');
+    const [T] = await Promise.all([ctx.waitForEvent('page'), Q.locator('#side .nav-pos').click()]);
+    watch(T, 'one-login-pos');
+    await expect(T).toHaveURL(/\/pos$/);
+    await expect(T.locator('.pos-top')).toContainText('QL quầy E2E');
+    await expect(T.locator('#conn')).toHaveText('Đã kết nối');
+    const adminToken2 = await Q.evaluate(() => JSON.parse(localStorage.getItem('cf_admin_session')).token);
+    expect(await T.evaluate(() => localStorage.getItem('cf_staff_token'))).toBe(adminToken2);
+    // 2. Máy quầy → "Quản lý": đã đăng nhập trang Quản lý → vào thẳng, không hỏi mật khẩu
+    await T.locator('.pos-nav').getByRole('link', { name: 'Quản lý' }).click();
+    await expect(T).toHaveURL(/\/admin\/today$/);
+    await expect(T.locator('#side .who')).toContainText('@quay-ql');
+  } finally {
+    await ctx.close();
+  }
+  // 3. Máy quầy đang có nhân viên đăng nhập → quản lý mở trang Quản lý rồi "Mở màn hình quầy": giữ nhân viên đang đứng quầy
+  const ctx2 = await browser.newContext(desk);
+  try {
+    const N2 = await ctx2.newPage();
+    watch(N2, 'one-login-keep');
+    await N2.goto('/pos/login');
+    await N2.fill('#username', 'staff1');
+    await N2.fill('#password', 'Staff@123');
+    await N2.click('#submit');
+    await expect(N2).toHaveURL(/\/pos$/);
+    await adminLogin(N2, 'quay-ql', 'Quay@123');
+    const [T2] = await Promise.all([ctx2.waitForEvent('page'), N2.locator('#side .nav-pos').click()]);
+    watch(T2, 'one-login-keep-pos');
+    await expect(T2).toHaveURL(/\/pos$/);
+    await expect(T2.locator('.pos-top')).toContainText('Nhân viên quầy 1');
+  } finally {
+    await ctx2.close();
+  }
+  // 4. Chủ quán: không có "Mở màn hình quầy"; tự gõ /pos?from=admin → trang đăng nhập quầy (không vào được)
+  const ctx3 = await browser.newContext(desk);
+  try {
+    const O2 = await ctx3.newPage();
+    watch(O2, 'one-login-owner');
+    await adminLogin(O2, 'admin', 'Admin@123');
+    await expect(O2.locator('#side .nav-pos')).toHaveCount(0);
+    await O2.goto('/pos?from=admin');
+    await expect(O2).toHaveURL(/\/pos\/login/);
+    expect(await O2.evaluate(() => localStorage.getItem('cf_staff_token'))).toBeNull();
+  } finally {
+    await ctx3.close();
+  }
+});
+
 test('chủ quán chỉ dùng trang Quản lý: gõ tài khoản chủ quán ở màn quầy → vào thẳng Hôm nay của trang Quản lý, không có phiên máy quầy; phiên máy quầy cũ đứng tên chủ quán → bị bỏ, phải gõ mật khẩu ở trang Đăng nhập Quản lý; không còn lối "Mở màn hình quầy" / "Mở trang ca ở quầy"; việc cần làm không dẫn về máy quầy; in lại hóa đơn mang đi bằng phiên Quản lý (F-084, AC-084-02, AC-084-03)', async ({
   request,
 }) => {

@@ -55,6 +55,9 @@ publicRouter.get('/auth/me', requireStaff, async (req, res) => {
     pos: { oneTap: s.oneTap }, // F-076
   });
 });
+// ADR-045: đã đăng nhập trang Quản lý (gõ mật khẩu) → mở máy quầy không đăng nhập lại: chấm công vào như đăng nhập quầy (chế độ
+// theo đăng nhập). Giao diện dùng lại chính token đang có — không cấp token mới (không kéo dài phiên). Chủ quán → 403 OWNER_ADMIN_ONLY.
+publicRouter.post('/auth/pos-session', requireStaff, async (req, res) => res.json(await userService.startPosSession(req.user)));
 // F-061 (ADR-021 D-80): xem xong / bỏ qua hướng dẫn 5 bước ở màn quầy — lưu theo tài khoản
 publicRouter.post('/auth/tour-seen', requireStaff, async (req, res) => res.json({ tourSeenAt: await usersRepo.markTourSeen(req.user.userId) }));
 // F-062 (D-81): tên + địa chỉ quán cho trang Chính sách dữ liệu (công khai, chỉ 2 trường này)

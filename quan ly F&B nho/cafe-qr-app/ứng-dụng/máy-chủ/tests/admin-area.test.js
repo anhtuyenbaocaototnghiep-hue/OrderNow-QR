@@ -61,4 +61,24 @@ describe('Trang Quản lý riêng (F-080)', () => {
     assert.match(page.text, /admin-login\.js/);
     assert.doesNotMatch(page.text, /pos-login\.js/);
   });
+
+  test('AC-080-04: đã đăng nhập trang Quản lý → mở máy quầy (POST /api/auth/pos-session) không cần gõ lại mật khẩu: quản lý cửa hàng được, chấm công vào một lần (gọi lại không tạo thêm), không cấp token mới; chủ quán → 403 OWNER_ADMIN_ONLY; không token → 401', async () => {
+    const r = await api.post('/api/admin/users').set(auth(admin)).send({ username: 'ql_pos', password: 'Pass@123', fullName: 'TK ql_pos', role: 'STORE_MGR' });
+    assert.equal(r.status, 201, JSON.stringify(r.body));
+    const id = (await q1("SELECT UserId FROM dbo.Users WHERE Username = 'ql_pos'"))[0].UserId;
+    const tok = (await login('ql_pos', 'Pass@123', 'admin')).body.accessToken;
+    assert.equal(await openAtt(id), 0, 'đăng nhập trang Quản lý chưa vào ca');
+    const s1 = await api.post('/api/auth/pos-session').set(auth(tok));
+    assert.equal(s1.status, 200, JSON.stringify(s1.body));
+    assert.equal(s1.body.user.username, 'ql_pos');
+    assert.equal(s1.body.user.role, 'STORE_MGR');
+    assert.equal(s1.body.accessToken, undefined, 'dùng lại token đang có — không cấp token mới');
+    assert.equal(await openAtt(id), 1, 'mở máy quầy = vào ca');
+    assert.equal((await api.post('/api/auth/pos-session').set(auth(tok))).status, 200);
+    assert.equal(await openAtt(id), 1, 'gọi lại không tạo bản ghi chấm công thứ hai');
+    const own = await api.post('/api/auth/pos-session').set(auth(admin));
+    assert.equal(own.status, 403);
+    assert.equal(own.body.code, 'OWNER_ADMIN_ONLY');
+    assert.equal((await api.post('/api/auth/pos-session')).status, 401);
+  });
 });

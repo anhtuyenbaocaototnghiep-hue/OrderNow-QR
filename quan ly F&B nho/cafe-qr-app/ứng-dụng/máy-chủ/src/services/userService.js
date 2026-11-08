@@ -39,6 +39,18 @@ export async function login(username, password, { ip = null, area } = {}) {
 }
 
 /**
+ * ADR-045: người đã đăng nhập trang Quản lý bằng mật khẩu mở máy quầy (nút "Mở màn hình quầy") — không gõ lại mật khẩu.
+ * Như đăng nhập quầy: chủ quán bị từ chối (F-084), chấm công vào (chế độ theo đăng nhập; đã có bản ghi mở thì không tạo thêm).
+ */
+export async function startPosSession(user) {
+  if (user.role === 'ADMIN') throw forbidden('Tài khoản Chủ quán chỉ dùng trang Quản lý — không đăng nhập máy quầy', 'OWNER_ADMIN_ONLY');
+  await onLogin(user).catch((err) => {
+    if (config.env !== 'test') console.error('[attendance] không ghi được giờ vào', err.message);
+  });
+  return { user: await usersRepo.findById(user.userId) };
+}
+
+/**
  * F-072 (ADR-030 D-126) "Đổi người" ở máy quầy: người sắp đứng máy nhập PIN của mình → phiên mới đứng tên người đó
  * (mọi thao tác sau đó ghi đúng người). Chỉ nhân viên / trưởng ca; quản lý đăng nhập bằng mật khẩu.
  */
