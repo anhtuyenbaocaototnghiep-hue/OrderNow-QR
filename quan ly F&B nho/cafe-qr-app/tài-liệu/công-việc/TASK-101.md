@@ -81,4 +81,6 @@ Lần chạy kiểm chứng đầu (08/11, 0 giờ 40): luồng E2E 73/73 đạt
 
 Ảnh so sánh cho chủ dự án (ngoài repo): `quan ly F&B nho/ảnh giao diện sửa lại (TASK-101)/`. Có 9 cặp ảnh "bản đầu ↔ bản sửa": thực đơn và bảng chọn ở 1920 px; thực đơn, có giỏ, bảng chọn, giỏ, theo dõi đơn ở 390 px; máy quầy; trang Quản lý.
 
+**Bổ sung cùng ngày — ô mời nhập SĐT:** chủ dự án gửi ảnh ô "Nhập SĐT để nhận ưu đãi" (nền trắng viền mảnh): "chỗ này bạn làm thêm điểm nhấn để khách dễ thấy" → `js/member-box.js` (lớp `invite`, quà trong vòng tròn, "Đơn đầu tiên giảm **10%**, hội viên giảm 3–8%", dấu "Nhận ngay ›") + `css/customer.css` (`.member-box.invite`, `.member-ic`, `.member-sub`, `.member-cta`; bỏ quy tắc mũi tên cũ). Bản đầu đặt "Nhận ngay" bên phải → chữ bị ép 4–5 dòng ở 320 px → chuyển xuống dưới chữ. Ảnh 390 / 320 px (giỏ, theo dõi đơn) không lỗi trang; E2E vẫn bấm `.member-box` như cũ.
+
 **Câu hỏi kèm của chủ dự án (không sửa mã):** "vì sao admin vẫn có thể vào màn hình quầy" — theo thiết kế. `roles-permissions.md` §4.1: ADMIN có mọi quyền của STAFF (dòng này còn đánh dấu PROPOSED); bảng §4.6 (ADR-035, F-077): "Bán, thu tiền, mở / đóng ca…" — Chủ quán: Có. `requireStaff` nhận mọi tài khoản đang hoạt động; trang Quản lý tách phiên riêng (ADR-038) nhưng không chặn chủ quán đứng quầy. Chờ chủ dự án quyết giữ hay chặn.

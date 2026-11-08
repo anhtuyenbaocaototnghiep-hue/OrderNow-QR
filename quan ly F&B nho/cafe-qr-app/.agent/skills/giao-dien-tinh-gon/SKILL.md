@@ -7,10 +7,10 @@ description: Giao diện tinh gọn của cafe-qr-app (ADR-042 / TASK-101, đợ
 
 Ghi lại **giao diện tinh gọn** (08/11/2026, TASK-101 + vòng sửa D-195) để agent sau sửa giao diện mà không kéo app quay lại "giao diện AI" (nền kem, ô chữ cái, thông báo xanh chồng nhau), cũng không quay lại bản đầu bị chủ dự án chê "khó nhìn" (phông có chân mảnh, dòng món không khung, nút "+" chỉ có viền, lệch cột trên máy tính), không phá hiệu ứng / trợ năng / E2E.
 
-| Tài liệu | Đường dẫn |
-| --- | --- |
-| Quyết định | `tài-liệu/quyết-định/ADR-042-giao-dien-tinh-gon.md` (D-188…D-195; D-195 thay một phần D-188 / D-189 / D-190 / D-193) |
-| Design system | `tài-liệu/giao-diện/design-system.md` (token, phông, chữ, mục "Chuyển động", thành phần, quy tắc) |
+| Tài liệu        | Đường dẫn                                                                                                                     |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Quyết định      | `tài-liệu/quyết-định/ADR-042-giao-dien-tinh-gon.md` (D-188…D-195; D-195 thay một phần D-188 / D-189 / D-190 / D-193)          |
+| Design system   | `tài-liệu/giao-diện/design-system.md` (token, phông, chữ, mục "Chuyển động", thành phần, quy tắc)                             |
 | Task / kế hoạch | `tài-liệu/công-việc/TASK-101.md` (mục "Vòng sửa 1"), `tài-liệu/kế-hoạch/TASK-101-plan.md` · UAT-53 (`chất-lượng/uat-plan.md`) |
 
 # Khi dùng
@@ -31,7 +31,7 @@ Ghi lại **giao diện tinh gọn** (08/11/2026, TASK-101 + vòng sửa D-195) 
 - **Đóng hộp thoại (D-191):** `leave()` bỏ `role` / `aria-modal` / mọi `id`, đặt `inert` + `aria-hidden` NGAY (để E2E / trình đọc màn hình không thấy hai hộp thoại), rồi `document.startViewTransition(gone)` với `view-transition-name` `vt-dialog` / `vt-scrim` + `html[data-vt-leave=sheet|drawer|modal]` → CSS `::view-transition-old(vt-dialog)` chạy `sheet-out` / `drawer-out` / `modal-out`. Bắt cả `ready`, `updateCallbackDone`, `finished` (bị hủy khi trang chuyển đi lúc gửi đơn → không được báo `pageerror`); đường lùi `setTimeout(gone, 600)`.
 - **Kéo để đóng:** `dragToDismiss(box, [head, grabber])` — pointer events, bỏ qua khi bấm vào nút / ô nhập; > 90 px hoặc > 0,6 px/ms (đã kéo > 30 px) → đóng; ít hơn → bật về. `.sheet > .modal-head { touch-action: none }`.
 - **Toast:** nền mực; `success` có `circle-check`; tối đa 3 (`MAX_TOASTS`); ra bằng `.leaving`. E2E bắt toast theo chữ — giữ nội dung chữ trong `span`.
-- **Màn khách:** `.c-item` thẻ trắng; `.c-name-btn::after` phủ cả thẻ; `.c-control` (`position: relative`), `.fav-btn`, `.link-btn` có `z-index: 1`; "+" là `icon('plus')` (aria-label "Thêm …" — E2E dùng); `.qty-badge` tuyệt đối ở góc trên phải `.c-control`, `pointer-events: none` (E2E đọc chữ số); nhóm món `body.customer .c-tabs .chip` nút tròn, `.active` nền nâu rang; `spyOnScroll` mép `8.75rem + 16px` = `scroll-margin-top` của `.c-section` (đổi chiều cao đầu trang / thanh nhóm thì sửa cả hai); thanh giỏ `.bump` khi số món tăng, chữ `nowrap`; dòng giỏ vừa sửa `.updated`. ≥ 1024 px: `.c-section` là lưới 2 cột, con không phải `.c-item` trải hết hàng.
+- **Màn khách:** `.c-item` thẻ trắng; `.c-name-btn::after` phủ cả thẻ; `.c-control` (`position: relative`), `.fav-btn`, `.link-btn` có `z-index: 1`; "+" là `icon('plus')` (aria-label "Thêm …" — E2E dùng); `.qty-badge` tuyệt đối ở góc trên phải `.c-control`, `pointer-events: none` (E2E đọc chữ số); nhóm món `body.customer .c-tabs .chip` nút tròn, `.active` nền nâu rang; `spyOnScroll` mép `8.75rem + 16px` = `scroll-margin-top` của `.c-section` (đổi chiều cao đầu trang / thanh nhóm thì sửa cả hai); thanh giỏ `.bump` khi số món tăng, chữ `nowrap`; ô mời nhập SĐT `.member-box.invite` là điểm nhấn duy nhất có nền màu (nền `--c-primary-50`, quà trong vòng tròn đặc, "Nhận ngay ›" dưới chữ — đặt bên phải thì ép chữ ở 320 px); dòng giỏ vừa sửa `.updated`. ≥ 1024 px: `.c-section` là lưới 2 cột, con không phải `.c-item` trải hết hàng.
 - **Bảng chọn món:** chân = `.item-foot` (`.stepper` có `#item-qty` + nút `.btn-primary` "Thêm vào giỏ · tổng") — nút "+" số lượng nằm NGOÀI `.item-sheet` (E2E: `getByRole('dialog').getByRole('button', { name: 'Thêm …' })`). Không còn "Hủy", "Giá 1 phần" (`.opt-total` chỉ còn ở `pickOptions` của quầy).
 
 # Đã thử rồi bỏ (đừng làm lại nếu chưa có lý do mới)

@@ -213,18 +213,20 @@ export function mountMemberBox(container, { sessionId, getSession, onChange }) {
       );
       return;
     }
+    // Ô mời đăng ký là ưu đãi khách dễ bỏ lỡ: thẻ nền nâu nhạt, quà trong vòng tròn đặc, "10%" đậm, nút "Nhận ngay" tô màu (chủ dự án 08/11)
     clear(
       container,
       el(
         'button',
-        { class: 'member-box', type: 'button', onclick: open },
+        { class: 'member-box invite', type: 'button', onclick: open },
+        el('span', { class: 'member-ic', 'aria-hidden': 'true' }, icon('gift')),
         el(
           'span',
           { class: 'grow' },
-          el('strong', {}, icon('star'), 'Nhập SĐT để nhận ưu đãi'),
-          el('div', { class: 'small muted' }, 'Hội viên giảm 3–8%, đơn đầu tiên giảm 10%'),
+          el('strong', {}, 'Nhập SĐT để nhận ưu đãi'),
+          el('span', { class: 'member-sub small' }, 'Đơn đầu tiên giảm ', el('b', {}, '10%'), ', hội viên giảm ', el('span', { class: 'nowrap' }, '3–8%')),
+          el('span', { class: 'member-cta' }, 'Nhận ngay', icon('chevron-right')),
         ),
-        icon('chevron-right'),
       ),
     );
   }
