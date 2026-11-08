@@ -1,6 +1,6 @@
 /* Màn hình quầy (POS) — máy tính 1366–1920 px và máy tính bảng (ADR-018 D-70). */
 body.pos {
-  background: #efe6da;
+  background: #eceae7; /* xám ấm, đậm hơn nền khách một bậc để thẻ trắng nổi rõ (ADR-042 D-195 — không kem) */
   min-height: 100vh;
 }
 /* Vùng chạm ở quầy ≥ 44 px (ADR-012 D-54 — WCAG 2.5.5 / Apple HIG) */

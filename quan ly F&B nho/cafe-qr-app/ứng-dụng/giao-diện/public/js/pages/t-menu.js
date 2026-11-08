@@ -372,7 +372,6 @@ function renderMenu() {
         s.name,
       ),
     ),
-    el('span', { class: 'tab-ink', 'aria-hidden': 'true' }),
   );
   clear(
     menu,
@@ -392,22 +391,12 @@ function renderMenu() {
       ),
     ),
   );
-  moveInk(tabs.querySelector('.chip.active'), { instant: true });
   spyOnScroll(); // vẽ lại menu khi đang cuộn giữa trang (menu theo lịch, hết món…) → thanh nhóm theo đúng nhóm đang xem
 }
 
-// ---------- Thanh nhóm món: vạch đồng trượt tới nhóm đang chọn, tự đổi theo nhóm đang xem khi cuộn (ADR-042 D-193) ----------
+// ---------- Thanh nhóm món: nhóm đang chọn tô màu, tự đổi theo nhóm đang xem khi cuộn (ADR-042 D-193, D-195) ----------
 let spyPausedUntil = 0;
 let spyFrame = 0;
-
-/** Đặt vạch dưới nút nhóm (dịch + giãn một vạch 1 px — chỉ đổi transform nên trượt mượt). */
-function moveInk(btn, { instant = false } = {}) {
-  const ink = $('#tabs .tab-ink');
-  if (!ink || !btn) return;
-  if (instant) ink.style.transition = 'none';
-  ink.style.transform = `translateX(${btn.offsetLeft}px) scaleX(${btn.offsetWidth})`;
-  if (instant) requestAnimationFrame(() => (ink.style.transition = ''));
-}
 
 function setActiveTab(btn) {
   const tabs = $('#tabs');
@@ -417,7 +406,6 @@ function setActiveTab(btn) {
     if (b === btn) b.setAttribute('aria-current', 'true');
     else b.removeAttribute('aria-current');
   }
-  moveInk(btn);
   // Nhóm đang chọn luôn nằm trong tầm nhìn của thanh (thanh cuộn ngang khi nhiều nhóm)
   tabs.scrollTo({ left: btn.offsetLeft - (tabs.clientWidth - btn.offsetWidth) / 2, behavior: reducedMotion() ? 'auto' : 'smooth' });
 }
@@ -430,7 +418,7 @@ function spyOnScroll() {
     if (Date.now() < spyPausedUntil) return;
     const sections = [...document.querySelectorAll('#menu .c-section')];
     if (!sections.length) return;
-    const line = parseFloat(getComputedStyle(document.documentElement).fontSize) * 7.25 + 24;
+    const line = parseFloat(getComputedStyle(document.documentElement).fontSize) * 8.75 + 16; // = scroll-margin-top của .c-section + 16 px
     let current = sections[0];
     for (const s of sections) if (s.getBoundingClientRect().top <= line) current = s;
     if (globalThis.innerHeight + globalThis.scrollY >= document.documentElement.scrollHeight - 4) current = sections.at(-1);
@@ -439,8 +427,6 @@ function spyOnScroll() {
   });
 }
 globalThis.addEventListener('scroll', spyOnScroll, { passive: true });
-globalThis.addEventListener('resize', () => moveInk($('#tabs .chip.active'), { instant: true }));
-document.fonts?.ready.then(() => moveInk($('#tabs .chip.active'), { instant: true })); // web font tải xong → bề ngang chữ đổi
 
 function renderControl(itemId) {
   const item = state.itemsById.get(itemId);

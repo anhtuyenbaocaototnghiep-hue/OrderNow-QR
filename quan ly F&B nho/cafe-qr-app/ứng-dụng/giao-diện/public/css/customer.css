@@ -1,7 +1,15 @@
 /* Giao diện khách — mobile-first (NFR-004), màn hình ≥ 360px. */
 body.customer {
+  --page: 720px; /* bề ngang cột nội dung: đầu trang, nhóm món, thực đơn, thanh giỏ cùng thẳng một cột */
+  --gutter: max(1rem, calc((100% - var(--page)) / 2 + 1rem));
   background: var(--c-bg);
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+/* Máy tính / máy tính bảng ngang: cột rộng hơn, thẻ món xếp 2 cột (không để một dải hẹp giữa màn trống) */
+@media (min-width: 1024px) {
+  body.customer {
+    --page: 1040px;
+  }
 }
 /* Vùng chạm trên điện thoại ≥ 44 px (ADR-012 D-54) */
 body.customer .btn:not(.btn-sm):not(.btn-lg) {
@@ -12,9 +20,10 @@ body.customer .toasts {
   bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
-/* Đầu trang sáng, mảnh (ADR-042 D-193 — thay thanh espresso viền caramel của ADR-012): tên quán chữ có chân, tên bàn ngay dưới,
-   đường kẻ mảnh. Cao cố định (rem — phóng chữ thì đầu trang và thanh nhóm món cùng lớn) để thanh nhóm món dính ngay bên dưới */
+/* Đầu trang nền espresso (D-195 — bỏ vạch caramel cũ của ADR-012, bỏ đầu trang sáng mảnh của bản đầu ADR-042): tên quán chữ trắng đậm,
+   tên bàn ngay dưới. Nội dung thẳng cột thực đơn (--gutter). Cao cố định (rem) để thanh nhóm món dính ngay bên dưới */
 .c-header {
+  --c-focus: var(--c-focus-dark); /* nền tối → viền focus sáng */
   position: sticky;
   top: 0;
   z-index: 30;
@@ -24,20 +33,19 @@ body.customer .toasts {
   gap: 0.75rem;
   height: 4.125rem; /* 66px */
   padding: 0 1rem;
-  background: var(--c-bg);
-  color: var(--c-text);
-  border-bottom: 1px solid var(--c-border);
+  padding-inline: var(--gutter, 1rem);
+  background: var(--c-espresso);
+  color: var(--c-on-dark);
 }
 .c-header > div:first-child {
   min-width: 0;
 }
 .c-shop {
-  font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-size: 1.35rem;
-  font-weight: 600;
-  line-height: 1.1;
-  color: var(--c-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -45,8 +53,9 @@ body.customer .toasts {
 /* Tên bàn là chỗ khách xác nhận đúng bàn: chữ đậm vừa, tên dài xuống tối đa 2 dòng thay vì bị cắt (review G3 TASK-065) */
 .c-table {
   margin-top: 0.1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
+  color: var(--c-on-dark-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
   line-height: 1.2;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -58,11 +67,12 @@ body.customer .toasts {
 .c-header .btn {
   flex: none;
   background: transparent;
-  border-color: var(--c-input-border);
-  color: var(--c-text);
+  border-color: rgba(234, 220, 203, 0.4);
+  color: var(--c-on-dark);
 }
 .c-header .btn:hover {
-  background: var(--c-surface-2);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(234, 220, 203, 0.6);
 }
 
 .c-tabs {
@@ -84,87 +94,104 @@ body.customer .toasts {
 .c-tabs::-webkit-scrollbar {
   display: none;
 }
-/* Khách: nhóm món là chữ, vạch đồng trượt theo nhóm đang xem (ADR-042 D-193). Quầy (Bán mang đi / Gọi món tại bàn) vẫn dùng chip */
+/* Khách: nhóm món là nút tròn — nhóm đang xem tô nâu rang, tự đổi theo vị trí cuộn (D-195). Quầy (Bán mang đi / Gọi món tại bàn) giữ chip */
 body.customer .c-tabs {
-  gap: 1.4rem;
-  padding: 0 1rem;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  padding-inline: var(--gutter);
+  scroll-padding-inline: var(--gutter);
 }
 body.customer .c-tabs .chip {
-  position: relative;
-  min-height: 2.75rem; /* 44px */
-  padding: 0 0.1rem;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--c-muted);
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-body.customer .c-tabs .chip:hover,
-body.customer .c-tabs .chip.active {
+  min-height: 2.5rem; /* 40px */
+  padding: 0 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface);
   color: var(--c-text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition:
+    background var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out);
 }
-.tab-ink {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 1px;
-  height: 2px;
-  background: var(--c-accent);
-  transform-origin: 0 0;
-  transition: transform var(--dur-3) var(--ease-out);
-  pointer-events: none;
+body.customer .c-tabs .chip:hover {
+  border-color: var(--c-input-border);
+}
+body.customer .c-tabs .chip.active {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+  font-weight: 600;
 }
 .c-menu {
   padding: 0.25rem 1rem 1rem;
-  max-width: 720px;
+  max-width: var(--page, 720px);
   margin: 0 auto;
 }
 .c-section {
-  scroll-margin-top: 7.25rem; /* đầu trang 66 px + thanh nhóm món 45 px */
+  scroll-margin-top: 8.75rem; /* đầu trang 66 px + thanh nhóm món 61 px + khoảng thở */
 }
-/* Tiêu đề nhóm món: chữ có chân lớn, không biểu tượng, không gạch trang trí */
+/* Tiêu đề nhóm món: chữ thân đậm, không biểu tượng, không gạch trang trí */
 .c-section h2 {
-  font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-size: 1.7rem;
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: 0;
-  margin: 1.75rem 0 0.15rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: 1.5rem 0 0.75rem;
 }
-/* Món: dòng phẳng như thực đơn in — tên, giá, đường kẻ mảnh; ảnh chỉ khi quán có ảnh thật, không còn ô chữ cái (ADR-042 D-193).
-   Bấm vào đâu trên dòng cũng mở bảng chọn (lớp phủ của nút tên món); "+", tim, "Chọn size" nằm trên lớp phủ */
+/* Món: thẻ trắng viền mảnh trên nền xám ấm (D-195 — bản đầu ADR-042 là dòng phẳng, chủ dự án thấy trôi, khó nhìn);
+   ảnh chỉ khi quán có ảnh thật, không ô chữ cái (D-194). Bấm vào đâu trên thẻ cũng mở bảng chọn (lớp phủ của nút tên món);
+   "+", tim, "Chọn size" nằm trên lớp phủ */
 .c-item {
   position: relative;
   display: flex;
   gap: 0.9rem;
   align-items: center;
-  padding: 0.95rem 0;
-  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 0.625rem;
+  padding: 0.9rem 0.9rem 0.9rem 1rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(34, 26, 20, 0.04);
+  transition: border-color var(--dur-1) var(--ease-out);
 }
-.c-section .c-item:last-child {
-  border-bottom: 0;
+@media (hover: hover) {
+  .c-item:hover {
+    border-color: var(--c-input-border);
+  }
 }
 .c-item .thumb {
-  width: 76px;
-  height: 76px;
+  width: 72px;
+  height: 72px;
   border-radius: 10px;
   background: var(--c-surface-2);
+}
+/* Máy tính: thẻ món 2 cột; tiêu đề nhóm, ưu đãi, "lần trước bạn gọi" trải hết bề ngang */
+@media (min-width: 1024px) {
+  body.customer .c-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0.75rem;
+    align-items: stretch;
+  }
+  body.customer .c-section > :not(.c-item) {
+    grid-column: 1 / -1;
+  }
 }
 .c-item.soldout {
   opacity: 0.55;
 }
 .c-item-name {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1.02rem;
   line-height: 1.35;
 }
 .c-item-price {
-  margin-top: 0.2rem;
-  color: var(--c-text);
-  font-weight: 400;
-  font-size: 0.95rem;
+  margin-top: 0.25rem;
+  color: var(--c-primary);
+  font-weight: 700;
+  font-size: 1rem;
   font-variant-numeric: tabular-nums;
 }
 .c-item .c-control,
@@ -173,15 +200,16 @@ body.customer .c-tabs .chip.active {
   position: relative;
   z-index: 1;
 }
+/* Nút "+": tròn đặc nâu rang — chỗ bấm chính của thẻ, nhìn là thấy (D-195; bản đầu ADR-042 chỉ có viền, trông như nút tắt) */
 .add-btn {
   display: inline-grid;
   place-items: center;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid var(--c-input-border);
-  background: var(--c-surface);
-  color: var(--c-text);
+  border: 0;
+  background: var(--c-primary);
+  color: #fff;
   line-height: 1;
   cursor: pointer;
   flex: none;
@@ -196,12 +224,10 @@ body.customer .c-tabs .chip.active {
   width: 1.3rem;
   height: 1.3rem;
   margin: 0;
-  stroke-width: 1.75;
+  stroke-width: 2.25;
 }
 .add-btn:hover {
-  background: var(--c-primary);
-  border-color: var(--c-primary);
-  color: #fff;
+  background: var(--c-primary-600);
 }
 .add-btn:active {
   transform: scale(0.92);
@@ -241,7 +267,8 @@ body.customer .c-tabs .chip.active {
   font-variant-numeric: tabular-nums;
 }
 
-/* Thanh giỏ nổi màu mực; thêm món → thanh nảy nhẹ, số món / tổng tiền đổi ngay (thay thông báo xanh — ADR-042 D-192) */
+/* Thanh giỏ nổi nâu rang, nằm giữa màn (máy tính không còn dạt trái); thêm món → thanh nảy nhẹ, số món / tổng tiền đổi ngay
+   (thay thông báo xanh — ADR-042 D-192) */
 .c-cartbar {
   position: fixed;
   left: 0;
@@ -249,23 +276,28 @@ body.customer .c-tabs .chip.active {
   bottom: 0;
   z-index: 40;
   padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-  background: linear-gradient(rgba(247, 246, 243, 0), var(--c-bg) 40%);
+  background: linear-gradient(rgba(243, 242, 239, 0), var(--c-bg) 40%);
   animation: cartbar-in var(--dur-3) var(--ease-sheet); /* chạy mỗi lần thanh hiện lại (bỏ [hidden]) */
 }
 .c-cartbar .btn {
-  max-width: 640px;
+  display: flex;
+  width: 100%;
+  max-width: 560px;
   min-height: 56px;
   margin: 0 auto;
   justify-content: space-between;
   gap: 0.75rem;
   border-radius: 14px;
-  background: var(--c-text);
-  border-color: var(--c-text);
+  background: var(--c-primary);
+  border-color: var(--c-primary);
   box-shadow: var(--shadow-lg);
   font-weight: 500;
 }
+.c-cartbar .btn > span {
+  white-space: nowrap; /* "2 món", "Xem giỏ · Gửi đơn" không bẻ dòng ở màn 360–390 px */
+}
 .c-cartbar .btn:hover {
-  background: #2e2a26;
+  background: var(--c-primary-600);
 }
 .c-cartbar.bump .btn {
   animation: cart-bump var(--dur-3) var(--ease-out);
@@ -284,9 +316,9 @@ body.customer .c-tabs .chip.active {
   min-width: 1.9rem;
   border-radius: 6px;
   padding: 0.1rem 0.5rem;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -369,7 +401,7 @@ body.customer .c-tabs .chip.active {
   color: var(--c-warning-text);
 }
 .c-hero h1 {
-  font-size: 2.2rem;
+  font-size: 1.6rem;
 }
 .c-choice {
   display: block;
@@ -555,21 +587,21 @@ body.customer .c-tabs .chip.active {
 .chip.special {
   border-color: var(--c-accent);
 }
-/* Nhãn nhỏ trên tên món ("Bán chạy", khuyến mãi): viền tóc, chữ nhỏ — không tô khối màu (ADR-042) */
+/* Nhãn nhỏ cạnh tên món ("Bán chạy", khuyến mãi): nền nhạt chữ đậm cùng tông — đọc được ngay, không viền mờ (D-195) */
 .tag {
   display: inline-block;
   margin-left: 0.4rem;
-  padding: 0 0.4rem;
-  border: 1px solid var(--c-border);
-  border-radius: 4px;
-  color: var(--c-muted);
+  padding: 0.05rem 0.45rem;
+  border-radius: 6px;
+  background: var(--c-primary-50);
+  color: var(--c-primary);
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.5;
   vertical-align: 0.1em;
 }
 .tag.promo {
-  border-color: #efc9c3;
+  background: var(--c-danger-50);
   color: var(--c-danger);
 }
 .save {
@@ -583,19 +615,26 @@ body.customer .c-tabs .chip.active {
   padding: 0.75rem 0.95rem;
   margin: 0.6rem 0;
 }
+/* Số món đã có trong giỏ: chấm số gắn góc nút "+" (như số trên biểu tượng giỏ) — không nằm lơ lửng cạnh nút; không nhận bấm */
 .qty-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  z-index: 1;
   display: inline-grid;
   place-items: center;
-  min-width: 1.55rem;
-  height: 1.55rem;
-  padding: 0 0.35rem;
-  margin-right: 0.5rem;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.3rem;
   border-radius: 999px;
-  background: var(--c-text);
+  border: 2px solid var(--c-surface);
+  background: var(--c-espresso);
   color: #fff;
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  pointer-events: none;
   animation: badge-pop var(--dur-2) var(--ease-out);
 }
 @keyframes badge-pop {
@@ -605,6 +644,7 @@ body.customer .c-tabs .chip.active {
   }
 }
 .c-control {
+  position: relative;
   display: flex;
   align-items: center;
 }
@@ -813,11 +853,9 @@ body.customer .alert.info {
   text-align: left;
 }
 .review-box h2 {
-  font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-size: 1.4rem;
-  font-weight: 600;
-  letter-spacing: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 0 0 0.5rem;
 }
 .review-row {
@@ -879,7 +917,7 @@ body.customer .alert.info {
   .c-choice:active {
     transform: none;
   }
-  .tab-ink,
+  body.customer .c-tabs .chip,
   .progress span {
     transition: none;
   }
@@ -898,7 +936,7 @@ body.customer .alert.info {
   padding: 1rem 1rem 3rem;
 }
 .policy h1 {
-  font-size: 1.9rem;
+  font-size: 1.5rem;
   margin: 0.5rem 0;
 }
 .policy h2 {
@@ -945,9 +983,7 @@ body.customer .alert.info {
   text-align: center;
 }
 .spin-page h1 {
-  font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-size: 1.7rem;
+  font-size: 1.45rem;
   margin: 0.5rem 0 0.25rem;
 }
 .wheel-wrap {
@@ -1032,10 +1068,8 @@ body.customer .alert.info {
   background: var(--c-surface);
 }
 .spin-result h2 {
-  font-family: var(--font-display);
-  font-variant-numeric: lining-nums;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
   margin: 0.25rem 0 0.5rem;
 }
 .spin-result .big {
@@ -1095,13 +1129,14 @@ body.customer .alert.info {
   cursor: pointer;
 }
 .c-item .link-btn {
-  margin-top: 0.1rem;
-  color: var(--c-muted);
+  margin-top: 0.15rem;
+  color: var(--c-primary);
   font-weight: 500;
   white-space: nowrap; /* "Chọn size / tùy chọn ›" không rớt dấu "›" xuống dòng riêng */
 }
 .c-item .link-btn:hover {
-  color: var(--c-text);
+  color: var(--c-primary-600);
+  text-decoration: underline;
 }
 /* Đầu bảng chọn: ảnh lớn khi quán có ảnh thật; giá, nhãn khuyến mãi, thành phần combo */
 .item-sheet-head {
