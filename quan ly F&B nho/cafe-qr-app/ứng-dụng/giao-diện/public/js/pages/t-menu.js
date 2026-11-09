@@ -421,7 +421,10 @@ function spyOnScroll() {
     const line = parseFloat(getComputedStyle(document.documentElement).fontSize) * 8.75 + 16; // = scroll-margin-top của .c-section + 16 px
     let current = sections[0];
     for (const s of sections) if (s.getBoundingClientRect().top <= line) current = s;
-    if (globalThis.innerHeight + globalThis.scrollY >= document.documentElement.scrollHeight - 4) current = sections.at(-1);
+    // Cuộn chạm đáy → nhóm cuối; chỉ khi trang cuộn được và đã cuộn (màn lớn, trang ngắn không cuộn → giữ nhóm đầu — sửa 09/11/2026)
+    const page = document.documentElement;
+    if (globalThis.scrollY > 0 && page.scrollHeight > globalThis.innerHeight + 4 && globalThis.innerHeight + globalThis.scrollY >= page.scrollHeight - 4)
+      current = sections.at(-1);
     const btn = document.querySelector(`#tabs .chip[data-target="${current.id}"]`);
     if (btn && !btn.classList.contains('active')) setActiveTab(btn);
   });
@@ -483,17 +486,23 @@ async function quickAdd(item) {
   changed(item.id);
 }
 
-/** Đầu bảng chọn món: ảnh lớn khi quán có ảnh thật (ADR-042), giá (giá gạch khi khuyến mãi), nhãn khuyến mãi, thành phần combo. */
+/** Đầu bảng chọn món: ảnh vuông 112 px khi quán có ảnh thật (ADR-042 D-193, sửa 09/11), giá (giá gạch khi khuyến mãi), nhãn khuyến mãi, thành phần combo. */
+// Đầu bảng chọn: có ảnh → ảnh vuông nhỏ bên trái, giá / nhãn / thành phần combo bên phải — ảnh không đẩy tùy chọn và nút "Thêm vào giỏ"
+// xuống dưới (09/11/2026: ảnh rộng cả bảng chiếm gần nửa chiều cao, chủ dự án báo "phá bố cục")
 function itemHead(item) {
   return el(
     'div',
-    { class: 'item-sheet-head' },
-    item.imageUrl ? el('img', { class: 'item-photo', src: item.imageUrl, alt: '' }) : null,
-    priceNode(item),
-    item.promotionBadge ? el('span', { class: 'tag promo' }, item.promotionBadge) : null,
-    item.itemType === 'COMBO'
-      ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity > 1 ? `${c.quantity}× ` : ''}${c.name}`).join(' + '))
-      : null,
+    { class: `item-sheet-head${item.imageUrl ? ' has-photo' : ''}` },
+    item.imageUrl ? el('img', { class: 'item-photo', src: item.imageUrl, alt: '', width: 112, height: 112 }) : null,
+    el(
+      'div',
+      { class: 'item-head-info' },
+      priceNode(item),
+      item.promotionBadge ? el('span', { class: 'tag promo' }, item.promotionBadge) : null,
+      item.itemType === 'COMBO'
+        ? el('div', { class: 'small muted' }, item.components.map((c) => `${c.quantity > 1 ? `${c.quantity}× ` : ''}${c.name}`).join(' + '))
+        : null,
+    ),
   );
 }
 

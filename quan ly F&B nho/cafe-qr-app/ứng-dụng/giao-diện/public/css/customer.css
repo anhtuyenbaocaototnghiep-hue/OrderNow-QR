@@ -1204,17 +1204,33 @@ body.customer .alert.info {
   color: var(--c-primary-600);
   text-decoration: underline;
 }
-/* Đầu bảng chọn: ảnh lớn khi quán có ảnh thật; giá, nhãn khuyến mãi, thành phần combo */
+/* Đầu bảng chọn: ảnh thật của món (nếu có), giá, nhãn khuyến mãi, thành phần combo */
 .item-sheet-head {
   margin-bottom: 0.6rem;
 }
+/* Có ảnh: ảnh vuông 112 px bên trái, giá / nhãn bên phải — gọn, không đẩy tùy chọn và chân bảng (09/11/2026) */
+.item-sheet-head.has-photo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
 .item-photo {
-  width: 100%;
-  aspect-ratio: 16 / 10;
+  flex: none;
+  width: 112px;
+  height: 112px;
   object-fit: cover;
   border-radius: var(--radius);
   background: var(--c-surface-2);
-  margin-bottom: 0.75rem;
+}
+.item-head-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.item-head-info .tag {
+  margin-left: 0;
 }
 .item-sheet-head .c-item-price {
   font-size: 1.1rem;
