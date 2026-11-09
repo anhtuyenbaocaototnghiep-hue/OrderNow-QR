@@ -44,7 +44,8 @@ export function adjustDialog(i, { url, onDone }) {
             toast('Nhập số lượng hợp lệ', 'error');
             return false;
           }
-          setBusy(e.currentTarget, true);
+          const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null, nút sẽ khóa mãi khi máy chủ báo lỗi
+          setBusy(btn, true);
           try {
             const r = await staffApi(url, {
               method: 'POST',
@@ -53,7 +54,7 @@ export function adjustDialog(i, { url, onDone }) {
             toast(`Đã điều chỉnh: ${r.name} còn ${num(r.stockQty)} ${r.unit}`, 'success');
             onDone?.();
           } catch (err) {
-            setBusy(e.currentTarget, false);
+            setBusy(btn, false);
             if (!showFieldErrors(form, err)) toast(errorMessage(err), 'error', 5000);
             return false;
           }

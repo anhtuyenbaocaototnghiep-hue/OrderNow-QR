@@ -254,12 +254,13 @@ function formModal({ title, form, submitLabel, send }) {
         label: submitLabel,
         class: 'btn-primary',
         onClick: async (_c, e) => {
-          setBusy(e.currentTarget, true);
+          const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null, nút sẽ khóa mãi khi máy chủ báo lỗi
+          setBusy(btn, true);
           try {
             await send();
             load();
           } catch (err) {
-            setBusy(e.currentTarget, false);
+            setBusy(btn, false);
             if (!showFieldErrors(form, err)) {
               form.querySelector('.alert')?.remove();
               form.prepend(el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -470,7 +471,8 @@ async function grantsDialog(u) {
             }
             grants.push({ capability: r.it.key, effect: r.mode.value, expiresAt });
           }
-          setBusy(e.currentTarget, true);
+          const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null, nút sẽ khóa mãi khi máy chủ báo lỗi
+          setBusy(btn, true);
           try {
             await staffApi(`/api/admin/users/${u.userId}/grants`, { method: 'PUT', body: { grants } });
             toast(`Đã lưu quyền của ${u.fullName}`, 'success');
@@ -480,7 +482,7 @@ async function grantsDialog(u) {
             toast(errorMessage(err), 'error', 6000);
             return false;
           } finally {
-            setBusy(e.currentTarget, false);
+            setBusy(btn, false);
           }
         },
       },

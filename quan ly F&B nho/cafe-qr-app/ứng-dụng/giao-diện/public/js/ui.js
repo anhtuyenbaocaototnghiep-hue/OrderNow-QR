@@ -387,9 +387,10 @@ export function playSound(kind = 'ting') {
 }
 
 /** Ô vuông chữ cái đầu khi món chưa có ảnh. */
-export function thumb(name, imageUrl) {
-  if (imageUrl) return el('img', { class: 'thumb', src: imageUrl, alt: '', loading: 'lazy' });
-  return el('div', { class: 'thumb', 'aria-hidden': 'true' }, (name || '?').trim().charAt(0).toUpperCase());
+export function thumb(name, imageUrl, { small = false } = {}) {
+  const cls = small ? 'thumb sm' : 'thumb'; // sm: 40 px cho bảng gọn (tồn kho ở quầy — F-085)
+  if (imageUrl) return el('img', { class: cls, src: imageUrl, alt: '', loading: 'lazy' });
+  return el('div', { class: cls, 'aria-hidden': 'true' }, (name || '?').trim().charAt(0).toUpperCase());
 }
 
 /** Ô nhập tiền: chỉ giữ chữ số, hiển thị phân cách nghìn. */

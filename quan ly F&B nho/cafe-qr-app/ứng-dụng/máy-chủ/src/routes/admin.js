@@ -119,10 +119,20 @@ adminRouter.get('/wifi-qr.png', async (_req, res) => {
 });
 
 // ---- Nguyên liệu / kho (FEATURE-011) ----
+// F-085 (ADR-046 D-204): ảnh nguyên liệu kiểm như ảnh món; vắng trường = giữ ảnh cũ (bản cũ / nơi khác không gửi), '' / null = bỏ ảnh
+const ingredientImage = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((s) => s === '' || /^(https?:\/\/|\/)[^\s]*$/i.test(s), 'Ảnh phải là URL http(s) hoặc đường dẫn bắt đầu bằng /')
+  .optional()
+  .nullable()
+  .transform((s) => (s === undefined ? undefined : s || null));
 const ingredientBase = {
   name: zText(100).min(1, 'Nhập tên nguyên liệu'),
   unit: zText(10).min(1, 'Nhập đơn vị'),
   lowStockThreshold: zQty(),
+  imageUrl: ingredientImage,
 };
 adminRouter.get('/ingredients', async (_req, res) => res.json(await adminService.listIngredients()));
 adminRouter.post('/ingredients', async (req, res) => {

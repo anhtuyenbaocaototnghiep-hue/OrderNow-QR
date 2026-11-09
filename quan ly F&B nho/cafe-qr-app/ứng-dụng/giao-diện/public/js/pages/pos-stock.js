@@ -8,7 +8,7 @@ import { receivePoDialog } from '../receive-po.js';
 import { connectRealtime } from '../socket.js';
 import { adjustDialog } from '../stock-adjust.js';
 import { stocktakeUi } from '../stocktake.js';
-import { $, clear, confirmDialog, dateTime, el, errorMessage, money, num, setBusy, toast, todayVn } from '../ui.js';
+import { $, clear, confirmDialog, dateTime, el, errorMessage, money, num, setBusy, thumb, toast, todayVn } from '../ui.js';
 import { icon } from '../icons.js';
 import { hasCap } from '../roles.js';
 
@@ -324,6 +324,7 @@ function openPackCard(packs) {
               class: `btn btn-sm ${p.expired ? 'btn-danger' : ''}`,
               type: 'button',
               onclick: async (e) => {
+                const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null (nút không khóa chống bấm đôi, không mở lại)
                 if (
                   !(await confirmDialog('Bỏ phần còn của hộp đang mở?', `${p.name}: ghi hủy khoảng ${num(p.qty)} ${p.unit} (lý do: hết hạn).`, {
                     okLabel: 'Bỏ phần còn',
@@ -331,14 +332,14 @@ function openPackCard(packs) {
                   }))
                 )
                   return;
-                setBusy(e.currentTarget, true);
+                setBusy(btn, true);
                 try {
                   const r = await staffApi(`/api/ingredients/${p.ingredientId}/discard-open`, { method: 'POST', body: {} });
                   toast(`Đã ghi hủy ${num(r.qty)} ${p.unit} ${p.name}`, 'success');
                   load();
                 } catch (err) {
                   toast(errorMessage(err), 'error', 6000);
-                  setBusy(e.currentTarget, false);
+                  setBusy(btn, false);
                 }
               },
             },
@@ -404,14 +405,15 @@ async function renderExpiry() {
                         class: 'btn btn-sm btn-danger',
                         type: 'button',
                         onclick: async (e) => {
-                          setBusy(e.currentTarget, true);
+                          const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null
+                          setBusy(btn, true);
                           try {
                             await staffApi(`/api/lots/${l.lotId}/write-off`, { method: 'POST', body: {} });
                             toast(`Đã hủy lô ${l.lotCode ?? `#${l.lotId}`} (${num(l.qty)} ${l.unit})`, 'success');
                             load();
                           } catch (err) {
                             toast(errorMessage(err), 'error', 6000);
-                            setBusy(e.currentTarget, false);
+                            setBusy(btn, false);
                           }
                         },
                       },
@@ -503,26 +505,41 @@ async function renderStock() {
               el(
                 'tr',
                 { class: i.isLow ? 'loss-flag' : '' },
-                el('td', {}, i.name, i.kind === 'SEMI' ? el('span', { class: 'pill' }, ' bán thành phẩm') : null),
+                el(
+                  'td',
+                  {},
+                  // F-085: ảnh nhỏ giúp nhận ra nguyên liệu khi đếm / sơ chế
+                  el(
+                    'div',
+                    { class: 'row ing-name' },
+                    thumb(i.name, i.imageUrl, { small: true }),
+                    el('span', {}, i.name, i.kind === 'SEMI' ? el('span', { class: 'pill' }, ' bán thành phẩm') : null),
+                  ),
+                ),
                 el('td', { class: 'num' }, `${num(i.stockQty)} ${i.unit}`),
                 el('td', { class: 'num' }, num(i.reservedQty)),
                 el('td', { class: 'num' }, i.expiredQty ? num(i.expiredQty) : ''),
                 el('td', { class: 'num' }, el('strong', {}, num(i.available))),
                 el(
                   'td',
-                  { class: 'row' },
-                  i.isLow ? el('span', { class: 'badge danger' }, 'Sắp hết') : null,
-                  isLead
-                    ? el(
-                        'button',
-                        {
-                          class: 'btn btn-sm',
-                          type: 'button',
-                          onclick: () => adjustDialog(i, { url: `/api/ops/ingredients/${i.ingredientId}/adjust`, onDone: load }),
-                        },
-                        'Điều chỉnh',
-                      )
-                    : null,
+                  {},
+                  // Bọc trong div.row: đặt class row (flex) thẳng lên td làm ô rời khỏi bảng, kẻ dòng lệch nửa hàng (thấy khi thêm ảnh — 09/11/2026)
+                  el(
+                    'div',
+                    { class: 'row' },
+                    i.isLow ? el('span', { class: 'badge danger' }, 'Sắp hết') : null,
+                    isLead
+                      ? el(
+                          'button',
+                          {
+                            class: 'btn btn-sm',
+                            type: 'button',
+                            onclick: () => adjustDialog(i, { url: `/api/ops/ingredients/${i.ingredientId}/adjust`, onDone: load }),
+                          },
+                          'Điều chỉnh',
+                        )
+                      : null,
+                  ),
                 ),
               ),
             ),

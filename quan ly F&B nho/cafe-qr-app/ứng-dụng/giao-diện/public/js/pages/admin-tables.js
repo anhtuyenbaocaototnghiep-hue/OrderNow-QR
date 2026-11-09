@@ -162,7 +162,8 @@ function editTable(t) {
         label: t ? 'Lưu' : 'Tạo bàn & QR',
         class: 'btn-primary',
         onClick: async (_c, e) => {
-          setBusy(e.currentTarget, true);
+          const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null, nút sẽ khóa mãi khi máy chủ báo lỗi
+          setBusy(btn, true);
           try {
             if (t)
               await staffApi(`/api/admin/tables/${t.tableId}`, {
@@ -173,7 +174,7 @@ function editTable(t) {
             toast(t ? 'Đã lưu bàn' : 'Đã tạo bàn và mã QR', 'success');
             load();
           } catch (err) {
-            setBusy(e.currentTarget, false);
+            setBusy(btn, false);
             if (!showFieldErrors(form, err)) toast(errorMessage(err), 'error');
             return false;
           }

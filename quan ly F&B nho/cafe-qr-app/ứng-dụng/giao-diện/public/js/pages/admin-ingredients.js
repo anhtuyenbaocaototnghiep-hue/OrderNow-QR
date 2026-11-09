@@ -5,7 +5,7 @@ import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell } from '../admin-shell.js';
 import { advancedDialog, costLine, ingredientBadges, lotsDialog, recipeDialog } from '../inventory-advanced.js';
 import { adjustDialog } from '../stock-adjust.js';
-import { $, clear, dateTime, el, errorMessage, modal, num, setBusy, showFieldErrors, toast } from '../ui.js';
+import { $, clear, dateTime, el, errorMessage, modal, num, setBusy, showFieldErrors, thumb, toast } from '../ui.js';
 
 await mountAdminShell('ingredients');
 
@@ -53,11 +53,21 @@ async function load() {
                   el(
                     'td',
                     {},
-                    el('strong', {}, i.name),
-                    ' ',
-                    ingredientBadges(i),
-                    el('div', { class: 'muted small' }, `Đơn vị: ${i.unit} · dùng trong ${i.usedIn} món`),
-                    costLine(i),
+                    // F-085: ảnh nguyên liệu (chưa có ảnh → ô chữ cái như trang Món)
+                    el(
+                      'div',
+                      { class: 'row ing-name' },
+                      thumb(i.name, i.imageUrl),
+                      el(
+                        'div',
+                        {},
+                        el('strong', {}, i.name),
+                        ' ',
+                        ingredientBadges(i),
+                        el('div', { class: 'muted small' }, `Đơn vị: ${i.unit} · dùng trong ${i.usedIn} món`),
+                        costLine(i),
+                      ),
+                    ),
                   ),
                   el('td', { class: 'num' }, num(i.stockQty)),
                   el('td', { class: 'num' }, num(i.reservedQty)),
@@ -124,6 +134,13 @@ function editIngredient(i) {
     {},
     el('div', { class: 'field' }, el('label', {}, 'Tên nguyên liệu'), el('input', { class: 'input', name: 'name', maxlength: 100, value: i?.name ?? '' })),
     el('div', { class: 'field' }, el('label', {}, 'Đơn vị (ml, g, cái…)'), el('input', { class: 'input', name: 'unit', maxlength: 10, value: i?.unit ?? '' })),
+    // F-085: ảnh như ảnh món — đường dẫn ảnh (URL hoặc /img/…); để trống = không ảnh
+    el(
+      'div',
+      { class: 'field' },
+      el('label', { for: 'ing-image' }, 'Ảnh (URL, không bắt buộc)'),
+      el('input', { class: 'input', id: 'ing-image', name: 'imageUrl', maxlength: 500, placeholder: 'https://… hoặc /img/…', value: i?.imageUrl ?? '' }),
+    ),
     isNew
       ? el('div', { class: 'field' }, el('label', {}, 'Tồn kho ban đầu'), el('input', { class: 'input', name: 'stockQty', inputmode: 'decimal', value: '0' }))
       : null,
@@ -145,23 +162,36 @@ function editIngredient(i) {
         label: 'Lưu',
         class: 'btn-primary',
         onClick: async (_c, e) => {
-          setBusy(e.currentTarget, true);
+          const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null, nút sẽ khóa mãi khi máy chủ báo lỗi
+          setBusy(btn, true);
           const decimal = (n) => String(f(n).value).replace(',', '.').trim();
           try {
             if (isNew)
               await staffApi('/api/admin/ingredients', {
                 method: 'POST',
-                body: { name: f('name').value, unit: f('unit').value, stockQty: decimal('stockQty'), lowStockThreshold: decimal('lowStockThreshold') },
+                body: {
+                  name: f('name').value,
+                  unit: f('unit').value,
+                  imageUrl: f('imageUrl').value,
+                  stockQty: decimal('stockQty'),
+                  lowStockThreshold: decimal('lowStockThreshold'),
+                },
               });
             else
               await staffApi(`/api/admin/ingredients/${i.ingredientId}`, {
                 method: 'PUT',
-                body: { name: f('name').value, unit: f('unit').value, lowStockThreshold: decimal('lowStockThreshold'), isActive: f('isActive').checked },
+                body: {
+                  name: f('name').value,
+                  unit: f('unit').value,
+                  imageUrl: f('imageUrl').value,
+                  lowStockThreshold: decimal('lowStockThreshold'),
+                  isActive: f('isActive').checked,
+                },
               });
             toast('Đã lưu nguyên liệu', 'success');
             load();
           } catch (err) {
-            setBusy(e.currentTarget, false);
+            setBusy(btn, false);
             if (!showFieldErrors(form, err)) toast(errorMessage(err), 'error');
             return false;
           }

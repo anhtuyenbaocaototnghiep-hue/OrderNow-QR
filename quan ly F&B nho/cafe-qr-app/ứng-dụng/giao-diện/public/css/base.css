@@ -928,6 +928,13 @@ ul.voided li {
   font-weight: 700;
   font-size: 1.5rem;
 }
+/* F-085: ảnh nhỏ trong bảng gọn (tồn kho ở quầy) */
+.thumb.sm {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
 .badge.voided {
   background: var(--c-danger-50);
   color: var(--c-danger);

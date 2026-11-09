@@ -3306,3 +3306,99 @@ test('"+" mở bảng chọn cho mọi món: chủ quán bật ở Cài đặt �
     await apiAs(request, 'delete', `/api/admin/tables/${t.tableId}`);
   }
 });
+
+test('ảnh nguyên liệu: chủ quán mở Kho nguyên liệu → Sửa "Cốt trà đào" → dán đường dẫn sai thì báo ngay dưới ô, dán "/img/nguyen-lieu/cot-tra-dao.jpg" → Lưu → dòng hiện ảnh (tải được), nguyên liệu chưa có ảnh vẫn là ô chữ cái; nhân viên mở Kho & sơ chế → Tồn kho thấy ảnh nhỏ (F-085, AC-085-03)', async ({
+  request,
+}) => {
+  const IMG = '/img/nguyen-lieu/cot-tra-dao.jpg';
+  const rowOf = (page, name) => page.locator('tbody tr').filter({ has: page.getByText(name, { exact: true }) });
+  await P.goto('/admin/ingredients');
+  const row = rowOf(P, 'Cốt trà đào');
+  await expect(row.locator('div.thumb')).toHaveText('C'); // chưa có ảnh → ô chữ cái như trang Món
+  await row.getByRole('button', { name: 'Sửa' }).click();
+  const dialog = P.getByRole('dialog');
+  const field = dialog.getByLabel('Ảnh (URL, không bắt buộc)');
+  await field.fill('anh-tra-dao.jpg');
+  await dialog.getByRole('button', { name: 'Lưu' }).click();
+  await expect(dialog.locator('.field-error')).toHaveText('Ảnh phải là URL http(s) hoặc đường dẫn bắt đầu bằng /');
+  await field.fill(IMG);
+  await dialog.getByRole('button', { name: 'Lưu' }).click();
+  await expect(P.getByRole('dialog')).toHaveCount(0);
+  const img = row.locator('img.thumb');
+  await expect(img).toHaveAttribute('src', IMG);
+  await expect.poll(() => img.evaluate((i) => i.complete && i.naturalWidth > 0)).toBe(true);
+  await expect(rowOf(P, 'Đào ngâm').locator('div.thumb')).toHaveText('Đ');
+  const ing = (await apiAs(request, 'get', '/api/admin/ingredients')).find((i) => i.name === 'Cốt trà đào');
+  expect(ing.imageUrl).toBe(IMG);
+  expect(Number(ing.lowStockThreshold)).toBeGreaterThan(0); // sửa ảnh không làm mất các trường khác
+
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  try {
+    const S = await ctx.newPage();
+    watch(S, 'kho');
+    await S.goto('/pos/login');
+    await S.fill('#username', 'staff1');
+    await S.fill('#password', 'Staff@123');
+    await S.click('#submit');
+    await expect(S).toHaveURL(/\/pos$/);
+    await S.goto('/pos/stock');
+    await S.getByRole('tab', { name: 'Tồn kho' }).click();
+    const small = rowOf(S, 'Cốt trà đào').locator('img.thumb.sm');
+    await expect(small).toHaveAttribute('src', IMG);
+    expect(await small.evaluate((i) => i.getBoundingClientRect().width)).toBe(40);
+  } finally {
+    await ctx.close();
+  }
+});
+
+test('báo lỗi xong vẫn lưu được (DEF-024): thêm bàn trùng mã / nhân viên trùng tên đăng nhập / món có ảnh sai → máy chủ báo lỗi, nút không bị khóa → sửa lại → lưu được ngay trong cùng hộp', async ({
+  request,
+}) => {
+  // Bàn: mã đã có → lỗi → đổi mã → tạo được
+  await P.goto('/admin/tables');
+  await P.getByRole('button', { name: '+ Thêm bàn' }).click();
+  let dialog = P.getByRole('dialog');
+  const existing = (await apiAs(request, 'get', '/api/admin/tables'))[0].code;
+  await dialog.locator('input[name="code"]').fill(existing);
+  let save = dialog.getByRole('button', { name: 'Tạo bàn & QR' });
+  await save.click();
+  await expect(save).toBeEnabled();
+  await expect(save).not.toHaveClass(/loading/);
+  await dialog.locator('input[name="code"]').fill('DF');
+  await save.click();
+  await expect(P.getByRole('dialog')).toHaveCount(0);
+  const table = (await apiAs(request, 'get', '/api/admin/tables')).find((t) => t.code === 'DF');
+  expect(table).toBeTruthy();
+  await apiAs(request, 'delete', `/api/admin/tables/${table.tableId}`);
+
+  // Tài khoản: tên đăng nhập đã có → lỗi trong hộp → đổi tên → tạo được
+  await P.goto('/admin/users');
+  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  dialog = P.getByRole('dialog');
+  await dialog.locator('input[name="username"]').fill('staff1');
+  await dialog.locator('input[name="password"]').fill('Def024@123');
+  await dialog.locator('input[name="fullName"]').fill('Thử lỗi DEF-024');
+  save = dialog.getByRole('button', { name: 'Tạo tài khoản' });
+  await save.click();
+  await expect(dialog.locator('.alert.danger, .field-error').first()).toBeVisible();
+  await expect(save).toBeEnabled();
+  await dialog.locator('input[name="username"]').fill('def024-nv');
+  await save.click();
+  await expect(P.getByRole('dialog')).toHaveCount(0);
+  const user = (await apiAs(request, 'get', '/api/admin/users')).find((u) => u.username === 'def024-nv');
+  expect(user).toBeTruthy();
+  await apiAs(request, 'delete', `/api/admin/users/${user.userId}`);
+
+  // Món: ảnh sai dạng → báo dưới ô → xóa ô ảnh → lưu được
+  await P.goto('/admin/menu');
+  await P.locator('tr', { hasText: 'Nước suối' }).getByRole('button', { name: 'Sửa' }).click();
+  dialog = P.getByRole('dialog');
+  await dialog.getByLabel('Ảnh (URL, không bắt buộc)').fill('anh-sai.jpg');
+  save = dialog.getByRole('button', { name: 'Lưu' });
+  await save.click();
+  await expect(dialog.locator('.field-error')).toHaveText('Ảnh phải là URL http(s) hoặc đường dẫn bắt đầu bằng /');
+  await expect(save).toBeEnabled();
+  await dialog.getByLabel('Ảnh (URL, không bắt buộc)').fill('');
+  await save.click();
+  await expect(P.getByRole('dialog')).toHaveCount(0);
+});

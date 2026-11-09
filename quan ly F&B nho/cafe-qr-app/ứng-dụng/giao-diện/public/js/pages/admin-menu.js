@@ -379,14 +379,15 @@ function editItem(item) {
             groupIds: [...form.querySelectorAll('input[name="groupIds"]:checked')].map((x) => Number(x.value)),
             prepSeconds: f('prepSeconds').value ? Number(f('prepSeconds').value) : null,
           };
-          setBusy(e.currentTarget, true);
+          const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null, nút sẽ khóa mãi khi máy chủ báo lỗi
+          setBusy(btn, true);
           try {
             if (isNew) await staffApi('/api/admin/menu-items', { method: 'POST', body });
             else await staffApi(`/api/admin/menu-items/${item.menuItemId}`, { method: 'PUT', body });
             toast(isNew ? 'Đã thêm món' : 'Đã lưu món', 'success');
             load();
           } catch (err) {
-            setBusy(e.currentTarget, false);
+            setBusy(btn, false);
             if (!showFieldErrors(form, err)) toast(errorMessage(err), 'error');
             return false;
           }

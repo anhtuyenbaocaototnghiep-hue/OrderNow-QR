@@ -8,6 +8,7 @@ const mapIngredient = (r) =>
     ingredientId: r.IngredientId,
     name: r.Name,
     unit: r.Unit,
+    imageUrl: r.ImageUrl ?? null, // F-085
     stockQty: r.StockQty,
     reservedQty: r.ReservedQty,
     // F-028: lô đã hết hạn không tính vào khả dụng
@@ -62,16 +63,17 @@ export async function existingIds(ids) {
   return new Set(r.recordset.map((x) => x.IngredientId));
 }
 
-export async function create({ name, unit, stockQty, lowStockThreshold, userId }) {
+export async function create({ name, unit, stockQty, lowStockThreshold, imageUrl = null, userId }) {
   const id = await inTransaction(async (tx) => {
     const r = await txQuery(
       tx,
-      `${ENSURE_UNIT} INSERT dbo.Ingredients (Name, Unit, BaseUnitCode, StockQty, LowStockThreshold) OUTPUT inserted.IngredientId VALUES (@n, @u, @u, @q, @l)`,
+      `${ENSURE_UNIT} INSERT dbo.Ingredients (Name, Unit, BaseUnitCode, StockQty, LowStockThreshold, ImageUrl) OUTPUT inserted.IngredientId VALUES (@n, @u, @u, @q, @l, @img)`,
       {
         n: [sql.NVarChar(100), name],
         u: [sql.NVarChar(10), unit],
         q: [sql.Decimal(18, 3), stockQty],
         l: [sql.Decimal(18, 3), lowStockThreshold],
+        img: [sql.NVarChar(500), imageUrl ?? null],
       },
     );
     const newId = r.recordset[0].IngredientId;
@@ -88,10 +90,15 @@ export async function create({ name, unit, stockQty, lowStockThreshold, userId }
   return getById(id);
 }
 
-export async function update(id, { name, unit, lowStockThreshold, isActive }) {
+// imageUrl vắng (undefined) = giữ ảnh cũ (F-085)
+export async function update(id, { name, unit, lowStockThreshold, isActive, imageUrl }) {
   const r = await query(
-    `${ENSURE_UNIT} UPDATE dbo.Ingredients SET Name = @n, Unit = @u, BaseUnitCode = @u, LowStockThreshold = @l, IsActive = @a WHERE IngredientId = @id AND DeletedAt IS NULL`,
+    `${ENSURE_UNIT} UPDATE dbo.Ingredients SET Name = @n, Unit = @u, BaseUnitCode = @u, LowStockThreshold = @l, IsActive = @a,
+       ImageUrl = CASE WHEN @keepImg = 1 THEN ImageUrl ELSE @img END
+     WHERE IngredientId = @id AND DeletedAt IS NULL`,
     {
+      keepImg: [sql.Bit, imageUrl === undefined],
+      img: [sql.NVarChar(500), imageUrl ?? null],
       id: [sql.Int, id],
       n: [sql.NVarChar(100), name],
       u: [sql.NVarChar(10), unit],
