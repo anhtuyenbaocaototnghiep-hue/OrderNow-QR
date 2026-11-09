@@ -815,3 +815,10 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
   - Dùng khi người đã đăng nhập trang Quản lý bấm "Mở màn hình quầy": chấm công vào như đăng nhập quầy (chế độ theo đăng nhập; đã có bản ghi mở thì không tạo thêm).
   - Trả `200 { user }`. **Không cấp token mới**: giao diện dùng lại token đang có làm phiên máy quầy.
   - Chủ quán → `403 OWNER_ADMIN_ONLY`. Không token / hết hạn → `401`.
+
+## Bổ sung F-085 — ảnh nguyên liệu (ADR-046, TASK-103, 09/11/2026)
+
+- `POST /api/admin/ingredients`, `PUT /api/admin/ingredients/{id}`: thêm `imageUrl` (chuỗi, không bắt buộc).
+  - Hợp lệ: `''`, `null`, URL `http(s)://…` hoặc đường dẫn bắt đầu bằng `/`, không khoảng trắng, ≤ 500 ký tự; sai → `400 VALIDATION_ERROR` (`fields[].path = "imageUrl"`).
+  - `PUT` **không gửi** `imageUrl` → giữ ảnh cũ; `''` / `null` → bỏ ảnh. (Khác món: `PUT /api/admin/menu-items/{id}` không gửi ảnh vẫn là bỏ ảnh như trước.)
+- `GET /api/admin/ingredients`, `GET /api/ops/ingredients`: mỗi nguyên liệu thêm `imageUrl` (`string | null`).

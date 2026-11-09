@@ -217,6 +217,7 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-082-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách, tôi muốn giỏ hàng chỉ liệt kê gọn các món đã chọn và bấm vào món nào thì sửa món đó, để xem lại nhanh và gửi đơn mà không bị rối. | AC-082-01, AC-082-02 | BR-120 | UC-02 | MOD-ORDER | SCR-03, SCR-57 | F-082 | DONE |
 | US-083-1 | Should | ACT-ADMIN, ACT-STORE, ACT-GUEST | Là chủ quán, tôi muốn khách bấm "+" ở bất kỳ món nào cũng thấy ngay chỗ ghi chú và số lượng, để khách chọn một lần là xong, không phải tìm cách sửa sau. | AC-083-01, AC-083-02 | BR-121 | UC-02 | MOD-MENU, MOD-ORDER | SCR-02, SCR-57, SCR-33 | F-083 | DONE |
 | US-084-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn tài khoản của mình chỉ dùng trang Quản lý, không vào màn hình quầy, để tách hẳn việc quản lý với việc đứng quầy (thao tác bán, thu tiền ở quầy đứng tên nhân viên). | AC-084-01, AC-084-02, AC-084-03 | BR-122 | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-42, SCR-32, SCR-25, SCR-56 | F-084 | DONE |
+| US-085-1 | Should | ACT-ADMIN, ACT-STORE, ACT-STAFF | Là chủ quán / quản lý cửa hàng, tôi muốn gắn ảnh cho từng nguyên liệu trong kho, để tôi và nhân viên nhìn là nhận ra đúng hàng khi xem tồn, đếm kho, sơ chế. | AC-085-01, AC-085-02, AC-085-03 | BR-123 | UC-13 | MOD-INVENTORY | SCR-23, SCR-17 | F-085 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

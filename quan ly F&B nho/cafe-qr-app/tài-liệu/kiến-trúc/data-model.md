@@ -1329,3 +1329,9 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | --- | --- |
 | Migration `0055_quyen_rieng_tung_tai_khoan.sql` | `UserGrants (GrantId PK, UserId → Users, Capability VARCHAR(30), Effect ALLOW/DENY, ExpiresAt DATETIME2(0) NULL, GrantedBy → Users, GrantedAt, Note)`, duy nhất `(UserId, Capability)`. `AccessRequests (RequestId PK, UserId → Users, Capability, Reason, Status PENDING/APPROVED/REJECTED, CreatedAt, DecidedBy → Users, DecidedAt, Duration TODAY/WEEK/ALWAYS, DecisionNote)`, chỉ mục duy nhất lọc `(UserId, Capability) WHERE Status = 'PENDING'`. `Alerts.Kind` thêm `ACCESS_GRANT` |
 | Thủ tục | `sp_DeleteUser`: xin quyền / người đã cấp quyền cho người khác = lịch sử (xóa mềm); xóa hẳn thì xóa `UserGrants` của tài khoản trước |
+
+### Ảnh nguyên liệu (FEATURE-085, ADR-046, TASK-103, 09/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0056_anh_nguyen_lieu.sql` | `Ingredients.ImageUrl NVARCHAR(500) NULL` — đường dẫn ảnh (URL `http(s)` hoặc `/…`), giống `MenuItems.ImageUrl`; NULL = chưa có ảnh. Chỉ thêm (kiểm `COL_LENGTH` trước). |

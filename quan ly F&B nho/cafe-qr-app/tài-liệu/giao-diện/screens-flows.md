@@ -533,3 +533,8 @@ flowchart LR
   - máy quầy đang có người khác đăng nhập → giữ người đó;
   - thanh địa chỉ bỏ `?from=admin`.
 - **Máy quầy → "Quản lý":** đã đăng nhập trang Quản lý thì vào thẳng; chưa thì trang Đăng nhập Quản lý (ADR-044).
+
+## F-085 — Ảnh nguyên liệu ở kho (TASK-103, ADR-046, 09/11/2026)
+
+- **SCR-23 Kho nguyên liệu:** ô tên có ảnh 64 px bên trái (chưa có ảnh → ô chữ cái như trang Món); hộp **Thêm / Sửa nguyên liệu** có ô **"Ảnh (URL, không bắt buộc)"** (sau ô Đơn vị) — dán sai báo ngay dưới ô "Ảnh phải là URL http(s) hoặc đường dẫn bắt đầu bằng /"; xóa trống rồi Lưu = bỏ ảnh.
+- **SCR-17 Kho & sơ chế → Tồn kho** (máy quầy): ảnh nhỏ 40 px cạnh tên nguyên liệu. Các tab khác chưa đổi.

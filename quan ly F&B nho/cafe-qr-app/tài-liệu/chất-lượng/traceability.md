@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 470 test, sửa lúc 2026-11-08 09:40 UTC
-- `npm run test:e2e` (JSON): 79 test, sửa lúc 2026-11-09 11:47 UTC
+- `npm test` (JUnit): 472 test, sửa lúc 2026-11-09 12:01 UTC
+- `npm run test:e2e` (JSON): 81 test, sửa lúc 2026-11-09 12:30 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 183 |
-| Acceptance Criteria | 502 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 502 |
+| User Story | 184 |
+| Acceptance Criteria | 505 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 505 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -34,10 +34,11 @@
 - **BR chưa gắn Story nào:** 0 — mọi BR đều có Story
 - **Màn hình (SCR trong sitemap) chưa gắn Story nào:** 0 — mọi màn hình đều có Story
 - **Test FAIL bất kỳ (kể cả test không gắn AC, file test không nạp được):** 0 — không có
-- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 56
+- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 57
   - kiểm-thử/e2e/a11y.spec.js › khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn nhóm, màn cảm ơn + đánh giá — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px
   - kiểm-thử/e2e/a11y.spec.js › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm
   - kiểm-thử/e2e/a11y.spec.js › quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính
+  - kiểm-thử/e2e/flow.spec.js › báo lỗi xong vẫn lưu được (DEF-024): thêm bàn trùng mã / nhân viên trùng tên đăng nhập / món có ảnh sai → máy chủ báo lỗi, nút không bị khóa → sửa lại → lưu được ngay trong cùng hộp
   - kiểm-thử/e2e/flow.spec.js › bố cục quầy (ADR-018): lưới bàn hiện cả bàn trống; màn 1024 px lưới bàn là ngăn trượt — nút "Bàn" mở, Esc / nền mờ đóng, focus trả về nút (TASK-072)
   - kiểm-thử/e2e/flow.spec.js › chuyển giữa các mục quầy: rời trang không làm hiện "Mất kết nối" (app tự đóng kết nối, không phải mất mạng) (DEF-011, TASK-059)
   - kiểm-thử/e2e/flow.spec.js › gọi lại đơn lần trước + thời gian chờ: hội viên gắn SĐT → "Lần trước bạn gọi" → Gọi lại vào giỏ; giỏ + theo dõi hiện ETA (F-045, F-025)
@@ -598,4 +599,7 @@
 | AC-084-01 | TC-084-01 | F-084 | US-084-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-42, SCR-32, SCR-25, SCR-56 | BR-122 | Integration: `owner-admin-only.test.js` › AC-084-01: chủ quán đăng nhập màn quầy (area = pos) → 403 OWNER_ADMIN_ONLY, không có token, không chấm công; sai mật khẩu vẫn chỉ 401 (không lộ vai trò); trang Quản lý (area = admin) và công cụ gọi API (không gửi area) vẫn vào được; quản lý cửa hàng, nhân viên vẫn đăng nhập quầy và chấm công như cũ — **PASS**<br>Integration: `owner-admin-only.test.js` › AC-084-01: "Đổi người" ở máy quầy (nhập PIN) không đổi sang chủ quán được — như trước (chỉ nhân viên / trưởng ca) — **PASS** | **PASS** |
 | AC-084-02 | TC-084-02 | F-084 | US-084-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-42, SCR-32, SCR-25, SCR-56 | BR-122 | E2E: `flow.spec.js` › chủ quán chỉ dùng trang Quản lý: gõ tài khoản chủ quán ở màn quầy → vào thẳng Hôm nay của trang Quản lý, không có phiên máy quầy; phiên máy quầy cũ đứng tên chủ quán → bị bỏ, phải gõ mật khẩu ở trang Đăng nhập Quản lý; không còn lối "Mở màn hình quầy" / "Mở trang ca ở quầy"; việc cần làm không dẫn về máy quầy; in lại hóa đơn mang đi bằng phiên Quản lý (F-084, AC-084-02, AC-084-03) — **PASS** | **PASS** |
 | AC-084-03 | TC-084-03 | F-084 | US-084-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-42, SCR-32, SCR-25, SCR-56 | BR-122 | E2E: `flow.spec.js` › chủ quán chỉ dùng trang Quản lý: gõ tài khoản chủ quán ở màn quầy → vào thẳng Hôm nay của trang Quản lý, không có phiên máy quầy; phiên máy quầy cũ đứng tên chủ quán → bị bỏ, phải gõ mật khẩu ở trang Đăng nhập Quản lý; không còn lối "Mở màn hình quầy" / "Mở trang ca ở quầy"; việc cần làm không dẫn về máy quầy; in lại hóa đơn mang đi bằng phiên Quản lý (F-084, AC-084-02, AC-084-03) — **PASS** | **PASS** |
+| AC-085-01 | TC-085-01 | F-085 | US-085-1 | ACT-ADMIN, ACT-STORE, ACT-STAFF | UC-13 | MOD-INVENTORY | SCR-23, SCR-17 | BR-123 | Integration: `ingredient-image.test.js` › AC-085-01: chủ quán thêm nguyên liệu có ảnh → danh sách kho trang Quản lý và tab Tồn kho máy quầy đều trả ảnh; quản lý cửa hàng đổi ảnh được; nguyên liệu cũ chưa có ảnh trả null — **PASS** | **PASS** |
+| AC-085-02 | TC-085-02 | F-085 | US-085-1 | ACT-ADMIN, ACT-STORE, ACT-STAFF | UC-13 | MOD-INVENTORY | SCR-23, SCR-17 | BR-123 | Integration: `ingredient-image.test.js` › AC-085-02: sửa nguyên liệu không gửi ảnh → giữ ảnh cũ; gửi rỗng → bỏ ảnh; ảnh không phải URL http(s) hoặc "/…" → 400, ảnh cũ còn nguyên — **PASS** | **PASS** |
+| AC-085-03 | TC-085-03 | F-085 | US-085-1 | ACT-ADMIN, ACT-STORE, ACT-STAFF | UC-13 | MOD-INVENTORY | SCR-23, SCR-17 | BR-123 | E2E: `flow.spec.js` › ảnh nguyên liệu: chủ quán mở Kho nguyên liệu → Sửa "Cốt trà đào" → dán đường dẫn sai thì báo ngay dưới ô, dán "/img/nguyen-lieu/cot-tra-dao.jpg" → Lưu → dòng hiện ảnh (tải được), nguyên liệu chưa có ảnh vẫn là ô chữ cái; nhân viên mở Kho & sơ chế → Tồn kho thấy ảnh nhỏ (F-085, AC-085-03) — **PASS** | **PASS** |
 

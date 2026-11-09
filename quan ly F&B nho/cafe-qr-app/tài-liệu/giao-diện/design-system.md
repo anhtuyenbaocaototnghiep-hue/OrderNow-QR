@@ -143,7 +143,7 @@ Gom hết CSS cũ sang `--space-*`: làm dần khi sửa từng màn (đợt 3 /
 | `.btn-danger` | **Nút viền đỏ** (nền trắng, chữ / viền `--c-danger`); hover `--c-danger-50` — nút Xóa, Hủy bàn | — |
 | `.btn-ghost` | Trong suốt, không viền | — |
 | `.btn-sm` / `.btn-lg` / `.btn-block` | Nhỏ / lớn / rộng 100 % | 36 px (trước 32) / 52 px |
-| `.btn.loading` | Ẩn chữ, hiện vòng quay 18 px; bật bằng `setBusy(button, true)` (đồng thời `disabled`) | — |
+| `.btn.loading` | Ẩn chữ, hiện vòng quay 18 px; bật bằng `setBusy(button, true)` (đồng thời `disabled`). Trong handler `async`: **giữ nút trong biến trước `await`** (`const btn = e.currentTarget`) — sau `await`, `e.currentTarget` là `null`, `setBusy(null, false)` không làm gì và nút khóa mãi khi máy chủ báo lỗi (DEF-002, DEF-024) | — |
 | `.icon-btn` | Nút tròn chỉ có ký hiệu (ví dụ "×" đóng hộp thoại, kèm `aria-label`) | 40 × 40 px (trước 36) |
 | `.link-btn` | Nút trông như link (ví dụ "Xem thẻ thành viên ›") | — |
 | `.add-btn` (khách) | Nút tròn viền mảnh `--c-input-border`, nền trắng, biểu tượng `plus` nét 1.75; rê chuột → nền `--c-primary` chữ trắng; co `0.92` khi bấm (ADR-042 — trước: nâu đặc có bóng) | 44 × 44 px |
@@ -241,7 +241,7 @@ Hành vi chung: `role="dialog"`, `aria-modal="true"`, `aria-label` = tiêu đề
 | `.c-loading` + `.spinner` | Vòng quay 34 px ở SCR-01 ("Đang mở thực đơn…") |
 | `<p class="muted">Đang tải…</p>` | Chữ chờ có sẵn trong HTML của mọi trang quầy / quản lý |
 | `.empty` | Khối rỗng căn giữa, chữ `--c-muted` |
-| `.thumb` | Ảnh món 64 × 64; không có ảnh thì hiện chữ cái đầu (`thumb(name, imageUrl)`) |
+| `.thumb` | Ảnh món / nguyên liệu 64 × 64; không có ảnh thì hiện chữ cái đầu (`thumb(name, imageUrl)`). `.thumb.sm` 40 × 40 góc 8 px (`thumb(name, imageUrl, { small: true })`) cho bảng gọn — tab Tồn kho máy quầy (F-085) |
 | `.kv`, `.minus`, `.total` | Dòng breakdown tiền do server tính (`breakdownRows(lines)`); dòng giảm màu xanh |
 
 ### Trang in (`css/print.css`)

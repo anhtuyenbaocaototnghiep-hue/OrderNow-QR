@@ -49,3 +49,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-100-plan.md](TASK-100-plan.md) — "+" mở bảng chọn cho mọi món (F-083, ADR-041).
 - [TASK-101-plan.md](TASK-101-plan.md) — giao diện tinh gọn, đợt 1 nền tảng + đợt 2 màn khách (ADR-042).
 - [TASK-102-plan.md](TASK-102-plan.md) — tài khoản Chủ quán chỉ dùng trang Quản lý (F-084, ADR-043).
+- [TASK-103-plan.md](TASK-103-plan.md) — ảnh nguyên liệu ở kho (F-085, ADR-046).

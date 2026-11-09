@@ -27,7 +27,7 @@
 | UC-10 | Hội viên: gắn SĐT, tích điểm / tem, đổi quà, voucher, giới thiệu, xem Thẻ thành viên | ACT-GUEST → ACT-MEMBER, ACT-STAFF | F-014, F-038, F-039, F-045, F-047 | SCR-02, SCR-03, SCR-05, SCR-13, SCR-14, SCR-12 |
 | UC-11 | Mở / đóng ca và sổ quỹ | ACT-STAFF, ACT-LEAD, ACT-ADMIN | F-018, F-033 (F-036, F-054) | SCR-10, SCR-15, SCR-32, SCR-36 |
 | UC-12 | Chấm công, lịch làm | ACT-STAFF, ACT-LEAD, ACT-ADMIN, EXT-SCHEDULER | F-035 | SCR-09, SCR-15, SCR-37 |
-| UC-13 | Kho: nhập hàng / PO / kiểm kê / hao hụt / sơ chế / lô | ACT-STAFF, ACT-LEAD, ACT-ADMIN, EXT-SCHEDULER | F-011, F-023, F-027…F-032, F-036 | SCR-17, SCR-23, SCR-24, SCR-31, SCR-35 |
+| UC-13 | Kho: nhập hàng / PO / kiểm kê / hao hụt / sơ chế / lô | ACT-STAFF, ACT-LEAD, ACT-ADMIN, EXT-SCHEDULER | F-011, F-023, F-027…F-032, F-036, F-085 | SCR-17, SCR-23, SCR-24, SCR-31, SCR-35 |
 | UC-14 | Quản lý menu, BOM, tùy chọn, combo, khuyến mãi, lịch thực đơn | ACT-ADMIN | F-010, F-011, F-013, F-015, F-016, F-017, F-020, F-040 | SCR-21, SCR-22, SCR-24, SCR-27…SCR-30, SCR-34 |
 | UC-15 | Chiến dịch marketing | ACT-ADMIN, EXT-SCHEDULER, EXT-ZALO | F-037 (F-038) | SCR-40, SCR-26 |
 | UC-16 | Báo cáo, lãi lỗ, phân tích, dashboard Hôm nay | ACT-ADMIN, ACT-LEAD, EXT-SCHEDULER | F-012, F-034, F-041, F-042, F-043 | SCR-42, SCR-25, SCR-39, SCR-41 |
@@ -542,7 +542,7 @@ Mọi FEATURE F-001…F-043, F-045…F-047 có mặt ở ít nhất một UC (kh
 | --- | --- |
 | Actor chính | ACT-STAFF (sơ chế, hủy hàng, hủy lô, nhận hàng theo PO), ACT-LEAD (+ điều chỉnh, kiểm kê ở quầy), ACT-ADMIN (nguyên liệu, BOM, nhập kho, kiểm kê, đơn vị, công thức, lô, nhà cung cấp, PO, báo cáo) |
 | Actor phụ | EXT-SCHEDULER (`demand-forecast`, `lot-expiry`, `runout-alert`); EXT-PRINTER (phiếu đặt hàng) |
-| Story | `US-011-*`, `US-023-*`, `US-027-*`, `US-028-*`, `US-029-*`, `US-030-*`, `US-031-*`, `US-032-*`, `US-036-*` |
+| Story | `US-011-*`, `US-023-*`, `US-027-*`, `US-028-*`, `US-029-*`, `US-030-*`, `US-031-*`, `US-032-*`, `US-036-*`, `US-085-*` |
 | FEATURE | [F-011](../chức-năng/FEATURE-011.md), [F-023](../chức-năng/FEATURE-023.md), [F-027](../chức-năng/FEATURE-027.md), [F-028](../chức-năng/FEATURE-028.md), [F-029](../chức-năng/FEATURE-029.md), [F-030](../chức-năng/FEATURE-030.md), [F-031](../chức-năng/FEATURE-031.md), [F-032](../chức-năng/FEATURE-032.md), [F-036](../chức-năng/FEATURE-036.md) |
 | Tiền điều kiện | Đăng nhập đúng quyền; nguyên liệu tồn tại, chưa xóa |
 | Kích hoạt | Quầy mở **Kho & sơ chế** (SCR-17); quản lý mở Kho nguyên liệu (SCR-23), Nhập kho & kiểm kê (SCR-31), Nhà cung cấp & đặt hàng (SCR-35); job 02:00 / 06:00 / 06:05 |
