@@ -132,3 +132,11 @@ Bỏ lỡ sự kiện (mất mạng): `GET /api/sessions/{id}` của người tr
 | `session.staff_call_handled` | `staff`, `session:{id}` | như F-021 + `type` | quầy "Chuyển" / "Bỏ qua" — điện thoại còn ở bàn cũ được báo "Quầy chưa chuyển bàn…" |
 | `session.table_changed` | `staff`, `session:{id}` | như F-049 + `byGuest: true` | khách tự chuyển (`move-here`) |
 | `session.closed` | `staff`, `session:{id}` | `{ sessionId, table, reason }` — `reason`: `EMPTY` (quầy đóng bàn trống), `IDLE_EMPTY` (hệ thống tự đóng) | điện thoại đang mở thực đơn cất giỏ, mở lại bàn, lấy lại giỏ |
+
+## Bổ sung F-087 — hoàn thiện đổi bàn (ADR-048, 10/11/2026)
+
+| Sự kiện | Room | Payload | Phát khi |
+| --- | --- | --- | --- |
+| `session.opened` | staff | `{ sessionId, table, session, byGuest: true }` | **khách** quét QR mở nhóm mới (bàn trống / "Gọi món riêng" / "Tạo đơn cá nhân") — trước chỉ khi nhân viên mở bàn (DEF-029); máy quầy tải lại nhóm, vẽ lại lưới bàn + thẻ "xin chuyển bàn" |
+| `order.created`, `order.status_changed`, … | như cũ | `order.tableMove` | đơn của nhóm đã đổi bàn — máy quầy hiện nhãn "Đổi bàn" 10 phút |
+| `session.staff_called` | `staff`, `session:{id}` | yêu cầu `MOVE` thêm `toTable.openGroups` | máy quầy ghi "(đang có n nhóm)" trong thông báo |

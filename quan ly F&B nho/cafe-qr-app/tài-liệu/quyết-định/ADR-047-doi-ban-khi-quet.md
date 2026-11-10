@@ -30,3 +30,4 @@
 - API: `POST /api/sessions/scan` thêm `state: 'ELSEWHERE'` (`elsewhere`, `otherGroups`, `openSessions`); `POST /api/sessions/{id}/move-here`; `POST /api/sessions/{id}/move-request`; `POST /api/staff-calls/{id}/move`; phiên có `moveRequest`, `clientCount`, `closeReason`; gọi nhân viên có `type`, `toTable`.
 - Giao diện: `t-entry.js` (màn hỏi), `t-track.js` (dòng chờ), `t-menu.js` + `customer.js` (giữ giỏ), `pos-dashboard.js` (thẻ yêu cầu ở dải Gọi nhân viên).
 - Test: `tests/table-change.test.js` (AC-086-01…05), E2E AC-086-06, 07.
+- **Bổ sung (ADR-048, 10/11/2026):** D-209 — 30 phút là **mặc định**, chủ quán chọn Tắt / 15 / 30 / 60 phút (D-212); thẻ xin chuyển ghi bàn đích có người (D-213); đơn có nhãn "Đổi bàn" + phiếu pha bàn mới (D-211).

@@ -32,7 +32,7 @@ Quy tắc chuyển bàn F-049 (bill riêng khi bàn đích có nhóm khác), thu
 
 **Lỗi tìm ra trong lúc đi thử (đã sửa trong task):** điện thoại có hai nhóm (đã "Gọi món riêng") quét bàn thứ ba → bản đầu hỏi về nhóm trống mở gần nhất, bỏ quên nhóm có món → sắp nhóm đã gửi món trước + lựa chọn cho nhóm còn lại (AC-086-04); lời nhắn giữ giỏ không hiện (màn vào bàn chuyển đi ngay) → chuyển tiếp lời nhắn; lời nhắn "Bàn trống lâu…" hiện cả khi quầy đóng tay → tách lời nhắn theo lý do; thông báo nổi lặp dòng chờ → bỏ.
 
-## Đề xuất thêm (chưa làm — chờ chủ dự án xem)
+## Đề xuất thêm (chủ dự án 10/11 chọn 1–3 → [TASK-105](TASK-105.md) / F-087; 4 không làm)
 1. **Món đang pha khi nhóm đổi bàn:** phiếu pha đã in / người mang món vẫn nhớ bàn cũ. Đề xuất: thẻ đơn ở quầy hiện nhãn nổi "Đổi bàn → Bàn B" trong 10 phút sau khi chuyển + nút in lại phiếu pha.
 2. **Chủ quán chỉnh thời gian tự đóng bàn trống** ở Cài đặt (15 / 30 / 60 phút hoặc tắt) — quán có khách ngồi chờ bạn lâu mới gọi.
 3. **Thẻ "xin chuyển bàn" cho biết bàn đích đang có người** ("Bàn B đang có 1 nhóm") để nhân viên chọn chuyển hay thu chung khi tính tiền.

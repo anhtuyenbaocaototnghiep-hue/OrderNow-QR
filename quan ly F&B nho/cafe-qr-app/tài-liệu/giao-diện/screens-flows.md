@@ -548,3 +548,10 @@ flowchart LR
 - **SCR-05 Theo dõi đơn:** dòng "Đã nhờ quầy chuyển nhóm sang Bàn B lúc HH:MM — trang sẽ tự chuyển khi nhân viên xác nhận" tới khi quầy xử lý; chuyển xong tự mở lại ở Bàn B ("Nhóm của bạn đã chuyển sang Bàn B"); bỏ qua → "Quầy chưa chuyển bàn cho nhóm của bạn — bấm Gọi nhân viên nếu cần".
 - **Máy quầy → Đơn hàng, dải "Gọi nhân viên":** thẻ **"Bàn A → Bàn B · Khách xin chuyển bàn · đồng hồ chờ · [Chuyển] [Bỏ qua]"** + chuông + thông báo "Bàn A xin chuyển sang Bàn B…". "Chuyển" như Chuyển bàn F-049 (thẻ bàn ghi "Chuyển từ Bàn A").
 - **SCR-02 Thực đơn:** nhóm trống bị đóng (tự đóng 30 phút / quầy "Đóng bàn trống") → tự mở lại bàn, giỏ còn nguyên, lời nhắn đúng lý do.
+
+## F-087 — Hoàn thiện đổi bàn (TASK-105, ADR-048, 10/11/2026)
+
+- **Máy quầy → Đơn hàng, thẻ đơn mới / đang pha:** dưới tên bàn có dải nâu nhạt **"↳ Đổi bàn: ~~Bàn A~~ → Bàn B"** + nút **"In phiếu bàn mới"** (máy in hóa đơn) trong 10 phút từ lần chuyển cuối, tự mất. Đơn đang giữ (F-066) chỉ có nhãn. Nhóm đổi bàn còn đơn chưa ra món → thông báo "Bàn A đã chuyển sang Bàn B — còn n đơn chưa ra món, mang ra Bàn B".
+- **Phiếu pha** (`/pos/orders/{id}/receipt?mode=ticket`, 58 / 80 mm): "PHIẾU PHA — ĐỔI BÀN" · **Bàn B** (chữ to) · "(đổi từ Bàn A lúc HH:MM)" · "Đơn #… · đặt HH:MM" · món (số lượng đậm), tùy chọn, thành phần combo, ghi chú · ghi chú đơn · giờ in. Không giá. Nút trên trang: "In phiếu".
+- **Dải "Gọi nhân viên", thẻ xin chuyển:** "Bàn A → Bàn B · Khách xin chuyển bàn · **Bàn B đang trống** (xanh) / **Bàn B đang có n nhóm khác** (nâu)" — tự cập nhật khi có nhóm mở / đóng / đổi bàn. Chuyển tới bàn có người → thông báo nhắc "Thu chung với bàn khác" khi tính tiền.
+- **Quản lý → Cài đặt (chủ quán), thẻ "Bàn trống":** ô chọn "Tự trả bàn khách quét QR nhưng không gọi món" — Tắt — không tự đóng / Sau 15 phút / Sau 30 phút (mặc định) / Sau 60 phút + giải thích.

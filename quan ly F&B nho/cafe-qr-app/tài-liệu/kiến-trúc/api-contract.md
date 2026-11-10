@@ -831,3 +831,11 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `POST /api/staff-calls/{id}/move` — nhân viên vị trí Phục vụ (`403 POSITION_REQUIRED`), ca mở (`409 NO_OPEN_SHIFT`) → như `POST /api/sessions/{id}/move` + `call`; đã xử lý → `409 ALREADY_PROCESSED`.
 - `GET /api/staff-calls`, sự kiện gọi nhân viên: thêm `type` (`STAFF` / `MOVE`), `toTable`. `GET /api/sessions/{id}`: thêm `moveRequest { callId, toTable, requestedAt }`, `clientCount`, `closeReason`; `openCalls` chỉ đếm Gọi nhân viên.
 - Job `close-idle-tables` (mỗi 5 phút; chạy tay `POST /api/admin/jobs/close-idle-tables/run`) → `{ checked, closed }`.
+
+## Bổ sung F-087 — hoàn thiện đổi bàn (ADR-048, TASK-105, 10/11/2026)
+
+- Đơn hàng (`GET /api/orders`, `GET /api/orders/{id}`, phần `order` của `POST /api/orders`, sự kiện `order.*`): thêm `tableMove: { fromTable, fromTableId, movedAt } | null` — nhóm đổi bàn sau giờ đặt đơn; `fromTable` = bàn lúc đặt, `movedAt` = lần chuyển cuối; quay về đúng bàn lúc đặt → `null`.
+- `GET /api/admin/settings` / `PUT /api/admin/settings`: `idleCloseMinutes` ∈ {0, 15, 30, 60} (0 = tắt; giá trị khác → `400`; chỉ chủ quán — quản lý cửa hàng `403 OWNER_ONLY`).
+- Job `close-idle-tables` (`POST /api/admin/jobs/close-idle-tables/run`): `info = { minutes, checked, closed }`; cài đặt Tắt → `{ off: true, checked: 0, closed: 0 }`.
+- `GET /api/staff-calls`, sự kiện `session.staff_called`: yêu cầu `MOVE` có `toTable.openGroups` (số nhóm chưa đóng ở bàn đích, trừ nhóm xin chuyển).
+- Trang in `/pos/orders/{id}/receipt?mode=ticket` (phiếu pha: đơn tại bàn hoặc mang đi, không giá) đọc `GET /api/orders/{id}`.

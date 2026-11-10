@@ -1342,3 +1342,10 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | --- | --- |
 | Migration `0057_doi_ban_khi_quet.sql` | `StaffCalls.ToTableId INT NULL → Tables`; `CK_StaffCalls_Type` = `STAFF` / `MOVE`; `CK_StaffCalls_MoveTarget` (MOVE ⇔ có bàn đích); chỉ mục duy nhất `UX_StaffCalls_OpenMove (SessionId) WHERE Type = 'MOVE' AND HandledAt IS NULL`. `SessionTableMoves.MovedBy` cho phép NULL + `ByGuest BIT NOT NULL DEFAULT 0` + `CK_Moves_Actor` (có nhân viên hoặc khách tự chuyển). `Sessions.CloseReason VARCHAR(20) NULL` (`IDLE_EMPTY`). Chỉ thêm / nới. |
 | Thủ tục | `sp_MoveSession` thêm `@ByGuest`, `@ClientToken` (khách tự chuyển: thành viên, `OPEN`, không món, một điện thoại — lỗi 50125 `NOT_SESSION_MEMBER`, 50126 `GUEST_MOVE_BLOCKED` = `PAYMENT` / `ORDERS` / `SHARED`); chuyển xong tự đóng yêu cầu MOVE đang chờ. `sp_CloseEmptySession` thêm `@Reason`, `@IdleMinutes` (tự đóng: không yêu cầu đang chờ, lần cuối có người vào nhóm quá N phút — lỗi 50127 `NOT_IDLE`). |
+
+### Hoàn thiện đổi bàn (FEATURE-087, ADR-048, TASK-105, 10/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Không migration | "Đổi từ bàn nào" suy ra từ `SessionTableMoves` (lần chuyển đầu tiên có `MovedAt >= Orders.CreatedAt` = bàn lúc đặt, `MAX(MovedAt)` = lần chuyển cuối; chỉ mục `IX_Moves_Session`). |
+| Cài đặt | `Settings` key `tables.idle_close_minutes` ∈ {0, 15, 30, 60} (0 = tắt tự trả bàn trống; thiếu / sai = 30). |

@@ -15,9 +15,9 @@
 
 | UC | Tên | Actor chính | FEATURE | SCR |
 | --- | --- | --- | --- | --- |
-| UC-01 | Quét QR vào bàn (tách / gộp phiên) | ACT-GUEST | F-001 (F-024, F-086) | SCR-01, SCR-02 |
+| UC-01 | Quét QR vào bàn (tách / gộp phiên) | ACT-GUEST | F-001 (F-024, F-086, F-087) | SCR-01, SCR-02 |
 | UC-02 | Khách gọi món qua QR | ACT-GUEST | F-002, F-003, F-004 (F-013, F-015, F-016, F-017, F-025, F-040, F-055, F-081, F-082, F-083) | SCR-02, SCR-03, SCR-05, SCR-57 |
-| UC-03 | Quầy tiếp nhận / hoàn tất / hủy đơn (giữ & trừ kho) | ACT-STAFF | F-007 (F-025, F-028, F-031, F-055) | SCR-10, SCR-11 |
+| UC-03 | Quầy tiếp nhận / hoàn tất / hủy đơn (giữ & trừ kho) | ACT-STAFF | F-007 (F-025, F-028, F-031, F-055, F-087) | SCR-10, SCR-11 |
 | UC-04 | Gọi thanh toán & thu tiền tại bàn, in bill | ACT-GUEST, ACT-STAFF, EXT-PRINTER | F-005, F-006 (F-018, F-022, F-047) | SCR-05, SCR-04, SCR-10, SCR-14, SCR-12 |
 | UC-05 | Bán mang đi | ACT-STAFF, EXT-PRINTER | F-008 (F-013, F-015, F-022, F-040, F-045) | SCR-13, SCR-12, SCR-10 |
 | UC-06 | Chia bill thu từng phần | ACT-GUEST, ACT-STAFF | F-026 | SCR-05, SCR-14, SCR-12 |
@@ -32,7 +32,7 @@
 | UC-15 | Chiến dịch marketing | ACT-ADMIN, EXT-SCHEDULER, EXT-ZALO | F-037 (F-038) | SCR-40, SCR-26 |
 | UC-16 | Báo cáo, lãi lỗ, phân tích, dashboard Hôm nay | ACT-ADMIN, ACT-LEAD, EXT-SCHEDULER | F-012, F-034, F-041, F-042, F-043 | SCR-42, SCR-25, SCR-39, SCR-41 |
 | UC-17 | Tài khoản, phân quyền, nhật ký thao tác | ACT-ADMIN, ACT-STORE, ACT-STAFF | F-009, F-036, F-035 (F-052, F-053, F-077, F-084) | SCR-09, SCR-20, SCR-33, SCR-38, SCR-46 |
-| UC-18 | Khách gọi nhân viên | ACT-GUEST, ACT-STAFF | F-021 | SCR-05, SCR-10 |
+| UC-18 | Khách gọi nhân viên | ACT-GUEST, ACT-STAFF | F-021 (F-086, F-087) | SCR-05, SCR-10 |
 | UC-19 | Tạm ngưng nhận đơn QR / giờ bán | ACT-STAFF, ACT-ADMIN | F-020, F-040 | SCR-10, SCR-02, SCR-21, SCR-33, SCR-34 |
 
 Mọi FEATURE F-001…F-043, F-045…F-047 có mặt ở ít nhất một UC (không có F-044).

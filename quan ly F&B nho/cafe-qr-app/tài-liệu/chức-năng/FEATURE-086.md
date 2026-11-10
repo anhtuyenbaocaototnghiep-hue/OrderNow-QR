@@ -21,7 +21,7 @@
 1. Chỉ hỏi khi điện thoại có nhóm mở ở **bàn khác** trong 6 giờ gần nhất; có nhóm ở chính bàn vừa quét → vào thẳng.
 2. Tự chuyển chỉ khi nhóm chưa có món (trừ đơn đã hủy), một điện thoại, chưa gọi thanh toán; còn lại phải nhờ quầy (mỗi nhóm một yêu cầu đang chờ).
 3. Nhóm chuyển tới bàn đang có nhóm khác vẫn là bill riêng (như F-049).
-4. Nhóm không có món, 30 phút không ai vào thêm, không có yêu cầu đang chờ → hệ thống tự đóng; khách còn mở thực đơn → mở lại bàn, giữ giỏ.
+4. Nhóm không có món, 30 phút (mặc định — chủ quán chọn Tắt / 15 / 30 / 60, [F-087](FEATURE-087.md)) không ai vào thêm, không có yêu cầu đang chờ → hệ thống tự đóng; khách còn mở thực đơn → mở lại bàn, giữ giỏ.
 
 ## API
 

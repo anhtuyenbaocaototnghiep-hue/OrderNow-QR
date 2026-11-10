@@ -120,6 +120,7 @@
 | [TASK-102](TASK-102.md) | Tài khoản Chủ quán chỉ dùng trang Quản lý (F-084), ADR-043 | FEATURE-084 | TASK-101 | Agent | — | chủ dự án 08/11 | READY_FOR_REVIEW |
 | [TASK-103](TASK-103.md) | Ảnh nguyên liệu ở kho (F-085), ADR-046, migration 0056 | FEATURE-085 | TASK-102 | Agent | — | chủ dự án 09/11 | READY_FOR_REVIEW |
 | [TASK-104](TASK-104.md) | Khách đổi bàn khi quét QR (F-086), ADR-047, migration 0057 | FEATURE-086 | TASK-103 | Agent | — | chủ dự án 10/11 | READY_FOR_REVIEW |
+| [TASK-105](TASK-105.md) | Hoàn thiện đổi bàn (F-087): nhãn đổi bàn + phiếu pha, thời gian tự trả bàn, bàn đích có người; ADR-048; sửa DEF-029 | FEATURE-087 | TASK-104 | Agent | — | chủ dự án 10/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 
