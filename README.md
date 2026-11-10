@@ -7,6 +7,8 @@ Quản lý F&amp;B đặt bàn bằng QR
 
 **Cập nhật 06/11/2026 (chưa gắn phiên bản, chờ duyệt):** trang Tài khoản cho thấy ai đã đặt PIN (DEF-020); quên PIN thì đặt lại ngay ở màn Chấm công bằng mật khẩu đăng nhập; máy quầy nhắc người có lịch mà quên chấm vào / chấm ra; nhân viên tự báo quên chấm công để quản lý duyệt ở trang Lương (TASK-090, ADR-031).
 
+**Cập nhật 10/11/2026 (chưa gắn phiên bản, chờ duyệt):** thêm F-074…F-087 — bán tiếp khi mất mạng, hạn dùng nguyên liệu, quy trình 1 chạm ở màn Đơn hàng, vai Quản lý cửa hàng + vị trí / cấp nhân viên + quyền riêng từng tài khoản, trang Quản lý riêng (chủ quán chỉ dùng trang Quản lý), bảng chọn món + giỏ hàng gọn, giao diện mới dễ nhìn, ảnh món và ảnh nguyên liệu, khách đổi bàn khi quét QR (nhãn đổi bàn, in phiếu pha bàn mới, tự trả bàn trống); sửa lỗi DEF-021…DEF-029 (trừ DEF-025 còn chờ duyệt). Danh sách ở `quan ly F&B nho/cafe-qr-app/tài-liệu/chức-năng/README.md`.
+
 ## Nội dung
 
 - [Mã nguồn web-app `cafe-qr-app`](quan%20ly%20F%26B%20nho/cafe-qr-app/): HTML/CSS/JS thuần, Node.js + Express, SQL Server, Socket.io. Cách cài và chạy xem README trong thư mục này.
