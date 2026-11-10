@@ -822,3 +822,12 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
   - Hợp lệ: `''`, `null`, URL `http(s)://…` hoặc đường dẫn bắt đầu bằng `/`, không khoảng trắng, ≤ 500 ký tự; sai → `400 VALIDATION_ERROR` (`fields[].path = "imageUrl"`).
   - `PUT` **không gửi** `imageUrl` → giữ ảnh cũ; `''` / `null` → bỏ ảnh. (Khác món: `PUT /api/admin/menu-items/{id}` không gửi ảnh vẫn là bỏ ảnh như trước.)
 - `GET /api/admin/ingredients`, `GET /api/ops/ingredients`: mỗi nguyên liệu thêm `imageUrl` (`string | null`).
+
+## Bổ sung F-086 — khách đổi bàn khi quét QR (ADR-047, TASK-104, 10/11/2026)
+
+- `POST /api/sessions/scan` thêm kết quả `{ state: 'ELSEWHERE', table, elsewhere, otherGroups[], openSessions[] }` khi điện thoại có nhóm mở ở bàn khác (6 giờ gần nhất). `elsewhere` / mỗi phần tử `otherGroups` = `{ sessionId, table: { name, qrToken }, status, orderCount, itemCount, clientCount, canMoveNow, moveRequest }` — nhóm đã gửi món trước. Không tạo nhóm ở bàn vừa quét.
+- `POST /api/sessions/{id}/move-here` `{ qrToken }` — khách (cookie, thuộc nhóm) tự chuyển nhóm sang bàn của `qrToken` → `200 { session, table: { …, qrToken } }`. Lỗi: `409 GUEST_MOVE_BLOCKED` (đã có món / có người khác / đang gọi thanh toán — lời nhắn theo lý do), `403 NOT_SESSION_MEMBER`, `400 SAME_TABLE`, `404 TABLE_NOT_FOUND`, `409 SESSION_CLOSED`. Không cần ca mở.
+- `POST /api/sessions/{id}/move-request` `{ qrToken }` — khách nhờ quầy chuyển → `201 { callId, type: 'MOVE', sessionId, table, toTable, requestedAt }`; nhóm đã có yêu cầu đang chờ → cùng `callId`, cập nhật bàn đích. Lỗi `403`, `400 SAME_TABLE`, `404`, `409 SESSION_CLOSED`.
+- `POST /api/staff-calls/{id}/move` — nhân viên vị trí Phục vụ (`403 POSITION_REQUIRED`), ca mở (`409 NO_OPEN_SHIFT`) → như `POST /api/sessions/{id}/move` + `call`; đã xử lý → `409 ALREADY_PROCESSED`.
+- `GET /api/staff-calls`, sự kiện gọi nhân viên: thêm `type` (`STAFF` / `MOVE`), `toTable`. `GET /api/sessions/{id}`: thêm `moveRequest { callId, toTable, requestedAt }`, `clientCount`, `closeReason`; `openCalls` chỉ đếm Gọi nhân viên.
+- Job `close-idle-tables` (mỗi 5 phút; chạy tay `POST /api/admin/jobs/close-idle-tables/run`) → `{ checked, closed }`.

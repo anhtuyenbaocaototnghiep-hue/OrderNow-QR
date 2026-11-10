@@ -1335,3 +1335,10 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Thành phần | Nội dung |
 | --- | --- |
 | Migration `0056_anh_nguyen_lieu.sql` | `Ingredients.ImageUrl NVARCHAR(500) NULL` — đường dẫn ảnh (URL `http(s)` hoặc `/…`), giống `MenuItems.ImageUrl`; NULL = chưa có ảnh. Chỉ thêm (kiểm `COL_LENGTH` trước). |
+
+### Khách đổi bàn khi quét QR (FEATURE-086, ADR-047, TASK-104, 10/11/2026)
+
+| Thành phần | Nội dung |
+| --- | --- |
+| Migration `0057_doi_ban_khi_quet.sql` | `StaffCalls.ToTableId INT NULL → Tables`; `CK_StaffCalls_Type` = `STAFF` / `MOVE`; `CK_StaffCalls_MoveTarget` (MOVE ⇔ có bàn đích); chỉ mục duy nhất `UX_StaffCalls_OpenMove (SessionId) WHERE Type = 'MOVE' AND HandledAt IS NULL`. `SessionTableMoves.MovedBy` cho phép NULL + `ByGuest BIT NOT NULL DEFAULT 0` + `CK_Moves_Actor` (có nhân viên hoặc khách tự chuyển). `Sessions.CloseReason VARCHAR(20) NULL` (`IDLE_EMPTY`). Chỉ thêm / nới. |
+| Thủ tục | `sp_MoveSession` thêm `@ByGuest`, `@ClientToken` (khách tự chuyển: thành viên, `OPEN`, không món, một điện thoại — lỗi 50125 `NOT_SESSION_MEMBER`, 50126 `GUEST_MOVE_BLOCKED` = `PAYMENT` / `ORDERS` / `SHARED`); chuyển xong tự đóng yêu cầu MOVE đang chờ. `sp_CloseEmptySession` thêm `@Reason`, `@IdleMinutes` (tự đóng: không yêu cầu đang chờ, lần cuối có người vào nhóm quá N phút — lỗi 50127 `NOT_IDLE`). |

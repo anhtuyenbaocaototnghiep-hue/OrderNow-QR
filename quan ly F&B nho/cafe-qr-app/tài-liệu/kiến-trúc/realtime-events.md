@@ -123,3 +123,12 @@ Bỏ lỡ sự kiện (mất mạng): `GET /api/sessions/{id}` của người tr
 | --- | --- | --- | --- |
 | `review.low` | `staff` | `{ reviewId, sessionId, table: { name }, items[{ menuItemId, name, stars }], comment, createdAt, ring }` (`ring = false` khi nhóm đã có đánh giá thấp chưa xử lý — không rung lại) | khách gửi đánh giá có món ≤ 2 sao — quầy hiện dải "Đánh giá thấp" + chuông |
 | `review.handled` | `staff` | `{ reviewId, handledBy }` | nhân viên bấm Đã xử lý |
+
+## Bổ sung F-086 — khách đổi bàn khi quét QR (ADR-047, 10/11/2026)
+
+| Sự kiện | Room | Payload | Phát khi |
+| --- | --- | --- | --- |
+| `session.staff_called` | `staff`, `session:{id}` | như F-021 + `type: 'MOVE'`, `toTable` | khách "Nhờ quầy chuyển nhóm sang bàn này" — máy quầy hiện thẻ "Bàn A → Bàn B" |
+| `session.staff_call_handled` | `staff`, `session:{id}` | như F-021 + `type` | quầy "Chuyển" / "Bỏ qua" — điện thoại còn ở bàn cũ được báo "Quầy chưa chuyển bàn…" |
+| `session.table_changed` | `staff`, `session:{id}` | như F-049 + `byGuest: true` | khách tự chuyển (`move-here`) |
+| `session.closed` | `staff`, `session:{id}` | `{ sessionId, table, reason }` — `reason`: `EMPTY` (quầy đóng bàn trống), `IDLE_EMPTY` (hệ thống tự đóng) | điện thoại đang mở thực đơn cất giỏ, mở lại bàn, lấy lại giỏ |

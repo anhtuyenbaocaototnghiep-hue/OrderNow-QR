@@ -538,3 +538,13 @@ flowchart LR
 
 - **SCR-23 Kho nguyên liệu:** ô tên có ảnh 64 px bên trái (chưa có ảnh → ô chữ cái như trang Món); hộp **Thêm / Sửa nguyên liệu** có ô **"Ảnh (URL, không bắt buộc)"** (sau ô Đơn vị) — dán sai báo ngay dưới ô "Ảnh phải là URL http(s) hoặc đường dẫn bắt đầu bằng /"; xóa trống rồi Lưu = bỏ ảnh.
 - **SCR-17 Kho & sơ chế → Tồn kho** (máy quầy): ảnh nhỏ 40 px cạnh tên nguyên liệu. Các tab khác chưa đổi.
+
+## F-086 — Khách đổi bàn khi quét QR (TASK-104, ADR-047, 10/11/2026)
+
+- **SCR-01 Vào bàn — trạng thái "đang có nhóm ở bàn khác":** tiêu đề bàn vừa quét; "Bạn đang gọi món ở Bàn A (đã gửi n món / chưa gửi món nào). Bạn đã chuyển sang Bàn B?"
+  - Nhóm chưa có món, một mình → thẻ **"Chuyển sang Bàn B"** ("Món bạn đang chọn đi theo…") → thực đơn Bàn B, giỏ giữ nguyên, lời nhắn "Đã chuyển sang Bàn B…".
+  - Còn lại → thẻ **"Nhờ quầy chuyển nhóm sang Bàn B"** → trang theo dõi (có món) / thực đơn (chưa có món) của nhóm ở Bàn A + thẻ **"Gọi món riêng ở Bàn B"** (Bàn B có nhóm khác → màn Gộp chung / Tạo đơn cá nhân như cũ).
+  - Điện thoại có nhóm thứ hai → thêm thẻ "Chuyển / Nhờ quầy chuyển nhóm Bàn C sang Bàn B". Luôn có nút **"Quay lại Bàn A"**. Đã nhờ quầy trước đó → hộp "Bạn đã nhờ quầy chuyển sang … — đang chờ".
+- **SCR-05 Theo dõi đơn:** dòng "Đã nhờ quầy chuyển nhóm sang Bàn B lúc HH:MM — trang sẽ tự chuyển khi nhân viên xác nhận" tới khi quầy xử lý; chuyển xong tự mở lại ở Bàn B ("Nhóm của bạn đã chuyển sang Bàn B"); bỏ qua → "Quầy chưa chuyển bàn cho nhóm của bạn — bấm Gọi nhân viên nếu cần".
+- **Máy quầy → Đơn hàng, dải "Gọi nhân viên":** thẻ **"Bàn A → Bàn B · Khách xin chuyển bàn · đồng hồ chờ · [Chuyển] [Bỏ qua]"** + chuông + thông báo "Bàn A xin chuyển sang Bàn B…". "Chuyển" như Chuyển bàn F-049 (thẻ bàn ghi "Chuyển từ Bàn A").
+- **SCR-02 Thực đơn:** nhóm trống bị đóng (tự đóng 30 phút / quầy "Đóng bàn trống") → tự mở lại bàn, giỏ còn nguyên, lời nhắn đúng lý do.

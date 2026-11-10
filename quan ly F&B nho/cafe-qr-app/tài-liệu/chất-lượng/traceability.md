@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 472 test, sửa lúc 2026-11-09 12:01 UTC
-- `npm run test:e2e` (JSON): 81 test, sửa lúc 2026-11-10 07:24 UTC
+- `npm test` (JUnit): 477 test, sửa lúc 2026-11-10 08:05 UTC
+- `npm run test:e2e` (JSON): 83 test, sửa lúc 2026-11-10 08:13 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 184 |
-| Acceptance Criteria | 505 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 505 |
+| User Story | 186 |
+| Acceptance Criteria | 512 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 512 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -602,4 +602,11 @@
 | AC-085-01 | TC-085-01 | F-085 | US-085-1 | ACT-ADMIN, ACT-STORE, ACT-STAFF | UC-13 | MOD-INVENTORY | SCR-23, SCR-17 | BR-123 | Integration: `ingredient-image.test.js` › AC-085-01: chủ quán thêm nguyên liệu có ảnh → danh sách kho trang Quản lý và tab Tồn kho máy quầy đều trả ảnh; quản lý cửa hàng đổi ảnh được; nguyên liệu cũ chưa có ảnh trả null — **PASS** | **PASS** |
 | AC-085-02 | TC-085-02 | F-085 | US-085-1 | ACT-ADMIN, ACT-STORE, ACT-STAFF | UC-13 | MOD-INVENTORY | SCR-23, SCR-17 | BR-123 | Integration: `ingredient-image.test.js` › AC-085-02: sửa nguyên liệu không gửi ảnh → giữ ảnh cũ; gửi rỗng → bỏ ảnh; ảnh không phải URL http(s) hoặc "/…" → 400, ảnh cũ còn nguyên — **PASS** | **PASS** |
 | AC-085-03 | TC-085-03 | F-085 | US-085-1 | ACT-ADMIN, ACT-STORE, ACT-STAFF | UC-13 | MOD-INVENTORY | SCR-23, SCR-17 | BR-123 | E2E: `flow.spec.js` › ảnh nguyên liệu: chủ quán mở Kho nguyên liệu → Sửa "Cốt trà đào" → dán đường dẫn sai thì báo ngay dưới ô, dán "/img/nguyen-lieu/cot-tra-dao.jpg" → Lưu → dòng hiện ảnh (tải được), nguyên liệu chưa có ảnh vẫn là ô chữ cái; nhân viên mở Kho & sơ chế → Tồn kho thấy ảnh nhỏ (F-085, AC-085-03) — **PASS** | **PASS** |
+| AC-086-01 | TC-086-01 | F-086 | US-086-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-05 | BR-124 | Integration: `table-change.test.js` › AC-086-01: điện thoại có nhóm mở ở Bàn 01 quét QR Bàn 02 → state ELSEWHERE (tên + mã QR Bàn 01, chưa có món, tự chuyển được), KHÔNG tạo nhóm ở Bàn 02; quét lại Bàn 01 → vào lại nhóm cũ; nhóm mở quá 6 giờ không hỏi nữa — **PASS** | **PASS** |
+| AC-086-02 | TC-086-02 | F-086 | US-086-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-05 | BR-124 | Integration: `table-change.test.js` › AC-086-02: nhóm chưa có món, một điện thoại → "Chuyển sang bàn này": nhóm (cùng mã nhóm → giỏ giữ nguyên) sang Bàn D2, Bàn D1 trống, lịch sử ghi khách tự chuyển, quầy nhận sự kiện; có món / có người khác / không thuộc nhóm / cùng bàn / mã sai → từ chối, không đổi gì — **PASS** | **PASS** |
+| AC-086-03 | TC-086-03 | F-086 | US-086-2 | ACT-STAFF, ACT-LEAD, EXT-SCHEDULER | UC-01 | MOD-ORDER | SCR-05, SCR-10 | BR-124 | Integration: `table-change.test.js` › AC-086-03: nhóm đã có món → "Nhờ quầy chuyển": yêu cầu MOVE hiện ở dải Gọi nhân viên (bàn đi → bàn đến), điện thoại thấy đang chờ, không tính là "đã gọi nhân viên"; đổi ý → cập nhật bàn đích (một yêu cầu); quầy bấm "Chuyển" → nhóm + đơn sang bàn mới, yêu cầu xong; bấm lại → 409; "Bỏ qua" dùng nút Đã xử lý; nhân viên không phải Phục vụ → 403 — **PASS** | **PASS** |
+| AC-086-04 | TC-086-04 | F-086 | US-086-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-05 | BR-124 | Integration: `table-change.test.js` › AC-086-04: chọn "Gọi món riêng ở bàn này" → nhóm mới ở bàn mới, nhóm cũ giữ nguyên; quét lại bàn nào vào đúng nhóm bàn đó; điện thoại có hai nhóm quét bàn thứ ba → hỏi nhóm ĐÃ GỬI MÓN trước (dù mở trước), nhóm còn lại trong otherGroups — **PASS** | **PASS** |
+| AC-086-05 | TC-086-05 | F-086 | US-086-2 | ACT-STAFF, ACT-LEAD, EXT-SCHEDULER | UC-01 | MOD-ORDER | SCR-05, SCR-10 | BR-124 | Integration: `table-change.test.js` › AC-086-05: bàn trống (không món) không ai vào thêm quá 30 phút → job "close-idle-tables" tự đóng (lý do IDLE_EMPTY, quầy + điện thoại nhận session.closed); nhóm có món, mới có người vào, đang gọi nhân viên, mới 29 phút → giữ nguyên; đóng bàn trống tay báo lý do EMPTY — **PASS** | **PASS** |
+| AC-086-06 | TC-086-06 | F-086 | US-086-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-05 | BR-124 | E2E: `flow.spec.js` › đổi bàn khi quét (chưa gửi món): khách chọn 2 món ở Bàn X1 → quét QR Bàn X2 → màn hỏi "Bạn đang gọi món ở Bàn X1 (chưa gửi món nào)" → "Chuyển sang Bàn X2" → thực đơn Bàn X2, giỏ còn 2 món; quầy: Bàn X1 trống, Bàn X2 "Chuyển từ Bàn X1"; quầy "Đóng bàn trống" Bàn X2 → điện thoại mở lại bàn, giỏ vẫn còn, có lời nhắn (F-086, AC-086-06) — **PASS** | **PASS** |
+| AC-086-07 | TC-086-07 | F-086 | US-086-2 | ACT-STAFF, ACT-LEAD, EXT-SCHEDULER | UC-01 | MOD-ORDER | SCR-05, SCR-10 | BR-124 | E2E: `flow.spec.js` › đổi bàn khi quét (đã gửi món): khách gửi đơn ở Bàn X3 → quét QR Bàn X4 → "Nhờ quầy chuyển nhóm sang Bàn X4" → trang theo dõi Bàn X3 hiện dòng chờ; máy quầy thấy thẻ "Bàn X3 → Bàn X4" ở dải Gọi nhân viên → bấm "Chuyển" → điện thoại tự mở lại ở Bàn X4, đơn vẫn còn, thẻ yêu cầu biến mất (F-086, AC-086-07) — **PASS** | **PASS** |
 

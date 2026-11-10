@@ -15,7 +15,7 @@
 
 | UC | Tên | Actor chính | FEATURE | SCR |
 | --- | --- | --- | --- | --- |
-| UC-01 | Quét QR vào bàn (tách / gộp phiên) | ACT-GUEST | F-001 (F-024) | SCR-01, SCR-02 |
+| UC-01 | Quét QR vào bàn (tách / gộp phiên) | ACT-GUEST | F-001 (F-024, F-086) | SCR-01, SCR-02 |
 | UC-02 | Khách gọi món qua QR | ACT-GUEST | F-002, F-003, F-004 (F-013, F-015, F-016, F-017, F-025, F-040, F-055, F-081, F-082, F-083) | SCR-02, SCR-03, SCR-05, SCR-57 |
 | UC-03 | Quầy tiếp nhận / hoàn tất / hủy đơn (giữ & trừ kho) | ACT-STAFF | F-007 (F-025, F-028, F-031, F-055) | SCR-10, SCR-11 |
 | UC-04 | Gọi thanh toán & thu tiền tại bàn, in bill | ACT-GUEST, ACT-STAFF, EXT-PRINTER | F-005, F-006 (F-018, F-022, F-047) | SCR-05, SCR-04, SCR-10, SCR-14, SCR-12 |
