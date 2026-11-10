@@ -26,7 +26,7 @@ import { mountMemberBox } from '../member-box.js';
 import { groupsOf, pickItem } from '../options.js';
 import { connectRealtime } from '../socket.js';
 import { $, announce, clear, el, errorMessage, modal, money, reducedMotion, setBusy, thumb, toast } from '../ui.js';
-import { followTable, getSessionId, goEntry, isLeaving, qrToken, setFlash, takeFlash } from '../customer.js';
+import { carryCart, followTable, getSessionId, goEntry, isLeaving, qrToken, setFlash, takeCarriedCart, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
 
 const qr = qrToken();
@@ -40,7 +40,7 @@ const state = {
   session: null,
   menu: null,
   itemsById: new Map(),
-  cart: loadCart(sessionId),
+  cart: adoptCart(),
   controls: new Map(), // itemId → Set(node điều khiển) — một món có thể hiện ở nhiều mục (Gợi ý + danh mục)
   sheet: null,
   quote: null,
@@ -52,11 +52,33 @@ const NOTE_CHIPS = ['Ít đường', 'Không đường', 'Ít đá', 'Nhiều đ
 const flash = takeFlash();
 if (flash) toast(flash.message, flash.type, 6000);
 
+/** Giỏ của nhóm này; nhóm mới mà giỏ trống → lấy lại giỏ đã cất khi nhóm cũ ở bàn này bị đóng (F-086 D-210). */
+function adoptCart() {
+  const own = loadCart(sessionId);
+  if (own.length) return own;
+  const carried = takeCarriedCart(qr);
+  if (!carried) return own;
+  saveCart(sessionId, carried);
+  return carried;
+}
+
+/** Nhóm đã đóng: cất giỏ chưa gửi rồi về màn vào bàn (nhóm mới ở cùng bàn lấy lại giỏ). */
+function leaveClosed(message) {
+  carryCart(qr, state.cart);
+  goEntry(qr, message);
+}
+// Lời nhắn đúng lý do đóng (F-086): hệ thống tự đóng vì trống lâu / quầy đóng bàn trống — cả hai đều mở lại bàn, giữ giỏ
+const IDLE_CLOSED = 'Bàn trống lâu nên đã được đóng — hệ thống mở lại bàn cho bạn, món đang chọn vẫn còn trong giỏ.';
+const EMPTY_CLOSED = 'Quầy vừa đóng bàn trống — hệ thống mở lại bàn cho bạn, món đang chọn vẫn còn trong giỏ.';
+
 // ---------- Tải dữ liệu ----------
 async function loadSession() {
   try {
     const s = await api(`/api/sessions/${sessionId}`);
-    if (s.status === 'CLOSED') return goEntry(qr, 'Phiên trước đã thanh toán. Hệ thống tạo phiên mới cho bạn.');
+    if (s.status === 'CLOSED')
+      return leaveClosed(
+        s.closeReason === 'IDLE_EMPTY' ? IDLE_CLOSED : !s.orderCount ? EMPTY_CLOSED : 'Phiên trước đã thanh toán. Hệ thống tạo phiên mới cho bạn.',
+      );
     if (followTable(qr, sessionId, s.table)) return; // F-049: nhóm đã chuyển bàn trong lúc trang đóng / mất mạng
     const memberChanged = s.member?.memberId !== state.session?.member?.memberId;
     state.session = s;
@@ -850,7 +872,9 @@ function handleSubmitError(err) {
   }
   if (err.code === 'SESSION_CLOSED' || err.status === 403) {
     state.sheet?.close();
-    return goEntry(qr, err.code === 'SESSION_CLOSED' ? 'Phiên trước đã thanh toán. Vui lòng gọi món trong phiên mới.' : 'Vui lòng quét lại mã QR tại bàn.');
+    return leaveClosed(
+      err.code === 'SESSION_CLOSED' ? 'Nhóm trước đã đóng — hệ thống mở lại bàn cho bạn, món đang chọn vẫn còn trong giỏ.' : 'Vui lòng quét lại mã QR tại bàn.',
+    );
   }
   if (err.code === 'INVALID_OPTIONS') reloadMenuSoon();
   if (state.sheet) {
@@ -898,5 +922,7 @@ socket?.on('session.member_changed', async () => {
 });
 socket?.on('order.created', () => loadSession().catch(() => {}));
 socket?.on('session.settled', () => !isLeaving() && (location.href = `/t/${qr}/track`));
-socket?.on('session.closed', () => goEntry(qr, 'Bàn đã được đóng. Vui lòng quét lại mã QR để gọi món.'));
+socket?.on('session.closed', (p) =>
+  leaveClosed(p?.reason === 'IDLE_EMPTY' ? IDLE_CLOSED : p?.reason === 'EMPTY' ? EMPTY_CLOSED : 'Bàn đã được đóng. Vui lòng quét lại mã QR để gọi món.'),
+);
 socket?.on('session.table_changed', (p) => (submitting ? (pendingMove = p.toTable) : followTable(qr, sessionId, p.toTable))); // F-049

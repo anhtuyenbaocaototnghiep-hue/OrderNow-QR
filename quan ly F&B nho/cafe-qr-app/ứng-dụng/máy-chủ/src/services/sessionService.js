@@ -97,11 +97,40 @@ export async function selfBirthDate(sessionId, birthDate, viewer) {
   return memberCard(sessionId, viewer);
 }
 
+/** F-086 (ADR-047 D-206): chỉ hỏi "đã đổi bàn?" khi nhóm ở bàn kia mở trong ngần này giờ (nhóm cũ hơn: coi như đã rời quán). */
+export const ELSEWHERE_HOURS = 6;
+/** F-086 (D-209): phiên không có món, không ai vào thêm trong ngần này phút → hệ thống tự đóng. */
+export const IDLE_EMPTY_MINUTES = 30;
+
+/** Tóm tắt nhóm ở bàn khác cho khách (không lộ món / ghi chú — chỉ số món, trạng thái, có tự chuyển được không). */
+const elsewhereView = (s) => ({
+  sessionId: s.sessionId,
+  table: { name: s.table.name, qrToken: s.table.qrToken },
+  status: s.status,
+  orderCount: s.orderCount,
+  itemCount: s.itemCount,
+  clientCount: s.clientCount,
+  // D-207: tự chuyển ngay khi chưa có món nào, chỉ mình khách, chưa gọi thanh toán (SP kiểm lại trong khóa)
+  canMoveNow: s.status === 'OPEN' && !s.orderCount && s.clientCount <= 1,
+  moveRequest: s.moveRequest ? { toTable: s.moveRequest.toTable, requestedAt: s.moveRequest.requestedAt } : null,
+});
+
 export async function scan(qrToken, clientToken) {
   const table = await activeTable(qrToken);
   const mine = await sessionsRepo.findOpenForClient(table.tableId, clientToken);
   if (mine) return { state: 'MEMBER', table: publicTable(table), session: customerView({ ...mine, member: memberView(mine.member, false) }) };
   const open = await sessionsRepo.listOpenByTable(table.tableId);
+  // F-086: điện thoại đang có nhóm mở ở bàn khác → hỏi khách đã đổi bàn chưa (không tự tạo nhóm mới ở bàn này)
+  const groups = clientToken ? await sessionsRepo.listOpenForClientElsewhere(table.tableId, clientToken, ELSEWHERE_HOURS) : [];
+  if (groups.length) {
+    return {
+      state: 'ELSEWHERE',
+      table: publicTable(table),
+      elsewhere: elsewhereView(groups[0]), // nhóm đã gửi món trước, rồi nhóm mở gần nhất
+      otherGroups: groups.slice(1).map(elsewhereView), // điện thoại còn nhóm khác (đã "gọi riêng" trước đó)
+      openSessions: open.map((s, i) => ({ sessionId: s.sessionId, label: `Nhóm ${i + 1}`, itemCount: s.itemCount, openedAt: s.openedAt })),
+    };
+  }
   if (open.length === 0) {
     const session = await sessionsRepo.createWithClient(table.tableId, clientToken);
     return { state: 'NEW', table: publicTable(table), session: customerView(session) };
@@ -352,18 +381,70 @@ export async function settle(sessionId, body, user) {
 export async function moveSession(sessionId, { toTableId, fromTableId: expected = null }, user) {
   await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   const fromTableId = await withDeadlockRetry(() => sessionsRepo.move(sessionId, toTableId, user.userId, expected));
-  const [session, from, to] = await Promise.all([sessionsRepo.findById(sessionId), tablesRepo.findById(fromTableId), tablesRepo.findById(toTableId)]);
-  const payload = { sessionId, fromTable: publicTable(from), toTable: publicTable(to) };
-  publish([ROOMS.staff], 'session.table_changed', payload);
-  // Điện thoại trong nhóm nhận thêm mã QR bàn mới để mở lại trang ở /t/{qr mới}/…
-  publish([ROOMS.session(sessionId)], 'session.table_changed', { ...payload, toTable: { ...payload.toTable, qrToken: to.qrToken } });
+  const { session, payload } = await announceMove(sessionId, fromTableId, toTableId);
   return { session: { ...session, member: memberView(session.member, true) }, fromTable: payload.fromTable, toTable: payload.toTable };
+}
+
+/** Báo chuyển bàn: quầy (`staff`) + điện thoại trong nhóm (kèm mã QR bàn mới để mở lại trang ở /t/{qr mới}/…). */
+async function announceMove(sessionId, fromTableId, toTableId, extra = {}) {
+  const [session, from, to] = await Promise.all([sessionsRepo.findById(sessionId), tablesRepo.findById(fromTableId), tablesRepo.findById(toTableId)]);
+  const payload = { sessionId, fromTable: publicTable(from), toTable: publicTable(to), ...extra };
+  publish([ROOMS.staff], 'session.table_changed', payload);
+  publish([ROOMS.session(sessionId)], 'session.table_changed', { ...payload, toTable: { ...payload.toTable, qrToken: to.qrToken } });
+  return { session, payload, to };
+}
+
+/** Lý do khách không tự chuyển được (SP 50126) → lời nhắn. */
+const GUEST_MOVE_BLOCKED = {
+  ORDERS: 'Nhóm của bạn đã gửi món — hãy nhờ quầy chuyển để món mang ra đúng bàn',
+  SHARED: 'Nhóm có người khác cùng gọi món — hãy nhờ quầy chuyển cả nhóm',
+  PAYMENT: 'Nhóm đang gọi thanh toán — hãy nhờ quầy chuyển bàn',
+};
+
+/**
+ * F-086 (ADR-047 D-207): khách quét QR bàn khác và chọn "Chuyển sang bàn này" — nhóm chưa có món, chỉ một điện thoại, chưa gọi thanh toán.
+ * Không cần ca mở (không xử lý đơn). Quầy thấy "Chuyển từ Bàn X" như chuyển bàn thường; bàn cũ trống ngay.
+ */
+export async function moveHere(sessionId, qrToken, clientToken) {
+  const table = await activeTable(qrToken);
+  let fromTableId;
+  try {
+    fromTableId = await withDeadlockRetry(() => sessionsRepo.move(sessionId, table.tableId, null, null, { clientToken: clientToken || '' }));
+  } catch (err) {
+    const appErr = fromSqlError(err);
+    if (appErr?.code === 'GUEST_MOVE_BLOCKED') appErr.message = GUEST_MOVE_BLOCKED[String(appErr.sqlMessage).trim()] ?? appErr.message;
+    throw appErr ?? err;
+  }
+  const { session } = await announceMove(sessionId, fromTableId, table.tableId, { byGuest: true });
+  return { session: customerView({ ...session, member: memberView(session.member, false) }), table: { ...publicTable(table), qrToken: table.qrToken } };
+}
+
+/**
+ * F-086 (D-209): đóng các phiên trống không ai dùng quá `minutes` phút (khách quét rồi rời đi / đã đổi bàn). SP kiểm lại trong khóa —
+ * phiên vừa có món, vừa có người vào hoặc đang gọi nhân viên thì bỏ qua. Điện thoại còn mở trang nhận `session.closed` (reason IDLE_EMPTY)
+ * → tự mở nhóm mới, giữ giỏ.
+ */
+export async function closeIdleEmpty(minutes = IDLE_EMPTY_MINUTES) {
+  const ids = await sessionsRepo.idleEmptySessionIds(minutes);
+  let closed = 0;
+  for (const id of ids) {
+    try {
+      await sessionsRepo.closeEmpty(id, null, { reason: 'IDLE_EMPTY', idleMinutes: minutes });
+    } catch (err) {
+      if (['NOT_IDLE', 'HAS_ORDERS', 'SESSION_CLOSED', 'NOT_FOUND'].includes(fromSqlError(err)?.code)) continue;
+      throw err;
+    }
+    const s = await sessionsRepo.findById(id);
+    publish([ROOMS.staff, ROOMS.session(id)], 'session.closed', { sessionId: id, table: s.table, reason: 'IDLE_EMPTY' });
+    closed++;
+  }
+  return { checked: ids.length, closed };
 }
 
 export async function closeEmpty(sessionId, user) {
   await withDeadlockRetry(() => sessionsRepo.closeEmpty(sessionId, user.userId));
   const session = await sessionsRepo.findById(sessionId);
-  publish([ROOMS.staff, ROOMS.session(sessionId)], 'session.closed', { sessionId, table: session.table });
+  publish([ROOMS.staff, ROOMS.session(sessionId)], 'session.closed', { sessionId, table: session.table, reason: 'EMPTY' }); // F-086: khách đang chọn món giữ giỏ
   return session;
 }
 

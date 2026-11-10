@@ -9,6 +9,7 @@ import * as auditRepo from '../repositories/auditRepo.js';
 import * as campaignService from '../services/campaignService.js';
 import * as dashboardService from '../services/dashboardService.js';
 import * as inventoryService from '../services/inventoryService.js';
+import * as sessionService from '../services/sessionService.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 
 // Mỗi 15 phút: làm mới thống kê gợi ý (F-017) + bảng thời gian chuẩn (F-025)
@@ -46,6 +47,9 @@ registerJob('audit-retention', { label: 'Dọn nhật ký thao tác quá 12 thá
 
 // Mỗi 5 phút: chạy chiến dịch đã đến giờ hẹn — F-037
 registerJob('campaigns-due', { label: 'Chạy chiến dịch đã hẹn giờ', everyMinutes: 5 }, () => campaignService.runDue());
+
+// F-086 (ADR-047 D-209): bàn có người quét QR nhưng không gọi món quá 30 phút → tự đóng (quầy không còn bàn "ma")
+registerJob('close-idle-tables', { label: 'Đóng bàn trống quá 30 phút', everyMinutes: 5 }, () => sessionService.closeIdleEmpty());
 
 // 00:30: tổng hợp số liệu hôm qua cho dashboard chủ quán — F-043
 registerJob('daily-summary', { label: 'Tổng hợp ngày (dashboard)', at: '00:30' }, () => dashboardService.computeYesterday());

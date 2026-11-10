@@ -2,18 +2,21 @@
 import { query, sql } from '../db.js';
 
 const SELECT = `
-  SELECT c.CallId, c.SessionId, c.Message, c.RequestedAt, c.HandledAt, c.HandledBy, u.FullName AS HandledByName,
-         t.TableId, t.Code AS TableCode, t.Name AS TableName
+  SELECT c.CallId, c.SessionId, c.Type, c.Message, c.RequestedAt, c.HandledAt, c.HandledBy, u.FullName AS HandledByName,
+         t.TableId, t.Code AS TableCode, t.Name AS TableName, tt.TableId AS ToTableId, tt.Code AS ToTableCode, tt.Name AS ToTableName
   FROM dbo.StaffCalls c
   JOIN dbo.Sessions s ON s.SessionId = c.SessionId
   JOIN dbo.Tables t ON t.TableId = s.TableId
+  LEFT JOIN dbo.Tables tt ON tt.TableId = c.ToTableId
   LEFT JOIN dbo.Users u ON u.UserId = c.HandledBy`;
 
 export const map = (r) =>
   r && {
     callId: r.CallId,
+    type: r.Type ?? 'STAFF', // F-086: 'MOVE' = khách xin chuyển nhóm sang toTable
     sessionId: r.SessionId.toLowerCase(),
     table: { tableId: r.TableId, code: r.TableCode, name: r.TableName },
+    toTable: r.ToTableId ? { tableId: r.ToTableId, code: r.ToTableCode, name: r.ToTableName } : null,
     message: r.Message,
     requestedAt: r.RequestedAt,
     handledAt: r.HandledAt,
@@ -28,7 +31,7 @@ export async function create(sessionId, message, cooldownSec) {
      SELECT @s, @m
      WHERE EXISTS (SELECT 1 FROM dbo.Sessions WITH (UPDLOCK, HOLDLOCK) WHERE SessionId = @s AND Status <> 'CLOSED')
        AND NOT EXISTS (SELECT 1 FROM dbo.StaffCalls WITH (UPDLOCK, HOLDLOCK)
-                       WHERE SessionId = @s AND RequestedAt > DATEADD(SECOND, -@cool, SYSUTCDATETIME()))`,
+                       WHERE SessionId = @s AND Type = 'STAFF' AND RequestedAt > DATEADD(SECOND, -@cool, SYSUTCDATETIME()))`,
     { s: [sql.UniqueIdentifier, sessionId], m: [sql.NVarChar(100), message || null], cool: [sql.Int, cooldownSec] },
   );
   return r.recordset[0]?.CallId ?? null;
@@ -40,7 +43,9 @@ export async function findById(id) {
 }
 
 export async function lastForSession(sessionId) {
-  const r = await query(`${SELECT} WHERE c.SessionId = @s ORDER BY c.RequestedAt DESC, c.CallId DESC`, { s: [sql.UniqueIdentifier, sessionId] });
+  const r = await query(`${SELECT} WHERE c.SessionId = @s AND c.Type = 'STAFF' ORDER BY c.RequestedAt DESC, c.CallId DESC`, {
+    s: [sql.UniqueIdentifier, sessionId],
+  });
   return map(r.recordset[0]);
 }
 
@@ -56,4 +61,27 @@ export async function handle(id, userId) {
     u: [sql.Int, userId],
   });
   return r.rowsAffected[0] > 0;
+}
+
+/**
+ * F-086 (ADR-047 D-208): khách xin chuyển nhóm sang bàn khác — mỗi phiên tối đa một yêu cầu đang chờ (đổi ý thì cập nhật bàn đích + giờ).
+ * Một batch có khóa (UPDLOCK, HOLDLOCK) + chỉ mục duy nhất UX_StaffCalls_OpenMove → hai lần bấm cùng lúc không tạo hai yêu cầu. Trả CallId (null nếu phiên đã đóng).
+ */
+export async function upsertMove(sessionId, toTableId) {
+  const r = await query(
+    `SET XACT_ABORT ON;
+     BEGIN TRAN;
+     DECLARE @id INT = (SELECT CallId FROM dbo.StaffCalls WITH (UPDLOCK, HOLDLOCK) WHERE SessionId = @s AND Type = 'MOVE' AND HandledAt IS NULL);
+     IF @id IS NOT NULL
+       UPDATE dbo.StaffCalls SET ToTableId = @t, RequestedAt = SYSUTCDATETIME() WHERE CallId = @id;
+     ELSE IF EXISTS (SELECT 1 FROM dbo.Sessions WITH (UPDLOCK, HOLDLOCK) WHERE SessionId = @s AND Status <> 'CLOSED')
+     BEGIN
+       INSERT dbo.StaffCalls (SessionId, Type, ToTableId) VALUES (@s, 'MOVE', @t);
+       SET @id = SCOPE_IDENTITY();
+     END
+     COMMIT;
+     SELECT @id AS CallId;`,
+    { s: [sql.UniqueIdentifier, sessionId], t: [sql.Int, toTableId] },
+  );
+  return r.recordset[0]?.CallId ?? null;
 }

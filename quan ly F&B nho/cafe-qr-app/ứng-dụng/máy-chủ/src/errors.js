@@ -114,6 +114,10 @@ const SQL_ERRORS = {
   50203: [409, 'TABLE_INACTIVE', 'Bàn đích đang tắt'],
   50204: [400, 'SAME_TABLE', 'Nhóm đang ngồi ở bàn này rồi'],
   50205: [409, 'SESSION_MOVED', 'Nhóm vừa được chuyển sang bàn khác ở máy khác — xem lại bàn hiện tại rồi chuyển'],
+  // FEATURE-086 khách đổi bàn khi quét QR (ADR-047)
+  50125: [403, 'NOT_SESSION_MEMBER', 'Nhóm này không thuộc điện thoại của bạn — vui lòng quét lại mã QR tại bàn'],
+  50126: [409, 'GUEST_MOVE_BLOCKED', 'Nhóm đã có món hoặc có người khác — hãy nhờ quầy chuyển bàn'],
+  50127: [409, 'NOT_IDLE', 'Bàn vừa có hoạt động — chưa tự đóng'],
   // FEATURE-057 thu chung nhiều bàn (ADR-019 D-73)
   50210: [400, 'VALIDATION_ERROR', 'Chọn 1–10 bàn khác (không trùng, không chọn chính bàn này) để thu chung'],
   50211: [404, 'NOT_FOUND', 'Không tìm thấy bàn được chọn để thu chung'],

@@ -11,6 +11,10 @@ const watch = (page, name) => {
   page.on('response', (r) => r.status() >= 500 && errors.push(`[${name}] HTTP ${r.status()} ${r.url()}`));
 };
 
+// F-086: điện thoại thử đóng vai KHÁCH MỚI ở bàn khác → bỏ cookie danh tính máy. Không bỏ thì app (đúng với khách thật) hỏi
+// "Bạn đang gọi món ở Bàn …, đã chuyển sang bàn này?" vì điện thoại còn nhóm chưa thanh toán từ bài trước.
+const newCustomer = (ctx) => ctx.clearCookies();
+
 async function apiAs(request, method, url, data) {
   const res = await request[method](url, { headers: { Authorization: `Bearer ${adminToken}` }, data });
   expect(res.ok(), `${method} ${url} → ${res.status()}`).toBeTruthy();
@@ -497,12 +501,14 @@ test('gọi lại đơn lần trước + thời gian chờ: hội viên gắn S�
 });
 
 test('chia bill: 2 khách gộp bàn, mỗi người chọn món của mình; quầy thu từng phần, in bill riêng, thu xong phần cuối thì đóng bàn (F-026)', async () => {
+  await newCustomer(phoneA);
   await A.goto(`/t/${tables['06']}`);
   await expect(A).toHaveURL(/\/menu$/);
   await A.locator('.c-section.cat .c-item', { hasText: 'Cà phê đen' }).locator('.add-btn').click();
   await A.click('#open-cart');
   await A.locator('.sheet .modal-foot .btn-primary').click();
   await expect(A).toHaveURL(/\/track$/);
+  await newCustomer(phoneB);
   await B.goto(`/t/${tables['06']}`);
   await B.getByRole('button', { name: /Gộp chung nhóm/ }).click();
   await B.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).locator('.add-btn').click();
@@ -1099,6 +1105,7 @@ test('chuyển bàn: quầy chuyển nhóm sang bàn khác → thẻ đơn hiệ
     await D.click('#open-cart');
     await D.locator('.sheet .modal-foot .btn-primary').click();
   };
+  await newCustomer(phoneD);
   await D.goto(`/t/${t1.qrToken}`);
   await expect(D).toHaveURL(/\/menu$/);
   await order();
@@ -1123,6 +1130,7 @@ test('chuyển bàn: quầy chuyển nhóm sang bàn khác → thẻ đơn hiệ
   await expect(D).toHaveURL(new RegExp(`/t/${t2.qrToken}/track$`));
   await expect(D.locator('.order-card')).toHaveCount(2);
   // Khách khác quét QR bàn mới → thấy nhóm này để Gộp chung
+  await newCustomer(phoneA);
   await A.goto(`/t/${t2.qrToken}`);
   await expect(A.getByText('Bàn đang có người. Bạn đi cùng nhóm hay đi lẻ?')).toBeVisible();
   await A.getByRole('button', { name: /Gộp chung nhóm/ }).click();
@@ -1193,6 +1201,7 @@ test('đánh giá sau khi dùng món: thu tiền xong khách chấm sao từng m
   request,
 }) => {
   const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'DG1', name: 'Bàn DG1' });
+  await newCustomer(phoneD);
   await D.goto(`/t/${t.qrToken}`);
   await expect(D).toHaveURL(/\/menu$/);
   await D.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).locator('.add-btn').click();
@@ -1406,6 +1415,7 @@ test('chưa mở ca: quầy thấy dải "Chưa mở ca — chưa nhận, xử l
   const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'MC1', name: 'Bàn MC1' });
   // Một đơn chờ từ lúc còn ca: mở ca (nếu chưa có), khách gửi đơn, rồi đóng ca
   if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  await newCustomer(phoneD);
   await D.goto(`/t/${t.qrToken}`);
   await expect(D).toHaveURL(/\/menu$/);
   await D.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).locator('.add-btn').click();
@@ -3401,4 +3411,96 @@ test('báo lỗi xong vẫn lưu được (DEF-024): thêm bàn trùng mã / nh�
   await dialog.getByLabel('Ảnh (URL, không bắt buộc)').fill('');
   await save.click();
   await expect(P.getByRole('dialog')).toHaveCount(0);
+});
+
+test('đổi bàn khi quét (chưa gửi món): khách chọn 2 món ở Bàn X1 → quét QR Bàn X2 → màn hỏi "Bạn đang gọi món ở Bàn X1 (chưa gửi món nào)" → "Chuyển sang Bàn X2" → thực đơn Bàn X2, giỏ còn 2 món; quầy: Bàn X1 trống, Bàn X2 "Chuyển từ Bàn X1"; quầy "Đóng bàn trống" Bàn X2 → điện thoại mở lại bàn, giỏ vẫn còn, có lời nhắn (F-086, AC-086-06)', async ({
+  request,
+}) => {
+  const made = [];
+  for (const code of ['X1', 'X2']) made.push(await apiAs(request, 'post', '/api/admin/tables', { code, name: `Bàn ${code}` }));
+  const [x1, x2] = made;
+  const phone = await browser.newContext(phoneOpts);
+  try {
+    const G = await phone.newPage();
+    watch(G, 'doi-ban');
+    await G.goto(`/t/${x1.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    for (const name of ['Nước suối', 'Cà phê đen'])
+      await G.locator('.c-section.cat .c-item')
+        .filter({ has: G.getByRole('button', { name, exact: true }) })
+        .locator('.add-btn')
+        .click();
+    await expect(G.locator('#cart-count')).toHaveText('2 món');
+    await G.goto(`/t/${x2.qrToken}`);
+    await expect(G.locator('.c-hero p')).toHaveText('Bạn đang gọi món ở Bàn X1 (chưa gửi món nào). Bạn đã chuyển sang Bàn X2?');
+    await expect(G.getByRole('link', { name: 'Quay lại Bàn X1' })).toBeVisible();
+    await G.getByRole('button', { name: /Chuyển sang Bàn X2/ }).click();
+    await expect(G).toHaveURL(new RegExp(`/t/${x2.qrToken}/menu$`));
+    await expect(G.locator('#cart-count')).toHaveText('2 món');
+    await expect(G.locator('.toast', { hasText: 'Đã chuyển sang Bàn X2' })).toBeVisible();
+    const tables = await apiAs(request, 'get', '/api/tables');
+    expect(tables.find((t) => t.code === 'X1').sessions).toHaveLength(0);
+    const s2 = tables.find((t) => t.code === 'X2').sessions[0];
+    expect(s2.lastMove.fromTable).toBe('Bàn X1');
+    // Quầy đóng bàn trống trong lúc khách còn chọn món → mở lại bàn, giữ giỏ
+    await apiAs(request, 'post', `/api/sessions/${s2.sessionId}/close`);
+    await expect(G.locator('.toast', { hasText: 'Quầy vừa đóng bàn trống' })).toBeVisible();
+    await expect(G).toHaveURL(new RegExp(`/t/${x2.qrToken}/menu$`));
+    await expect(G.locator('#cart-count')).toHaveText('2 món');
+    const fresh = (await apiAs(request, 'get', '/api/tables')).find((t) => t.code === 'X2').sessions[0];
+    expect(fresh.sessionId).not.toBe(s2.sessionId);
+    await apiAs(request, 'post', `/api/sessions/${fresh.sessionId}/close`);
+  } finally {
+    await phone.close();
+    for (const t of made) await request.delete(`/api/admin/tables/${t.tableId}`, { headers: { Authorization: `Bearer ${adminToken}` } });
+  }
+});
+
+test('đổi bàn khi quét (đã gửi món): khách gửi đơn ở Bàn X3 → quét QR Bàn X4 → "Nhờ quầy chuyển nhóm sang Bàn X4" → trang theo dõi Bàn X3 hiện dòng chờ; máy quầy thấy thẻ "Bàn X3 → Bàn X4" ở dải Gọi nhân viên → bấm "Chuyển" → điện thoại tự mở lại ở Bàn X4, đơn vẫn còn, thẻ yêu cầu biến mất (F-086, AC-086-07)', async ({
+  request,
+}) => {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  const x3 = await apiAs(request, 'post', '/api/admin/tables', { code: 'X3', name: 'Bàn X3' });
+  const x4 = await apiAs(request, 'post', '/api/admin/tables', { code: 'X4', name: 'Bàn X4' });
+  const phone = await browser.newContext(phoneOpts);
+  const quay = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  try {
+    const G = await phone.newPage();
+    watch(G, 'nho-quay');
+    await G.goto(`/t/${x3.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .c-item')
+      .filter({ has: G.getByRole('button', { name: 'Nước suối', exact: true }) })
+      .locator('.add-btn')
+      .click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    await G.goto(`/t/${x4.qrToken}`);
+    await expect(G.locator('.c-hero p')).toHaveText('Bạn đang gọi món ở Bàn X3 (đã gửi 1 món). Bạn đã chuyển sang Bàn X4?');
+    await expect(G.getByRole('button', { name: /Gọi món riêng ở Bàn X4/ })).toBeVisible();
+    await G.getByRole('button', { name: /Nhờ quầy chuyển nhóm sang Bàn X4/ }).click();
+    await expect(G).toHaveURL(new RegExp(`/t/${x3.qrToken}/track$`));
+    await expect(G.locator('#move-status')).toContainText('Đã nhờ quầy chuyển nhóm sang Bàn X4');
+
+    const S = await quay.newPage();
+    watch(S, 'quay-doi-ban');
+    await S.goto('/pos/login');
+    await S.fill('#username', 'staff1');
+    await S.fill('#password', 'Staff@123');
+    await S.click('#submit');
+    await expect(S).toHaveURL(/\/pos$/);
+    const card = S.locator('.move-card', { hasText: 'Bàn X3 → Bàn X4' });
+    await expect(card).toContainText('Khách xin chuyển bàn');
+    await card.getByRole('button', { name: 'Chuyển Bàn X3 sang Bàn X4' }).click();
+    await expect(S.locator('.move-card')).toHaveCount(0);
+    await expect(G).toHaveURL(new RegExp(`/t/${x4.qrToken}/track$`));
+    await expect(G.locator('header')).toContainText('Bàn X4');
+    await expect(G.locator('.order-card')).toContainText('Nước suối');
+    await expect(G.locator('#move-status')).toHaveCount(0);
+  } finally {
+    await Promise.all([phone.close(), quay.close()]);
+    const s = (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === 'X4')?.sessions?.[0];
+    if (s) await apiAs(request, 'post', `/api/sessions/${s.sessionId}/cancel`, { reason: 'Dọn bàn thử đổi bàn' });
+  }
 });

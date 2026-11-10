@@ -270,6 +270,8 @@ staffRouter.get('/staff-calls', async (_req, res) => res.json(await staffCallSer
 staffRouter.get('/reviews/alerts', async (_req, res) => res.json(await reviewService.alerts()));
 staffRouter.post('/reviews/:id/handle', async (req, res) => res.json(await reviewService.handle(paramId(req), req.user)));
 staffRouter.post('/staff-calls/:id/handle', async (req, res) => res.json(await staffCallService.handle(paramId(req), req.user)));
+// F-086: quầy bấm "Chuyển" trên yêu cầu xin chuyển bàn của khách (cùng quyền chuyển bàn F-049 — vị trí Phục vụ)
+staffRouter.post('/staff-calls/:id/move', server, async (req, res) => res.json(await staffCallService.acceptMove(paramId(req), req.user)));
 
 // ---- Công tắc nhận đơn QR (FEATURE-020) — nhân viên quầy bật/tắt được ----
 staffRouter.get('/store', async (_req, res) => res.json(await settingsService.storeStatus()));

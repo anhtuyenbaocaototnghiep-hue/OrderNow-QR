@@ -14,6 +14,7 @@ import { connectRealtime } from '../socket.js';
 import { current, getToken } from '../auth.js';
 import {
   $,
+  announce,
   breakdownRows,
   clear,
   confirmDialog,
@@ -672,14 +673,42 @@ function renderCalls() {
     strip,
     el('span', { class: 'label' }, icon('hand'), 'Gọi nhân viên'),
     state.calls.map((c) =>
-      el(
-        'div',
-        { class: 'pay-card call-card' },
-        el('strong', {}, c.table.name),
-        el('span', {}, c.message || 'Cần hỗ trợ'),
-        el('span', { class: 'wait', dataset: { since: c.requestedAt } }, elapsed(c.requestedAt)),
-        el('button', { class: 'btn btn-sm btn-success', type: 'button', onclick: (e) => handleCall(c, e.currentTarget) }, 'Đã xử lý'),
-      ),
+      c.type === 'MOVE'
+        ? // F-086: khách quét QR bàn khác, xin chuyển nhóm (đã có món / có người khác) — một chạm "Chuyển" hoặc "Bỏ qua"
+          el(
+            'div',
+            { class: 'pay-card call-card move-card' },
+            el('strong', {}, `${c.table.name} → ${c.toTable?.name ?? '?'}`),
+            el('span', {}, 'Khách xin chuyển bàn'),
+            el('span', { class: 'wait', dataset: { since: c.requestedAt } }, elapsed(c.requestedAt)),
+            el(
+              'div',
+              { class: 'row' },
+              el(
+                'button',
+                {
+                  class: 'btn btn-sm btn-primary',
+                  type: 'button',
+                  'aria-label': `Chuyển ${c.table.name} sang ${c.toTable?.name}`,
+                  onclick: (e) => acceptMove(c, e.currentTarget),
+                },
+                'Chuyển',
+              ),
+              el(
+                'button',
+                { class: 'btn btn-sm', type: 'button', 'aria-label': `Bỏ qua yêu cầu chuyển ${c.table.name}`, onclick: (e) => handleCall(c, e.currentTarget) },
+                'Bỏ qua',
+              ),
+            ),
+          )
+        : el(
+            'div',
+            { class: 'pay-card call-card' },
+            el('strong', {}, c.table.name),
+            el('span', {}, c.message || 'Cần hỗ trợ'),
+            el('span', { class: 'wait', dataset: { since: c.requestedAt } }, elapsed(c.requestedAt)),
+            el('button', { class: 'btn btn-sm btn-success', type: 'button', onclick: (e) => handleCall(c, e.currentTarget) }, 'Đã xử lý'),
+          ),
     ),
   );
 }
@@ -732,6 +761,24 @@ async function handleReview(r, button) {
   }
   state.lowReviews = state.lowReviews.filter((x) => x.reviewId !== r.reviewId);
   renderReviews();
+}
+
+/** F-086: chuyển nhóm theo yêu cầu của khách (cùng quy tắc chuyển bàn F-049). */
+async function acceptMove(c, button) {
+  setBusy(button, true);
+  try {
+    await staffApi(`/api/staff-calls/${c.callId}/move`, { method: 'POST' });
+    announce(`Đã chuyển ${c.table.name} sang ${c.toTable?.name}`);
+    state.calls = state.calls.filter((x) => x.callId !== c.callId);
+    renderCalls();
+  } catch (err) {
+    setBusy(button, false);
+    toast(errorMessage(err), 'error', 6000);
+    if (err.code === 'ALREADY_PROCESSED' || err.code === 'SESSION_CLOSED') {
+      state.calls = state.calls.filter((x) => x.callId !== c.callId);
+      renderCalls();
+    }
+  }
 }
 
 async function handleCall(c, button) {
@@ -1876,8 +1923,15 @@ socket?.on('review.handled', ({ reviewId }) => {
 socket?.on('session.split_changed', onSessionEvent);
 socket?.on('session.staff_called', (c) => {
   playSound('bell');
-  toast(`${c.table?.name ?? 'Một bàn'} gọi nhân viên: ${c.message || 'cần hỗ trợ'}`, 'warning', 6000);
-  if (!state.calls.some((x) => x.callId === c.callId)) state.calls.push(c);
+  toast(
+    c.type === 'MOVE'
+      ? `${c.table?.name ?? 'Một bàn'} xin chuyển sang ${c.toTable?.name ?? 'bàn khác'} — bấm "Chuyển" ở dải Gọi nhân viên`
+      : `${c.table?.name ?? 'Một bàn'} gọi nhân viên: ${c.message || 'cần hỗ trợ'}`,
+    'warning',
+    6000,
+  );
+  // F-086: khách đổi ý bàn đích → cùng yêu cầu, thay bản cũ
+  state.calls = [...state.calls.filter((x) => x.callId !== c.callId), c];
   renderCalls();
 });
 socket?.on('session.staff_call_handled', (c) => {

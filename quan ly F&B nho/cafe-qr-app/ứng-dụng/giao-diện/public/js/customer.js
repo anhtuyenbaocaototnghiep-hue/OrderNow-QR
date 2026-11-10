@@ -52,6 +52,22 @@ export function followMerged(qr, mergedInto) {
   return true;
 }
 
+/**
+ * F-086 (ADR-047 D-210): nhóm bị đóng khi khách còn đang chọn món (bàn trống quá lâu, quầy "Đóng bàn trống", phiên vừa thanh toán…)
+ * → cất giỏ chưa gửi theo bàn; trang thực đơn của nhóm mới ở cùng bàn lấy lại (trong 2 giờ). Không có giỏ → không cất.
+ */
+const carryKey = (qr) => `cf_cart_carry_${qr}`;
+const CARRY_MS = 2 * 3600e3;
+export function carryCart(qr, lines) {
+  if (!lines?.length) return;
+  safe(() => localStorage.setItem(carryKey(qr), JSON.stringify({ at: Date.now(), lines })));
+}
+export function takeCarriedCart(qr) {
+  const c = safe(() => JSON.parse(localStorage.getItem(carryKey(qr))));
+  safe(() => localStorage.removeItem(carryKey(qr)));
+  return c && Array.isArray(c.lines) && Date.now() - c.at < CARRY_MS ? c.lines : null;
+}
+
 export function goEntry(qr, flash) {
   leaving = true;
   clearSessionId(qr);

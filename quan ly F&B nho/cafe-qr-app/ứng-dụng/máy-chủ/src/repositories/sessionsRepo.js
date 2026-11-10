@@ -11,7 +11,9 @@ const SESSION_SELECT = `
          ISNULL(a.PendingCount, 0) AS PendingCount, ISNULL(a.PreparingCount, 0) AS PreparingCount, ISNULL(q.ItemCount, 0) AS ItemCount,
          s.MemberId, mem.FullName AS MemberName, mem.TierCode AS MemberTier, mt.Name AS MemberTierName,
          mt.DiscountPercent AS MemberDiscountPercent, mem.FirstOrderDiscountUsed AS MemberFirstUsed,
-         (SELECT COUNT(*) FROM dbo.StaffCalls sc WHERE sc.SessionId = s.SessionId AND sc.HandledAt IS NULL) AS OpenCalls,
+         (SELECT COUNT(*) FROM dbo.StaffCalls sc WHERE sc.SessionId = s.SessionId AND sc.HandledAt IS NULL AND sc.Type = 'STAFF') AS OpenCalls,
+         mr.MoveCallId, mr.MoveToTableName, mr.MoveRequestedAt, s.CloseReason,
+         (SELECT COUNT(*) FROM dbo.SessionClients scl WHERE scl.SessionId = s.SessionId) AS ClientCount,
          s.OpenedBy, ob.FullName AS OpenedByName, s.Note, s.NoteUpdatedAt, nu.FullName AS NoteUpdatedByName,
          (SELECT COUNT(*) FROM dbo.SessionSplits sp WHERE sp.SessionId = s.SessionId AND sp.IsCommon = 0) AS SplitCount,
          ISNULL((SELECT SUM(pp.AmountDue) FROM dbo.Payments pp WHERE pp.SessionId = s.SessionId), 0) AS PaidAmount,
@@ -33,7 +35,11 @@ const SESSION_SELECT = `
                FROM dbo.OrderItems oi JOIN dbo.Orders o ON o.OrderId = oi.OrderId
                WHERE o.SessionId = s.SessionId AND o.Status NOT IN ('CANCELLED', 'VOIDED') AND oi.ParentOrderItemId IS NULL) q
   OUTER APPLY (SELECT TOP 1 ft.Name AS MovedFromName, m.MovedAt FROM dbo.SessionTableMoves m JOIN dbo.Tables ft ON ft.TableId = m.FromTableId
-               WHERE m.SessionId = s.SessionId ORDER BY m.MoveId DESC) mv`;
+               WHERE m.SessionId = s.SessionId ORDER BY m.MoveId DESC) mv
+  -- F-086: yêu cầu "xin chuyển bàn" đang chờ quầy xác nhận
+  OUTER APPLY (SELECT TOP 1 mc.CallId AS MoveCallId, mt2.Name AS MoveToTableName, mc.RequestedAt AS MoveRequestedAt
+               FROM dbo.StaffCalls mc JOIN dbo.Tables mt2 ON mt2.TableId = mc.ToTableId
+               WHERE mc.SessionId = s.SessionId AND mc.Type = 'MOVE' AND mc.HandledAt IS NULL ORDER BY mc.CallId DESC) mr`;
 
 export const mapSession = (r) =>
   r && {
@@ -49,6 +55,9 @@ export const mapSession = (r) =>
     pendingCount: r.PendingCount,
     preparingCount: r.PreparingCount,
     openCalls: r.OpenCalls ?? 0,
+    clientCount: r.ClientCount ?? 0, // F-086: số điện thoại trong nhóm
+    moveRequest: r.MoveCallId ? { callId: r.MoveCallId, toTable: r.MoveToTableName, requestedAt: r.MoveRequestedAt } : null, // F-086
+    closeReason: r.CloseReason ?? null, // F-086: 'IDLE_EMPTY' = hệ thống tự đóng phiên trống
     // F-024 — chỉ dành cho nhân viên
     openedBy: r.OpenedBy ? { userId: r.OpenedBy, fullName: r.OpenedByName } : null,
     note: r.Note ?? null,
@@ -246,7 +255,8 @@ export async function mergeAndSettle(targetId, sourceIds, userId, settleArgs) {
 }
 
 /** Chuyển cả nhóm sang bàn khác — sp_MoveSession (F-049). → TableId bàn cũ. */
-export async function move(sessionId, toTableId, userId, expectedFromTableId = null) {
+/** F-049 chuyển bàn; F-086: { clientToken } = khách tự chuyển (userId null — SP kiểm nhóm chưa có món, một điện thoại). */
+export async function move(sessionId, toTableId, userId, expectedFromTableId = null, { clientToken = null } = {}) {
   const r = await (
     await request()
   )
@@ -254,13 +264,60 @@ export async function move(sessionId, toTableId, userId, expectedFromTableId = n
     .input('ToTableId', sql.Int, toTableId)
     .input('UserId', sql.Int, userId)
     .input('ExpectedFromTableId', sql.Int, expectedFromTableId)
+    .input('ByGuest', sql.Bit, clientToken !== null ? 1 : 0) // có truyền clientToken (kể cả rỗng) = khách tự chuyển → SP kiểm thành viên
+    .input('ClientToken', sql.Char(32), clientToken)
     .output('FromTableId', sql.Int)
     .execute('dbo.sp_MoveSession');
   return r.output.FromTableId;
 }
 
-export async function closeEmpty(sessionId, userId) {
-  await (await request()).input('SessionId', sql.UniqueIdentifier, sessionId).input('UserId', sql.Int, userId).execute('dbo.sp_CloseEmptySession');
+/** Đóng bàn trống; F-086: reason 'IDLE_EMPTY' + idleMinutes = hệ thống tự đóng (userId null, SP kiểm lại không hoạt động). */
+export async function closeEmpty(sessionId, userId, { reason = null, idleMinutes = null } = {}) {
+  await (
+    await request()
+  )
+    .input('SessionId', sql.UniqueIdentifier, sessionId)
+    .input('UserId', sql.Int, userId)
+    .input('Reason', sql.VarChar(20), reason)
+    .input('IdleMinutes', sql.Int, idleMinutes)
+    .execute('dbo.sp_CloseEmptySession');
+}
+
+/**
+ * F-086 (ADR-047 D-206): các phiên còn mở của điện thoại này ở BÀN KHÁC (mở trong `withinHours` giờ gần nhất), tối đa 3 —
+ * nhóm đã gửi món trước (món có thể mang ra nhầm bàn), rồi nhóm mở gần nhất. Kèm mã QR bàn để khách "Quay lại".
+ */
+export async function listOpenForClientElsewhere(tableId, clientToken, withinHours) {
+  const r = await query(
+    `SELECT TOP 3 s.SessionId, t.QrToken
+     FROM dbo.Sessions s
+     JOIN dbo.SessionClients c ON c.SessionId = s.SessionId AND c.ClientToken = @c
+     JOIN dbo.Tables t ON t.TableId = s.TableId AND t.IsActive = 1 AND t.DeletedAt IS NULL
+     WHERE s.TableId <> @t AND s.Status <> 'CLOSED' AND s.OpenedAt > DATEADD(HOUR, -@h, SYSUTCDATETIME())
+     ORDER BY CASE WHEN EXISTS (SELECT 1 FROM dbo.Orders o WHERE o.SessionId = s.SessionId AND o.Status NOT IN ('CANCELLED', 'VOIDED')) THEN 0 ELSE 1 END,
+              s.OpenedAt DESC`,
+    { t: [sql.Int, tableId], c: [sql.Char(32), clientToken], h: [sql.Int, withinHours] },
+  );
+  const out = [];
+  for (const row of r.recordset) {
+    const session = await findById(row.SessionId);
+    if (session) out.push({ ...session, table: { ...session.table, qrToken: row.QrToken } });
+  }
+  return out;
+}
+
+/** F-086 (D-209): phiên trống (không đơn còn hiệu lực, không yêu cầu đang chờ) không ai vào thêm trong `minutes` phút. */
+export async function idleEmptySessionIds(minutes) {
+  const r = await query(
+    `SELECT s.SessionId
+     FROM dbo.Sessions s
+     WHERE s.Status = 'OPEN' AND s.OpenedAt <= DATEADD(MINUTE, -@m, SYSUTCDATETIME())
+       AND NOT EXISTS (SELECT 1 FROM dbo.Orders o WHERE o.SessionId = s.SessionId AND o.Status <> 'CANCELLED')
+       AND NOT EXISTS (SELECT 1 FROM dbo.StaffCalls sc WHERE sc.SessionId = s.SessionId AND sc.HandledAt IS NULL)
+       AND NOT EXISTS (SELECT 1 FROM dbo.SessionClients c WHERE c.SessionId = s.SessionId AND c.JoinedAt > DATEADD(MINUTE, -@m, SYSUTCDATETIME()))`,
+    { m: [sql.Int, minutes] },
+  );
+  return r.recordset.map((x) => x.SessionId.toLowerCase());
 }
 
 /** Lượt thu cả phiên (phiên không chia bill). */

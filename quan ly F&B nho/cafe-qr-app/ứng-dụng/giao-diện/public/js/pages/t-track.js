@@ -373,6 +373,7 @@ function render() {
     main,
     paymentStatus(),
     etaLine(),
+    moveStatus(),
     callStatus(),
     memberSlot,
     orders.length === 0
@@ -567,6 +568,16 @@ async function openSplit() {
   await refresh();
 }
 
+/** F-086: khách đã nhờ quầy chuyển nhóm sang bàn khác — chờ nhân viên bấm "Chuyển" (trang tự mở lại ở bàn mới). */
+function moveStatus() {
+  if (!session.moveRequest) return null;
+  return el(
+    'div',
+    { class: 'alert info', id: 'move-status' },
+    `Đã nhờ quầy chuyển nhóm sang ${session.moveRequest.toTable} lúc ${time(session.moveRequest.requestedAt)} — trang sẽ tự chuyển khi nhân viên xác nhận.`,
+  );
+}
+
 function callStatus() {
   if (!lastCall || lastCall.handled || !session.openCalls) return null;
   return el('div', { class: 'alert info', id: 'call-status' }, `Đã gọi nhân viên lúc ${time(lastCall.at)} — nhân viên sẽ đến bàn ngay.`);
@@ -721,7 +732,7 @@ socket?.on('session.table_changed', (p) => followTable(qr, sessionId, p.toTable)
 // F-057: bàn này được thu chung vào bàn khác → sang trang theo dõi của bàn đó (đánh giá món ở đó)
 socket?.on('session.settled', (p) => followMerged(qr, p.mergedInto));
 socket?.on('session.staff_called', (c) => {
-  lastCall = { at: new Date(c.requestedAt).getTime(), handled: false };
+  if (c.type !== 'MOVE') lastCall = { at: new Date(c.requestedAt).getTime(), handled: false }; // F-086: xin chuyển bàn không tính là gọi nhân viên
   scheduleLoad();
 });
 // F-038: thanh toán lần đầu của người được giới thiệu → cả hai nhận voucher
@@ -729,7 +740,13 @@ socket?.on('member.vouchers_issued', (p) => {
   toast(`Bạn và người giới thiệu mỗi người nhận 1 voucher giảm ${p.percent}% — dùng ở lần sau, báo nhân viên khi thanh toán.`, 'success', 9000);
   scheduleLoad();
 });
-socket?.on('session.staff_call_handled', () => {
+socket?.on('session.staff_call_handled', (c) => {
+  if (c?.type === 'MOVE') {
+    // Chuyển xong → session.table_changed mở lại trang ở bàn mới; còn ở bàn cũ = quầy bỏ qua yêu cầu
+    if (c.sessionId === sessionId && c.table?.tableId === session?.table?.tableId)
+      toast('Quầy chưa chuyển bàn cho nhóm của bạn — bấm "Gọi nhân viên" nếu cần hỗ trợ.', 'warning', 7000);
+    return scheduleLoad();
+  }
   if (lastCall) lastCall.handled = true;
   toast('Nhân viên đã nhận yêu cầu của bạn.', 'success');
   scheduleLoad();

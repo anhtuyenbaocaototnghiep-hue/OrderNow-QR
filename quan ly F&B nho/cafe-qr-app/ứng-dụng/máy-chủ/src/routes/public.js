@@ -129,6 +129,16 @@ publicRouter.post('/sessions/:id/join', async (req, res) => {
   res.json(await sessionService.join(paramGuid(req), qrToken, req.clientToken));
 });
 
+// F-086 (ADR-047): khách quét QR bàn khác khi đang có nhóm — tự chuyển (nhóm chưa có món) hoặc nhờ quầy chuyển
+publicRouter.post('/sessions/:id/move-here', async (req, res) => {
+  const { qrToken } = parse(qrBody, req.body);
+  res.json(await sessionService.moveHere(paramGuid(req), qrToken, req.clientToken));
+});
+publicRouter.post('/sessions/:id/move-request', async (req, res) => {
+  const { qrToken } = parse(qrBody, req.body);
+  res.status(201).json(await staffCallService.requestMove(paramGuid(req), qrToken, req.clientToken));
+});
+
 publicRouter.get('/sessions/:id', optionalStaff, async (req, res) => {
   // DEF-019: điện thoại khách đọc phiên đúng lúc quầy thu tiền / hoàn tất → đôi khi deadlock 1205 → 500; chỉ đọc nên chạy lại an toàn
   res.json(await withDeadlockRetry(() => sessionService.getDetail(paramGuid(req), { user: req.user, clientToken: req.clientToken })));

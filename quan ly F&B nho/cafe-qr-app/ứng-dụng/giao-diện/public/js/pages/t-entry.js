@@ -1,7 +1,7 @@
 // S-01 — Vào bàn: quét QR → phiên mới / vào lại phiên cũ / chọn Gộp chung nhóm hay Tạo đơn cá nhân (FEATURE-001, BR-008).
 import { api } from '../api.js';
 import { $, clear, el, errorMessage, setBusy, time, toast } from '../ui.js';
-import { qrToken, setFlash, setSessionId, takeFlash } from '../customer.js';
+import { clearSessionId, qrToken, setFlash, setSessionId, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
 
 const qr = qrToken();
@@ -23,7 +23,12 @@ async function start() {
   loading();
   try {
     const res = await api('/api/sessions/scan', { method: 'POST', body: { qrToken: qr } });
-    if (res.state === 'NEW' || res.state === 'MEMBER') return enter(res.session.sessionId);
+    if (res.state === 'NEW' || res.state === 'MEMBER') {
+      // Vào thẳng thực đơn: chuyển tiếp lời nhắn (vd "bàn trống đã đóng, giỏ vẫn còn") — trang này chuyển đi ngay, khách không kịp đọc (F-086)
+      if (flash) setFlash(flash.message, flash.type);
+      return enter(res.session.sessionId);
+    }
+    if (res.state === 'ELSEWHERE') return showElsewhere(res); // F-086
     showChoice(res);
   } catch (err) {
     if (err.status === 404 || err.code === 'VALIDATION_ERROR' || err.code === 'TABLE_NOT_FOUND') return showInvalid();
@@ -57,6 +62,107 @@ function showChoice({ table, openSessions }) {
       el('span', { class: 'small muted' }, 'Gọi món và thanh toán riêng, không bị nhầm bill'),
     ),
   );
+}
+
+/**
+ * F-086 (ADR-047): điện thoại đang có nhóm mở ở bàn khác — hỏi khách đã đổi bàn chưa thay vì lặng lẽ mở nhóm mới (món mang ra nhầm bàn,
+ * khách tưởng mất đơn rồi gọi lại). Nhóm chưa gửi món, chỉ một mình → chuyển ngay, giỏ đi theo; còn lại → nhờ quầy chuyển.
+ */
+function showElsewhere(res) {
+  const { table, elsewhere: e, otherGroups = [] } = res;
+  const sent = e.orderCount > 0;
+  const status = sent ? `đã gửi ${e.itemCount} món` : 'chưa gửi món nào';
+  const choices = [];
+  if (e.canMoveNow) {
+    choices.push(
+      el(
+        'button',
+        { class: 'c-choice', type: 'button', onclick: (ev) => moveHere(res, ev.currentTarget) },
+        el('strong', {}, `Chuyển sang ${table.name}`),
+        el('span', { class: 'small' }, `Món bạn đang chọn đi theo. ${e.table.name} được trả lại cho quán.`),
+      ),
+    );
+  } else {
+    choices.push(
+      el(
+        'button',
+        { class: 'c-choice', type: 'button', onclick: (ev) => requestMove(res, ev.currentTarget) },
+        el('strong', {}, `Nhờ quầy chuyển nhóm sang ${table.name}`),
+        el(
+          'span',
+          { class: 'small' },
+          sent ? 'Món đã gửi và hóa đơn chuyển theo — nhân viên xác nhận trong giây lát.' : 'Cả nhóm chuyển theo — nhân viên xác nhận trong giây lát.',
+        ),
+      ),
+      el(
+        'button',
+        { class: 'c-choice alt', type: 'button', onclick: (ev) => orderSeparately(res, ev.currentTarget) },
+        el('strong', {}, `Gọi món riêng ở ${table.name}`),
+        el('span', { class: 'small muted' }, `Nhóm ở ${e.table.name} vẫn giữ nguyên, hóa đơn riêng.`),
+      ),
+    );
+  }
+  // Điện thoại còn nhóm khác (đã "gọi riêng" ở bàn khác trước đó) → mỗi nhóm một lựa chọn chuyển
+  for (const g of otherGroups) {
+    const label = g.orderCount > 0 ? `đã gửi ${g.itemCount} món` : 'chưa gửi món';
+    choices.push(
+      el(
+        'button',
+        { class: 'c-choice alt', type: 'button', onclick: (ev) => (g.canMoveNow ? moveHere : requestMove)({ ...res, elsewhere: g }, ev.currentTarget) },
+        el('strong', {}, g.canMoveNow ? `Chuyển nhóm ${g.table.name} sang ${table.name}` : `Nhờ quầy chuyển nhóm ${g.table.name} sang ${table.name}`),
+        el('span', { class: 'small muted' }, `Nhóm thứ hai của bạn ở ${g.table.name} (${label}).`),
+      ),
+    );
+  }
+  clear(
+    app,
+    el(
+      'div',
+      { class: 'c-hero' },
+      el('div', { class: 'logo' }, icon('coffee')),
+      el('h1', {}, table.name),
+      el('p', { class: 'muted' }, `Bạn đang gọi món ở ${e.table.name} (${status}). Bạn đã chuyển sang ${table.name}?`),
+    ),
+    e.moveRequest ? el('div', { class: 'alert info' }, `Bạn đã nhờ quầy chuyển sang ${e.moveRequest.toTable} — đang chờ nhân viên xác nhận.`) : null,
+    choices,
+    el('a', { class: 'btn btn-block c-back', href: `/t/${e.table.qrToken}` }, `Quay lại ${e.table.name}`),
+  );
+}
+
+async function moveHere(res, button) {
+  const { table, elsewhere: e } = res;
+  setBusy(button, true);
+  try {
+    await api(`/api/sessions/${e.sessionId}/move-here`, { method: 'POST', body: { qrToken: qr } });
+    clearSessionId(e.table.qrToken);
+    setFlash(`Đã chuyển sang ${table.name} — món bạn đang chọn vẫn còn trong giỏ.`, 'success');
+    enter(e.sessionId);
+  } catch (err) {
+    setBusy(button, false);
+    toast(errorMessage(err), 'warning', 6000);
+    start(); // nhóm vừa có món / có người vào → hỏi lại với lựa chọn "Nhờ quầy chuyển"
+  }
+}
+
+async function requestMove(res, button) {
+  const { elsewhere: e } = res;
+  setBusy(button, true);
+  try {
+    await api(`/api/sessions/${e.sessionId}/move-request`, { method: 'POST', body: { qrToken: qr } });
+    // Về trang của nhóm ở bàn cũ: trang theo nhóm — quầy chuyển xong thì tự mở lại ở bàn mới
+    setSessionId(e.table.qrToken, e.sessionId);
+    // Không cần thông báo nổi: trang theo dõi đơn hiện dòng "Đã nhờ quầy chuyển…" cho tới khi xong
+    location.replace(`/t/${e.table.qrToken}/${e.orderCount > 0 ? 'track' : 'menu'}`);
+  } catch (err) {
+    setBusy(button, false);
+    toast(errorMessage(err), 'error');
+    if (err.code === 'SESSION_CLOSED') start();
+  }
+}
+
+function orderSeparately(res, button) {
+  if (res.openSessions?.length) return showChoice(res); // bàn này có nhóm khác → Gộp chung / Tạo đơn cá nhân như thường
+  return createOwn(button);
 }
 
 async function join(sessionId, button) {
