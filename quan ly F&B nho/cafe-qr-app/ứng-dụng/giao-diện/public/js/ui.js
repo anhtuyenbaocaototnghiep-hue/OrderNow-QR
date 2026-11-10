@@ -186,8 +186,12 @@ export function modal({ title, body, actions = [], foot: customFoot = null, draw
     t.finished.then(done, done);
     setTimeout(() => (gone(), done()), 600);
   };
+  // Esc chỉ đóng hộp thoại TRÊN CÙNG (giỏ + ô SĐT chồng nhau: trước đây Esc đóng cả hai — sửa 10/11/2026)
   const onKey = (e) => {
-    if (e.key === 'Escape' && dismissable) close(null);
+    if (e.key !== 'Escape' || !dismissable || e.defaultPrevented) return;
+    if ([...document.querySelectorAll('.overlay:not([inert])')].at(-1) !== overlay) return;
+    e.preventDefault();
+    close(null);
   };
   const foot = customFoot
     ? el('div', { class: 'modal-foot' }, customFoot)

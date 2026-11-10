@@ -186,6 +186,22 @@ body.customer .c-tabs .chip.active {
   font-weight: 600;
   font-size: 1.02rem;
   line-height: 1.35;
+  /* Tên + nhãn ("Bán chạy", "Giờ vàng"): xuống dòng thì nhãn thẳng mép trái với tên, không thụt vào (sửa 10/11/2026) */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.4rem;
+}
+.c-item-name .tag,
+.line-price .tag {
+  margin-left: 0;
+}
+/* Giá trong giỏ: giá gạch, giá mới, nhãn khuyến mãi — cùng một hàng, xuống dòng thì thẳng mép trái */
+.line-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem 0.4rem;
 }
 .c-item-price {
   margin-top: 0.25rem;
@@ -295,6 +311,42 @@ body.customer .c-tabs .chip.active {
 }
 .c-cartbar .btn > span {
   white-space: nowrap; /* "2 món", "Xem giỏ · Gửi đơn" không bẻ dòng ở màn 360–390 px */
+}
+/* Số món + tổng tiền giữ nguyên bề ngang; chữ giữa co lại (màn 320 / chữ to: trước đây "3 món" đè lên chữ, tổng tiền tràn ra ngoài — sửa 10/11/2026) */
+.c-cartbar .cart-count,
+.c-cartbar #cart-total {
+  flex: none;
+}
+.c-cartbar .cart-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+/* Đo theo bề ngang chính thanh giỏ (em theo cỡ chữ của nút — đúng cả khi điện thoại đặt chữ to). Đo 10/11/2026: "3 món" 3,8em,
+   tổng tiền 4,4em, "Xem giỏ · Gửi đơn" 11,4em, "Xem giỏ" 4em, 2 khoảng cách 1,4em → đủ chữ cần ~21em, "Xem giỏ" cần ~14em (chừa tổng tiền dài hơn).
+   Thiếu chỗ thì ẩn khỏi mắt (vẫn còn cho trình đọc màn hình) thay vì rút gọn "Xe…". */
+.c-cartbar .btn {
+  container-type: inline-size;
+}
+@container (max-width: 22em) {
+  .cart-label-more {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+@container (max-width: 15em) {
+  .c-cartbar .cart-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 }
 .c-cartbar .btn:hover {
   background: var(--c-primary-600);
@@ -526,7 +578,7 @@ body.customer .c-tabs .chip.active {
   align-items: baseline;
   font-weight: 600;
   font-size: 1.2rem;
-  padding: 0.6rem 0.25rem 1rem;
+  padding: 0.6rem 0 1rem;
   font-variant-numeric: tabular-nums;
 }
 .c-actions {
@@ -544,6 +596,12 @@ body.customer .c-tabs .chip.active {
 }
 .c-actions .btn {
   flex: 1;
+  padding-inline: 0.6rem;
+}
+@media (max-width: 340px) {
+  .c-actions .btn {
+    font-size: 0.95rem; /* "Gọi thanh toán" vừa một dòng ở màn 320 px */
+  }
 }
 .pay-status {
   border-radius: var(--radius);
@@ -553,7 +611,7 @@ body.customer .c-tabs .chip.active {
   border: 1px solid var(--c-border);
 }
 .pay-status .timer {
-  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
   font-size: 1.4rem;
   font-weight: 800;
 }
@@ -797,7 +855,7 @@ body.customer .c-tabs .chip.active {
 .cart-sub {
   display: flex;
   justify-content: space-between;
-  padding: 0.15rem 0.25rem;
+  padding: 0.15rem 0; /* trước 0.25rem ngang → lệch vào 4 px so với "Tổng đơn này" (sửa 10/11/2026) */
   font-size: 0.92rem;
 }
 .bill {
@@ -845,8 +903,14 @@ body.customer .c-tabs .chip.active {
   color: var(--c-text);
   font-weight: 500;
 }
+.eta {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
 .eta > .ic {
   color: var(--c-accent);
+  margin: 0.15em 0 0;
 }
 .alert.eta {
   margin-bottom: 0.6rem;
@@ -930,16 +994,14 @@ body.customer .alert.info {
   margin: 0 0 0.5rem;
 }
 .review-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 0.2rem 0;
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.35rem 0;
 }
 .stars {
   display: flex;
   gap: 0.15rem;
+  margin-left: calc((40px - 1.65rem) / -2); /* sao đầu thẳng mép chữ tên món (nút 40 px, hình sao 1,65rem ở giữa) */
 }
 .stars .star {
   display: inline-grid;
@@ -1019,7 +1081,7 @@ body.customer .alert.info {
 
 /* F-066 hẹn giờ làm món: chọn ở giỏ hàng, dòng "đang giữ" trên thẻ đơn */
 .hold-picker {
-  margin-top: 0.75rem;
+  margin: 0.75rem 0;
 }
 .hold-picker .note-chips {
   margin-top: 0.35rem;
@@ -1263,10 +1325,26 @@ body.customer .alert.info {
   width: 40px;
   height: 50px;
 }
-/* Màn rất hẹp (≤ 360 px): chữ nút được xuống dòng thay vì tràn */
-@media (max-width: 360px) {
-  .item-foot .btn-primary {
-    white-space: normal;
+/* Nút hẹp (màn ≤ 360 px, chữ to): "Thêm vào giỏ" một dòng, giá một dòng — không bẻ giữa chừng, không để "·" lơ lửng (sửa 10/11/2026).
+   Đo theo phần ruột của chính nút (container query, em theo cỡ chữ của nút — đúng cả khi điện thoại đặt chữ to); đo 10/11:
+   "Thêm vào giỏ · 32.000đ" một dòng cần 12,1em (+0,6em khi giá 6 chữ số) → dưới 13em thì xếp hai dòng. */
+.item-foot .btn-primary {
+  container-type: inline-size;
+}
+.item-foot .btn-label {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 0.3em;
+}
+@container (max-width: 13em) {
+  .item-foot .btn-sep {
+    display: none;
+  }
+  .item-foot .btn-label {
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.25;
   }
 }
 

@@ -279,6 +279,7 @@ img {
 /* ---------- Nút ---------- */
 .btn {
   appearance: none;
+  text-align: center; /* chữ nút xuống dòng vẫn canh giữa (trước: dòng 2 canh trái — "Gọi thêm / món"; sửa 10/11/2026) */
   display: inline-flex;
   align-items: center;
   justify-content: center;

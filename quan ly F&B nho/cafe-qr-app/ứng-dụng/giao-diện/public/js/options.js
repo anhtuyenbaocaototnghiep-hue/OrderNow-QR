@@ -136,7 +136,17 @@ export function pickItem(
     qtyEl.textContent = String(qty);
     minus.disabled = qty <= 1;
     plus.disabled = qty >= maxQty;
-    if (confirmBtn) confirmBtn.textContent = `${confirmLabel} · ${money(unitPrice() * qty)}`;
+    // Chữ · giá tách phần: nút hẹp (màn 320–360 px, chữ to) thì CSS xếp giá xuống dòng dưới, ẩn dấu "·" (sửa 10/11/2026)
+    if (confirmBtn)
+      confirmBtn.replaceChildren(
+        el(
+          'span',
+          { class: 'btn-label' },
+          el('span', {}, confirmLabel),
+          el('span', { class: 'btn-sep' }, ' · '), // giữ chữ nút = "Thêm vào giỏ · 32.000đ" (E2E, trình đọc màn hình)
+          el('span', { class: 'nowrap' }, money(unitPrice() * qty)),
+        ),
+      );
   };
   const opts = optionGroups(item, modifierGroups, { initial: initial?.optionIds ?? null, errorEl, onChange: () => refresh() });
 

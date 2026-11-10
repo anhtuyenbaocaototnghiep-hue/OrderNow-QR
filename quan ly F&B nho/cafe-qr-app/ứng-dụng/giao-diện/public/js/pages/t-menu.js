@@ -644,10 +644,9 @@ function lineNode(line) {
     line.note ? el('span', { class: 'small line-note' }, `Ghi chú: ${line.note}`) : null,
     el(
       'span',
-      { class: 'muted small' },
+      { class: 'muted small line-price' },
       quoted && quoted.lineDiscount > 0 ? el('s', {}, money(quoted.listPrice)) : null,
-      quoted && quoted.lineDiscount > 0 ? ' ' : null,
-      money(quoted?.unitPrice ?? line.price),
+      el('span', {}, money(quoted?.unitPrice ?? line.price)),
       quoted?.promotionName ? el('span', { class: 'tag promo' }, quoted.promotionName) : null,
     ),
     unavailable ? el('span', { class: 'field-error' }, 'Món này vừa hết — vui lòng bỏ khỏi giỏ') : el('span', { class: 'edit-hint small' }, 'Sửa ›'),
@@ -724,8 +723,7 @@ function renderTotals() {
           'p',
           { class: 'small eta', id: 'cart-eta' },
           icon('timer'),
-          'Dự kiến có món sau khoảng ',
-          el('span', { class: 'nowrap' }, `${state.eta.minMinutes}–${state.eta.maxMinutes} phút`),
+          el('span', {}, 'Dự kiến có món sau khoảng ', el('span', { class: 'nowrap' }, `${state.eta.minMinutes}–${state.eta.maxMinutes} phút`)),
         )
       : null,
     m ? el('p', { class: 'small save' }, `Ưu đãi hội viên (${m.maskedName}) được trừ khi thanh toán.`) : null,

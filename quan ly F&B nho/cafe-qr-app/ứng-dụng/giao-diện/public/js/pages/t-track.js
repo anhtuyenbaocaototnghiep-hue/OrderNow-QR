@@ -302,7 +302,13 @@ function billSummary() {
     lines.length > 1
       ? lines.map((b) => el('div', { class: `cart-sub ${b.amount < 0 ? 'save' : ''}` }, el('span', {}, b.label), el('span', {}, money(b.amount))))
       : null,
-    el('div', { class: 'c-summary' }, el('span', {}, lines.length > 1 ? 'Tổng thanh toán (dự kiến)' : 'Tổng tạm tính'), el('span', {}, money(bill.amountDue))),
+    el(
+      'div',
+      { class: 'c-summary' },
+      // "(dự kiến)" đi liền một khối — màn hẹp không bẻ "(dự" / "kiến)" hai bên số tiền (sửa 10/11/2026)
+      el('span', {}, lines.length > 1 ? ['Tổng thanh toán ', el('span', { class: 'nowrap' }, '(dự kiến)')] : 'Tổng tạm tính'),
+      el('span', { class: 'nowrap' }, money(bill.amountDue)),
+    ),
   );
 }
 
@@ -423,8 +429,7 @@ function etaLine() {
     'div',
     { class: 'alert info eta', id: 'eta' },
     icon('timer'),
-    'Món của bạn dự kiến xong sau khoảng ',
-    el('span', { class: 'nowrap' }, `${eta.minMinutes}–${eta.maxMinutes} phút`),
+    el('span', {}, 'Món của bạn dự kiến xong sau khoảng ', el('span', { class: 'nowrap' }, `${eta.minMinutes}–${eta.maxMinutes} phút`)),
   );
 }
 
