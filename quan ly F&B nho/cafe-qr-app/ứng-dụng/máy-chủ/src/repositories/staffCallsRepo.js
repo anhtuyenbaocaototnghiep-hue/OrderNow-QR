@@ -3,7 +3,9 @@ import { query, sql } from '../db.js';
 
 const SELECT = `
   SELECT c.CallId, c.SessionId, c.Type, c.Message, c.RequestedAt, c.HandledAt, c.HandledBy, u.FullName AS HandledByName,
-         t.TableId, t.Code AS TableCode, t.Name AS TableName, tt.TableId AS ToTableId, tt.Code AS ToTableCode, tt.Name AS ToTableName
+         t.TableId, t.Code AS TableCode, t.Name AS TableName, tt.TableId AS ToTableId, tt.Code AS ToTableCode, tt.Name AS ToTableName,
+         -- F-087 (ADR-048 D-213): bàn đích đang có bao nhiêu nhóm khác (để quầy quyết chuyển hay thu chung)
+         (SELECT COUNT(*) FROM dbo.Sessions ds WHERE ds.TableId = c.ToTableId AND ds.Status <> 'CLOSED' AND ds.SessionId <> c.SessionId) AS ToTableGroups
   FROM dbo.StaffCalls c
   JOIN dbo.Sessions s ON s.SessionId = c.SessionId
   JOIN dbo.Tables t ON t.TableId = s.TableId
@@ -16,7 +18,7 @@ export const map = (r) =>
     type: r.Type ?? 'STAFF', // F-086: 'MOVE' = khách xin chuyển nhóm sang toTable
     sessionId: r.SessionId.toLowerCase(),
     table: { tableId: r.TableId, code: r.TableCode, name: r.TableName },
-    toTable: r.ToTableId ? { tableId: r.ToTableId, code: r.ToTableCode, name: r.ToTableName } : null,
+    toTable: r.ToTableId ? { tableId: r.ToTableId, code: r.ToTableCode, name: r.ToTableName, openGroups: r.ToTableGroups ?? 0 } : null,
     message: r.Message,
     requestedAt: r.RequestedAt,
     handledAt: r.HandledAt,

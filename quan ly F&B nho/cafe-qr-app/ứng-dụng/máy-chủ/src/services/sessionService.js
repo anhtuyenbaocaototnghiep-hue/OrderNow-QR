@@ -35,6 +35,14 @@ const customerView = (s) => {
 
 /** Hội viên của phiên: khách thấy tên che; quầy thấy tên đầy đủ. */
 const memberView = (m, staff) => m && { ...m, fullName: staff ? m.fullName : undefined, maskedName: maskName(m.fullName) };
+/** F-087 (ADR-048 D-213): khách quét QR mở nhóm mới → máy quầy cập nhật lưới bàn + thẻ "xin chuyển bàn" (bàn đích có người) ngay. */
+const announceOpened = (session) =>
+  publish([ROOMS.staff], 'session.opened', {
+    sessionId: session.sessionId,
+    table: session.table,
+    session: { ...session, member: memberView(session.member, true) },
+    byGuest: true,
+  });
 
 /** Kèm % ưu đãi đơn đầu (cài đặt) + điểm / tem / voucher (F-039, F-038) để màn hình nói đúng quyền lợi của hội viên. */
 async function withFirstOrder(member, { staff = false } = {}) {
@@ -133,6 +141,7 @@ export async function scan(qrToken, clientToken) {
   }
   if (open.length === 0) {
     const session = await sessionsRepo.createWithClient(table.tableId, clientToken);
+    announceOpened(session);
     return { state: 'NEW', table: publicTable(table), session: customerView(session) };
   }
   // Không lộ chi tiết đơn/ghi chú của khách khác — chỉ số món và giờ mở (FEATURE-001)
@@ -146,6 +155,7 @@ export async function scan(qrToken, clientToken) {
 export async function createSession(qrToken, clientToken) {
   const table = await activeTable(qrToken);
   const session = await sessionsRepo.createWithClient(table.tableId, clientToken);
+  announceOpened(session);
   return { table: publicTable(table), session: customerView(session) };
 }
 
@@ -424,7 +434,10 @@ export async function moveHere(sessionId, qrToken, clientToken) {
  * phiên vừa có món, vừa có người vào hoặc đang gọi nhân viên thì bỏ qua. Điện thoại còn mở trang nhận `session.closed` (reason IDLE_EMPTY)
  * → tự mở nhóm mới, giữ giỏ.
  */
-export async function closeIdleEmpty(minutes = IDLE_EMPTY_MINUTES) {
+export async function closeIdleEmpty(minutesArg = null) {
+  // F-087 (D-212): chủ quán chọn 15 / 30 / 60 phút hoặc tắt (Cài đặt) — đọc mỗi lần chạy
+  const minutes = minutesArg ?? (await getSettings()).idleCloseMinutes ?? IDLE_EMPTY_MINUTES;
+  if (!minutes) return { off: true, checked: 0, closed: 0 };
   const ids = await sessionsRepo.idleEmptySessionIds(minutes);
   let closed = 0;
   for (const id of ids) {
@@ -438,7 +451,7 @@ export async function closeIdleEmpty(minutes = IDLE_EMPTY_MINUTES) {
     publish([ROOMS.staff, ROOMS.session(id)], 'session.closed', { sessionId: id, table: s.table, reason: 'IDLE_EMPTY' });
     closed++;
   }
-  return { checked: ids.length, closed };
+  return { minutes, checked: ids.length, closed };
 }
 
 export async function closeEmpty(sessionId, user) {

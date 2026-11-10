@@ -192,6 +192,17 @@ function render(s) {
   const oneTapCheck = el('input', { type: 'checkbox', name: 'oneTap', id: 'one-tap', checked: s.oneTap });
   // F-083 (ADR-041): màn gọi món của khách — "+" mở bảng chọn cho mọi món
   const sheetAllCheck = el('input', { type: 'checkbox', name: 'menuSheetAll', id: 'sheet-all', checked: s.menuSheetAll });
+  // F-087 (ADR-048 D-212): tự đóng bàn khách quét QR nhưng không gọi món
+  const idleClose = el(
+    'select',
+    { class: 'input', name: 'idleCloseMinutes', id: 'idle-close', style: { maxWidth: '320px' } },
+    [
+      [0, 'Tắt — không tự đóng'],
+      [15, 'Sau 15 phút'],
+      [30, 'Sau 30 phút (mặc định)'],
+      [60, 'Sau 60 phút'],
+    ].map(([v, label]) => el('option', { value: v, selected: v === s.idleCloseMinutes }, label)),
+  );
   const card = (title, ...children) =>
     el('div', { class: 'card', style: { maxWidth: '720px', marginBottom: '1rem' } }, el('h2', { style: { fontSize: '1rem' } }, title), ...children);
   clear(
@@ -236,6 +247,15 @@ function render(s) {
         'p',
         { class: 'small muted' },
         'Tắt: món không có tùy chọn bấm "+" là vào giỏ ngay (nhanh hơn 1 chạm), muốn ghi chú thì bấm tên món. Món có tùy chọn luôn mở bảng chọn. Điện thoại khách đổi theo khi tải lại menu.',
+      ),
+    ),
+    card(
+      'Bàn trống',
+      el('div', { class: 'field' }, el('label', {}, 'Tự trả bàn khách quét QR nhưng không gọi món'), idleClose),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Khách quét mã rồi bỏ đi hoặc sang bàn khác thì bàn vẫn hiện "có khách". Hết thời gian này mà nhóm chưa gọi món, không ai vào thêm, không gọi nhân viên → hệ thống tự trả bàn (kiểm 5 phút một lần); khách quay lại vẫn còn món đã chọn. Khách hay ngồi chờ bạn lâu mới gọi → chọn 60 phút hoặc Tắt.',
       ),
     ),
     card(
@@ -417,6 +437,7 @@ function render(s) {
                 uiModules: moduleChecks.filter((c) => c.checked).map((c) => c.value), // F-061
                 oneTap: oneTapCheck.checked, // F-076
                 menuSheetAll: sheetAllCheck.checked, // F-083
+                idleCloseMinutes: Number(idleClose.value), // F-087
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,
                 staffMaxPercent: Number(maxPct.value),

@@ -5,6 +5,9 @@ import * as shiftsRepo from '../repositories/shiftsRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { MODULES } from '../utils/modules.js';
 
+/** F-087: lựa chọn "tự đóng bàn trống" (phút; 0 = tắt). */
+export const IDLE_CLOSE_CHOICES = [0, 15, 30, 60];
+
 const TTL_MS = 10_000;
 let cache = null;
 
@@ -60,6 +63,8 @@ function toSettings(map) {
     oneTap: map.get('pos.one_tap') !== 'false',
     // F-083 (ADR-041 D-185): màn gọi món của khách — bấm "+" mở bảng chọn cho MỌI món (mặc định bật; tắt: món không tùy chọn thêm ngay)
     menuSheetAll: map.get('menu.sheet_all') !== 'false',
+    // F-087 (ADR-048 D-212): tự đóng bàn trống (khách quét QR rồi không gọi món) — 0 = tắt, 15 / 30 / 60 phút; mặc định 30
+    idleCloseMinutes: IDLE_CLOSE_CHOICES.includes(num(map.get('tables.idle_close_minutes'), 30)) ? num(map.get('tables.idle_close_minutes'), 30) : 30,
     staffMaxAmount: num(map.get('discount.staff_max_amount'), 20000),
     // F-025 thời gian chờ (D-18)
     etaBaseSeconds: num(map.get('kitchen.base_seconds'), 120),
@@ -159,6 +164,7 @@ const KEYS = {
   moneyPin: 'security.money_pin',
   oneTap: 'pos.one_tap',
   menuSheetAll: 'menu.sheet_all',
+  idleCloseMinutes: 'tables.idle_close_minutes',
   staffMaxAmount: 'discount.staff_max_amount',
   etaBaseSeconds: 'kitchen.base_seconds',
   kitchenParallelism: 'kitchen.parallelism',

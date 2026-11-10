@@ -6,11 +6,17 @@ const ORDER_SELECT = `
          o.PaymentStatus, o.PaymentMethod, o.TotalAmount, o.SubtotalAmount, o.PromoDiscount, o.OrderPromotionId, op.Name AS OrderPromotionName,
          o.MemberId, o.Note, o.CreatedBy, cu.FullName AS CreatedByName,
          o.CreatedAt, o.AcceptedAt, o.PaidAt, o.CompletedAt, o.CancelledAt, o.CancelReason, o.VoidedAt,
-         o.HoldMode, o.HoldUntil, o.ReleasedAt, o.SaleSource
+         o.HoldMode, o.HoldUntil, o.ReleasedAt, o.SaleSource, omv.MovedFromTableId, omv.MovedFromName, omv.LastMovedAt
   FROM dbo.Orders o
   LEFT JOIN dbo.Tables t ON t.TableId = o.TableId
   LEFT JOIN dbo.Users cu ON cu.UserId = o.CreatedBy
-  LEFT JOIN dbo.Promotions op ON op.PromotionId = o.OrderPromotionId`;
+  LEFT JOIN dbo.Promotions op ON op.PromotionId = o.OrderPromotionId
+  -- F-087 (ADR-048 D-211): nhóm đổi bàn sau khi đơn được tạo — bàn lúc đặt đơn (lần chuyển đầu tiên sau đó) + lúc chuyển gần nhất
+  OUTER APPLY (SELECT TOP 1 mv.FromTableId AS MovedFromTableId, ft.Name AS MovedFromName,
+                      (SELECT MAX(m2.MovedAt) FROM dbo.SessionTableMoves m2 WHERE m2.SessionId = o.SessionId AND m2.MovedAt >= o.CreatedAt) AS LastMovedAt
+               FROM dbo.SessionTableMoves mv JOIN dbo.Tables ft ON ft.TableId = mv.FromTableId
+               WHERE o.SessionId IS NOT NULL AND mv.SessionId = o.SessionId AND mv.MovedAt >= o.CreatedAt
+               ORDER BY mv.MoveId) omv`;
 
 const mapOrder = (r) => ({
   orderId: r.OrderId,
@@ -39,6 +45,9 @@ const mapOrder = (r) => ({
   holdMode: r.HoldMode ?? null,
   holdUntil: r.HoldUntil ?? null,
   saleSource: r.SaleSource ?? null, // F-074: OFFLINE (bán lúc mất mạng, gửi bù) | PAPER (nhập lại từ phiếu bán tay)
+  // F-087: đơn tạo ở bàn khác rồi nhóm mới đổi bàn (quay về đúng bàn cũ → không tính); máy quầy hiện nhãn "Đổi bàn" 10 phút
+  tableMove:
+    r.MovedFromTableId && r.MovedFromTableId !== r.TableId ? { fromTable: r.MovedFromName, fromTableId: r.MovedFromTableId, movedAt: r.LastMovedAt } : null,
   releasedAt: r.ReleasedAt ?? null,
   items: [],
 });

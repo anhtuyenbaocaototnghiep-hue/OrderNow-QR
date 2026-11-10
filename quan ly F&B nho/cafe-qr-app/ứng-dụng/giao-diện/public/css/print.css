@@ -131,3 +131,21 @@ body.receipt-page {
   margin: 1mm auto;
   image-rendering: pixelated;
 }
+
+/* F-087: phiếu pha (?mode=ticket) — tên bàn thật to cho người mang món, dòng món đậm, không giá */
+.receipt .slip-table {
+  text-align: center;
+  font-family: var(--font);
+  font-size: 2.4em;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 1mm 0;
+}
+.receipt tr.slip-line td {
+  font-weight: 800;
+  font-size: 1.1em;
+  padding-top: 1mm;
+}
+.receipt .slip-note {
+  font-weight: 700;
+}

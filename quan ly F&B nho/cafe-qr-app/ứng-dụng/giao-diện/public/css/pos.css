@@ -1570,3 +1570,52 @@ body.pos .tc-main .btn {
   min-height: 2.75rem;
   font-size: 1.05rem;
 }
+
+/* F-087 (ADR-048): nhóm vừa đổi bàn — nhãn trên thẻ đơn 10 phút + nút in phiếu bàn mới */
+.ticket .move-flag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-top: 0.45rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--c-warning-50);
+  border: 1px solid var(--c-warning);
+  color: var(--c-warning-text);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.ticket .move-flag .ic {
+  margin: 0;
+  flex: none;
+}
+.ticket .move-flag .move-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ticket .move-flag s {
+  font-weight: 600;
+}
+.ticket .move-flag strong {
+  color: var(--c-text);
+}
+.ticket .move-flag .btn {
+  margin-left: auto;
+}
+/* F-087: thẻ "xin chuyển bàn" — bàn đích đang trống / có nhóm khác */
+.move-card .move-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.move-card .dest {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.move-card .dest.free {
+  color: var(--c-success);
+}
+.move-card .dest.busy {
+  color: var(--c-warning-text);
+}

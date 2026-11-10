@@ -145,6 +145,7 @@ function refreshSessionsSoon() {
     try {
       await loadSessions();
       renderSessions();
+      renderCalls(); // F-087: thẻ "xin chuyển bàn" ghi bàn đích đang trống / có nhóm
     } catch {
       /* lần kết nối lại sau sẽ tải lại */
     }
@@ -153,6 +154,30 @@ function refreshSessionsSoon() {
 
 // ---------- Bảng đơn ----------
 const whereLabel = (o) => (o.type === 'TAKE_AWAY' ? 'Mang đi' : (o.table?.name ?? 'Bàn ?'));
+
+// F-087 (ADR-048 D-211): nhóm đổi bàn khi đơn còn chờ / đang pha → thẻ đơn có nhãn "Đổi bàn" 10 phút + nút in phiếu bàn mới,
+// để người pha / người mang món không mang ra bàn cũ. tableMove do máy chủ tính (lần chuyển đầu tiên sau khi đặt đơn).
+const MOVE_FLAG_MS = 10 * 60 * 1000;
+const moveUntil = (o) => (o.tableMove ? new Date(o.tableMove.movedAt).getTime() + MOVE_FLAG_MS : 0);
+const moveActive = (o, now = Date.now()) => (o.status === 'PENDING' || o.status === 'PREPARING') && moveUntil(o) > now;
+const printSlip = (o) => printUrl(`/pos/orders/${o.orderId}/receipt?mode=ticket`);
+function moveFlag(o, { print = true } = {}) {
+  if (!moveActive(o)) return null;
+  return el(
+    'div',
+    { class: 'move-flag', dataset: { moveUntil: moveUntil(o) } },
+    icon('corner-down-right'),
+    el('span', { class: 'move-text' }, 'Đổi bàn: ', el('s', {}, o.tableMove.fromTable), ' → ', el('strong', {}, whereLabel(o))),
+    print
+      ? el(
+          'button',
+          { class: 'btn btn-sm', type: 'button', 'aria-label': `In phiếu bàn mới cho đơn #${o.orderCode}`, onclick: (e) => act(e, () => printSlip(o)) },
+          icon('printer'),
+          'In phiếu bàn mới',
+        )
+      : null,
+  );
+}
 
 /** Dòng món trên phiếu: tùy chọn (F-013) và thành phần combo (F-015) để người pha làm đúng. */
 const itemDetail = (i) => [
@@ -192,6 +217,7 @@ function heldTicket(o) {
         o.holdMode === 'ARRIVAL' ? `Chờ bạn tới · tối đa ${time(o.holdUntil)}` : `Làm lúc ${time(o.holdUntil)}`,
       ),
     ),
+    moveFlag(o, { print: false }),
     el(
       'div',
       { class: 'ticket-meta' },
@@ -282,6 +308,7 @@ function ticket(o) {
       onkeydown: openOnKey(o),
     },
     el('div', { class: 'ticket-head' }, el('span', { class: 'where' }, whereLabel(o)), wait),
+    moveFlag(o),
     el(
       'div',
       { class: 'ticket-meta' },
@@ -338,6 +365,7 @@ const ticketKey = (o) =>
     shell.shift ? 1 : 0,
     isHeld(o) ? 1 : 0, // F-066: hết giữ → vẽ lại thành phiếu thường
     o.releasedAt,
+    moveActive(o) ? o.tableMove.movedAt : 0, // F-087: nhãn "Đổi bàn" hết 10 phút → vẽ lại
   ].join('|');
 shell.onShiftChange(() => {
   renderBoard();
@@ -666,6 +694,9 @@ function renderTables() {
   clear(box, cards);
 }
 
+// F-087 (ADR-048 D-213): số nhóm khác đang ngồi ở một bàn — đọc từ danh sách nhóm đang mở (cập nhật theo realtime)
+const groupsAt = (tableId, exceptSessionId) => state.sessions.filter((s) => s.table?.tableId === tableId && s.sessionId !== exceptSessionId).length;
+
 function renderCalls() {
   const strip = $('#call-strip');
   strip.hidden = state.calls.length === 0;
@@ -679,7 +710,7 @@ function renderCalls() {
             'div',
             { class: 'pay-card call-card move-card' },
             el('strong', {}, `${c.table.name} → ${c.toTable?.name ?? '?'}`),
-            el('span', {}, 'Khách xin chuyển bàn'),
+            moveInfo(c),
             el('span', { class: 'wait', dataset: { since: c.requestedAt } }, elapsed(c.requestedAt)),
             el(
               'div',
@@ -763,12 +794,35 @@ async function handleReview(r, button) {
   renderReviews();
 }
 
+/** F-087: "Khách xin chuyển bàn" + bàn đích đang trống / có nhóm khác — nhân viên quyết chuyển (bill riêng, thu chung khi tính tiền) hay hỏi lại khách. */
+function moveInfo(c) {
+  const busy = c.toTable ? groupsAt(c.toTable.tableId, c.sessionId) : 0;
+  return el(
+    'span',
+    { class: 'move-info' },
+    el('span', {}, 'Khách xin chuyển bàn'),
+    el(
+      'span',
+      { class: `dest ${busy ? 'busy' : 'free'}` },
+      busy ? `${c.toTable.name} đang có ${busy} nhóm khác` : `${c.toTable?.name ?? 'Bàn đích'} đang trống`,
+    ),
+  );
+}
+
 /** F-086: chuyển nhóm theo yêu cầu của khách (cùng quy tắc chuyển bàn F-049). */
 async function acceptMove(c, button) {
   setBusy(button, true);
+  const busy = c.toTable ? groupsAt(c.toTable.tableId, c.sessionId) : 0; // F-087: đếm trước khi chuyển
   try {
     await staffApi(`/api/staff-calls/${c.callId}/move`, { method: 'POST' });
     announce(`Đã chuyển ${c.table.name} sang ${c.toTable?.name}`);
+    // F-087: bàn đích có nhóm khác → mỗi nhóm vẫn một bill (F-049); khách muốn trả chung thì gộp lúc tính tiền (F-057)
+    if (busy)
+      toast(
+        `Đã chuyển sang ${c.toTable?.name} — bàn này giờ có ${busy + 1} nhóm, tính tiền riêng. Khách muốn trả chung thì bấm "Thu chung với bàn khác" khi tính tiền.`,
+        'info',
+        9000,
+      );
     state.calls = state.calls.filter((x) => x.callId !== c.callId);
     renderCalls();
   } catch (err) {
@@ -1906,7 +1960,17 @@ socket?.on('session.closed', onSessionEvent);
 socket?.on('session.member_changed', onSessionEvent);
 socket?.on('session.opened', onSessionEvent);
 socket?.on('session.note_changed', onSessionEvent);
-socket?.on('session.table_changed', () => loadAll()); // F-049: thẻ đơn + danh sách bàn + ngăn kéo hiện bàn mới
+socket?.on('session.table_changed', async (p) => {
+  await loadAll(); // F-049: thẻ đơn + danh sách bàn + ngăn kéo hiện bàn mới
+  // F-087: nhóm còn đơn chưa ra món (mới / đang pha / đang giữ) → nhắc người pha, người mang món (thẻ đơn giữ nhãn "Đổi bàn" 10 phút)
+  const moved = [...state.orders.values()].filter((o) => o.sessionId === p.sessionId && moveActive(o));
+  if (moved.length)
+    toast(
+      `${p.fromTable?.name ?? 'Một bàn'} đã chuyển sang ${p.toTable?.name ?? 'bàn khác'} — còn ${moved.length} đơn chưa ra món, mang ra ${p.toTable?.name ?? 'bàn mới'}`,
+      'warning',
+      8000,
+    );
+});
 // F-051: khách chấm món ≤ 2 sao → dải "Đánh giá thấp" + chuông, để ra xử lý khi khách còn ở quán
 socket?.on('review.low', (r) => {
   if (r.ring !== false) {
@@ -1925,7 +1989,7 @@ socket?.on('session.staff_called', (c) => {
   playSound('bell');
   toast(
     c.type === 'MOVE'
-      ? `${c.table?.name ?? 'Một bàn'} xin chuyển sang ${c.toTable?.name ?? 'bàn khác'} — bấm "Chuyển" ở dải Gọi nhân viên`
+      ? `${c.table?.name ?? 'Một bàn'} xin chuyển sang ${c.toTable?.name ?? 'bàn khác'}${c.toTable?.openGroups ? ` (đang có ${c.toTable.openGroups} nhóm)` : ''} — bấm "Chuyển" ở dải Gọi nhân viên`
       : `${c.table?.name ?? 'Một bàn'} gọi nhân viên: ${c.message || 'cần hỗ trợ'}`,
     'warning',
     6000,
@@ -1943,6 +2007,8 @@ socket?.on('inventory.low', (p) => toast(`Nguyên liệu sắp hết: ${p.name} 
 // Cập nhật đồng hồ chờ mỗi giây; phiếu đơn đổi màu khi chờ lâu (D-68); đơn hẹn tới giờ → thành đơn mới (F-066)
 setInterval(() => {
   checkHolds();
+  // F-087: nhãn "Đổi bàn" quá 10 phút → vẽ lại thẻ (khóa thẻ đổi nên chỉ thẻ đó dựng lại)
+  if ([...document.querySelectorAll('[data-move-until]')].some((n) => Number(n.dataset.moveUntil) <= Date.now())) renderBoard();
   document.querySelectorAll('[data-since]').forEach((n) => {
     n.textContent = elapsed(n.dataset.since);
     if (n.classList.contains('ago')) markWait(n.parentElement, n.dataset.since);

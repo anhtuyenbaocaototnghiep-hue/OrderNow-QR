@@ -1,14 +1,16 @@
 // S-12 In hóa đơn: /pos/sessions/{id}/receipt?mode=final|provisional (phiên), /pos/orders/{id}/receipt (mang đi),
 // /pos/payments/{id}/receipt (một phần chia bill — F-026).
 // ADR-019: ghi cách trả (tiền mặt / chuyển khoản — F-056); bill thu chung nhiều bàn in món theo từng bàn (F-057, ?merge= khi tạm tính).
+// F-087 (ADR-048 D-211): /pos/orders/{id}/receipt?mode=ticket = phiếu pha (bàn thật to, đổi từ bàn nào, món, tùy chọn, ghi chú — không giá).
 // Bản tạm tính có chữ TẠM TÍNH (BR-014). ?autoprint=1 → tự gọi window.print(); ?embed=1 → báo trang cha qua postMessage.
 import { staffApi } from '../api.js';
 import { receiptWidth, setReceiptWidth } from '../print.js';
-import { $, clear, dateOnly, dateTime, el, errorMessage, money, voucherValue } from '../ui.js';
+import { $, clear, dateOnly, dateTime, el, errorMessage, money, time, voucherValue } from '../ui.js';
 
 const params = new URLSearchParams(location.search);
 const [, , kind, id] = location.pathname.split('/'); // /pos/sessions/:id/receipt | /pos/orders/:id/receipt
 const mode = params.get('mode') === 'provisional' ? 'provisional' : 'final';
+const slip = kind === 'orders' && params.get('mode') === 'ticket'; // F-087: phiếu pha
 const embed = params.get('embed') === '1';
 let width = Number(params.get('w')) === 58 ? 58 : Number(params.get('w')) === 80 ? 80 : receiptWidth();
 
@@ -126,9 +128,51 @@ function render(data) {
   );
 }
 
+/** F-087: phiếu pha cho người pha / người mang món — đơn tại bàn hoặc mang đi, không giá. */
+function renderSlip(o) {
+  const where = o.type === 'TAKE_AWAY' ? 'MANG ĐI' : (o.table?.name ?? 'Bàn ?');
+  clear(
+    $('#receipt'),
+    el('div', { class: 'title' }, o.tableMove ? 'PHIẾU PHA — ĐỔI BÀN' : 'PHIẾU PHA'),
+    el('div', { class: 'slip-table' }, where),
+    o.tableMove ? el('div', { class: 'center' }, `(đổi từ ${o.tableMove.fromTable} lúc ${time(o.tableMove.movedAt)})`) : null,
+    el('div', { class: 'center' }, `Đơn #${o.orderCode} · đặt ${time(o.createdAt)}`),
+    el('hr'),
+    el(
+      'table',
+      {},
+      el(
+        'tbody',
+        {},
+        o.items.map((i) => [
+          el('tr', { class: 'slip-line' }, el('td', { class: 'q' }, `${i.quantity}×`), el('td', {}, i.name)),
+          i.options?.length ? el('tr', {}, el('td'), el('td', { class: 'note' }, `+ ${i.options.map((x) => x.name).join(', ')}`)) : null,
+          (i.children ?? []).map((c) => el('tr', { class: 'child' }, el('td'), el('td', {}, `· ${c.quantity}× ${c.name}`))),
+          i.note ? el('tr', {}, el('td'), el('td', { class: 'note' }, `(${i.note})`)) : null,
+        ]),
+      ),
+    ),
+    o.note ? [el('hr'), el('div', { class: 'slip-note' }, `Ghi chú đơn: ${o.note}`)] : null,
+    el('hr'),
+    el('div', { class: 'center' }, `In lúc ${dateTime(new Date().toISOString())}`),
+  );
+}
+
 async function main() {
   applyWidth();
+  if (slip) $('#print').textContent = 'In phiếu';
   try {
+    if (slip) {
+      const order = await staffApi(`/api/orders/${id}`);
+      renderSlip(order);
+      applyWidth();
+      document.title = `Phiếu pha — ${order.table?.name ?? 'Mang đi'} #${order.orderCode}`;
+      if (params.get('autoprint') === '1') {
+        window.addEventListener('afterprint', () => notifyParent({ type: 'receipt-done' }), { once: true });
+        setTimeout(() => window.print(), 150);
+      }
+      return;
+    }
     const url =
       kind === 'sessions'
         ? `/api/sessions/${id}/receipt?mode=${mode}${params.get('merge') ? `&merge=${encodeURIComponent(params.get('merge'))}` : ''}`

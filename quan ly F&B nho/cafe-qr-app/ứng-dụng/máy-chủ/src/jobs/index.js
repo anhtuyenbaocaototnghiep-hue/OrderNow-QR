@@ -49,7 +49,8 @@ registerJob('audit-retention', { label: 'Dọn nhật ký thao tác quá 12 thá
 registerJob('campaigns-due', { label: 'Chạy chiến dịch đã hẹn giờ', everyMinutes: 5 }, () => campaignService.runDue());
 
 // F-086 (ADR-047 D-209): bàn có người quét QR nhưng không gọi món quá 30 phút → tự đóng (quầy không còn bàn "ma")
-registerJob('close-idle-tables', { label: 'Đóng bàn trống quá 30 phút', everyMinutes: 5 }, () => sessionService.closeIdleEmpty());
+// F-087 (ADR-048 D-212): thời gian theo Cài đặt → Bàn trống (Tắt / 15 / 30 / 60 phút), đọc mỗi lần chạy
+registerJob('close-idle-tables', { label: 'Tự trả bàn trống (thời gian theo Cài đặt)', everyMinutes: 5 }, () => sessionService.closeIdleEmpty());
 
 // 00:30: tổng hợp số liệu hôm qua cho dashboard chủ quán — F-043
 registerJob('daily-summary', { label: 'Tổng hợp ngày (dashboard)', at: '00:30' }, () => dashboardService.computeYesterday());
