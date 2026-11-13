@@ -14,4 +14,5 @@ Quản lý F&amp;B đặt bàn bằng QR
 - [Mã nguồn web-app `cafe-qr-app`](quan%20ly%20F%26B%20nho/cafe-qr-app/): HTML/CSS/JS thuần, Node.js + Express, SQL Server, Socket.io. Cách cài và chạy xem README trong thư mục này.
 - [Video review (59 giây)](quan%20ly%20F%26B%20nho/nop-bai/Video_Review_CafeQR.mp4): khách quét QR gọi món, quầy nhận đơn realtime và thu tiền, quản lý xem báo cáo.
 - [Phân tích backend](quan%20ly%20F%26B%20nho/PH%C3%82N-T%C3%8DCH-BACKEND.md): backend chạy thế nào, chức năng nào dùng hàm nào, stored procedure.
+- [Thiết kế hệ thống bán cà phê cho quán nhỏ](quan%20ly%20F%26B%20nho/nop-bai/THI%E1%BA%BET-K%E1%BA%BE-H%E1%BB%86-TH%E1%BB%90NG-QU%C3%81N-C%C3%80-PH%C3%8A.md): ý tưởng thiết kế mới, dùng QR từ lúc gọi món đến lúc trả tiền, một màn hình quầy, 1 chủ, 1 quản lý, 2 nhân viên mỗi ca.
 - [File nộp bài](quan%20ly%20F%26B%20nho/nop-bai/): nhật ký prompt AI (Word), slide thuyết trình (PowerPoint).
