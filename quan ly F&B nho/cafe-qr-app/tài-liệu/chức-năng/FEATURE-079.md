@@ -6,6 +6,7 @@
 - **Actor:** **ACT-ADMIN** (đặt quyền riêng, duyệt / từ chối); **ACT-STAFF / ACT-LEAD / ACT-STORE** (bị chặn → xin quyền).
 - **Màn hình:**
   - **Tài khoản** (SCR-20): nút **Quyền** mỗi dòng (trừ chủ quán) → hộp "Quyền của …" chia nhóm Máy quầy / Trang Quản lý: mỗi quyền chọn **Theo vai trò (có / không)** / **Cho phép** / **Không cho** + **Hạn** (luôn / hết hôm nay / 7 ngày / đến ngày…), nhãn "Tiền" ở quyền dính tiền; nhãn **Có quyền riêng** ở dòng tài khoản; khung **Xin quyền chờ duyệt** (người, quyền, lý do, giờ; chọn hạn + Duyệt / Từ chối).
+  - **Cập nhật 14/11/2026 ([F-090](FEATURE-090.md), ADR-051):** hộp "Quyền" + nút riêng trên dòng được thay bằng phần **Quyền** trong hộp Thêm / Sửa tài khoản — công tắc **Cho phép / Không cho phép** (không còn "Mặc định" và ô Hạn khi đặt tay; quyền tạm từ Xin quyền vẫn giữ hạn), nhãn dòng **Có quyền nâng cao**.
   - **Hôm nay** (SCR-42): việc cần làm "n yêu cầu xin quyền chờ duyệt" → Tài khoản.
   - **Mọi trang quầy / Quản lý**: thanh **Bạn chưa có quyền: … [Xin quyền]** → hộp lý do → "Đã gửi — chờ chủ quán duyệt"; kết quả báo bằng thanh (duyệt → "Tải lại").
 - **Dữ liệu:** `UserGrants`, `AccessRequests`, `Alerts.Kind` + `ACCESS_GRANT` (migration 0055).

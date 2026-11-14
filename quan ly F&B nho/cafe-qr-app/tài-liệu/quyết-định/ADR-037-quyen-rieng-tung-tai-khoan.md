@@ -1,6 +1,7 @@
 # ADR-037 — Quyền riêng từng tài khoản và Xin quyền / Duyệt
 
 - **Trạng thái:** ACCEPTED (07/11/2026). Chủ dự án: "tôi muốn admin có nhiều quyền hơn giống như có thể duyệt hoặc cấp quyền để truy cập ở mỗi tài khoản"; agent đề xuất "Quyền riêng từng tài khoản + Xin quyền / Duyệt"; chủ dự án: "ok".
+- **Cập nhật 14/11/2026 ([ADR-051](ADR-051-phan-quyen-don-gian.md)):** giao diện đặt quyền đổi thành công tắc Cho phép / Không cho phép trong hộp Thêm / Sửa tài khoản ("Quyền nâng cao"), có danh sách "Vai trò này được làm"; bỏ hộp "Quyền" ba trạng thái + ô Hạn. Mô hình quyền riêng, API, kiểm quyền ở máy chủ giữ nguyên.
 - **Bối cảnh:** sau F-077 / F-078, quyền của mỗi người được suy ra từ vai trò + vị trí + cấp. Chủ quán không chỉnh được cho một người cụ thể (cho bạn phục vụ thu tiền hôm thu ngân nghỉ, không cho quản lý cửa hàng đổi giá, cho trưởng ca vào trang Lương…) và nhân viên bị chặn thì không có cách xin.
 
 ## Quyết định
