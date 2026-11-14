@@ -1605,3 +1605,126 @@ ul.bday-tips {
 .expiry-cell .link-btn {
   min-height: 32px; /* vùng chạm ≥ 24 px (2.5.8) cho nút chữ "Theo dõi hạn" */
 }
+
+/* ---------- F-090 (ADR-051): quyền trong hộp Thêm / Sửa tài khoản — tóm tắt theo vai trò + công tắc Cho phép / Không cho phép ---------- */
+.perm-editor {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.85rem 0.75rem;
+}
+.perm-editor legend {
+  font-weight: 700;
+  padding: 0 0.3rem;
+}
+.perm-head {
+  margin: 0.25rem 0;
+}
+.perm-base {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.25rem;
+  font-size: 0.9rem;
+  list-style-type: '✓  ';
+}
+.perm-base li::marker {
+  color: var(--c-success);
+  font-weight: 700;
+}
+.perm-diff {
+  color: var(--c-warning-text);
+  font-weight: 600;
+}
+.perm-advanced > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--c-primary);
+}
+.perm-group-title {
+  margin: 0.75rem 0 0.15rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.perm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--c-border);
+}
+.perm-row.diff .perm-note {
+  color: var(--c-warning-text);
+  font-weight: 600;
+}
+.perm-text .badge {
+  margin-left: 0.35rem;
+}
+.perm-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+  min-width: 9.25rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+.perm-switch input {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 24px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--c-muted);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.perm-switch input::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.perm-switch input:checked {
+  background: var(--c-success);
+}
+.perm-switch input:checked::before {
+  transform: translateX(20px);
+}
+.perm-switch input:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 2px;
+}
+.perm-state {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+  .perm-switch input,
+  .perm-switch input::before {
+    transition: none;
+  }
+}
+@media (max-width: 520px) {
+  /* Màn hẹp: chữ Cho phép / Không cho phép xuống dưới công tắc — nhãn quyền có thêm chỗ */
+  .perm-switch {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+  .perm-state {
+    font-size: 0.8rem;
+  }
+}

@@ -488,6 +488,14 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     await A.goto(`/admin/${r}`);
     await check(A, `quan-ly-${r.replace(/\//g, '-').replace(/-\d+-/, '-id-')}`);
   }
+  // F-090 (TASK-110): hộp Sửa tài khoản có phần Quyền — "Vai trò này được làm" + Quyền nâng cao (công tắc Cho phép / Không cho phép)
+  await A.goto('/admin/users');
+  await A.locator('tbody tr', { hasText: 'staff1' }).first().getByRole('button', { name: 'Sửa' }).click();
+  await A.locator('.perm-advanced > summary').click();
+  await expect(A.getByRole('switch').first()).toBeVisible();
+  await check(A, 'quan-ly-users-quyen', { narrow: true });
+  await A.setViewportSize(desk.viewport);
+  await A.keyboard.press('Escape');
   // F-089 (TASK-109): ngăn "⋯" của Kho nguyên liệu; Kho nguyên liệu + hàng thẻ kho hai hàng không cuộn ngang ở 320 / 390 px
   await A.goto('/admin/ingredients');
   await A.getByRole('button', { name: /^Việc khác: / })

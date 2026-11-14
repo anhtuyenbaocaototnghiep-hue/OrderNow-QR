@@ -169,7 +169,7 @@ Test: `staff-positions.test.js` (AC-078-01…05), E2E AC-078-06.
 
 ## 4.8. Bổ sung F-079 — quyền riêng từng tài khoản + xin quyền (ADR-037, 07/11/2026)
 
-Ngoài vai trò / vị trí, chủ quán đặt riêng cho từng người (trừ chủ quán) **Cho phép** / **Không cho** từng quyền dưới đây, có thể kèm hạn. Không đặt = theo vai trò.
+Ngoài vai trò / vị trí, chủ quán đặt riêng cho từng người (trừ chủ quán) **Cho phép** / **Không cho phép** từng quyền dưới đây (công tắc trong hộp Thêm / Sửa tài khoản → "Quyền nâng cao" — F-090, mục 4.10). Công tắc giống vai trò = không đặt riêng. Quyền tạm có hạn chỉ đến từ duyệt Xin quyền.
 
 | Quyền | Mặc định có |
 | --- | --- |
@@ -209,3 +209,10 @@ Thêm vào bảng vị trí của F-078 (chỉ áp cho vai Nhân viên; để tr
 | Nhận / Xong đơn có món trạm Bar | — | Có | — (như F-078) |
 
 Thẻ của vùng Quầy hiện theo vị trí: Bán mang đi ← Thu ngân, Gọi món tại bàn ← Phục vụ, Ca & két ← người mở được trang Ca; nút "Hết món" ← Pha chế. Cài đặt "Màn quầy một màn hình", "Món tại bàn pha xong": chủ quán ở Quản lý → Cài đặt (API `PUT /api/admin/settings` nhận cả quản lý cửa hàng như "Quy trình 1 chạm" — F-077; trang Cài đặt chỉ chủ quán mở — F-079). Trạm làm món của món: ai sửa được thực đơn. Test: `single-screen.test.js` (AC-088-01…05).
+
+## 4.10. Bổ sung F-090 — phân quyền đơn giản (ADR-051, 14/11/2026)
+
+- **Hai trạng thái:** mỗi quyền ở mục 4.8 một công tắc **Cho phép / Không cho phép**, bật sẵn theo quyền đang có; khác mặc định của vai trò + vị trí → quyền riêng (`ALLOW` / `DENY`, không hạn), giống → không lưu. "Về như vai trò" bỏ mọi quyền riêng.
+- **Quyền theo vai lúc tạo / sửa tài khoản:** chọn vai trò (+ vị trí) → hộp hiện "Vai trò này được làm N / 17 việc" (máy chủ tính — `GET /api/admin/role-permissions`, chỉ chủ quán); tài khoản mới nhận đúng các quyền đó.
+- **Quyền nâng cao** nằm trong hộp Thêm / Sửa (không còn nút "Quyền" riêng); chỉ chủ quán đặt. Quyền tạm (duyệt Xin quyền) hiện "tạm đến …", giữ hạn nếu không chạm.
+- Không đổi: ai được làm gì theo vai / vị trí (mục 4.5–4.9), kiểm quyền ở máy chủ, cảnh báo `ACCESS_GRANT`. Test: `role-permissions.test.js` (AC-090-01), E2E AC-090-02…04.

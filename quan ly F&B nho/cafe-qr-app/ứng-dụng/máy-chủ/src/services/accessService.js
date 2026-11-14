@@ -17,6 +17,25 @@ const withLabel = (r) => r && { ...r, capabilityLabel: CAPABILITY[r.capability]?
 /** Danh mục quyền cho giao diện (không gửi hàm). */
 export const catalogue = () => CAPABILITIES.map(({ key, group, label, money }) => ({ key, group, label, money: Boolean(money) }));
 
+/**
+ * F-090 (ADR-051 D-223): quyền mặc định của một vai trò + vị trí (chưa đặt riêng) — hộp Thêm / Sửa tài khoản hiện "Vai trò này được làm"
+ * và lấy làm mốc cho công tắc Quyền nâng cao. Máy chủ tính bằng đúng hàm byRole (giao diện không chép luật). Chủ quán: đủ mọi quyền.
+ */
+export function roleDefaults({ role, positions = [] }) {
+  const user = { role, positions: role === 'STAFF' && positions.length ? positions : null, level: 'OFFICIAL', grants: [] };
+  return {
+    role,
+    positions: user.positions,
+    items: CAPABILITIES.map((c) => ({
+      key: c.key,
+      group: c.group,
+      label: c.label,
+      money: Boolean(c.money),
+      byRole: role === 'ADMIN' || Boolean(c.byRole(user)),
+    })),
+  };
+}
+
 /** Hạn của lần duyệt: hết hôm nay / hết ngày thứ 7 (tính cả hôm nay) theo giờ Việt Nam / không hạn. */
 export function expiryOf(duration, today = todayVn()) {
   if (duration === 'TODAY') return vnDayStartUtc(addDays(today, 1));

@@ -26,7 +26,11 @@ Các con số ngưỡng ở trên là mặc định; quản lý sửa được �
 
 1. **Quản lý → Tài khoản** → **+ Thêm nhân viên**.
 2. Điền **Tên đăng nhập**, **Mật khẩu (tối thiểu 6 ký tự)**, **Họ tên**; ô **Vai trò** chọn **Trưởng ca** (các lựa chọn: Nhân viên quầy / Trưởng ca / Quản lý).
-3. **Tạo tài khoản** → người đó đăng nhập được ngay.
+3. Ngay dưới ô Vai trò, khung **Quyền** ghi *"Vai trò này được làm N / 17 việc"* kèm danh sách — đổi ngay khi bạn chọn vai trò / vị trí khác. Tài khoản tạo ra có đúng các quyền đó.
+4. (Không bắt buộc) Muốn cho thêm hoặc bớt việc riêng người này: mở **Quyền nâng cao — cho phép / không cho phép từng việc** → bật / tắt công tắc từng việc (**Cho phép** / **Không cho phép**). Dòng nhỏ dưới tên việc cho biết *Theo vai trò* / *Cấp thêm* / *Bỏ bớt*; **Về như vai trò** đưa tất cả về mặc định.
+5. **Tạo tài khoản** → người đó đăng nhập được ngay. Dòng của người có quyền riêng có nhãn **Có quyền nâng cao**.
+
+Đổi quyền về sau: bấm **Sửa** trên dòng → khung **Quyền** (phần Quyền nâng cao mở sẵn nếu người đó đang có quyền riêng) → bật / tắt → **Lưu**. Quyền tạm do bạn duyệt "Xin quyền" (hết hôm nay / 7 ngày) ghi *tạm đến …* và giữ nguyên hạn nếu bạn không chạm công tắc đó.
 
 Đổi vai trò người đang có: bấm **Sửa** trên dòng → đổi **Vai trò** → **Lưu**. Không tự đổi vai trò của chính mình được.
 

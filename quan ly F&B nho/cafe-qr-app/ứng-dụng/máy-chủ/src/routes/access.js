@@ -4,7 +4,7 @@
 //    `users/…` chỉ chủ quán sửa; `access-requests` không thuộc quyền cấp được → chỉ chủ quán.
 import express from 'express';
 import { z } from 'zod';
-import { CAPABILITIES } from '../auth/permissions.js';
+import { CAPABILITIES, POSITIONS, ROLES } from '../auth/permissions.js';
 import { requireStaff } from '../middleware/auth.js';
 import { paramId, parse, zText } from '../middleware/validate.js';
 import * as accessService from '../services/accessService.js';
@@ -24,6 +24,28 @@ accessRouter.post('/access-requests', requireStaff, async (req, res) => {
 
 export const accessAdminRouter = express.Router();
 
+// F-090 (ADR-051 D-223): quyền mặc định của vai trò + vị trí (?positions=CASHIER,SERVER — trống = mọi vị trí). Chỉ chủ quán.
+const csvList = (s) => {
+  const parts = String(s ?? '')
+    .split(',')
+    .map((p) => p.trim());
+  return [...new Set(parts)].filter(Boolean);
+};
+accessAdminRouter.get('/role-permissions', (req, res) => {
+  const q = parse(
+    z.object({
+      role: z.enum(ROLES, { message: 'Vai trò không hợp lệ' }),
+      positions: z
+        .string()
+        .max(100)
+        .optional()
+        .transform(csvList)
+        .pipe(z.array(z.enum(POSITIONS, { message: 'Vị trí không hợp lệ' }))),
+    }),
+    req.query,
+  );
+  res.json(accessService.roleDefaults(q));
+});
 accessAdminRouter.get('/users/:id/grants', async (req, res) => res.json(await accessService.grantsView(paramId(req))));
 accessAdminRouter.put('/users/:id/grants', async (req, res) => {
   const { grants } = parse(

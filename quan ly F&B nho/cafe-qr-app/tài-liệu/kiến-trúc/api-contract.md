@@ -778,6 +778,7 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 
 | Method & path | Mục đích | Lỗi |
 | --- | --- | --- |
+| `GET /api/admin/role-permissions` | F-090: quyền mặc định của vai trò + vị trí `?role=STAFF|MANAGER|STORE_MGR|ADMIN&positions=CASHIER,BARISTA,SERVER` → `{ role, positions, items: [{ key, group, label, money, byRole }] }` | `400 VALIDATION_ERROR` (vai / vị trí lạ, thiếu vai) |
 | `GET /api/admin/users/{id}/grants` | `{ user, items: [{ key, group, label, money, byRole, override, effective }] }` | `400 OWNER_ALWAYS` (chủ quán), 404 |
 | `PUT /api/admin/users/{id}/grants` | Thay toàn bộ quyền riêng `{ grants: [{ capability, effect: ALLOW/DENY, expiresAt? }] }` | 400 (quyền lạ, trùng, hạn đã qua), `400 OWNER_ALWAYS` |
 | `GET /api/admin/access-requests?status` | `{ requests, pending }` (`status` = `PENDING` mặc định / `ALL`) | — |
@@ -863,3 +864,8 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 ## Bỏ "Đổi người" (ADR-050, TASK-107, 14/11/2026)
 
 - `POST /api/auth/switch` (đổi phiên máy quầy bằng PIN — F-072) **đã bỏ**: đường dẫn không còn, gọi → `404 NOT_FOUND`, không cấp phiên. Người khác đứng máy: `POST /api/auth/logout` rồi `POST /api/auth/login`. PIN vẫn dùng cho `POST /api/attendance/punch` (màn chung) và header `X-Actor-Pin` (thao tác tiền).
+
+## Bổ sung F-090 — phân quyền đơn giản (ADR-051, TASK-110, 14/11/2026)
+
+- `GET /api/admin/role-permissions?role=&positions=` (chỉ chủ quán): quyền mặc định của vai trò + vị trí (chưa đặt riêng), tính bằng đúng hàm kiểm quyền của máy chủ → `{ role, positions, items: [{ key, group, label, money, byRole }] }` (17 quyền, thứ tự như `GET /api/access/capabilities`). `positions` = CSV `CASHIER` / `BARISTA` / `SERVER` (bỏ trùng; trống = mọi vị trí; chỉ áp cho `STAFF`); `ADMIN` → mọi `byRole = true`. Lỗi: vai / vị trí lạ, thiếu `role` → `400 VALIDATION_ERROR`; quản lý cửa hàng → `403 OWNER_ONLY`; nhân viên / trưởng ca → `403 FORBIDDEN`; chưa đăng nhập → `401`.
+- Hộp Thêm / Sửa tài khoản lưu quyền riêng bằng `PUT /api/admin/users/{id}/grants` (không đổi): chỉ gửi quyền khác mặc định; quyền tạm chưa chạm gửi lại đúng `expiresAt` cũ.
