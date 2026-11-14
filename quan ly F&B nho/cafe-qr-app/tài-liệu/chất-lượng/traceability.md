@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 489 test, sửa lúc 2026-11-14 08:06 UTC
-- `npm run test:e2e` (JSON): 95 test, sửa lúc 2026-11-14 08:15 UTC
+- `npm test` (JUnit): 490 test, sửa lúc 2026-11-14 08:48 UTC
+- `npm run test:e2e` (JSON): 97 test, sửa lúc 2026-11-14 09:45 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 196 |
-| Acceptance Criteria | 537 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 537 |
+| User Story | 198 |
+| Acceptance Criteria | 541 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 541 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -585,7 +585,7 @@
 | AC-079-04 | TC-079-04 | F-079 | US-079-2 | ACT-STAFF, ACT-LEAD, ACT-STORE, ACT-ADMIN | UC-17 | MOD-AUTH | SCR-20, SCR-42, SCR-10 | BR-117 | Integration: `access-grants.test.js` › AC-079-04: xin quyền → chủ quán duyệt "hết hôm nay" — bị chặn kèm quyền cần, gửi yêu cầu (gửi lại = cùng yêu cầu), chủ quán thấy ở danh sách + trang Hôm nay, duyệt xong làm được ngay, hạn = hết ngày (giờ VN); đã có quyền thì không xin nữa — **PASS** | **PASS** |
 | AC-079-05 | TC-079-05 | F-079 | US-079-2 | ACT-STAFF, ACT-LEAD, ACT-STORE, ACT-ADMIN | UC-17 | MOD-AUTH | SCR-20, SCR-42, SCR-10 | BR-117 | Integration: `access-grants.test.js` › AC-079-05: từ chối có ghi chú; nhân viên / quản lý cửa hàng không duyệt được; tối đa 5 yêu cầu chờ mỗi người — **PASS** | **PASS** |
 | AC-079-06 | TC-079-06 | F-079 | US-079-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47 | BR-117 | Integration: `access-grants.test.js` › AC-079-06: cho phép quyền dính tiền (đặt riêng hoặc duyệt) → cảnh báo ACCESS_GRANT cho chủ quán (quản lý cửa hàng không thấy); quyền không dính tiền → không cảnh báo; Tra cứu API ghi quyền cấp được của từng dòng Quản lý — **PASS** | **PASS** |
-| AC-079-07 | TC-079-07 | F-079 | US-079-1, US-079-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47, SCR-42, SCR-10 | BR-117 | E2E: `flow.spec.js` › quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuyển về kèm thanh "Xin quyền" → gửi lý do; chủ quán thấy ở Hôm nay → Tài khoản → Duyệt "Hết hôm nay" → nhân viên vào được; chủ quán mở "Sửa" của người đó tắt công tắc quyền ở Quyền nâng cao (về như vai trò) → hết vào được (F-079, AC-079-07) — **PASS** | **PASS** |
+| AC-079-07 | TC-079-07 | F-079 | US-079-1, US-079-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN, MOD-NOTIFY | SCR-20, SCR-47, SCR-42, SCR-10 | BR-117 | E2E: `flow.spec.js` › quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuyển về kèm thanh "Xin quyền" → gửi lý do; chủ quán thấy ở Hôm nay → trang Quyền nâng cao → Duyệt "Hết hôm nay" → nhân viên vào được; chủ quán tắt công tắc quyền đó của người đó (về như vai trò) → Lưu quyền → hết vào được (F-079, AC-079-07) — **PASS** | **PASS** |
 | AC-080-01 | TC-080-01 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | Integration: `admin-area.test.js` › AC-080-01: đăng nhập trang Quản lý (area = admin) không chấm công vào — kể cả quản lý cửa hàng, nhân viên; đăng nhập máy quầy vẫn chấm công như cũ; area lạ → 400 — **PASS** | **PASS** |
 | AC-080-02 | TC-080-02 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | Integration: `admin-area.test.js` › AC-080-02: /admin dẫn vào Hôm nay; /admin/login là trang Đăng nhập Quản lý riêng (không phải màn đăng nhập quầy) — **PASS** | **PASS** |
 | AC-080-03 | TC-080-03 | F-080 | US-080-1 | ACT-ADMIN, ACT-STORE | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-56, SCR-42 | BR-118 | E2E: `flow.spec.js` › trang Quản lý riêng: máy mới mở /admin → trang "Đăng nhập Quản lý" → vào thẳng Hôm nay; phiên riêng với máy quầy (mở /pos vẫn phải đăng nhập quầy); Đăng xuất chỉ thoát trang Quản lý; nhân viên không có quyền thì được mời Xin quyền; máy đang đăng nhập quầy (quản lý cửa hàng) vẫn phải gõ mật khẩu ở trang Đăng nhập Quản lý — không có "Vào bằng tài khoản này", mở /admin không tự vào (F-080, AC-080-03) — **PASS** | **PASS** |
@@ -631,7 +631,11 @@
 | AC-089-04 | TC-089-04 | F-089 | US-089-2 | ACT-ADMIN, ACT-STORE | UC-13 | MOD-INVENTORY, MOD-ADMIN | SCR-23, SCR-31, SCR-35 | — | E2E: `flow.spec.js` › Nhập kho & kiểm kê gộp Nhà cung cấp & đặt hàng: thanh bên chỉ còn một mục; hàng thẻ chung Nhập kho · Kiểm kê · Đề xuất nhập hàng · Đơn đặt hàng · Nhà cung cấp + Báo cáo kho; chọn thẻ của trang kia → chuyển đúng thẻ (?tab=), mục ở thanh bên vẫn sáng; tải lại giữ thẻ (F-089, AC-089-04) — **PASS** | **PASS** |
 | AC-089-05 | TC-089-05 | F-089 | US-089-1, US-089-2 | ACT-ADMIN, ACT-STORE | UC-13 | MOD-INVENTORY, MOD-ADMIN | SCR-23, SCR-31, SCR-35 | BR-041 | E2E: `a11y.spec.js` › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm — **PASS** | **PASS** |
 | AC-090-01 | TC-090-01 | F-090 | US-090-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | — | Integration: `role-permissions.test.js` › AC-090-01: quyền mặc định theo vai trò + vị trí — nhân viên chưa chọn vị trí làm cả 3 việc máy quầy, chọn vị trí thì chỉ việc của vị trí đó; trưởng ca thêm kiểm kê / sửa chấm công / Hôm nay; quản lý cửa hàng có trang Quản lý trừ thu chi, lương, nhật ký; chủ quán đủ cả; khớp hộp quyền của tài khoản thật; vai / vị trí lạ → 400; chỉ chủ quán gọi được — **PASS** | **PASS** |
-| AC-090-02 | TC-090-02 | F-090 | US-090-1, US-090-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | — | E2E: `flow.spec.js` › tạo tài khoản: chọn vai trò → hiện ngay "Vai trò này được làm" (đổi theo vị trí / vai trò); "Quyền nâng cao" mỗi việc một công tắc Cho phép / Không cho phép — tắt "Trang Hôm nay", bật "Kho hàng" → tài khoản tạo xong có đúng hai quyền riêng, không hạn (F-090, AC-090-02) — **PASS** | **PASS** |
-| AC-090-03 | TC-090-03 | F-090 | US-090-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | — | E2E: `flow.spec.js` › sửa tài khoản: "Quyền nâng cao" mở sẵn khi người đó có quyền riêng — quyền tạm ghi "tạm đến …", chưa chạm thì lưu vẫn giữ hạn; "Về như vai trò" → Lưu → hết quyền riêng (F-090, AC-090-03) — **PASS** | **PASS** |
+| AC-090-02 | TC-090-02 | F-090 | US-090-1, US-090-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | — | E2E: `flow.spec.js` › tạo tài khoản: chọn vai trò → hiện ngay "Vai trò này được làm" (đổi theo vị trí / vai trò); trang Quyền nâng cao mỗi việc một công tắc Cho phép / Không cho phép — tắt "Trang Hôm nay", bật "Kho hàng" → Lưu quyền → đúng hai quyền riêng, không hạn (F-090, AC-090-02) — **PASS** | **PASS** |
+| AC-090-03 | TC-090-03 | F-090 | US-090-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | — | E2E: `flow.spec.js` › quyền nâng cao: nhãn "Có quyền nâng cao" ở Tài khoản mở trang Quyền nâng cao chọn sẵn người đó — quyền tạm ghi "tạm đến …", lưu mà không chạm vẫn giữ hạn (sửa tài khoản cũng không đụng quyền); "Về như vai trò" → Lưu quyền → hết quyền riêng (F-090, AC-090-03) — **PASS** | **PASS** |
 | AC-090-04 | TC-090-04 | F-090 | US-090-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | — | E2E: `a11y.spec.js` › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm — **PASS** | **PASS** |
+| AC-091-01 | TC-091-01 | F-091 | US-091-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | BR-024 | Integration: `staff-phone.test.js` › AC-091-01: số điện thoại tài khoản — tạo kèm số (có dấu cách / +84 / 84) lưu chuẩn +84, danh sách trả số nội địa; sai định dạng → 400 ô phone; sửa không gửi số thì giữ, gửi số mới thì đổi, gửi rỗng thì xóa; quản lý cửa hàng xem danh sách không thấy số; nhật ký thao tác che số — **PASS** | **PASS** |
+| AC-091-02 | TC-091-02 | F-091 | US-091-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | BR-024 | E2E: `flow.spec.js` › số điện thoại tài khoản: + Thêm nhân viên có ô Số điện thoại (không bắt buộc) — số sai báo ngay dưới ô, số đúng hiện ở cột Số điện thoại (bấm gọi được); Sửa đổi số (F-091, AC-091-02) — **PASS** | **PASS** |
+| AC-091-03 | TC-091-03 | F-091 | US-091-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-58, SCR-20 | — | E2E: `flow.spec.js` › trang Quyền nâng cao: thanh bên Hệ thống có "Quyền nâng cao" ngay sau "Tài khoản"; danh sách người không có chủ quán; đổi công tắc rồi chọn người khác → hỏi "Bỏ thay đổi chưa lưu?" — Hủy thì ở lại, Bỏ thay đổi thì sang người kia và không lưu gì (F-091, AC-091-03) — **PASS** | **PASS** |
+| AC-091-04 | TC-091-04 | F-091 | US-091-1, US-091-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-58, SCR-20 | BR-024 | E2E: `a11y.spec.js` › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm — **PASS** | **PASS** |
 
