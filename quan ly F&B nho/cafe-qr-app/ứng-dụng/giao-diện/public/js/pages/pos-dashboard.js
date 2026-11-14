@@ -2305,13 +2305,13 @@ if (singleScreen) {
     toast(on ? 'Máy này sẽ tự in phiếu pha khi có đơn mới' : 'Đã tắt tự in phiếu pha trên máy này', 'info');
   });
   $('.pos-status')?.append(printToggle);
-  // Vùng Hàng pha: tiêu đề + Hết món (người pha). Máy đứng tên người không pha → nhắc "Đổi người" (một màn hình, một tài khoản)
+  // Vùng Hàng pha: tiêu đề + Hết món (người pha). Máy đăng nhập tài khoản không pha chế → nhắc người pha đăng nhập (một màn hình, một tài khoản; ADR-050 bỏ "Đổi người")
   zoneBar.prepend(
     el(
       'div',
       { class: 'zone-head' },
       el('h2', {}, 'Hàng pha'),
-      canMake ? null : el('span', { class: 'zone-hint small' }, 'Người pha bấm "Đổi người" để làm đơn'),
+      canMake ? null : el('span', { class: 'zone-hint small' }, 'Không có vị trí Pha chế — người pha đăng nhập để làm đơn'),
       el(
         'div',
         { class: 'zone-tools' },

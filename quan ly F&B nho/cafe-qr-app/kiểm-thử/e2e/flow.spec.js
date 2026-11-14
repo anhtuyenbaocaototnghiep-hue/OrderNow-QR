@@ -2522,7 +2522,7 @@ test('ly treo: quản lý bật tab Ly tặng; quầy "Bán ly tặng" → mã +
   await expect(P.locator('#content tbody tr', { hasText: code })).toContainText('Đã dùng');
 });
 
-test('chấm công nhiều người + lương: nhân viên tự đặt PIN; màn Chấm công vào ca bằng PIN; chi tiền hỏi PIN người đứng máy; Đổi người; Giờ công của tôi; quản lý nhập hồ sơ lương ở trang Lương (F-072, F-073, AC-072-07, AC-073-09)', async ({
+test('chấm công nhiều người + lương: nhân viên tự đặt PIN; màn Chấm công vào ca bằng PIN; chi tiền hỏi PIN người đứng máy; không còn nút "Đổi người" (ADR-050) — người khác đăng xuất / đăng nhập; Giờ công của tôi; quản lý nhập hồ sơ lương ở trang Lương (F-072, F-073, AC-072-07, AC-073-09)', async ({
   request,
 }) => {
   await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'KIOSK', moneyPin: true });
@@ -2581,11 +2581,15 @@ test('chấm công nhiều người + lương: nhân viên tự đặt PIN; màn
     await expect(Q.locator('.toast', { hasText: 'Đã ghi 20.000đ' })).toBeVisible();
     await expect(Q.locator('table.cash-book')).toContainText('Đá E2E chấm công');
 
-    // Đổi người: Bảo đứng máy → tên trên thanh trên đổi
-    await Q.locator('#switch-btn').click();
-    await Q.locator('.modal', { hasText: 'Đổi người đứng máy' }).locator('.person-tile', { hasText: 'Bảo E2E' }).click();
-    await Q.keyboard.type('1397');
-    await Q.locator('.modal', { hasText: 'Đổi sang Bảo E2E' }).getByRole('button', { name: 'Đổi người' }).click();
+    // ADR-050: máy quầy không còn "Đổi người" — Bảo đứng máy thì Hà đăng xuất, Bảo đăng nhập tài khoản của mình
+    await expect(Q.getByRole('button', { name: 'Đổi người' })).toHaveCount(0);
+    await Q.getByRole('button', { name: 'Đăng xuất' }).click();
+    await expect(Q).toHaveURL(/\/pos\/login/);
+    await Q.fill('#username', 'e2e-bao');
+    await Q.fill('#password', 'Pass@123');
+    await Q.click('#submit');
+    await expect(Q).toHaveURL(/\/pos$/);
+    await Q.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click(); // tài khoản mới → hướng dẫn lần đầu
     await expect(Q.locator('.pos-top .user-name')).toContainText('Bảo E2E');
 
     // Giờ công của tôi: chỉ của Bảo, đang làm
@@ -2678,11 +2682,14 @@ test('nhắc & báo quên chấm công: máy quầy nhắc người có lịch c
     await reset.getByRole('button', { name: 'Hủy' }).click();
     await Q.locator('.modal', { hasText: 'Chạm vào tên mình' }).getByRole('button', { name: 'Xong' }).click();
 
-    // Tú đứng máy → Giờ công của tôi: hôm qua có lịch mà không chấm công → Báo quên chấm công
-    await Q.locator('#switch-btn').click();
-    await Q.locator('.modal', { hasText: 'Đổi người đứng máy' }).locator('.person-tile', { hasText: 'Tú E2E' }).click();
-    await Q.keyboard.type('3691');
-    await Q.locator('.modal', { hasText: 'Đổi sang Tú E2E' }).getByRole('button', { name: 'Đổi người' }).click();
+    // Tú đứng máy (đăng xuất / đăng nhập — ADR-050 bỏ "Đổi người") → Giờ công của tôi: hôm qua có lịch mà không chấm công → Báo quên chấm công
+    await Q.getByRole('button', { name: 'Đăng xuất' }).click();
+    await expect(Q).toHaveURL(/\/pos\/login/);
+    await Q.fill('#username', 'e2e-tu');
+    await Q.fill('#password', 'Pass@123');
+    await Q.click('#submit');
+    await expect(Q).toHaveURL(/\/pos$/);
+    await Q.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click(); // tài khoản mới → hướng dẫn lần đầu
     await expect(Q.locator('.pos-top .user-name')).toContainText('Tú E2E');
     await Q.goto('/pos/me');
     await expect(Q.getByRole('heading', { name: 'Giờ công của tôi' })).toBeVisible();

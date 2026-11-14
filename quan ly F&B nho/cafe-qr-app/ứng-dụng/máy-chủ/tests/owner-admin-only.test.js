@@ -53,9 +53,10 @@ describe('Chủ quán chỉ dùng trang Quản lý (F-084)', () => {
     assert.equal(await openAtt(users.nv_owner), 1);
   });
 
-  test('AC-084-01: "Đổi người" ở máy quầy (nhập PIN) không đổi sang chủ quán được — như trước (chỉ nhân viên / trưởng ca)', async () => {
+  test('AC-084-01: máy quầy không có lối đổi phiên sang chủ quán bằng PIN — "Đổi người" đã bỏ (ADR-050), POST /api/auth/switch → 404, không cấp phiên', async () => {
     const staff = (await login('nv_owner', 'Pass@123', 'pos')).body.accessToken;
     const r = await api.post('/api/auth/switch').set(auth(staff)).send({ userId: users.admin, pin: '1234' });
-    assert.ok([400, 404].includes(r.status), JSON.stringify(r.body));
+    assert.equal(r.status, 404, JSON.stringify(r.body));
+    assert.equal(r.body.accessToken, undefined);
   });
 });

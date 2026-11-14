@@ -1278,7 +1278,7 @@ body:has(.tour-layer) .toasts {
   }
 }
 
-/* F-072 (ADR-030): bàn phím PIN (số đổi chỗ mỗi lần mở), ô chọn người ở màn chấm công / đổi người */
+/* F-072 (ADR-030): bàn phím PIN (số đổi chỗ mỗi lần mở), ô chọn người ở màn chấm công */
 .pin-pad {
   display: grid;
   gap: 0.75rem;

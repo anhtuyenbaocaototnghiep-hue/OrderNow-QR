@@ -1,7 +1,6 @@
-// F-072 (ADR-030): ở máy quầy — hỏi PIN khi thao tác tiền, hộp "Chấm công" (màn chung), "Đổi người", "Đặt PIN".
+// F-072 (ADR-030): ở máy quầy — hỏi PIN khi thao tác tiền, hộp "Chấm công" (màn chung), "Đặt PIN". ("Đổi người" đã bỏ — ADR-050)
 // ADR-031 D-135: "Quên PIN?" trên mọi bàn phím PIN; ở màn chung người chưa có / quên PIN chạm tên mình → mật khẩu đăng nhập + PIN mới.
 import { setPinPrompter, staffApi } from './api.js';
-import { saveStaffSession } from './auth-store.js';
 import { current } from './auth.js';
 import { pinPad } from './pin-pad.js';
 import { clear, el, errorMessage, modal, time, toast } from './ui.js';
@@ -88,51 +87,7 @@ async function punch(p, reload) {
   reload();
 }
 
-/** "Đổi người": người sắp đứng máy chạm tên + PIN → phiên mới đứng tên người đó. */
-export async function switchUserDialog() {
-  const list = el('div', { class: 'person-grid' }, el('p', { class: 'muted' }, 'Đang tải…'));
-  const dialog = modal({
-    title: 'Đổi người đứng máy',
-    body: el('div', { class: 'stack' }, el('p', { class: 'small muted' }, 'Từ lúc đổi, mọi việc thu tiền, hoàn tiền, giảm giá ghi tên người mới.'), list),
-    actions: [{ label: 'Hủy', value: null }],
-  });
-  try {
-    const { people } = await staffApi('/api/attendance/board');
-    clear(
-      list,
-      ...people
-        .filter((p) => p.userId !== current.user.userId)
-        .map((p) =>
-          personTile(p, {
-            status: p.hasPin ? 'Chạm để đổi sang' : 'Chưa đặt PIN — chạm để đặt',
-            onPick: async (who) => {
-              if (!who.hasPin) {
-                if (await kioskPinDialog(who)) who.hasPin = true;
-                return;
-              }
-              try {
-                const r = await pinPad({
-                  title: `Đổi sang ${who.fullName}`,
-                  confirmLabel: 'Đổi người',
-                  submit: (pin) => staffApi('/api/auth/switch', { method: 'POST', body: { userId: who.userId, pin } }),
-                  onForgot: () => kioskPinDialog(who),
-                });
-                if (!r) return;
-                saveStaffSession(r.accessToken, r.user);
-                dialog.close(true);
-                location.reload();
-              } catch (err) {
-                toast(errorMessage(err), 'error');
-              }
-            },
-          }),
-        ),
-    );
-  } catch (err) {
-    clear(list, el('div', { class: 'alert danger' }, errorMessage(err)));
-  }
-  return dialog.result;
-}
+// ADR-050 (14/11/2026): bỏ "Đổi người" ở máy quầy — người khác đứng máy thì Đăng xuất rồi đăng nhập tài khoản của mình.
 
 /** Hộp đặt PIN: mật khẩu đăng nhập của người đó + PIN mới (2 lần). save({ password, pin }) gửi lên máy chủ. → true nếu đã lưu */
 function pinForm({ title, intro, save, done }) {
@@ -146,7 +101,7 @@ function pinForm({ title, intro, save, done }) {
       'div',
       { class: 'stack' },
       el('p', { class: 'small muted' }, intro),
-      el('p', { class: 'small muted' }, 'PIN 4–6 chữ số, chỉ mình bạn biết: dùng để chấm công, đổi người và xác nhận thao tác tiền. Không dùng 1234, 0000…'),
+      el('p', { class: 'small muted' }, 'PIN 4–6 chữ số, chỉ mình bạn biết: dùng để chấm công và xác nhận thao tác tiền. Không dùng 1234, 0000…'),
       el('label', { for: 'pin-pw' }, 'Mật khẩu đăng nhập'),
       pw,
       el('label', { for: 'pin-new' }, 'PIN mới'),

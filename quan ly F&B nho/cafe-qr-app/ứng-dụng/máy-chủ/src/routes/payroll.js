@@ -1,5 +1,5 @@
 // F-072 chấm công nhiều người + F-073 tính lương (ADR-030); nhắc chấm công, báo quên chấm công, đặt PIN ở màn chung (ADR-031).
-//  - payrollRouter (gắn thẳng /api, nhân viên): PIN của mình, Đổi người, màn chấm công, nhắc chấm công, danh sách đóng ca, Giờ công của tôi.
+//  - payrollRouter (gắn thẳng /api, nhân viên): PIN của mình, màn chấm công, nhắc chấm công, danh sách đóng ca, Giờ công của tôi.
 //  - payrollAdminRouter (gắn dưới /api/admin, chỉ quản lý): cách chấm công, bảng lương, hồ sơ lương, ngày lễ, quyết định, báo sai,
 //    báo quên chấm công, báo cáo tuần.
 import express from 'express';
@@ -11,7 +11,6 @@ import * as attendanceService from '../services/attendanceService.js';
 import * as payrollService from '../services/payrollService.js';
 import * as pinService from '../services/pinService.js';
 import { getSettings, updateSettings } from '../services/settingsService.js';
-import * as userService from '../services/userService.js';
 import { isValidDate } from '../utils/time.js';
 
 export const payrollRouter = express.Router();
@@ -37,10 +36,7 @@ payrollRouter.post('/auth/pin/kiosk', requireStaff, async (req, res) => {
   const { userId, ...body } = parse(z.object({ userId: zId(), password: zPassword(), pin: z.string().max(10) }), req.body);
   res.json(await pinService.setPinAtKiosk(userId, body, { ip: req.ip }));
 });
-payrollRouter.post('/auth/switch', requireStaff, async (req, res) => {
-  const body = parse(z.object({ userId: zId(), pin: z.string().max(10) }), req.body);
-  res.json(await userService.switchTo(body.userId, body.pin, req.user));
-});
+// ADR-050: bỏ "Đổi người" (POST /auth/switch) — người khác đứng máy thì đăng xuất / đăng nhập bằng mật khẩu của mình
 payrollRouter.get('/attendance/board', requireStaff, async (_req, res) =>
   res.json({ mode: (await getSettings()).attendanceMode, people: await attendanceService.board() }),
 );

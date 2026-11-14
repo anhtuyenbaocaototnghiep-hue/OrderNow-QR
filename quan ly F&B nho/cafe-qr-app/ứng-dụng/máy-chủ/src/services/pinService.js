@@ -1,4 +1,4 @@
-// F-072 (ADR-030 D-125…D-127): PIN riêng từng người — chấm công ở màn chung, "Đổi người" ở quầy, xác nhận thao tác tiền.
+// F-072 (ADR-030 D-125…D-127): PIN riêng từng người — chấm công ở màn chung, xác nhận thao tác tiền ("Đổi người" đã bỏ — ADR-050).
 //  - Mỗi người tự đặt PIN sau khi nhập mật khẩu đăng nhập (quản lý không biết PIN của ai; chỉ xóa được để người đó đặt lại).
 //  - Sai 5 lần / 15 phút cùng người bị thử + cùng người đứng quầy → 429 PIN_LOCKED + cảnh báo AUTH_LOCK (F-071).
 //  - Thao tác tiền (giảm giá tay, hoàn tiền, xóa món đã pha, chi / hủy / duyệt sổ quỹ) khi `security.money_pin` bật: nhân viên và

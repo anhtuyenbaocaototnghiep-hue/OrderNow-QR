@@ -8,7 +8,7 @@ import { $, audioReady, clear, el, errorMessage, modal, money, moneyInput, money
 import { brandMark, icon } from './icons.js';
 import { canOpenPosPage, firstAdminHref, hasAdminPages, hasCap, hasPosition, isProbation, posPageCap, positionsText, ROLE_BADGE, ROLE_LABEL } from './roles.js';
 import { registerAccessPrompter } from './access.js';
-import { kioskDialog, registerPinPrompter, setPinDialog, switchUserDialog } from './staff-pin.js';
+import { kioskDialog, registerPinPrompter, setPinDialog } from './staff-pin.js';
 import { embedded, topNav } from './embed.js';
 
 /** F-088 (ADR-049 D-214): trang quầy ↔ thẻ của vùng Quầy trên màn một màn hình. */
@@ -131,12 +131,9 @@ export async function mountPosShell(active) {
             : null,
           isProbation(user) ? el('span', { class: 'badge pending', title: 'Giảm giá tay, chi quỹ, sửa / xóa món cần trưởng ca duyệt' }, 'Thử việc') : null,
         ),
-        // F-072: màn chấm công chung (PIN riêng) + đổi người đứng máy
+        // F-072: màn chấm công chung (PIN riêng). ADR-050: bỏ "Đổi người" — người khác đứng máy thì Đăng xuất / đăng nhập
         current.attendance.mode === 'KIOSK'
           ? el('button', { class: 'btn btn-sm', type: 'button', id: 'kiosk-btn', onclick: () => kioskDialog().then(loadReminders) }, icon('clock'), 'Chấm công')
-          : null,
-        user.role !== 'ADMIN'
-          ? el('button', { class: 'btn btn-sm', type: 'button', id: 'switch-btn', onclick: () => switchUserDialog() }, icon('users'), 'Đổi người')
           : null,
         // F-061 (ADR-021 D-80): xem lại hướng dẫn 5 bước — ở trang Đơn hàng mở ngay, trang khác chuyển về Đơn hàng
         el(

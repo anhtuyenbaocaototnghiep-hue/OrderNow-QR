@@ -57,7 +57,7 @@ export function createApp() {
     ['', loyaltyRouter], // ADR-006: điểm / tem / voucher (quầy)
     ['', luckySpinRouter], // F-065: vòng quay may mắn (khách theo mã, màn cảm ơn của phiên)
     ['', giftDrinksRouter], // F-070: ly treo — quầy bán ly tặng, trang quà công khai
-    ['', payrollRouter], // F-072 / F-073: PIN, đổi người, màn chấm công, giờ công của tôi
+    ['', payrollRouter], // F-072 / F-073: PIN, màn chấm công, giờ công của tôi ("Đổi người" đã bỏ — ADR-050)
     ['', offlineSalesRouter], // F-074: gửi bù đơn bán lúc mất mạng / phiếu bán tay
     ['', expiryRouter], // F-075: hạn dùng nguyên liệu — rủi ro, món nên mời, bỏ hộp đã mở quá hạn
     ['', accessRouter], // F-079: danh mục quyền, xin quyền (nhân viên)

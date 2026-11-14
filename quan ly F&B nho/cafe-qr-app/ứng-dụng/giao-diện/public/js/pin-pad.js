@@ -1,4 +1,4 @@
-// F-072 (ADR-030 D-125): bàn phím PIN dùng chung — chấm công ở màn chung, "Đổi người", xác nhận thao tác tiền.
+// F-072 (ADR-030 D-125): bàn phím PIN dùng chung — chấm công ở màn chung, xác nhận thao tác tiền ("Đổi người" đã bỏ — ADR-050).
 // Số đổi chỗ mỗi lần mở (người đứng cạnh khó nhớ PIN theo vị trí tay bấm); gõ bằng bàn phím máy cũng được.
 import { clear, el, errorMessage, modal } from './ui.js';
 

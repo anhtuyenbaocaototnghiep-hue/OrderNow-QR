@@ -1955,7 +1955,7 @@ body.pos-compact .pos-user {
     display: none;
   }
 }
-/* Hàng pha: tên vùng + "Hết món"; nhắc "Đổi người" khi máy đứng tên người không pha */
+/* Hàng pha: tên vùng + "Hết món"; nhắc người pha đăng nhập khi máy đăng nhập tài khoản không pha chế */
 .zone-hint {
   color: var(--c-muted);
   font-weight: 600;

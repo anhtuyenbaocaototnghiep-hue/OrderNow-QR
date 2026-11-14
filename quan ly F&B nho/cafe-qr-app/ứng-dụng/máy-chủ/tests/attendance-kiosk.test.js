@@ -142,20 +142,16 @@ describe('Chấm công nhiều người (F-072)', () => {
     ok(await settings());
   });
 
-  test('AC-072-04: Đổi người — PIN đúng → phiên mới đứng tên người đó (thao tác ghi đúng người, không tạo chấm công); PIN sai 403; quản lý không đổi sang được', async () => {
+  test('AC-072-04: "Đổi người" đã bỏ (ADR-050) — POST /api/auth/switch → 404 kể cả PIN đúng; phiên máy quầy vẫn đứng tên người đã đăng nhập, thao tác ghi người đó, không tạo chấm công cho người kia', async () => {
     const before = await count('Attendance', `UserId = ${users.thuha}`);
-    const bad = await call(staff, 'post', '/api/auth/switch', { userId: users.thuha, pin: '1111' });
-    assert.deepEqual([bad.status, bad.body.code], [403, 'PIN_INVALID']);
-    assert.equal((await call(staff, 'post', '/api/auth/switch', { userId: users.admin, pin: '1111' })).status, 404);
-    const sw = ok(await call(staff, 'post', '/api/auth/switch', { userId: users.thuha, pin: PIN.thuha }));
-    assert.equal(sw.user.userId, users.thuha);
-    assert.equal(ok(await call(sw.accessToken, 'get', '/api/auth/me')).user.username, 'thuha');
-    const txn = ok(
-      await call(sw.accessToken, 'post', '/api/cash-transactions', { categoryId: cats['Bổ sung tiền lẻ'], amount: 50_000, reason: 'đổi tiền lẻ' }),
-      201,
-    );
-    assert.equal(txn.createdBy.userId, users.thuha, 'thu thêm (không cần PIN) ghi đúng người đứng máy');
-    assert.equal(await count('Attendance', `UserId = ${users.thuha}`), before, 'đổi người không chấm công');
+    const me = ok(await call(staff, 'get', '/api/auth/me')).user;
+    const gone = await call(staff, 'post', '/api/auth/switch', { userId: users.thuha, pin: PIN.thuha });
+    assert.equal(gone.status, 404, JSON.stringify(gone.body));
+    assert.equal(gone.body.accessToken, undefined, 'không cấp phiên mới');
+    assert.equal(ok(await call(staff, 'get', '/api/auth/me')).user.userId, me.userId, 'phiên không đổi người');
+    const txn = ok(await call(staff, 'post', '/api/cash-transactions', { categoryId: cats['Bổ sung tiền lẻ'], amount: 50_000, reason: 'đổi tiền lẻ' }), 201);
+    assert.equal(txn.createdBy.userId, me.userId, 'thao tác ghi đúng người đang đăng nhập');
+    assert.equal(await count('Attendance', `UserId = ${users.thuha}`), before, 'không chấm công cho người kia');
   });
 
   test('AC-072-05: PIN cho thao tác tiền — giảm giá tay, hoàn tiền, chi sổ quỹ, hủy khoản sổ quỹ: thiếu PIN 403 PIN_REQUIRED, sai 403 PIN_INVALID, đúng thì làm; thu thêm không cần; quản lý miễn; tắt cài đặt thì không hỏi', async () => {
