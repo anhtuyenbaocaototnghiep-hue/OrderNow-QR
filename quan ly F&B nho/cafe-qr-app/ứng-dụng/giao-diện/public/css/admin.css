@@ -1780,9 +1780,16 @@ ul.bday-tips {
   margin: 0 0 0.25rem;
   font-size: 1.15rem;
 }
+/* Danh sách công tắc dài → hàng nút Về như vai trò / Lưu quyền dính ở đáy màn hình khi cuộn */
 .perm-actions {
+  position: sticky;
+  bottom: 0;
   justify-content: flex-end;
-  margin-top: 0.75rem;
+  margin: 0.75rem -1.1rem -1.05rem;
+  padding: 0.75rem 1.1rem;
+  border-top: 1px solid var(--c-border);
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: var(--c-surface);
 }
 .perm-more {
   margin: 0.5rem 0 0;
@@ -1791,4 +1798,12 @@ ul.bday-tips {
   .perm-page {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+/* Nhãn "Có quyền nâng cao" là liên kết → vùng chạm ≥ 24 px (WCAG 2.5.8) */
+.badge-link {
+  min-height: 26px;
+  text-decoration: none;
+}
+.badge-link:hover {
+  text-decoration: underline;
 }

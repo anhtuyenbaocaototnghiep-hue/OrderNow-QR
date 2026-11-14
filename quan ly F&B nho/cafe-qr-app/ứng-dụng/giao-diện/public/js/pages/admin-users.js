@@ -152,7 +152,7 @@ async function load() {
                       {},
                       el(
                         'a',
-                        { class: 'badge preparing', href: `${PERMISSIONS_PAGE}?user=${u.userId}`, title: 'Xem / đổi quyền nâng cao của người này' },
+                        { class: 'badge preparing badge-link', href: `${PERMISSIONS_PAGE}?user=${u.userId}`, title: 'Xem / đổi quyền nâng cao của người này' },
                         'Có quyền nâng cao',
                       ),
                     )
