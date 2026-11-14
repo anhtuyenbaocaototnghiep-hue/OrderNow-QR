@@ -488,6 +488,17 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     await A.goto(`/admin/${r}`);
     await check(A, `quan-ly-${r.replace(/\//g, '-').replace(/-\d+-/, '-id-')}`);
   }
+  // F-089 (TASK-109): ngăn "⋯" của Kho nguyên liệu; Kho nguyên liệu + hàng thẻ kho hai hàng không cuộn ngang ở 320 / 390 px
+  await A.goto('/admin/ingredients');
+  await A.getByRole('button', { name: /^Việc khác: / })
+    .first()
+    .click();
+  await expect(A.getByRole('dialog')).toBeVisible();
+  await check(A, 'quan-ly-ingredients-viec-khac', { narrow: true });
+  await A.setViewportSize(desk.viewport);
+  await A.goto('/admin/stock');
+  await check(A, 'quan-ly-stock-hang-the', { shot: false, narrow: true });
+  await A.setViewportSize(desk.viewport);
   // F-065: tab Vòng quay may mắn (bảng ô quà nhập được) — nhãn ô nhập, không cuộn ngang ở màn hẹp
   await A.goto('/admin/loyalty');
   await A.getByRole('tab', { name: 'Vòng quay may mắn' }).click();

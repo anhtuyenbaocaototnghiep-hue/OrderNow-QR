@@ -37,8 +37,8 @@ const NAV = [
     icon: 'package',
     items: [
       ['ingredients', '/admin/ingredients', 'Nguyên liệu', 'Kho nguyên liệu'],
-      ['stock', '/admin/stock', 'Nhập kho & kiểm kê'],
-      ['purchasing', '/admin/purchasing', 'Nhà cung cấp', 'Nhà cung cấp & đặt hàng'],
+      // TASK-109 (F-089): Nhà cung cấp & đặt hàng gộp vào mục này — hai trang dùng chung hàng thẻ (stock-nav.js)
+      ['stock', '/admin/stock', 'Nhập kho & kiểm kê', 'Nhập kho, nhà cung cấp, đặt hàng & kiểm kê'],
     ],
   },
   {
@@ -98,6 +98,8 @@ export const MODULE_OF = {
   audit: 'advanced',
   'api-docs': 'advanced',
 };
+// TASK-109 (F-089): trang không có mục riêng ở thanh bên → sáng mục chứa nó
+const NAV_ALIAS = { purchasing: 'stock' };
 const shown = (key) => !MODULE_OF[key] || current.modules.includes(MODULE_OF[key]);
 const allowed = (key) => canOpenAdminPage(current.user, key); // F-077
 
@@ -150,11 +152,12 @@ export async function mountAdminShell(active) {
   registerAccessPrompter(); // F-079
   const side = $('#side');
   const open = savedOpen();
+  const navActive = NAV_ALIAS[active] ?? active;
   clear(
     side,
     el('div', { class: 'brand' }, brandMark(), current.shop?.name || 'Quản lý'),
-    allowed('today') ? navLink(HOME, active, icon('house')) : null,
-    NAV.map((g) => navGroup(g, active, open)),
+    allowed('today') ? navLink(HOME, navActive, icon('house')) : null,
+    NAV.map((g) => navGroup(g, navActive, open)),
     // F-080: tab mới. F-084: chủ quán không dùng máy quầy → không có lối này
     // ADR-045: ?from=admin → máy quầy dùng luôn phiên Quản lý này (không đăng nhập lại)
     isOwner(user) ? null : el('a', { href: '/pos?from=admin', class: 'nav-pos', target: '_blank', rel: 'noopener' }, icon('monitor'), 'Mở màn hình quầy'),

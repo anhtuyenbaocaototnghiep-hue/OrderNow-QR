@@ -1543,3 +1543,65 @@ ul.bday-tips {
 .admin-login-alt {
   margin-top: 0.25rem;
 }
+
+/* ---------- TASK-109 (F-089): Kho nguyên liệu gọn — hạn sử dụng, một nút chính + "⋯" ---------- */
+.ing-table td {
+  vertical-align: top;
+}
+.ing-actions {
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+.ing-actions .btn {
+  white-space: nowrap;
+}
+.expiry-cell {
+  min-width: 11rem;
+}
+.expiry-cell .badge {
+  margin-left: 0.15rem;
+}
+.ing-more-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm, 8px);
+  background: var(--c-bg, #f5f1ec);
+}
+.ing-more-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  width: 100%;
+  min-height: 52px;
+  text-align: left;
+}
+.btn.btn-danger-ghost {
+  border-color: var(--c-danger);
+  color: var(--c-danger);
+  background: transparent;
+}
+/* Hàng thẻ chung của "Nhập kho & kiểm kê" (gộp Nhà cung cấp & đặt hàng): việc hằng ngày ở trên, báo cáo kho ở dưới (chữ nhỏ) */
+.stock-tabs {
+  align-items: center;
+  row-gap: 0.15rem;
+}
+.stock-tabs .tabs-break {
+  flex-basis: 100%;
+  height: 0;
+}
+.stock-tabs .tabs-sep {
+  padding-left: 0.5rem;
+}
+.stock-tabs button.tab-sm {
+  min-height: 40px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.expiry-cell .link-btn {
+  min-height: 32px; /* vùng chạm ≥ 24 px (2.5.8) cho nút chữ "Theo dõi hạn" */
+}

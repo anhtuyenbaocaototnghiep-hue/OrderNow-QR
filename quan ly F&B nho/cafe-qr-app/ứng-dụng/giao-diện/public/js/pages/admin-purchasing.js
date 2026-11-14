@@ -5,6 +5,7 @@ import { mountAdminShell } from '../admin-shell.js';
 import { receivePoDialog } from '../receive-po.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, showFieldErrors, toast, todayVn } from '../ui.js';
 import { icon } from '../icons.js';
+import { initialTab, stockTabs } from '../stock-nav.js';
 
 await mountAdminShell('purchasing');
 
@@ -12,33 +13,13 @@ const DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const STATUS = { DRAFT: 'Nháp', SENT: 'Đã gửi', PARTIAL: 'Nhận một phần', RECEIVED: 'Đã nhận đủ', CANCELLED: 'Đã hủy' };
 const STATUS_CLASS = { DRAFT: '', SENT: 'pending', PARTIAL: 'preparing', RECEIVED: 'completed', CANCELLED: 'cancelled' };
 const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
-const state = { tab: 'suggest', suppliers: [], ingredients: [], units: [], from: addDays(todayVn(), -29), to: todayVn() };
+const state = { tab: initialTab('purchasing', 'suggest'), suppliers: [], ingredients: [], units: [], from: addDays(todayVn(), -29), to: todayVn() };
 const body = el('div');
-const tabs = el(
-  'div',
-  { class: 'tabs', role: 'tablist' },
-  [
-    ['suggest', 'Đề xuất nhập hàng'],
-    ['pos', 'Đơn đặt hàng'],
-    ['suppliers', 'Nhà cung cấp'],
-    ['report', 'Giá & giao hàng'],
-  ].map(([key, label]) =>
-    el(
-      'button',
-      {
-        type: 'button',
-        role: 'tab',
-        'aria-selected': String(state.tab === key),
-        onclick: (e) => {
-          state.tab = key;
-          tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b === e.currentTarget)));
-          load();
-        },
-      },
-      label,
-    ),
-  ),
-);
+// TASK-109 (F-089): hàng thẻ chung với trang Nhập kho & kiểm kê (một mục ở thanh bên)
+const tabs = stockTabs('purchasing', state.tab, (key) => {
+  state.tab = key;
+  load();
+});
 clear($('#content'), tabs, body);
 
 async function load() {

@@ -303,7 +303,8 @@ test('quản lý: nút Xóa cho món, bàn, nguyên liệu, tài khoản (ADR-00
   await expect(P.locator('tr', { hasText: 'Bàn 99' })).toHaveCount(0);
 
   await P.goto('/admin/ingredients');
-  await P.locator('tr', { hasText: 'Cà phê cốt' }).getByRole('button', { name: 'Xóa' }).click();
+  await P.getByRole('button', { name: 'Việc khác: Cà phê cốt', exact: true }).click(); // TASK-109: Xóa nằm trong "⋯"
+  await P.getByRole('dialog', { name: 'Cà phê cốt', exact: true }).getByRole('button', { name: 'Xóa nguyên liệu' }).click();
   await P.locator('.modal').getByRole('button', { name: 'Xóa' }).click();
   await expect(P.locator('.toast').last()).toContainText('Nguyên liệu đang dùng trong định lượng của');
 
@@ -2793,7 +2794,8 @@ test('hạn dùng nguyên liệu: quản lý đặt "hộp 100 ml, mở rồi d�
   const ingredients = await apiAs(request, 'get', '/api/admin/ingredients');
   const coffee = ingredients.find((i) => i.name === 'Cà phê cốt');
   await P.goto('/admin/ingredients');
-  await P.locator('tr', { hasText: 'Cà phê cốt' }).getByRole('button', { name: 'Kho nâng cao' }).click();
+  await P.getByRole('button', { name: 'Việc khác: Cà phê cốt', exact: true }).click(); // TASK-109: Kho nâng cao nằm trong "⋯"
+  await P.getByRole('dialog', { name: 'Cà phê cốt', exact: true }).getByRole('button', { name: 'Kho nâng cao' }).click();
   const dlg = P.locator('.modal', { hasText: 'Kho nâng cao: Cà phê cốt' });
   await dlg.locator('#adv-pack').fill('100');
   await dlg.locator('#adv-open').fill('24');
@@ -4047,4 +4049,95 @@ test('màn quầy gọn: thanh trên một hàng ở 1366 px chỉ Màn quầy /
     await apiAs(request, 'put', '/api/admin/settings', SINGLE_OFF);
     await clearTables(request, ['G1']);
   }
+});
+
+// ---------- TASK-109 (F-089): Kho nguyên liệu gọn — hạn sử dụng, "⋯"; Nhà cung cấp & đặt hàng gộp vào Nhập kho & kiểm kê ----------
+test('kho nguyên liệu: cột Hạn sử dụng hiện lô gần hết hạn nhất (ngày, "Còn 2 ngày", lượng của lô) + dải "Sắp hết hạn"; mỗi dòng chỉ còn Điều chỉnh · Sửa · ⋯, "⋯" mở ngăn Lịch sử kho / Lô & hạn dùng / Kho nâng cao / Xóa nguyên liệu; nguyên liệu chưa theo dõi → "Theo dõi hạn" một chạm → dòng nhập kho có ô Hạn sử dụng (F-089, AC-089-03)', async ({
+  request,
+}) => {
+  const vnDay = (n) => new Date(Date.now() + 7 * 3600e3 + n * 86400e3).toISOString().slice(0, 10);
+  const dmy = (iso) => iso.split('-').reverse().join('/');
+  const id = (await apiAs(request, 'post', '/api/admin/ingredients', { name: 'Sữa hạn E2E', unit: 'ml', stockQty: 0, lowStockThreshold: 0 })).ingredientId;
+  await apiAs(request, 'put', `/api/admin/ingredients/${id}/advanced`, { kind: 'RAW', wastePercent: 0, trackLots: true });
+  await apiAs(request, 'post', '/api/admin/stock-receipts', {
+    lines: [{ ingredientId: id, qty: 1000, unitCost: 30, expiryDate: vnDay(10), lotCode: 'E2E-B' }],
+  });
+  await apiAs(request, 'post', '/api/admin/stock-receipts', { lines: [{ ingredientId: id, qty: 400, unitCost: 30, expiryDate: vnDay(2), lotCode: 'E2E-A' }] });
+
+  await P.goto('/admin/ingredients');
+  const rowOf = (name) => P.locator('tbody tr').filter({ has: P.getByText(name, { exact: true }) });
+  const row = rowOf('Sữa hạn E2E');
+  await expect(P.locator('thead th')).toHaveText(['Nguyên liệu', 'Còn dùng được', 'Hạn sử dụng', 'Trạng thái', '']);
+  const cell = row.locator('td.expiry-cell');
+  await expect(cell).toContainText(dmy(vnDay(2)));
+  await expect(cell.locator('.badge')).toHaveText('Còn 2 ngày');
+  await expect(cell).toContainText('400 ml của lô này');
+  await expect(row.locator('td.num strong')).toHaveText('1.400');
+  await expect(P.locator('#expiry-alert')).toContainText('Sữa hạn E2E (còn 2 ngày)');
+  await expect(row.getByRole('button')).toHaveText(['Điều chỉnh', 'Sửa', '⋯']);
+
+  await row.getByRole('button', { name: 'Việc khác: Sữa hạn E2E' }).click();
+  const more = P.getByRole('dialog', { name: 'Sữa hạn E2E', exact: true });
+  await expect(more.locator('.ing-more-item strong')).toHaveText(['Lịch sử kho', 'Lô & hạn dùng', 'Kho nâng cao', 'Xóa nguyên liệu']);
+  await expect(more.locator('.ing-more-summary')).toContainText('Còn 2 ngày');
+  await more.getByRole('button', { name: 'Lô & hạn dùng' }).click();
+  const lots = P.getByRole('dialog', { name: 'Lô: Sữa hạn E2E' });
+  await expect(lots).toContainText('E2E-A');
+  await expect(lots).toContainText('E2E-B');
+  await lots.getByRole('button', { name: 'Đóng', exact: true }).last().click();
+  await expect(P.getByRole('dialog')).toHaveCount(0);
+  await expect(row.getByRole('button', { name: 'Việc khác: Sữa hạn E2E' })).toBeFocused();
+
+  // Chưa theo dõi hạn → "Theo dõi hạn" (một chạm, không phải vào Kho nâng cao) → nhập kho có ô Hạn sử dụng cho nguyên liệu đó
+  await apiAs(request, 'post', '/api/admin/ingredients', { name: 'Bột cacao E2E', unit: 'g', stockQty: 0, lowStockThreshold: 0 });
+  await P.reload();
+  const cacao = rowOf('Bột cacao E2E').locator('td.expiry-cell');
+  await expect(cacao).toContainText('Chưa theo dõi');
+  await cacao.getByRole('button', { name: 'Theo dõi hạn: Bột cacao E2E' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã bật theo dõi hạn cho Bột cacao E2E' })).toBeVisible();
+  await expect(rowOf('Bột cacao E2E').locator('td.expiry-cell')).toHaveText('Chưa có lô ghi hạn — ghi hạn ở dòng nhập kho');
+  await expect(P.getByRole('button', { name: 'Việc khác: Bột cacao E2E' })).toBeFocused();
+  const cacaoNow = (await apiAs(request, 'get', '/api/admin/ingredients')).find((i) => i.name === 'Bột cacao E2E');
+  expect([cacaoNow.trackLots, cacaoNow.kind, cacaoNow.wastePercent]).toEqual([true, 'RAW', 0]);
+  await P.goto('/admin/stock');
+  await expect(P.getByLabel('Hạn sử dụng')).toHaveCount(0);
+  await P.getByRole('combobox', { name: 'Nguyên liệu' }).first().selectOption({ label: 'Bột cacao E2E (g) · còn 0' });
+  await expect(P.getByLabel('Hạn sử dụng')).toBeVisible();
+});
+
+test('Nhập kho & kiểm kê gộp Nhà cung cấp & đặt hàng: thanh bên chỉ còn một mục; hàng thẻ chung Nhập kho · Kiểm kê · Đề xuất nhập hàng · Đơn đặt hàng · Nhà cung cấp + Báo cáo kho; chọn thẻ của trang kia → chuyển đúng thẻ (?tab=), mục ở thanh bên vẫn sáng; tải lại giữ thẻ (F-089, AC-089-04)', async () => {
+  await P.goto('/admin/stock');
+  const side = P.locator('#side');
+  await expect(side.locator('a[href="/admin/purchasing"]')).toHaveCount(0);
+  await expect(side.locator('a[href="/admin/stock"]')).toHaveText('Nhập kho & kiểm kê');
+  const tabs = P.getByRole('tablist', { name: 'Nhập kho, đặt hàng & kiểm kê' });
+  await expect(tabs.getByRole('tab')).toHaveText([
+    'Nhập kho',
+    'Kiểm kê',
+    'Đề xuất nhập hàng',
+    'Đơn đặt hàng',
+    'Nhà cung cấp',
+    'Giá vốn & hao hụt',
+    'Giá vốn thực tế',
+    'Thất thoát',
+    'Giá & giao hàng',
+    'Đơn vị',
+  ]);
+  await expect(tabs.getByRole('tab', { name: 'Nhập kho', exact: true })).toHaveAttribute('aria-selected', 'true');
+
+  await tabs.getByRole('tab', { name: 'Nhà cung cấp' }).click();
+  await expect(P).toHaveURL(/\/admin\/purchasing\?tab=suppliers$/);
+  await expect(P.getByRole('tab', { name: 'Nhà cung cấp' })).toHaveAttribute('aria-selected', 'true');
+  await expect(P.getByRole('button', { name: '+ Thêm nhà cung cấp' })).toBeVisible();
+  await expect(side.locator('a[href="/admin/stock"]')).toHaveAttribute('aria-current', 'page');
+  await expect(P.locator('#page-title')).toHaveText('Nhập kho & kiểm kê');
+
+  await P.getByRole('tab', { name: 'Đơn đặt hàng' }).click();
+  await expect(P).toHaveURL(/\/admin\/purchasing\?tab=pos$/);
+  await P.reload();
+  await expect(P.getByRole('tab', { name: 'Đơn đặt hàng' })).toHaveAttribute('aria-selected', 'true');
+
+  await P.getByRole('tab', { name: 'Kiểm kê' }).click();
+  await expect(P).toHaveURL(/\/admin\/stock\?tab=stocktakes$/);
+  await expect(P.getByRole('tab', { name: 'Kiểm kê' })).toHaveAttribute('aria-selected', 'true');
 });

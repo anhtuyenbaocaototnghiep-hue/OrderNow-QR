@@ -14,9 +14,8 @@
 | Nơi | Ai | Các tab |
 | --- | --- | --- |
 | **Quầy → Kho & sơ chế** | Nhân viên, trưởng ca, quản lý | **Sơ chế** · **Hủy hàng** · **Hạn dùng** · **Nhận hàng** · **Tồn kho** (+ **Kiểm kê** cho trưởng ca / quản lý) |
-| **Quản lý → Kho nguyên liệu** | Quản lý | Nút **Kho nâng cao**, **Công thức**, **Lô** trên từng nguyên liệu |
-| **Quản lý → Nhập kho & kiểm kê** | Quản lý | Nhập kho · Kiểm kê · Giá vốn & hao hụt · **Giá vốn thực tế** · **Thất thoát** · **Đơn vị** |
-| **Quản lý → Nhà cung cấp & đặt hàng** | Quản lý | **Đề xuất nhập hàng** · **Đơn đặt hàng** · **Nhà cung cấp** · **Giá & giao hàng** |
+| **Quản lý → Kho nguyên liệu** | Quản lý | Mỗi dòng: **Điều chỉnh** · **Sửa** · **⋯** (Lịch sử kho, **Lô & hạn dùng**, **Công thức**, **Kho nâng cao**, Xóa); cột **Hạn sử dụng** + nút **Theo dõi hạn** |
+| **Quản lý → Nhập kho & kiểm kê** (gồm cả nhà cung cấp — 14/11/2026) | Quản lý | Hàng trên: Nhập kho · Kiểm kê · **Đề xuất nhập hàng** · **Đơn đặt hàng** · **Nhà cung cấp**; hàng dưới (Báo cáo kho): Giá vốn & hao hụt · **Giá vốn thực tế** · **Thất thoát** · **Giá & giao hàng** · **Đơn vị** |
 
 Khi đang mở trang **Kho & sơ chế**, quầy tự nhận thông báo: *"Nguyên liệu sắp hết: …"*, *"N lô sắp hết hạn — xem tab Hạn dùng"*, *"Sắp hết trước ngày giao: …"*.
 
@@ -58,10 +57,10 @@ Lưu phiếu → tồn cộng theo đơn vị gốc, **giá vốn bình quân** 
 ### Quản lý khai báo (một lần)
 
 1. **Kho nguyên liệu** → thêm nguyên liệu mới, ví dụ "Cốt cà phê" (đơn vị ml).
-2. Bấm **Kho nâng cao** trên dòng đó:
+2. Bấm **⋯** trên dòng đó → **Kho nâng cao**:
    - **Loại** → **Bán thành phẩm (tự sơ chế)**;
    - **Dùng trong (giờ, sau khi pha / mở)**: ví dụ 24; để trống = không hạn → **Lưu**.
-3. Dòng có nhãn **Bán thành phẩm** và nút **Công thức** → bấm vào:
+3. Dòng có nhãn **Bán thành phẩm**; **⋯** có thêm **Công thức** → bấm vào:
    - **Một mẻ ra bao nhiêu** (ví dụ 900 ml);
    - **Nguyên liệu cho một mẻ**: **+ Nguyên liệu**, ví dụ Hạt cà phê 100 g, Nước 1.000 ml;
    - **Cách làm** (không bắt buộc) → **Lưu công thức**.
@@ -112,10 +111,10 @@ Không hủy được phần **đang giữ cho đơn chưa hoàn tất** (*"Khô
 
 ### Bật theo dõi lô
 
-**Kho nguyên liệu → Kho nâng cao** → tick **Theo dõi theo lô + hạn sử dụng (trừ kho lô hết hạn sớm trước — FEFO)** → **Lưu**.
+**Kho nguyên liệu** → cột **Hạn sử dụng** của nguyên liệu đó ghi *Chưa theo dõi* → bấm **Theo dõi hạn** (một chạm). Cách cũ vẫn dùng được: **⋯ → Kho nâng cao** → tick **Theo dõi theo lô + hạn sử dụng (trừ kho lô hết hạn sớm trước — FEFO)** → **Lưu**.
 
-- Tồn hiện có thành một lô **"Tồn đầu"** không hạn.
-- Dòng nguyên liệu có nhãn **Theo lô** và nút **Lô**. Nếu có hàng hết hạn: nhãn đỏ **Hết hạn …**.
+- Tồn hiện có thành một lô **"Tồn đầu"** không hạn — cột Hạn sử dụng ghi *Chưa có lô ghi hạn* cho tới lần nhập hàng có ghi hạn.
+- Dòng nguyên liệu có nhãn **Theo lô**; **⋯** có thêm **Lô & hạn dùng**. Nếu có hàng hết hạn: nhãn đỏ **Hết hạn …**.
 - Tắt theo dõi → mọi lô được đóng.
 
 ### Nhập hàng có hạn dùng
@@ -131,7 +130,8 @@ Mỗi lần trừ kho (bán, sơ chế, hủy, điều chỉnh giảm…), hệ 
 ### Xử lý hàng hết hạn
 
 - **Quầy → Kho & sơ chế → tab Hạn dùng:** liệt kê lô **Đã hết hạn** (dòng đỏ) và lô **Còn N ngày** (sắp hết hạn trong 3 ngày). Bấm **Hủy lô** (không hỏi lại) → toàn bộ phần còn lại của lô được ghi phiếu hủy "Hết hạn", kho trừ, lô đóng.
-- **Quản lý → Kho nguyên liệu → Lô:** xem từng lô (còn bao nhiêu, hạn dùng, giá, nguồn, ngày nhận), có nút **Hủy lô**.
+- **Quản lý → Kho nguyên liệu → cột Hạn sử dụng:** ngày hết hạn của **lô còn hàng gần hết hạn nhất** + nhãn *Còn N ngày* (vàng khi ≤ 3 ngày) / *Hết hạn hôm nay* / *Hết hạn N ngày trước* (đỏ) + lượng của lô đó; còn ≤ 3 ngày thì đầu trang có dải **Sắp hết hạn: …**. Hộp đang mở (F-075) ghi *dùng trước …*.
+- **Quản lý → Kho nguyên liệu → ⋯ → Lô & hạn dùng:** xem từng lô (còn bao nhiêu, hạn dùng, giá, nguồn, ngày nhận), có nút **Hủy lô**.
 - **Tab Tồn kho ở quầy** có cột **Hết hạn** để biết bao nhiêu hàng đang nằm trong lô hết hạn.
 - Mỗi sáng 06:00 máy tự gửi cảnh báo lô sắp / đã hết hạn tới quầy.
 
@@ -139,7 +139,7 @@ Mỗi lần trừ kho (bán, sơ chế, hủy, điều chỉnh giảm…), hệ 
 
 ### Khai báo nhà cung cấp
 
-**Nhà cung cấp & đặt hàng → tab Nhà cung cấp → + Thêm nhà cung cấp:**
+**Nhập kho & kiểm kê → thẻ Nhà cung cấp → + Thêm nhà cung cấp:**
 
 1. **Tên**, **Điện thoại**, **Email**, **Giao sau (ngày)**, **Ngày giao trong tuần** (tick CN…T7), **Ghi chú**.
 2. **Nguyên liệu cung cấp**: mỗi dòng chọn nguyên liệu, **đơn vị gói** (ví dụ hộp 1 lít), số lượng gốc mỗi gói (trống = tự quy đổi theo tab Đơn vị), **Giá / gói**, tick **Ưu tiên** (★ — dùng khi đề xuất nhập; mỗi nguyên liệu một nhà cung cấp ưu tiên).
@@ -173,7 +173,7 @@ Mỗi lần nhận tự tạo phiếu nhập (ghi "Nhận theo PO #…"): cộng
 
 ## 6. Đề xuất nhập hàng
 
-**Nhà cung cấp & đặt hàng → tab Đề xuất nhập hàng** (mở sẵn khi vào trang):
+**Nhập kho & kiểm kê → thẻ Đề xuất nhập hàng:**
 
 1. Bảng mỗi nguyên liệu: **Khả dụng** · **Đang về** (đơn đã gửi chưa nhận) · **Nhu cầu đến ngày giao** · **An toàn** · **Đề xuất nhập** (số gói) · **Dự kiến hết** · **Nhà cung cấp**.
    - **Dòng đỏ:** sẽ hết **trước ngày giao** kế tiếp → cần đặt gấp.

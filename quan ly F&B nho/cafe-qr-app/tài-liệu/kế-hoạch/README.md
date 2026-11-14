@@ -54,3 +54,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-105-plan.md](TASK-105-plan.md) — hoàn thiện đổi bàn (F-087, ADR-048).
 - [TASK-106-plan.md](TASK-106-plan.md) — màn quầy một màn hình (F-088, ADR-049).
 - [TASK-107-plan.md](TASK-107-plan.md) — bỏ "Đổi người" ở máy quầy (ADR-050).
+- [TASK-109-plan.md](TASK-109-plan.md) — Kho nguyên liệu gọn + gộp Nhà cung cấp vào Nhập kho & kiểm kê (F-089).

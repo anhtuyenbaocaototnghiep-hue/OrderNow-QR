@@ -126,7 +126,7 @@ function render(d) {
           owner ? '/admin/cash' : '/pos/shift',
         ),
         todo(t.pendingAccess, `${t.pendingAccess} yêu cầu xin quyền chờ duyệt`, '/admin/users#xin-quyen'), // F-079
-        todo(t.posDue, `${t.posDue} đơn đặt hàng đến hạn nhận`, owner ? '/admin/purchasing' : '/pos/stock'),
+        todo(t.posDue, `${t.posDue} đơn đặt hàng đến hạn nhận`, owner ? '/admin/purchasing?tab=pos' : '/pos/stock'),
         todo(t.expiredLots, `${t.expiredLots} lô đã hết hạn còn hàng — cần hủy`, owner ? '/admin/ingredients' : '/pos/stock'),
         todo(
           t.stocktakeOverdue,

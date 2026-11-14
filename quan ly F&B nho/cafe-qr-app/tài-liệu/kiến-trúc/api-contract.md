@@ -822,6 +822,10 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
   - `PUT` **không gửi** `imageUrl` → giữ ảnh cũ; `''` / `null` → bỏ ảnh. (Khác món: `PUT /api/admin/menu-items/{id}` không gửi ảnh vẫn là bỏ ảnh như trước.)
 - `GET /api/admin/ingredients`, `GET /api/ops/ingredients`: mỗi nguyên liệu thêm `imageUrl` (`string | null`).
 
+## Bổ sung F-089 — hạn sử dụng ở Kho nguyên liệu (TASK-109, 14/11/2026)
+
+- `GET /api/admin/ingredients`, `GET /api/ops/ingredients`: mỗi nguyên liệu thêm `nextExpiry` (`'YYYY-MM-DD' | null` — hạn sớm nhất của lô còn hàng có ghi hạn, chỉ nguyên liệu theo lô), `nextExpiryDays` (`int | null`, theo ngày giờ quán, âm = đã hết hạn), `nextExpiryQty` (số — tổng lượng các lô cùng ngày đó; `0` khi không có hạn). Không đổi endpoint, quyền, mã lỗi.
+
 ## Bổ sung F-086 — khách đổi bàn khi quét QR (ADR-047, TASK-104, 10/11/2026)
 
 - `POST /api/sessions/scan` thêm kết quả `{ state: 'ELSEWHERE', table, elsewhere, otherGroups[], openSessions[] }` khi điện thoại có nhóm mở ở bàn khác (6 giờ gần nhất). `elsewhere` / mỗi phần tử `otherGroups` = `{ sessionId, table: { name, qrToken }, status, orderCount, itemCount, clientCount, canMoveNow, moveRequest }` — nhóm đã gửi món trước. Không tạo nhóm ở bàn vừa quét.

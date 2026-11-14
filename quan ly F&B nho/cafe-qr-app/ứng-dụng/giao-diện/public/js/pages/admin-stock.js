@@ -7,41 +7,20 @@ import { mountAdminShell } from '../admin-shell.js';
 import { stocktakeUi } from '../stocktake.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, num, reasonDialog, toast, todayVn } from '../ui.js';
 import { icon } from '../icons.js';
+import { initialTab, stockTabs } from '../stock-nav.js';
 
 await mountAdminShell('stock');
 
 const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
-const state = { tab: 'receipts', from: addDays(todayVn(), -29), to: todayVn(), ingredients: [], units: [] };
+const state = { tab: initialTab('stock', 'receipts'), from: addDays(todayVn(), -29), to: todayVn(), ingredients: [], units: [] };
 const body = el('div');
 const fromInput = el('input', { type: 'date', class: 'input', value: state.from, max: todayVn(), 'aria-label': 'Từ ngày' });
 const toInput = el('input', { type: 'date', class: 'input', value: state.to, max: todayVn(), 'aria-label': 'Đến ngày' });
-const tabs = el(
-  'div',
-  { class: 'tabs', role: 'tablist' },
-  [
-    ['receipts', 'Nhập kho'],
-    ['stocktakes', 'Kiểm kê'],
-    ['costs', 'Giá vốn & hao hụt'],
-    ['cogs', 'Giá vốn thực tế'],
-    ['loss', 'Thất thoát'],
-    ['units', 'Đơn vị'],
-  ].map(([key, label]) =>
-    el(
-      'button',
-      {
-        type: 'button',
-        role: 'tab',
-        'aria-selected': String(state.tab === key),
-        onclick: (e) => {
-          state.tab = key;
-          tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b === e.currentTarget)));
-          load();
-        },
-      },
-      label,
-    ),
-  ),
-);
+// TASK-109 (F-089): hàng thẻ chung với trang Nhà cung cấp & đặt hàng (một mục "Nhập kho & kiểm kê")
+const tabs = stockTabs('stock', state.tab, (key) => {
+  state.tab = key;
+  load();
+});
 const rangeBar = el(
   'div',
   { class: 'filters' },

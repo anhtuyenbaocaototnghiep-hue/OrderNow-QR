@@ -31,13 +31,25 @@ const mapIngredient = (r) =>
     openShelfHours: r.OpenShelfHours ?? null,
     openedAt: r.OpenedAt ?? null,
     openLeft: r.OpenLeft ? Math.min(Number(r.OpenLeft), Number(r.StockQty)) : 0,
+    // TASK-109 (F-089): hạn sử dụng gần nhất của lô còn hàng (nguyên liệu theo lô — F-028); ngày tính theo giờ VN như trang Lô
+    nextExpiry: r.NextExpiry ?? null,
+    nextExpiryDays: r.NextExpiry ? r.NextExpiryDays : null,
+    nextExpiryQty: r.NextExpiry ? round3(Number(r.NextExpiryQty ?? 0)) : 0,
   };
 
+// Lô còn hàng có hạn của nguyên liệu đang theo lô — dùng cho NextExpiry / NextExpiryQty
+const OPEN_LOTS = `FROM dbo.IngredientLots l WHERE l.IngredientId = i.IngredientId AND i.TrackLots = 1 AND l.IsClosed = 0 AND l.Qty > 0
+                   AND l.ExpiryDate IS NOT NULL`;
 const SELECT = `SELECT i.*, (SELECT COUNT(*) FROM dbo.BomItems b JOIN dbo.MenuItems m ON m.MenuItemId = b.MenuItemId
                               WHERE b.IngredientId = i.IngredientId AND m.DeletedAt IS NULL) AS UsedIn,
                        (SELECT ex.ExpiredQty FROM dbo.tvf_ExpiredLotQty() ex WHERE ex.IngredientId = i.IngredientId) AS ExpiredQty,
-                       CASE WHEN EXISTS (SELECT 1 FROM dbo.SemiRecipes sr WHERE sr.SemiIngredientId = i.IngredientId) THEN 1 ELSE 0 END AS HasRecipe
-                FROM dbo.Ingredients i`;
+                       CASE WHEN EXISTS (SELECT 1 FROM dbo.SemiRecipes sr WHERE sr.SemiIngredientId = i.IngredientId) THEN 1 ELSE 0 END AS HasRecipe,
+                       nx.NextExpiry, nx.NextExpiryDays,
+                       (SELECT SUM(l.Qty) ${OPEN_LOTS} AND CONVERT(CHAR(10), l.ExpiryDate, 23) = nx.NextExpiry) AS NextExpiryQty
+                FROM dbo.Ingredients i
+                OUTER APPLY (SELECT CONVERT(CHAR(10), MIN(l.ExpiryDate), 23) AS NextExpiry,
+                                    DATEDIFF(DAY, CAST(DATEADD(HOUR, 7, SYSUTCDATETIME()) AS DATE), MIN(l.ExpiryDate)) AS NextExpiryDays
+                             ${OPEN_LOTS}) nx`;
 
 /** F-031: đơn vị gốc của nguyên liệu phải có trong Units (đơn vị mới → tạo đơn vị gốc). */
 const ENSURE_UNIT = 'IF NOT EXISTS (SELECT 1 FROM dbo.Units WHERE UnitCode = @u) INSERT dbo.Units (UnitCode, Name) VALUES (@u, @u);';
