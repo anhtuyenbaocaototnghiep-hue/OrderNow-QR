@@ -57,3 +57,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-109-plan.md](TASK-109-plan.md) — Kho nguyên liệu gọn + gộp Nhà cung cấp vào Nhập kho & kiểm kê (F-089).
 - [TASK-110-plan.md](TASK-110-plan.md) — phân quyền đơn giản: Cho phép / Không cho phép, quyền theo vai, Quyền nâng cao (F-090, ADR-051).
 - [TASK-111-plan.md](TASK-111-plan.md) — bỏ trang Phân tích (ADR-052).
+- [TASK-112-plan.md](TASK-112-plan.md) — trang riêng Quyền nâng cao + số điện thoại tài khoản (F-091, ADR-053).

@@ -1,6 +1,7 @@
 # ADR-051 — Phân quyền đơn giản: Cho phép / Không cho phép, quyền theo vai lúc tạo tài khoản, Quyền nâng cao
 
 - **Trạng thái:** ACCEPTED (14/11/2026). Chủ dự án: "còn về phân quyền chỉ cho phép và không cho phép, khi tạo tài khoản thì quyền giao diện là nhân viên hay gì đó sẽ có quyền như vậy và có thêm giao diện cấp quyền nâng cao do chính admin cấp làm lại cho dễ sử dụng hơn".
+- **Cập nhật 14/11/2026 ([ADR-053](ADR-053-trang-quyen-nang-cao-va-sdt-tai-khoan.md) D-226):** công tắc "Quyền nâng cao" chuyển từ hộp Thêm / Sửa tài khoản sang trang riêng `/admin/permissions` (thay D-224); D-222, D-223 giữ nguyên.
 - **Bối cảnh:** F-079 ([ADR-037](ADR-037-quyen-rieng-tung-tai-khoan.md)) cho chủ quán đặt riêng từng quyền trong hộp "Quyền" (nút riêng trên dòng tài khoản): mỗi quyền một ô chọn ba trạng thái "Mặc định / Cho phép / Không cho" + ô Hạn (Giữ hạn cũ / Luôn luôn / Hết hôm nay / 7 ngày / Đến ngày…). Lúc tạo tài khoản không thấy vai trò vừa chọn được làm gì; muốn đổi quyền phải tạo xong rồi mở một hộp khác. Chủ dự án thấy khó dùng.
 
 ## Quyết định
