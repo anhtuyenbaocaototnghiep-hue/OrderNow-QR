@@ -31,6 +31,7 @@ const PAGES = {
   '/admin/tables/print': 'admin/qr-print.html',
   '/admin/ingredients': 'admin/ingredients.html',
   '/admin/users': 'admin/users.html',
+  '/admin/permissions': 'admin/permissions.html', // SCR-58 Quyền nâng cao (F-091, ADR-053)
   // Marketing & Khách hàng + vận hành (ADR-005)
   '/admin/members': 'admin/members.html',
   '/admin/combos': 'admin/combos.html',

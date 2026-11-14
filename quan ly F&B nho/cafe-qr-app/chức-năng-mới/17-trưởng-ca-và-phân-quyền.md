@@ -27,10 +27,15 @@ Các con số ngưỡng ở trên là mặc định; quản lý sửa được �
 1. **Quản lý → Tài khoản** → **+ Thêm nhân viên**.
 2. Điền **Tên đăng nhập**, **Mật khẩu (tối thiểu 6 ký tự)**, **Họ tên**; ô **Vai trò** chọn **Trưởng ca** (các lựa chọn: Nhân viên quầy / Trưởng ca / Quản lý).
 3. Ngay dưới ô Vai trò, khung **Quyền** ghi *"Vai trò này được làm N / 17 việc"* kèm danh sách — đổi ngay khi bạn chọn vai trò / vị trí khác. Tài khoản tạo ra có đúng các quyền đó.
-4. (Không bắt buộc) Muốn cho thêm hoặc bớt việc riêng người này: mở **Quyền nâng cao — cho phép / không cho phép từng việc** → bật / tắt công tắc từng việc (**Cho phép** / **Không cho phép**). Dòng nhỏ dưới tên việc cho biết *Theo vai trò* / *Cấp thêm* / *Bỏ bớt*; **Về như vai trò** đưa tất cả về mặc định.
-5. **Tạo tài khoản** → người đó đăng nhập được ngay. Dòng của người có quyền riêng có nhãn **Có quyền nâng cao**.
+4. (Không bắt buộc) Ô **Số điện thoại** — gõ kiểu nào cũng được (0912 345 678, +84…); số hiện ở cột **Số điện thoại**, bấm vào là gọi (trên điện thoại). Chỉ chủ quán thấy số.
+5. **Tạo tài khoản** → người đó đăng nhập được ngay.
 
-Đổi quyền về sau: bấm **Sửa** trên dòng → khung **Quyền** (phần Quyền nâng cao mở sẵn nếu người đó đang có quyền riêng) → bật / tắt → **Lưu**. Quyền tạm do bạn duyệt "Xin quyền" (hết hôm nay / 7 ngày) ghi *tạm đến …* và giữ nguyên hạn nếu bạn không chạm công tắc đó.
+**Cho thêm / bớt việc riêng một người: trang Quyền nâng cao** (thanh bên → Hệ thống → **Quyền nâng cao**, ngay dưới Tài khoản):
+
+1. Bên trái chọn người. Bên phải là mọi việc, mỗi việc một công tắc **Cho phép** / **Không cho phép**; dòng nhỏ dưới tên việc cho biết *Theo vai trò* / *Cấp thêm* / *Bỏ bớt*.
+2. Bật / tắt → **Lưu quyền**. **Về như vai trò** đưa tất cả về mặc định (rồi Lưu quyền). Đổi sang người khác khi chưa lưu → app hỏi lại.
+3. Nhân viên bấm **Xin quyền** → yêu cầu hiện ở đầu trang này (và ở **Hôm nay**): chọn thời hạn → **Duyệt** / **Từ chối**. Quyền tạm (hết hôm nay / 7 ngày) ghi *tạm đến …* và giữ nguyên hạn nếu bạn không chạm công tắc đó.
+4. Ở trang **Tài khoản**, người có quyền riêng có nhãn **Có quyền nâng cao** — bấm vào là mở trang này đúng người đó.
 
 Đổi vai trò người đang có: bấm **Sửa** trên dòng → đổi **Vai trò** → **Lưu**. Không tự đổi vai trò của chính mình được.
 

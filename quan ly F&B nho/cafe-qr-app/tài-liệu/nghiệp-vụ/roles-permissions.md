@@ -214,5 +214,14 @@ Thẻ của vùng Quầy hiện theo vị trí: Bán mang đi ← Thu ngân, G�
 
 - **Hai trạng thái:** mỗi quyền ở mục 4.8 một công tắc **Cho phép / Không cho phép**, bật sẵn theo quyền đang có; khác mặc định của vai trò + vị trí → quyền riêng (`ALLOW` / `DENY`, không hạn), giống → không lưu. "Về như vai trò" bỏ mọi quyền riêng.
 - **Quyền theo vai lúc tạo / sửa tài khoản:** chọn vai trò (+ vị trí) → hộp hiện "Vai trò này được làm N / 17 việc" (máy chủ tính — `GET /api/admin/role-permissions`, chỉ chủ quán); tài khoản mới nhận đúng các quyền đó.
-- **Quyền nâng cao** nằm trong hộp Thêm / Sửa (không còn nút "Quyền" riêng); chỉ chủ quán đặt. Quyền tạm (duyệt Xin quyền) hiện "tạm đến …", giữ hạn nếu không chạm.
+- **Quyền nâng cao** đặt ở trang riêng **Quyền nâng cao** (`/admin/permissions` — F-091, mục 4.11; trước đó trong hộp Thêm / Sửa); chỉ chủ quán đặt. Quyền tạm (duyệt Xin quyền) hiện "tạm đến …", giữ hạn nếu không chạm.
 - Không đổi: ai được làm gì theo vai / vị trí (mục 4.5–4.9), kiểm quyền ở máy chủ, cảnh báo `ACCESS_GRANT`. Test: `role-permissions.test.js` (AC-090-01), E2E AC-090-02…04.
+
+## 4.11. Bổ sung F-091 — trang Quyền nâng cao + số điện thoại tài khoản (ADR-053, 14/11/2026)
+
+| Việc | Chủ quán | Quản lý cửa hàng | Trưởng ca / Nhân viên |
+| --- | --- | --- | --- |
+| Mở trang Quyền nâng cao (`/admin/permissions`): duyệt xin quyền, bật / tắt quyền từng người | Có | — | — |
+| Thêm / sửa số điện thoại tài khoản; thấy cột Số điện thoại | Có | — (đọc danh sách tài khoản để xếp lịch nhưng không nhận SĐT) | — |
+
+Test: `staff-phone.test.js` (AC-091-01), E2E AC-091-02, AC-091-03.

@@ -51,11 +51,15 @@ export async function startPosSession(user) {
 
 // F-072 (ADR-030 D-126) "Đổi người" (đổi phiên máy quầy bằng PIN) đã bỏ — ADR-050 (14/11/2026).
 
-export const list = () => usersRepo.list();
+/** F-091 (ADR-053 D-227): SĐT nhân viên chỉ trả cho chủ quán — người xem danh sách để xếp lịch / lương không nhận số. */
+export const list = async ({ withPhone = false } = {}) => {
+  const users = await usersRepo.list();
+  return withPhone ? users : users.map(({ phone: _phone, ...u }) => u);
+};
 
-export async function create({ username, password, fullName, role, positions = null, level = 'OFFICIAL' }) {
+export async function create({ username, password, fullName, role, positions = null, level = 'OFFICIAL', phone = null }) {
   try {
-    return await usersRepo.create({ username, passwordHash: await bcrypt.hash(password, BCRYPT_COST), fullName, role, positions, level });
+    return await usersRepo.create({ username, passwordHash: await bcrypt.hash(password, BCRYPT_COST), fullName, role, positions, level, phone });
   } catch (err) {
     const n = sqlErrorNumber(err);
     if (n === 2627 || n === 2601) throw conflict('USERNAME_TAKEN', 'Tên đăng nhập đã tồn tại, vui lòng chọn tên khác');
@@ -67,10 +71,10 @@ export async function create({ username, password, fullName, role, positions = n
  * Đổi họ tên / vai trò (+ vị trí, cấp của nhân viên — F-078). Không tự đổi vai trò; không hạ quản lý cuối cùng (409 LAST_ADMIN — kiểm
  * nguyên tử trong SQL). Vắng `positions` / `level` → giữ như cũ.
  */
-export async function update(id, { fullName, role, positions, level }, actor) {
+export async function update(id, { fullName, role, positions, level, phone }, actor) {
   if (id === actor.userId && role !== actor.role) throw badRequest('CANNOT_CHANGE_OWN_ROLE', 'Không thể tự đổi vai trò của chính mình');
   const cur = positions === undefined || level === undefined ? await usersRepo.findById(id) : null;
-  const next = { fullName, role, positions: positions === undefined ? cur?.positions : positions, level: level ?? cur?.level ?? 'OFFICIAL' };
+  const next = { fullName, role, positions: positions === undefined ? cur?.positions : positions, level: level ?? cur?.level ?? 'OFFICIAL', phone };
   const user = await withDeadlockRetry(() => usersRepo.update(id, next));
   if (!user) throw notFound('Không tìm thấy tài khoản');
   return user;

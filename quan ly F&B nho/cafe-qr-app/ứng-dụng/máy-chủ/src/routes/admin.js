@@ -6,6 +6,7 @@ import { paramId, parse, zDate, zId, zText, zTime } from '../middleware/validate
 import * as adminService from '../services/adminService.js';
 import * as qrCheckService from '../services/qrCheckService.js';
 import * as userService from '../services/userService.js';
+import { normalizePhone } from '../services/memberService.js';
 import { badRequest } from '../errors.js';
 import { isValidDate } from '../utils/time.js';
 import { marketingRouter } from './marketing.js';
@@ -171,8 +172,17 @@ const staffFields = {
     .nullable()
     .optional(),
   level: z.enum(LEVELS, { message: 'Cấp không hợp lệ' }).optional(),
+  // F-091 (ADR-053 D-227): SĐT liên lạc (không bắt buộc) — chuẩn hóa như SĐT hội viên; vắng = giữ (khi sửa), '' / null = xóa
+  phone: z
+    .string()
+    .trim()
+    .max(20, 'Số điện thoại không hợp lệ — ví dụ 0912 345 678')
+    .nullable()
+    .optional()
+    .refine((v) => !v || normalizePhone(v) !== null, 'Số điện thoại không hợp lệ — ví dụ 0912 345 678')
+    .transform((v) => (v === undefined ? undefined : v ? normalizePhone(v) : null)),
 };
-adminRouter.get('/users', async (_req, res) => res.json(await userService.list()));
+adminRouter.get('/users', async (req, res) => res.json(await userService.list({ withPhone: req.user?.role === 'ADMIN' }))); // F-091: SĐT chỉ chủ quán
 adminRouter.post('/users', async (req, res) => {
   const body = parse(
     z.object({

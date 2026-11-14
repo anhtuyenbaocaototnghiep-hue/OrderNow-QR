@@ -230,6 +230,8 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-089-2 | Should | ACT-ADMIN, ACT-STORE | Là chủ quán, tôi muốn nhập hàng, kiểm kê, đặt hàng và nhà cung cấp nằm chung một mục với một hàng thẻ, còn việc ít dùng của nguyên liệu nằm sau nút "⋯", để màn hình gọn và dễ tìm. | AC-089-03, AC-089-04, AC-089-05 | — | UC-13 | MOD-INVENTORY, MOD-ADMIN | SCR-23, SCR-31, SCR-35 | F-089 | DONE |
 | US-090-1 | Should | ACT-ADMIN | Là chủ quán, khi tạo hoặc sửa tài khoản tôi muốn chọn vai trò (và vị trí) là thấy ngay người đó được làm những việc gì, để giao đúng việc mà không phải đoán. | AC-090-01, AC-090-02 | — | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | F-090 | DONE |
 | US-090-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn cho phép hoặc không cho phép riêng từng việc cho một người bằng một công tắc ngay trong hộp tài khoản ("Quyền nâng cao"), để cấp thêm / bỏ bớt nhanh, ít lựa chọn khó hiểu. | AC-090-02, AC-090-03, AC-090-04 | — | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | F-090 | DONE |
+| US-091-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn một trang riêng cho quyền nâng cao — thấy ai đang xin quyền, chọn từng người để cho phép / không cho phép từng việc — để hộp tài khoản gọn và việc phân quyền ở một chỗ. | AC-091-03, AC-091-04 | — | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-58, SCR-20 | F-091 | DONE |
+| US-091-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn lưu số điện thoại của từng nhân viên trong tài khoản và bấm gọi ngay từ danh sách, để liên lạc khi cần mà không phải tìm ở chỗ khác. | AC-091-01, AC-091-02, AC-091-04 | BR-024 | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | F-091 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

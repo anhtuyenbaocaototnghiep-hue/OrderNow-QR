@@ -1358,3 +1358,9 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Ghi "Đã mang" | `ordersRepo.markServed`: một câu `UPDATE … WHERE Type = 'DINE_IN' AND Status = 'COMPLETED' AND ServedAt IS NULL` + `@@ROWCOUNT` (hai người bấm cùng lúc → một người thắng, người kia `409 ALREADY_SERVED`). Không đụng kho, tiền. |
 | `sp_DeleteUser` | `Orders.ServedBy = @UserId` tính là đã có thao tác → lưu trữ (`ARCHIVED`), không xóa hẳn (khóa ngoại — trước đây lỗi 547). |
 | Cài đặt | `Settings` key `pos.single_screen` (`'false'` = tắt; thiếu = bật), `pos.serve_mode` (`COUNTER` \| khác = `TABLE`). |
+
+## Số điện thoại tài khoản (FEATURE-091, ADR-053 D-227, 14/11/2026)
+
+| Migration | Thay đổi |
+| --- | --- |
+| `0059_so_dien_thoai_tai_khoan.sql` | `Users.Phone VARCHAR(15) NULL` — SĐT liên lạc (không bắt buộc, không duy nhất), dạng chuẩn `+84` + 9 chữ số như `Members.Phone`; `CK_Users_Phone` (NULL hoặc đúng dạng). Chỉ thêm cột. Không nằm trong cột chung của phiên đăng nhập (`usersRepo` `COLS`) — chỉ danh sách / tạo / sửa tài khoản đọc. |

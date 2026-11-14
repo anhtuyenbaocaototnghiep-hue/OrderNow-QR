@@ -1,9 +1,9 @@
 // S-20 Tài khoản: tạo (username duy nhất — BR-004), sửa tên/vai trò, đặt lại mật khẩu, khóa/mở (BR-017). Không xóa cứng.
-// F-079 (ADR-037): khung "Xin quyền chờ duyệt". F-090 (ADR-051): hộp Thêm / Sửa có phần "Quyền" — vai trò này được làm gì + "Quyền nâng
-// cao" (công tắc Cho phép / Không cho phép từng việc); thay nút "Quyền" riêng trên dòng.
+// F-090 (ADR-051 D-223): hộp Thêm / Sửa ghi "Vai trò này được làm". F-091 (ADR-053): bật / tắt từng quyền + "Xin quyền chờ duyệt" ở trang
+// riêng Quyền nâng cao (/admin/permissions); ô + cột Số điện thoại (chỉ chủ quán thấy).
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell, toggle } from '../admin-shell.js';
-import { permissionEditor } from '../perm-editor.js';
+import { PERMISSIONS_PAGE, roleSummary } from '../perm-editor.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, setBusy, showFieldErrors, toast } from '../ui.js';
 import { LEVEL_LABEL, POSITION_HINT, POSITION_LABEL, positionsText, ROLE_BADGE, ROLE_LABEL, ROLE_SUMMARY } from '../roles.js';
 
@@ -93,7 +93,14 @@ async function load() {
   }
   clear(
     $('#content'),
-    requestsCard(requests),
+    requests.length
+      ? el(
+          'div',
+          { class: 'alert warning', role: 'status' },
+          `${requests.length} yêu cầu xin quyền chờ duyệt — `,
+          el('a', { href: `${PERMISSIONS_PAGE}#xin-quyen` }, 'mở Quyền nâng cao để duyệt'),
+        )
+      : null,
     roleGuide(),
     // F-072 (DEF-020): chỉ chỗ đặt / đổi PIN — quản lý không đặt hộ, chỉ xóa để người đó tự đặt lại
     el(
@@ -113,7 +120,7 @@ async function load() {
           el(
             'tr',
             {},
-            ['Tên đăng nhập', 'Họ tên', 'Vai trò', 'PIN', 'Tạo lúc', 'Hoạt động', ''].map((h) => el('th', {}, h)),
+            ['Tên đăng nhập', 'Họ tên', 'Số điện thoại', 'Vai trò', 'PIN', 'Tạo lúc', 'Hoạt động', ''].map((h) => el('th', {}, h)),
           ),
         ),
         el(
@@ -130,13 +137,26 @@ async function load() {
                 u.userId === me.userId ? el('span', { class: 'badge primary', style: { marginLeft: '0.4rem' } }, 'Bạn') : null,
               ),
               el('td', {}, u.fullName),
+              // F-091: gọi được ngay trên điện thoại (tel:)
+              el('td', {}, u.phone ? el('a', { href: `tel:${u.phone}`, class: 'nowrap' }, phoneText(u.phone)) : el('span', { class: 'muted small' }, '—')),
               el(
                 'td',
                 {},
                 el('span', { class: `badge ${ROLE_BADGE[u.role] ?? ''}` }, ROLE[u.role]),
                 u.level === 'PROBATION' ? el('span', { class: 'badge pending', style: { marginLeft: '0.3rem' } }, 'Thử việc') : null,
                 u.role === 'STAFF' ? el('div', { class: 'small muted' }, positionsText(u)) : null,
-                u.grantCount ? el('div', {}, el('span', { class: 'badge preparing' }, 'Có quyền nâng cao')) : null, // F-079, F-090
+                // F-091: nhãn dẫn tới trang Quyền nâng cao, chọn sẵn người này
+                u.grantCount
+                  ? el(
+                      'div',
+                      {},
+                      el(
+                        'a',
+                        { class: 'badge preparing', href: `${PERMISSIONS_PAGE}?user=${u.userId}`, title: 'Xem / đổi quyền nâng cao của người này' },
+                        'Có quyền nâng cao',
+                      ),
+                    )
+                  : null,
               ),
               el(
                 'td',
@@ -162,7 +182,7 @@ async function load() {
                   'div',
                   { class: 'row wrap' },
                   // F-090: quyền nằm trong hộp Sửa (vai trò + Quyền nâng cao) — không còn nút "Quyền" riêng
-                  el('button', { class: 'btn btn-sm', type: 'button', onclick: (e) => editUser(u, e.currentTarget) }, 'Sửa'),
+                  el('button', { class: 'btn btn-sm', type: 'button', onclick: () => editUser(u) }, 'Sửa'),
                   el('button', { class: 'btn btn-sm', type: 'button', onclick: () => resetPassword(u) }, 'Đặt lại mật khẩu'),
                   // F-072: quên PIN / nghi bị lộ → xóa để người đó đăng nhập bằng mật khẩu và đặt lại (quản lý không biết PIN của ai)
                   u.hasPin
@@ -239,6 +259,27 @@ async function setActive(u, isActive, input) {
   }
 }
 
+/** F-091 (ADR-053 D-227): số điện thoại liên lạc — không bắt buộc; máy chủ chuẩn hóa / báo sai dưới ô. */
+const phoneField = (value = null) =>
+  el(
+    'div',
+    { class: 'field' },
+    el('label', { for: 'user-phone' }, 'Số điện thoại (không bắt buộc)'),
+    el('input', {
+      class: 'input',
+      id: 'user-phone',
+      name: 'phone',
+      type: 'tel',
+      inputmode: 'tel',
+      autocomplete: 'off',
+      maxlength: 20,
+      placeholder: 'Ví dụ 0912 345 678',
+      value: value ? phoneText(value) : '',
+    }),
+  );
+/** '0912345678' → '0912 345 678' */
+const phoneText = (p) => p.replace(/^(\d{4})(\d{3})(\d{3})$/, '$1 $2 $3');
+
 const roleSelect = (value) =>
   el(
     'select',
@@ -297,51 +338,34 @@ function createUser() {
       el('label', { for: 'user-fullname' }, 'Họ tên'),
       el('input', { class: 'input', id: 'user-fullname', name: 'fullName', maxlength: 100 }),
     ),
+    phoneField(),
     el('div', { class: 'field' }, el('label', { for: 'user-role' }, 'Vai trò'), roleSelect('STAFF')),
   );
   const f = (n) => form.elements.namedItem(n);
   const staffValues = staffFields(form);
-  const perms = permissionEditor(form); // F-090: vai trò này được làm gì + Quyền nâng cao
-  form.append(perms.node);
+  form.append(roleSummary(form).node); // F-090: vai trò này được làm gì (bật / tắt từng việc: trang Quyền nâng cao)
   formModal({
     title: 'Thêm nhân viên',
     form,
     submitLabel: 'Tạo tài khoản',
     send: async () => {
-      await perms.ready();
-      const grants = perms.grants();
-      const user = await staffApi('/api/admin/users', {
+      await staffApi('/api/admin/users', {
         method: 'POST',
-        body: { username: f('username').value, password: f('password').value, fullName: f('fullName').value, role: f('role').value, ...staffValues() },
+        body: {
+          username: f('username').value,
+          password: f('password').value,
+          fullName: f('fullName').value,
+          phone: f('phone').value,
+          role: f('role').value,
+          ...staffValues(),
+        },
       });
-      if (grants.length) {
-        try {
-          await staffApi(`/api/admin/users/${user.userId}/grants`, { method: 'PUT', body: { grants } });
-        } catch (err) {
-          // Tài khoản đã tạo — chỉ phần quyền nâng cao chưa lưu: báo rõ, đóng hộp (bấm lại sẽ tạo trùng tên)
-          toast(`Đã tạo tài khoản nhưng chưa lưu được quyền nâng cao (${errorMessage(err)}) — bấm Sửa ở dòng đó để đặt lại`, 'warning', 9000);
-          return;
-        }
-      }
       toast('Đã tạo tài khoản — nhân viên có thể đăng nhập ngay', 'success');
     },
   });
 }
 
-async function editUser(u, button) {
-  // F-090: quyền riêng đang có của người này (chủ quán luôn đủ quyền — không cần)
-  let current = null;
-  if (u.role !== 'ADMIN') {
-    setBusy(button, true);
-    try {
-      current = await staffApi(`/api/admin/users/${u.userId}/grants`);
-    } catch (err) {
-      toast(errorMessage(err), 'error');
-      return;
-    } finally {
-      setBusy(button, false);
-    }
-  }
+function editUser(u) {
   const form = el(
     'form',
     {},
@@ -351,23 +375,23 @@ async function editUser(u, button) {
       el('label', { for: 'user-fullname' }, 'Họ tên'),
       el('input', { class: 'input', id: 'user-fullname', name: 'fullName', maxlength: 100, value: u.fullName }),
     ),
+    phoneField(u.phone),
     el('div', { class: 'field' }, el('label', { for: 'user-role' }, 'Vai trò'), roleSelect(u.role)),
   );
   const f = (n) => form.elements.namedItem(n);
   if (u.userId === me.userId) f('role').disabled = true;
   const staffValues = staffFields(form, u); // F-078
-  const perms = permissionEditor(form, current); // F-090
-  form.append(perms.node);
-  button?.focus(); // hộp thoại trả focus về nút Sửa khi đóng (nút vừa hết "đang tải")
+  form.append(roleSummary(form, u).node); // F-090: vai trò này được làm gì · F-091: liên kết Quyền nâng cao của người này
   formModal({
     title: `Sửa ${u.username}`,
     form,
     submitLabel: 'Lưu',
     send: async () => {
       const role = u.userId === me.userId ? u.role : f('role').value;
-      await perms.ready();
-      await staffApi(`/api/admin/users/${u.userId}`, { method: 'PUT', body: { fullName: f('fullName').value, role, ...staffValues() } });
-      if (perms.changed()) await staffApi(`/api/admin/users/${u.userId}/grants`, { method: 'PUT', body: { grants: perms.grants() } });
+      await staffApi(`/api/admin/users/${u.userId}`, {
+        method: 'PUT',
+        body: { fullName: f('fullName').value, phone: f('phone').value, role, ...staffValues() },
+      });
       toast('Đã lưu', 'success');
     },
   });
@@ -393,83 +417,6 @@ function resetPassword(u) {
       toast('Đã đặt lại mật khẩu', 'success');
     },
   });
-}
-
-// ---------- F-079 (ADR-037): duyệt xin quyền (thời hạn) — đặt quyền từng người: hộp Sửa → Quyền nâng cao (F-090) ----------
-const DURATIONS = [
-  ['ALWAYS', 'Luôn luôn'],
-  ['TODAY', 'Hết hôm nay'],
-  ['WEEK', '7 ngày'],
-];
-
-/** Khung "Xin quyền chờ duyệt" (chỉ hiện khi có yêu cầu). */
-function requestsCard(requests) {
-  if (!requests.length) return null;
-  return el(
-    'section',
-    { class: 'card access-requests', id: 'xin-quyen' },
-    el('h2', {}, `Xin quyền chờ duyệt (${requests.length})`),
-    el(
-      'ul',
-      { class: 'stack' },
-      requests.map((r) => {
-        const dur = el(
-          'select',
-          { class: 'input', 'aria-label': `Thời hạn cho ${r.user.fullName}` },
-          DURATIONS.map(([v, l]) => el('option', { value: v, selected: v === 'TODAY' }, l)),
-        );
-        const decide = async (btn, path, body, ok) => {
-          setBusy(btn, true);
-          try {
-            await staffApi(`/api/admin/access-requests/${r.requestId}/${path}`, { method: 'POST', body });
-            toast(ok, 'success');
-            load();
-          } catch (err) {
-            toast(errorMessage(err), 'error');
-            setBusy(btn, false);
-          }
-        };
-        return el(
-          'li',
-          { class: 'access-request' },
-          el(
-            'div',
-            {},
-            el('strong', {}, r.user.fullName),
-            ` (${ROLE[r.user.role] ?? r.user.role}) xin: `,
-            el('strong', {}, r.capabilityLabel ?? r.capability),
-            el('div', { class: 'small muted' }, `${dateTime(r.createdAt)}${r.reason ? ` — "${r.reason}"` : ''}`),
-          ),
-          el(
-            'div',
-            { class: 'row wrap' },
-            dur,
-            el(
-              'button',
-              {
-                class: 'btn btn-sm btn-primary',
-                type: 'button',
-                onclick: (e) => decide(e.currentTarget, 'approve', { duration: dur.value }, `Đã cho phép ${r.user.fullName}`),
-              },
-              'Duyệt',
-            ),
-            el(
-              'button',
-              {
-                class: 'btn btn-sm',
-                type: 'button',
-                onclick: async (e) => {
-                  if (!(await confirmDialog('Từ chối yêu cầu?', `${r.user.fullName} sẽ được báo là chưa được cấp quyền này.`, { okLabel: 'Từ chối' }))) return;
-                  decide(e.currentTarget, 'reject', {}, 'Đã từ chối');
-                },
-              },
-              'Từ chối',
-            ),
-          ),
-        );
-      }),
-    ),
-  );
 }
 
 load();

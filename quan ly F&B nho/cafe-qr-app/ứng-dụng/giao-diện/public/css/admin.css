@@ -1633,14 +1633,6 @@ ul.bday-tips {
   color: var(--c-warning-text);
   font-weight: 600;
 }
-.perm-advanced > summary {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--c-primary);
-}
 .perm-group-title {
   margin: 0.75rem 0 0.15rem;
   font-size: 0.8rem;
@@ -1728,26 +1720,6 @@ ul.bday-tips {
     font-size: 0.8rem;
   }
 }
-/* Mũi tên mở / đóng của "Quyền nâng cao" (summary dạng flex mất dấu tam giác mặc định) — như dòng Tra cứu API */
-.perm-advanced > summary {
-  gap: 0.6rem;
-  list-style: none;
-}
-.perm-advanced > summary::-webkit-details-marker {
-  display: none;
-}
-.perm-advanced > summary::before {
-  content: '';
-  flex: none;
-  width: 0.45rem;
-  height: 0.45rem;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(-45deg);
-}
-.perm-advanced[open] > summary::before {
-  transform: rotate(45deg);
-}
 @media (forced-colors: active) {
   /* Chế độ tương phản cao: công tắc tự vẽ vẫn thấy viền + trạng thái bật */
   .perm-switch input {
@@ -1755,5 +1727,68 @@ ul.bday-tips {
   }
   .perm-switch input:checked {
     background: Highlight;
+  }
+}
+
+/* ---------- F-091 (ADR-053): trang Quyền nâng cao — danh sách người (trái) + công tắc của người đang chọn (phải) ---------- */
+.perm-page {
+  display: grid;
+  grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.perm-people {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.perm-person {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.perm-person:hover {
+  background: var(--c-surface-2);
+}
+.perm-person:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 2px;
+}
+.perm-person[aria-pressed='true'] {
+  border-color: var(--c-primary);
+  background: var(--c-primary-50);
+  box-shadow: inset 4px 0 0 var(--c-primary);
+}
+.perm-person-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+.perm-panel h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+}
+.perm-actions {
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+.perm-more {
+  margin: 0.5rem 0 0;
+}
+@media (max-width: 760px) {
+  .perm-page {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

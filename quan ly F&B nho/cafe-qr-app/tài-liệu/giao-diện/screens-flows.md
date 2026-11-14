@@ -593,3 +593,8 @@ flowchart LR
 - Chủ dự án: "bỏ cái phân tích không cần thiết". Thanh bên nhóm **Tổng quan** còn **Báo cáo & lịch sử** · **Thu chi**. `/admin/analytics` (S-41 cũ) chuyển về **Thu chi** (S-39).
 - **Cài đặt (S-33) → Giao diện quản lý:** nhóm nâng cao **"Thu chi"** — Thu chi (lãi / lỗ, chi phí cố định) (trước: "Phân tích & thu chi").
 - Thanh Xin quyền / phần Quyền nâng cao: quyền **"Thu chi, chi phí cố định"**.
+
+## TASK-112 — Trang Quyền nâng cao + số điện thoại tài khoản — SCR-58, SCR-20 (F-091, ADR-053, 14/11/2026)
+
+- **SCR-58 `/admin/permissions` — Quyền nâng cao** (chỉ chủ quán; thanh bên nhóm Hệ thống, ngay sau Tài khoản; nút "Tài khoản" ở đầu trang): khung **Xin quyền chờ duyệt** (`#xin-quyen`, chỉ hiện khi có — Duyệt kèm thời hạn / Từ chối; duyệt xong chọn sẵn người đó) · câu giải thích · bố cục 2 cột (≤ 760 px: 1 cột): trái **danh sách người** (nút: họ tên, nhãn vai, vị trí, "N quyền nâng cao", "Đã khóa"; đang chọn viền nâu + `aria-pressed`), phải **Quyền của …** ("Vai trò · vị trí — theo vai trò được làm N / 17 việc" + liên kết đổi vai ở Tài khoản; dòng vàng "Cấp thêm … · Bỏ bớt …"; nhóm MÁY QUẦY / TRANG QUẢN LÝ với công tắc Cho phép / Không cho phép; **Về như vai trò** · **Lưu quyền**). Đổi người khi còn thay đổi → hộp "Bỏ thay đổi chưa lưu?" (Hủy / Bỏ thay đổi). `?user={id}` chọn sẵn.
+- **SCR-20 Tài khoản:** cột **Số điện thoại** (thứ ba; liên kết `tel:` "0912 345 678"); hộp Thêm / Sửa thêm ô **Số điện thoại (không bắt buộc)** (sau Họ tên), khung **Quyền** chỉ còn "Vai trò này được làm N / 17 việc" + câu liên kết **Quyền nâng cao** (khi sửa: "Người này có N quyền nâng cao" + liên kết đúng người); nhãn **Có quyền nâng cao** là liên kết; khung Xin quyền thay bằng dòng nhắc "N yêu cầu xin quyền chờ duyệt — mở Quyền nâng cao để duyệt".

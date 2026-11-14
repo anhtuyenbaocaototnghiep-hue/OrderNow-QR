@@ -91,6 +91,7 @@ Thanh bên (ADR-013 D-58, từ 23/10/2026): **Hôm nay** (SCR-42) luôn ở trê
 | SCR-35 | `/admin/purchasing` | `admin/purchasing.html`, `js/pages/admin-purchasing.js` | ACT-ADMIN | [F-029](../chức-năng/FEATURE-029.md), [F-030](../chức-năng/FEATURE-030.md) | |
 | SCR-22 | `/admin/tables` | `admin/tables.html`, `js/pages/admin-tables.js` | ACT-ADMIN | [F-010](../chức-năng/FEATURE-010.md) | |
 | SCR-20 | `/admin/users` | `admin/users.html`, `js/pages/admin-users.js` | ACT-ADMIN | [F-009](../chức-năng/FEATURE-009.md), [F-036](../chức-năng/FEATURE-036.md) | |
+| SCR-58 | `/admin/permissions` | `admin/permissions.html`, `js/pages/admin-permissions.js`, `js/perm-editor.js` | ACT-ADMIN | [F-091](../chức-năng/FEATURE-091.md), [F-090](../chức-năng/FEATURE-090.md), [F-079](../chức-năng/FEATURE-079.md) | Quyền nâng cao (ADR-053): xin quyền chờ duyệt + công tắc từng người; thanh bên nhóm Hệ thống sau Tài khoản |
 | SCR-26 | `/admin/members` | `admin/members.html`, `js/pages/admin-members.js` | ACT-ADMIN | [F-014](../chức-năng/FEATURE-014.md), [F-037](../chức-năng/FEATURE-037.md), [F-039](../chức-năng/FEATURE-039.md) | Nhóm "Khách hàng" (D-58) |
 | SCR-40 | `/admin/loyalty` | `admin/loyalty.html`, `js/pages/admin-loyalty.js` | ACT-ADMIN | [F-037](../chức-năng/FEATURE-037.md), [F-038](../chức-năng/FEATURE-038.md), [F-039](../chức-năng/FEATURE-039.md) | |
 | SCR-27 | `/admin/combos` | `admin/combos.html`, `js/pages/admin-combos.js` | ACT-ADMIN | [F-015](../chức-năng/FEATURE-015.md) | |

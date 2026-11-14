@@ -869,3 +869,9 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 
 - `GET /api/admin/role-permissions?role=&positions=` (chỉ chủ quán): quyền mặc định của vai trò + vị trí (chưa đặt riêng), tính bằng đúng hàm kiểm quyền của máy chủ → `{ role, positions, items: [{ key, group, label, money, byRole }] }` (17 quyền, thứ tự như `GET /api/access/capabilities`). `positions` = CSV `CASHIER` / `BARISTA` / `SERVER` (bỏ trùng; trống = mọi vị trí; chỉ áp cho `STAFF`); `ADMIN` → mọi `byRole = true`. Lỗi: vai / vị trí lạ, thiếu `role` → `400 VALIDATION_ERROR`; quản lý cửa hàng → `403 OWNER_ONLY`; nhân viên / trưởng ca → `403 FORBIDDEN`; chưa đăng nhập → `401`.
 - Hộp Thêm / Sửa tài khoản lưu quyền riêng bằng `PUT /api/admin/users/{id}/grants` (không đổi): chỉ gửi quyền khác mặc định; quyền tạm chưa chạm gửi lại đúng `expiresAt` cũ.
+
+## Bổ sung F-091 — số điện thoại tài khoản + trang Quyền nâng cao (ADR-053, TASK-112, 14/11/2026)
+
+- `POST /api/admin/users`, `PUT /api/admin/users/{id}`: thêm `phone` (chuỗi, không bắt buộc). Nhận `0xxxxxxxxx` / `+84…` / `84…` (bỏ dấu cách, chấm, gạch, ngoặc) → lưu `+84` + 9 chữ số; sai → `400 VALIDATION_ERROR` (`fields[].path = "phone"`, "Số điện thoại không hợp lệ — ví dụ 0912 345 678"). `PUT` không gửi `phone` → giữ số cũ; `''` / `null` → xóa. Phản hồi có `phone` (`'0xxxxxxxxx' | null`).
+- `GET /api/admin/users`: chủ quán nhận thêm `phone`; người khác gọi được danh sách (quyền Nhân sự / Lương) **không** có trường `phone`.
+- Trang mới `/admin/permissions` dùng API sẵn có: `GET /api/admin/users`, `GET / PUT /api/admin/users/{id}/grants`, `GET /api/admin/access-requests`, `POST …/approve`, `POST …/reject` (F-079 — không đổi).

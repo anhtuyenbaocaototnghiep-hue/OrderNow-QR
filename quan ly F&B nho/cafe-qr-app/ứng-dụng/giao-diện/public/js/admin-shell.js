@@ -71,6 +71,7 @@ const NAV = [
     items: [
       ['tables', '/admin/tables', 'Bàn & mã QR'],
       ['users', '/admin/users', 'Tài khoản'],
+      ['permissions', '/admin/permissions', 'Quyền nâng cao'], // F-091 (ADR-053): trang riêng — chỉ chủ quán
       ['audit', '/admin/audit', 'Nhật ký thao tác'],
       ['settings', '/admin/settings', 'Cài đặt'],
       ['api-docs', '/admin/api-docs', 'Tra cứu API'], // F-052

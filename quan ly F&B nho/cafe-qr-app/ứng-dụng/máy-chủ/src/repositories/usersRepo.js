@@ -16,6 +16,10 @@ const map = (r) =>
 
 const COLS =
   'UserId, Username, FullName, Role, IsActive, CreatedAt, TourSeenAt, Positions, StaffLevel, CAST(CASE WHEN PinHash IS NULL THEN 0 ELSE 1 END AS BIT) AS HasPin';
+/** F-091 (ADR-053 D-227): SĐT lưu '+84xxxxxxxxx' → trả số nội địa '0xxxxxxxxx' (chỉ trang Tài khoản của chủ quán dùng). */
+const localPhone = (p) => (p?.startsWith('+84') ? `0${p.slice(3)}` : null);
+const OUT =
+  'inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt, inserted.Positions, inserted.StaffLevel, inserted.Phone';
 /** F-078: chỉ nhân viên (STAFF) có vị trí / cấp; vai khác lưu NULL / OFFICIAL. */
 const positionsCsv = (role, positions) => (role === 'STAFF' && positions?.length ? positions.join(',') : null);
 const levelOf = (role, level) => (role === 'STAFF' && level === 'PROBATION' ? 'PROBATION' : 'OFFICIAL');
@@ -42,18 +46,19 @@ export async function markTourSeen(id) {
 
 export async function list() {
   const r = await query(
-    `SELECT ${COLS},
+    `SELECT ${COLS}, Phone,
        (SELECT COUNT(*) FROM dbo.UserGrants g WHERE g.UserId = Users.UserId AND (g.ExpiresAt IS NULL OR g.ExpiresAt > SYSUTCDATETIME())) AS GrantCount
      FROM dbo.Users WHERE DeletedAt IS NULL ORDER BY Role, Username`,
   );
-  return r.recordset.map((row) => ({ ...map(row), grantCount: row.GrantCount })); // F-079: số quyền riêng còn hạn
+  // F-079: số quyền riêng còn hạn · F-091: SĐT (route chỉ trả cho chủ quán)
+  return r.recordset.map((row) => ({ ...map(row), grantCount: row.GrantCount, phone: localPhone(row.Phone) }));
 }
 
-export async function create({ username, passwordHash, fullName, role, positions = null, level = 'OFFICIAL' }) {
+export async function create({ username, passwordHash, fullName, role, positions = null, level = 'OFFICIAL', phone = null }) {
   const r = await query(
-    `INSERT dbo.Users (Username, PasswordHash, FullName, Role, Positions, StaffLevel)
-     OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt, inserted.Positions, inserted.StaffLevel
-     VALUES (@u, @h, @n, @r, @pos, @lv)`,
+    `INSERT dbo.Users (Username, PasswordHash, FullName, Role, Positions, StaffLevel, Phone)
+     OUTPUT ${OUT}
+     VALUES (@u, @h, @n, @r, @pos, @lv, @ph)`,
     {
       u: [sql.NVarChar(50), username],
       h: [sql.NVarChar(255), passwordHash],
@@ -61,10 +66,13 @@ export async function create({ username, passwordHash, fullName, role, positions
       r: [sql.VarChar(10), role],
       pos: [sql.VarChar(40), positionsCsv(role, positions)],
       lv: [sql.VarChar(10), levelOf(role, level)],
+      ph: [sql.VarChar(15), phone ?? null],
     },
   );
-  return map(r.recordset[0]);
+  return withPhone(r.recordset[0]);
 }
+
+const withPhone = (row) => row && { ...map(row), phone: localPhone(row.Phone) };
 
 // F-036: luôn còn ít nhất một quản lý (ADMIN) đang hoạt động. Khóa U toàn bộ dòng ADMIN đang hoạt động (cùng thứ tự quét)
 // → hai quản lý hạ quyền / khóa nhau cùng lúc chạy tuần tự, người sau nhận 50150 LAST_ADMIN.
@@ -76,11 +84,13 @@ const LAST_ADMIN_GUARD = (losesAdmin) => `
      AND EXISTS (SELECT 1 FROM dbo.Users WHERE UserId = @id AND Role = 'ADMIN' AND IsActive = 1 AND DeletedAt IS NULL)
   BEGIN ROLLBACK; THROW 50150, 'LAST_ADMIN', 1; END`;
 
-export async function update(id, { fullName, role, positions = null, level = 'OFFICIAL' }) {
+// F-091: phone vắng (undefined) = giữ số cũ; null = xóa
+export async function update(id, { fullName, role, positions = null, level = 'OFFICIAL', phone }) {
   const r = await query(
     `${LAST_ADMIN_GUARD("@r <> 'ADMIN'")}
-     UPDATE dbo.Users SET FullName = @n, Role = @r, Positions = @pos, StaffLevel = @lv
-     OUTPUT inserted.UserId, inserted.Username, inserted.FullName, inserted.Role, inserted.IsActive, inserted.CreatedAt, inserted.Positions, inserted.StaffLevel
+     UPDATE dbo.Users SET FullName = @n, Role = @r, Positions = @pos, StaffLevel = @lv,
+       Phone = CASE WHEN @keepPhone = 1 THEN Phone ELSE @ph END
+     OUTPUT ${OUT}
      WHERE UserId = @id AND DeletedAt IS NULL;
      COMMIT;`,
     {
@@ -89,9 +99,11 @@ export async function update(id, { fullName, role, positions = null, level = 'OF
       r: [sql.VarChar(10), role],
       pos: [sql.VarChar(40), positionsCsv(role, positions)],
       lv: [sql.VarChar(10), levelOf(role, level)],
+      keepPhone: [sql.Bit, phone === undefined],
+      ph: [sql.VarChar(15), phone ?? null],
     },
   );
-  return map(r.recordset[0]);
+  return withPhone(r.recordset[0]);
 }
 
 export async function setPassword(id, passwordHash) {

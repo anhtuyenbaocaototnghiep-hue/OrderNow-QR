@@ -2961,7 +2961,7 @@ test('vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", c
   await ctx.close();
 });
 
-test('quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuyển về kèm thanh "Xin quyền" → gửi lý do; chủ quán thấy ở Hôm nay → Tài khoản → Duyệt "Hết hôm nay" → nhân viên vào được; chủ quán mở "Sửa" của người đó tắt công tắc quyền ở Quyền nâng cao (về như vai trò) → hết vào được (F-079, AC-079-07)', async ({
+test('quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuyển về kèm thanh "Xin quyền" → gửi lý do; chủ quán thấy ở Hôm nay → trang Quyền nâng cao → Duyệt "Hết hôm nay" → nhân viên vào được; chủ quán tắt công tắc quyền đó của người đó (về như vai trò) → Lưu quyền → hết vào được (F-079, AC-079-07)', async ({
   request,
 }) => {
   await apiAs(request, 'post', '/api/admin/users', {
@@ -2993,27 +2993,27 @@ test('quyền riêng: nhân viên Phục vụ mở Bán mang đi → bị chuy�
   await P.locator('.today-todo')
     .getByRole('link', { name: /yêu cầu xin quyền chờ duyệt/ })
     .click();
-  await expect(P).toHaveURL(/\/admin\/users#xin-quyen$/);
+  await expect(P).toHaveURL(/\/admin\/permissions#xin-quyen$/); // F-091: khung duyệt ở trang Quyền nâng cao
   const req = P.locator('.access-request', { hasText: 'Xin quyền E2E' });
   await expect(req).toContainText('Thu ngân nghỉ ốm');
   await expect(req.locator('select')).toHaveValue('TODAY');
   await req.getByRole('button', { name: 'Duyệt' }).click();
   await expect(P.locator('.toast', { hasText: 'Đã cho phép Xin quyền E2E' })).toBeVisible();
-  const row = P.locator('tr', { hasText: 'xin-e2e' });
-  await expect(row).toContainText('Có quyền nâng cao');
+  // Duyệt xong → trang chọn sẵn người đó, thấy quyền tạm vừa cấp
+  const person = P.locator('.perm-person', { hasText: 'Xin quyền E2E' });
+  await expect(person).toHaveAttribute('aria-pressed', 'true');
+  await expect(person).toContainText('1 quyền nâng cao');
 
   await X.goto('/pos/takeaway');
   await expect(X).toHaveURL(/\/pos\/takeaway$/);
 
-  // F-090: quyền đặt trong hộp Sửa → Quyền nâng cao (mở sẵn vì người này có quyền riêng) — công tắc Cho phép / Không cho phép
-  await row.getByRole('button', { name: 'Sửa' }).click();
-  const dlg = P.getByRole('dialog', { name: 'Sửa xin-e2e' });
-  const cashier = dlg.getByRole('switch', { name: 'Thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi thu chi' });
+  // F-090 / F-091: công tắc Cho phép / Không cho phép ở trang Quyền nâng cao
+  const cashier = P.getByRole('switch', { name: 'Thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi thu chi' });
   await expect(cashier).toBeChecked();
   await cashier.uncheck();
-  await dlg.getByRole('button', { name: 'Lưu', exact: true }).click();
-  await expect(P.locator('.toast', { hasText: 'Đã lưu' })).toBeVisible();
-  await expect(row).not.toContainText('Có quyền nâng cao');
+  await P.getByRole('button', { name: 'Lưu quyền' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu quyền của Xin quyền E2E' })).toBeVisible();
+  await expect(person).not.toContainText('quyền nâng cao');
   await X.goto('/pos/takeaway');
   await expect(X).toHaveURL(/\/pos\?denied=position/);
   await ctx.close();
@@ -4148,7 +4148,7 @@ const CASHIER_CAP = 'Thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, 
 const SERVER_CAP = 'Mở bàn, gọi món tại bàn, chuyển bàn';
 const permRow = (dlg, name) => dlg.locator('.perm-row').filter({ has: P.getByRole('switch', { name, exact: true }) });
 
-test('tạo tài khoản: chọn vai trò → hiện ngay "Vai trò này được làm" (đổi theo vị trí / vai trò); "Quyền nâng cao" mỗi việc một công tắc Cho phép / Không cho phép — tắt "Trang Hôm nay", bật "Kho hàng" → tài khoản tạo xong có đúng hai quyền riêng, không hạn (F-090, AC-090-02)', async ({
+test('tạo tài khoản: chọn vai trò → hiện ngay "Vai trò này được làm" (đổi theo vị trí / vai trò); trang Quyền nâng cao mỗi việc một công tắc Cho phép / Không cho phép — tắt "Trang Hôm nay", bật "Kho hàng" → Lưu quyền → đúng hai quyền riêng, không hạn (F-090, AC-090-02)', async ({
   request,
 }) => {
   await P.goto('/admin/users');
@@ -4162,40 +4162,45 @@ test('tạo tài khoản: chọn vai trò → hiện ngay "Vai trò này đượ
   await dlg.getByLabel('Vai trò').selectOption('MANAGER');
   await expect(dlg.locator('.perm-head')).toHaveText('Vai trò này được làm 6 / 17 việc');
   await expect(base).toContainText(['Kiểm kê, điều chỉnh kho ở quầy', 'Sửa / thêm chấm công của người khác', 'Trang Hôm nay']);
-
-  await expect(dlg.locator('.perm-advanced')).not.toHaveAttribute('open', '');
-  await dlg.locator('.perm-advanced > summary').click();
-  const today = dlg.getByRole('switch', { name: 'Trang Hôm nay', exact: true });
-  await expect(today).toBeChecked();
-  await expect(permRow(dlg, 'Trang Hôm nay')).toContainText('Cho phép');
-  await expect(permRow(dlg, 'Trang Hôm nay')).toContainText('Theo vai trò');
-  await today.uncheck();
-  await expect(permRow(dlg, 'Trang Hôm nay')).toContainText('Không cho phép');
-  await expect(permRow(dlg, 'Trang Hôm nay')).toContainText('Bỏ bớt');
-  const stockCap = 'Kho hàng (nguyên liệu, nhập kho, kiểm kê, nhà cung cấp, đặt hàng)';
-  const stock = dlg.getByRole('switch', { name: stockCap });
-  await expect(stock).not.toBeChecked();
-  await stock.check();
-  await expect(permRow(dlg, stockCap)).toContainText('Cấp thêm');
-  await expect(dlg.locator('.perm-diff')).toHaveText(`Cấp thêm: ${stockCap} · Bỏ bớt: Trang Hôm nay`);
-
+  await expect(dlg.getByRole('switch')).toHaveCount(0); // công tắc nằm ở trang Quyền nâng cao (F-091)
+  await expect(dlg.getByRole('link', { name: 'Quyền nâng cao' })).toHaveAttribute('href', '/admin/permissions');
   await dlg.getByLabel('Tên đăng nhập').fill('tc-quyen');
   await dlg.getByLabel('Mật khẩu (tối thiểu 6 ký tự)').fill('Pass@123');
   await dlg.getByLabel('Họ tên').fill('Trưởng ca quyền E2E');
   await dlg.getByRole('button', { name: 'Tạo tài khoản' }).click();
   await expect(P.locator('.toast', { hasText: 'Đã tạo tài khoản' })).toBeVisible();
-  const row = P.locator('tr', { hasText: 'tc-quyen' });
-  await expect(row).toContainText('Có quyền nâng cao');
-  await expect(row.getByRole('button', { name: 'Quyền', exact: true })).toHaveCount(0); // không còn nút "Quyền" riêng
+  await expect(P.locator('tr', { hasText: 'tc-quyen' })).not.toContainText('Có quyền nâng cao');
+
   const id = (await apiAs(request, 'get', '/api/admin/users')).find((u) => u.username === 'tc-quyen').userId;
+  await P.goto(`/admin/permissions?user=${id}`);
+  await expect(P.locator('.perm-person', { hasText: 'Trưởng ca quyền E2E' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(P.locator('#perm-panel-title')).toHaveText('Quyền của Trưởng ca quyền E2E');
+  const today = P.getByRole('switch', { name: 'Trang Hôm nay', exact: true });
+  await expect(today).toBeChecked();
+  await expect(permRow(P, 'Trang Hôm nay')).toContainText('Cho phép');
+  await expect(permRow(P, 'Trang Hôm nay')).toContainText('Theo vai trò');
+  await today.uncheck();
+  await expect(permRow(P, 'Trang Hôm nay')).toContainText('Không cho phép');
+  await expect(permRow(P, 'Trang Hôm nay')).toContainText('Bỏ bớt');
+  const stockCap = 'Kho hàng (nguyên liệu, nhập kho, kiểm kê, nhà cung cấp, đặt hàng)';
+  const stock = P.getByRole('switch', { name: stockCap });
+  await expect(stock).not.toBeChecked();
+  await stock.check();
+  await expect(permRow(P, stockCap)).toContainText('Cấp thêm');
+  await expect(P.locator('.perm-diff')).toHaveText(`Cấp thêm: ${stockCap} · Bỏ bớt: Trang Hôm nay`);
+  await P.getByRole('button', { name: 'Lưu quyền' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu quyền của Trưởng ca quyền E2E' })).toBeVisible();
+  await expect(P.locator('.perm-person', { hasText: 'Trưởng ca quyền E2E' })).toContainText('2 quyền nâng cao');
   const view = await apiAs(request, 'get', `/api/admin/users/${id}/grants`);
   expect(view.items.filter((i) => i.override).map((i) => [i.key, i.override.effect, i.override.expiresAt])).toEqual([
     ['dashboard.view', 'DENY', null],
     ['admin.stock', 'ALLOW', null],
   ]);
+  await P.goto('/admin/users');
+  await expect(P.locator('tr', { hasText: 'tc-quyen' })).toContainText('Có quyền nâng cao');
 });
 
-test('sửa tài khoản: "Quyền nâng cao" mở sẵn khi người đó có quyền riêng — quyền tạm ghi "tạm đến …", chưa chạm thì lưu vẫn giữ hạn; "Về như vai trò" → Lưu → hết quyền riêng (F-090, AC-090-03)', async ({
+test('quyền nâng cao: nhãn "Có quyền nâng cao" ở Tài khoản mở trang Quyền nâng cao chọn sẵn người đó — quyền tạm ghi "tạm đến …", lưu mà không chạm vẫn giữ hạn (sửa tài khoản cũng không đụng quyền); "Về như vai trò" → Lưu quyền → hết quyền riêng (F-090, AC-090-03)', async ({
   request,
 }) => {
   const u = await apiAs(request, 'post', '/api/admin/users', {
@@ -4207,32 +4212,103 @@ test('sửa tài khoản: "Quyền nâng cao" mở sẵn khi người đó có q
   });
   const until = new Date(Math.floor(Date.now() / 1000 + 3 * 3600) * 1000).toISOString(); // CSDL lưu hạn tới giây
   await apiAs(request, 'put', `/api/admin/users/${u.userId}/grants`, { grants: [{ capability: 'pos.cashier', effect: 'ALLOW', expiresAt: until }] });
+  const keptExpiry = async () => {
+    const view = await apiAs(request, 'get', `/api/admin/users/${u.userId}/grants`);
+    const g = view.items.find((i) => i.key === 'pos.cashier').override;
+    return g && [g.effect, new Date(g.expiresAt).getTime()];
+  };
+
+  // Sửa tài khoản (đổi họ tên) không đụng quyền
   await P.goto('/admin/users');
   const row = P.locator('tr', { hasText: 'tc-sua-quyen' });
-  await expect(row).toContainText('Có quyền nâng cao');
-
-  // Đổi họ tên, không chạm quyền → quyền tạm giữ nguyên hạn
   await row.getByRole('button', { name: 'Sửa' }).click();
-  let dlg = P.getByRole('dialog', { name: 'Sửa tc-sua-quyen' });
-  await expect(dlg.locator('.perm-advanced')).toHaveAttribute('open', '');
-  const cash = dlg.getByRole('switch', { name: CASHIER_CAP });
-  await expect(cash).toBeChecked();
-  await expect(permRow(dlg, CASHIER_CAP)).toContainText('Cấp thêm · tạm đến');
+  const dlg = P.getByRole('dialog', { name: 'Sửa tc-sua-quyen' });
+  await expect(dlg.getByRole('link', { name: 'Quyền nâng cao' })).toHaveAttribute('href', `/admin/permissions?user=${u.userId}`);
+  await expect(dlg).toContainText('Người này có 1 quyền nâng cao');
   await dlg.getByLabel('Họ tên').fill('Sửa quyền E2E (đổi tên)');
   await dlg.getByRole('button', { name: 'Lưu', exact: true }).click();
   await expect(P.locator('.toast', { hasText: 'Đã lưu' })).toBeVisible();
-  let view = await apiAs(request, 'get', `/api/admin/users/${u.userId}/grants`);
-  const kept = view.items.find((i) => i.key === 'pos.cashier').override;
-  expect([kept.effect, new Date(kept.expiresAt).getTime()]).toEqual(['ALLOW', new Date(until).getTime()]);
+  expect(await keptExpiry()).toEqual(['ALLOW', new Date(until).getTime()]);
 
-  // "Về như vai trò" → Lưu → không còn quyền riêng
+  // Nhãn "Có quyền nâng cao" → trang Quyền nâng cao chọn sẵn người này
+  await row.getByRole('link', { name: 'Có quyền nâng cao' }).click();
+  await expect(P).toHaveURL(new RegExp(`/admin/permissions\\?user=${u.userId}$`));
+  const cash = P.getByRole('switch', { name: CASHIER_CAP });
+  await expect(cash).toBeChecked();
+  await expect(permRow(P, CASHIER_CAP)).toContainText('Cấp thêm · tạm đến');
+  await P.getByRole('button', { name: 'Lưu quyền' }).click(); // không chạm → giữ hạn
+  await expect(P.locator('.toast', { hasText: 'Đã lưu quyền của Sửa quyền E2E (đổi tên)' })).toBeVisible();
+  expect(await keptExpiry()).toEqual(['ALLOW', new Date(until).getTime()]);
+
+  // "Về như vai trò" → Lưu quyền → không còn quyền riêng
+  await P.getByRole('button', { name: 'Về như vai trò' }).click();
+  await expect(P.getByRole('switch', { name: CASHIER_CAP })).not.toBeChecked();
+  await expect(permRow(P, CASHIER_CAP)).toContainText('Theo vai trò');
+  await P.getByRole('button', { name: 'Lưu quyền' }).click();
+  await expect(P.locator('.perm-person', { hasText: 'Sửa quyền E2E (đổi tên)' })).not.toContainText('quyền nâng cao');
+  expect(await keptExpiry()).toBe(null);
+});
+
+// ---------- TASK-112 (F-091, ADR-053): trang Quyền nâng cao riêng + số điện thoại tài khoản ----------
+test('số điện thoại tài khoản: + Thêm nhân viên có ô Số điện thoại (không bắt buộc) — số sai báo ngay dưới ô, số đúng hiện ở cột Số điện thoại (bấm gọi được); Sửa đổi số (F-091, AC-091-02)', async ({
+  request,
+}) => {
+  await P.goto('/admin/users');
+  await expect(P.locator('thead th').nth(2)).toHaveText('Số điện thoại');
+  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  const dlg = P.getByRole('dialog', { name: 'Thêm nhân viên' });
+  await dlg.getByLabel('Tên đăng nhập').fill('tc-sdt');
+  await dlg.getByLabel('Mật khẩu (tối thiểu 6 ký tự)').fill('Pass@123');
+  await dlg.getByLabel('Họ tên').fill('Nhân viên có số E2E');
+  const phone = dlg.getByLabel('Số điện thoại (không bắt buộc)');
+  await phone.fill('0912 345');
+  await dlg.getByRole('button', { name: 'Tạo tài khoản' }).click();
+  await expect(dlg.locator('.field-error')).toHaveText('Số điện thoại không hợp lệ — ví dụ 0912 345 678');
+  await phone.fill('0912 345 678');
+  await dlg.getByRole('button', { name: 'Tạo tài khoản' }).click();
+  await expect(P.getByRole('dialog')).toHaveCount(0);
+  const row = P.locator('tr', { hasText: 'tc-sdt' });
+  await expect(row.getByRole('link', { name: '0912 345 678' })).toHaveAttribute('href', 'tel:0912345678');
+
   await row.getByRole('button', { name: 'Sửa' }).click();
-  dlg = P.getByRole('dialog', { name: 'Sửa tc-sua-quyen' });
-  await dlg.getByRole('button', { name: 'Về như vai trò' }).click();
-  await expect(dlg.getByRole('switch', { name: CASHIER_CAP })).not.toBeChecked();
-  await expect(permRow(dlg, CASHIER_CAP)).toContainText('Theo vai trò');
-  await dlg.getByRole('button', { name: 'Lưu', exact: true }).click();
-  await expect(row).not.toContainText('Có quyền nâng cao');
-  view = await apiAs(request, 'get', `/api/admin/users/${u.userId}/grants`);
+  const edit = P.getByRole('dialog', { name: 'Sửa tc-sdt' });
+  await expect(edit.getByLabel('Số điện thoại (không bắt buộc)')).toHaveValue('0912 345 678');
+  await edit.getByLabel('Số điện thoại (không bắt buộc)').fill('+84 987 654 321');
+  await edit.getByRole('button', { name: 'Lưu', exact: true }).click();
+  await expect(row.getByRole('link', { name: '0987 654 321' })).toHaveAttribute('href', 'tel:0987654321');
+  expect((await apiAs(request, 'get', '/api/admin/users')).find((x) => x.username === 'tc-sdt').phone).toBe('0987654321');
+});
+
+test('trang Quyền nâng cao: thanh bên Hệ thống có "Quyền nâng cao" ngay sau "Tài khoản"; danh sách người không có chủ quán; đổi công tắc rồi chọn người khác → hỏi "Bỏ thay đổi chưa lưu?" — Hủy thì ở lại, Bỏ thay đổi thì sang người kia và không lưu gì (F-091, AC-091-03)', async ({
+  request,
+}) => {
+  const mk = (username, fullName) =>
+    apiAs(request, 'post', '/api/admin/users', { username, password: 'Pass@123', fullName, role: 'STAFF', positions: ['SERVER'] });
+  const a = await mk('tc-qa', 'Người quyền A');
+  await mk('tc-qb', 'Người quyền B');
+  await P.goto('/admin/permissions?user=' + a.userId);
+  const side = P.locator('#side');
+  const sys = await side.locator('details', { hasText: 'Hệ thống' }).locator('.nav-items a').allInnerTexts();
+  const at = sys.indexOf('Tài khoản');
+  expect(sys.slice(at, at + 2)).toEqual(['Tài khoản', 'Quyền nâng cao']);
+  await expect(side.locator('a[href="/admin/permissions"]')).toHaveAttribute('aria-current', 'page');
+  const people = P.locator('.perm-person');
+  await expect(people.filter({ hasText: 'Chủ quán' })).toHaveCount(0);
+  await expect(people.filter({ hasText: 'Người quyền A' })).toHaveAttribute('aria-pressed', 'true');
+
+  const today = P.getByRole('switch', { name: 'Trang Hôm nay', exact: true });
+  await expect(today).not.toBeChecked();
+  await today.check();
+  await expect(P.locator('.perm-diff')).toHaveText('Cấp thêm: Trang Hôm nay');
+  await people.filter({ hasText: 'Người quyền B' }).click();
+  const ask = P.getByRole('dialog', { name: 'Bỏ thay đổi chưa lưu?' });
+  await ask.getByRole('button', { name: 'Hủy' }).click();
+  await expect(P.locator('#perm-panel-title')).toHaveText('Quyền của Người quyền A');
+  await expect(today).toBeChecked();
+  await people.filter({ hasText: 'Người quyền B' }).click();
+  await P.getByRole('dialog', { name: 'Bỏ thay đổi chưa lưu?' }).getByRole('button', { name: 'Bỏ thay đổi' }).click();
+  await expect(P.locator('#perm-panel-title')).toHaveText('Quyền của Người quyền B');
+  await expect(P).toHaveURL(/\/admin\/permissions\?user=\d+$/);
+  const view = await apiAs(request, 'get', '/api/admin/users/' + a.userId + '/grants');
   expect(view.items.filter((i) => i.override)).toEqual([]);
 });

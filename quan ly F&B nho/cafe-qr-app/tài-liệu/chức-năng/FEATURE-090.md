@@ -6,6 +6,7 @@
 - **Actor:** **ACT-ADMIN** (chủ quán — tài khoản & phân quyền chỉ chủ quán, như F-079).
 - **Màn hình:** **Quản lý → Tài khoản** (SCR-20): hộp **Thêm nhân viên** / **Sửa** có phần **Quyền** — "Vai trò này được làm N / 17 việc" (danh sách ✓) + thu gọn **Quyền nâng cao — cho phép / không cho phép từng việc** (công tắc theo nhóm Máy quầy / Trang Quản lý, nhãn "Theo vai trò" / "Cấp thêm" / "Bỏ bớt", "tạm đến …", nút **Về như vai trò**). Dòng tài khoản: không còn nút "Quyền"; nhãn **Có quyền nâng cao**.
 - **Dữ liệu:** không đổi (`UserGrants` của F-079). API mới `GET /api/admin/role-permissions`.
+- **Cập nhật 14/11/2026 ([F-091](FEATURE-091.md), ADR-053 D-226):** công tắc "Quyền nâng cao" chuyển sang trang riêng **Quản lý → Quyền nâng cao** (`/admin/permissions`); hộp Thêm / Sửa chỉ còn "Vai trò này được làm" + liên kết. AC-090-02…04 dưới đây đã viết lại theo chỗ mới.
 
 ## User Story
 
@@ -29,9 +30,9 @@
 ## Acceptance Criteria
 
 - AC-090-01: `GET /api/admin/role-permissions`: Nhân viên chưa chọn vị trí → đúng 3 quyền máy quầy (thu tiền, làm đơn, phục vụ) trên 17; vị trí Phục vụ → chỉ "Mở bàn, gọi món tại bàn, chuyển bàn"; Thu ngân + Phục vụ (trùng lặp bỏ) → hai quyền tương ứng; Trưởng ca (vị trí bỏ qua) → thêm kiểm kê, sửa chấm công, Trang Hôm nay; Quản lý cửa hàng → mọi quyền trừ Thu chi, Lương, Nhật ký; Chủ quán → đủ; nhãn / nhóm / "tiền" đúng; khớp `byRole` của hộp quyền một tài khoản thật cùng vai / vị trí; vai / vị trí lạ, thiếu vai → 400; quản lý cửa hàng → 403 `OWNER_ONLY`, nhân viên → 403 `FORBIDDEN`, chưa đăng nhập → 401.
-- AC-090-02: (Tài khoản → + Thêm nhân viên) mặc định Nhân viên quầy → "Vai trò này được làm 3 / 17 việc" + 3 dòng; tick Phục vụ → còn 1 dòng; chọn Trưởng ca → "6 / 17", có Kiểm kê / Sửa chấm công / Trang Hôm nay; "Quyền nâng cao" thu gọn → mở: "Trang Hôm nay" Cho phép · Theo vai trò → tắt → Không cho phép · Bỏ bớt; "Kho hàng" tắt → bật → Cấp thêm; dòng tóm tắt "Cấp thêm: Kho hàng… · Bỏ bớt: Trang Hôm nay"; Tạo tài khoản → dòng có "Có quyền nâng cao", không có nút "Quyền"; API: đúng hai quyền riêng `dashboard.view DENY`, `admin.stock ALLOW`, không hạn.
-- AC-090-03: (Sửa tài khoản có quyền tạm Thu tiền 3 giờ) "Quyền nâng cao" mở sẵn, công tắc Thu tiền bật, ghi "Cấp thêm · tạm đến …"; chỉ đổi họ tên → Lưu → quyền tạm giữ nguyên hạn; mở lại → "Về như vai trò" → công tắc tắt, "Theo vai trò" → Lưu → hết nhãn "Có quyền nâng cao", API không còn quyền riêng. (Bài AC-079-07: tắt công tắc quyền vừa duyệt ở hộp Sửa → người đó bị chặn lại.)
-- AC-090-04: Quét khả năng tiếp cận trang Tài khoản khi hộp Sửa mở phần Quyền nâng cao: công tắc có tên là tên quyền + trạng thái bật / tắt, nhãn ô nhập, tương phản, vùng chạm ≥ 24 px; không cuộn ngang ở 320 / 390 px.
+- AC-090-02: (Tài khoản → + Thêm nhân viên) mặc định Nhân viên quầy → "Vai trò này được làm 3 / 17 việc" + 3 dòng; tick Phục vụ → còn 1 dòng; chọn Trưởng ca → "6 / 17", có Kiểm kê / Sửa chấm công / Trang Hôm nay; hộp không có công tắc, có liên kết "Quyền nâng cao"; tạo tài khoản → chưa có nhãn quyền nâng cao. (Quyền nâng cao `?user=` người đó) "Trang Hôm nay" Cho phép · Theo vai trò → tắt → Không cho phép · Bỏ bớt; "Kho hàng" tắt → bật → Cấp thêm; dòng "Cấp thêm: Kho hàng… · Bỏ bớt: Trang Hôm nay"; Lưu quyền → người đó "2 quyền nâng cao", API đúng hai quyền riêng `dashboard.view DENY`, `admin.stock ALLOW`, không hạn; dòng tài khoản có "Có quyền nâng cao".
+- AC-090-03: (Tài khoản có quyền tạm Thu tiền 3 giờ) Sửa → hộp ghi "Người này có 1 quyền nâng cao", liên kết tới `/admin/permissions?user={id}`; chỉ đổi họ tên → Lưu → quyền tạm giữ nguyên hạn; nhãn "Có quyền nâng cao" → trang Quyền nâng cao chọn sẵn người đó: công tắc Thu tiền bật, "Cấp thêm · tạm đến …"; Lưu quyền không chạm → giữ hạn; "Về như vai trò" → công tắc tắt, "Theo vai trò" → Lưu quyền → hết nhãn quyền nâng cao, API không còn quyền riêng. (Bài AC-079-07: tắt công tắc quyền vừa duyệt ở trang Quyền nâng cao → người đó bị chặn lại.)
+- AC-090-04: Quét khả năng tiếp cận trang Quyền nâng cao (công tắc `role="switch"` có tên là tên quyền + trạng thái bật / tắt, nút người, tương phản, vùng chạm ≥ 24 px); không cuộn ngang ở 320 / 390 px.
 
 ## Bằng chứng
 
