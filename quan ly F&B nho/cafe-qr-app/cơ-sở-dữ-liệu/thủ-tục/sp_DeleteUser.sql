@@ -20,7 +20,8 @@ BEGIN
      AND NOT EXISTS (SELECT 1 FROM dbo.Users WITH (UPDLOCK, HOLDLOCK) WHERE UserId <> @UserId AND Role = 'ADMIN' AND IsActive = 1 AND DeletedAt IS NULL)
   BEGIN ROLLBACK; THROW 50150, 'LAST_ADMIN', 1; END
 
-  IF EXISTS (SELECT 1 FROM dbo.Orders WHERE CreatedBy = @UserId OR CompletedBy = @UserId OR CancelledBy = @UserId)
+  IF EXISTS (SELECT 1 FROM dbo.Orders WHERE CreatedBy = @UserId OR CompletedBy = @UserId OR CancelledBy = @UserId
+                                         OR ServedBy = @UserId)   -- F-088: người bấm "Đã mang" (FK — xóa hẳn sẽ lỗi 547)
      OR EXISTS (SELECT 1 FROM dbo.Sessions WHERE ClosedBy = @UserId OR OpenedBy = @UserId OR NoteUpdatedBy = @UserId OR CancelledBy = @UserId)
      OR EXISTS (SELECT 1 FROM dbo.OrderItemVoids WHERE CreatedBy = @UserId OR ApprovedBy = @UserId)   -- F-046: sửa / xóa món, người duyệt
      OR EXISTS (SELECT 1 FROM dbo.Payments WHERE ReceivedBy = @UserId)

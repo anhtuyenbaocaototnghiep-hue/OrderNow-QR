@@ -4,6 +4,7 @@ import { api, staffApi } from './api.js';
 import { clearAdminSession, clearStaffSession, getAdminSession, getPosToken, getToken, isAdminArea, saveStaffSession } from './auth-store.js';
 import { confirmDialog } from './ui.js';
 import { canOpenAdminPage, firstAdminHref, hasAdminPages, pageCap } from './roles.js';
+import { currentPath, topNav } from './embed.js';
 
 /** Thông tin phiên hiện tại sau requireStaffPage(): { user, shop, modules } — modules: nhóm menu nâng cao đang bật (F-061). */
 export const current = { user: null, shop: null, modules: [], attendance: { mode: 'LOGIN', moneyPin: false }, pos: { oneTap: false } };
@@ -49,7 +50,7 @@ export async function requireStaffPage({ admin = false, page = '' } = {}) {
   // ADR-044: trang Quản lý không dùng phiên máy quầy — chưa đăng nhập trang Quản lý thì phải gõ mật khẩu ở /admin/login
   if (!getToken()) {
     const login = isAdminArea() ? '/admin/login' : '/pos/login';
-    location.replace(`${login}?next=${encodeURIComponent(location.pathname + location.search)}`);
+    topNav(`${login}?next=${encodeURIComponent(currentPath())}`, { replace: true }); // F-088: trang nhúng → chuyển cả màn hình
     return new Promise(() => {}); // dừng trang trong lúc chuyển hướng
   }
   const { user, shop, modules, attendance, pos } = await staffApi('/api/auth/me');
@@ -57,12 +58,12 @@ export async function requireStaffPage({ admin = false, page = '' } = {}) {
   current.shop = shop;
   current.modules = modules ?? [];
   current.attendance = attendance ?? { mode: 'LOGIN', moneyPin: false }; // F-072
-  current.pos = pos ?? { oneTap: false }; // F-076
+  current.pos = pos ?? { oneTap: false }; // F-076, F-088 (singleScreen, serveMode)
   // F-084 (ADR-043) + ADR-044: chủ quán chỉ dùng trang Quản lý. Phiên máy quầy đứng tên chủ quán (đăng nhập trước khi có luật) → bỏ,
   // sang trang Đăng nhập Quản lý — phải gõ mật khẩu, không đổi phiên quầy thành phiên Quản lý. Không gọi đăng xuất server.
   if (!isAdminArea() && user.role === 'ADMIN') {
     clearStaffSession();
-    location.replace('/admin/login?reason=owner');
+    topNav('/admin/login?reason=owner', { replace: true });
     return new Promise(() => {});
   }
   if (admin && !canOpenAdminPage(user, page)) {
@@ -105,12 +106,12 @@ export async function logout() {
         { okLabel: 'Đến trang đóng ca', cancelLabel: 'Ở lại' },
       );
       loggingOut = false;
-      if (go) location.href = '/pos/shift?then=logout';
+      if (go) topNav('/pos/shift?then=logout'); // F-088: gọi từ trang nhúng thì đi cả màn hình, không mở trang ca trong khung
       return;
     }
   }
   clearStaffSession();
-  location.href = '/pos/login';
+  topNav('/pos/login');
 }
 
 export { getToken };

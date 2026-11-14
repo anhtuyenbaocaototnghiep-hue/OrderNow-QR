@@ -2,6 +2,7 @@
 // rồi gửi đơn vào phiên của bàn (bàn trống → mở bàn). Đơn vào thẳng "Đang pha"; thu tiền như bàn gọi qua QR.
 // Ghi chú bàn chỉ nhân viên thấy. Tổng tiền lấy từ báo giá server (/api/orders/quote — cùng bộ tính lúc gửi, ADR-005).
 import { staffApi } from '../api.js';
+import { embedded, tellHost, topNav } from '../embed.js';
 import { addItem, cartCount, cartTotal, clearCart, itemQuantity, loadCart, MAX_QTY, saveCart, setQuantity, syncWithMenu, toOrderItems } from '../cart.js';
 import { getToken } from '../auth.js';
 import { defaultChoice, groupsOf, pickOptions } from '../options.js';
@@ -237,6 +238,7 @@ function afterSelect() {
   const q = new URLSearchParams();
   if (state.tableId) q.set('table', state.tableId);
   if (state.sessionId) q.set('session', state.sessionId);
+  if (embedded) q.set('embed', '1'); // F-088: giữ chế độ nhúng — tải lại khung không hiện thanh trên trong vùng Quầy (review G3)
   history.replaceState(null, '', `${location.pathname}?${q}`);
   clear($('#send-error'));
   renderTables();
@@ -755,7 +757,18 @@ function renderOrdered() {
             el('div', { class: 'muted small' }, o.createdBy ? `Nhân viên nhập: ${o.createdBy.fullName}` : 'Khách gọi qua QR'),
           ),
         ),
-    active.length ? el('a', { class: 'btn btn-sm btn-block', href: `/pos?settle=${d.sessionId}` }, 'Thu tiền bàn này') : null,
+    active.length
+      ? el(
+          'a',
+          {
+            class: 'btn btn-sm btn-block',
+            href: `/pos?settle=${d.sessionId}`,
+            // F-088: đang nhúng trong màn một màn hình → nhờ màn chính mở ngăn thu tiền ở vùng Quầy (không mở màn lồng màn)
+            onclick: (e) => tellHost({ type: 'pos:settle', sessionId: d.sessionId }) && e.preventDefault(),
+          },
+          'Thu tiền bàn này',
+        )
+      : null,
   );
 }
 
@@ -783,7 +796,7 @@ const socket = connectRealtime({
     }
   },
   onOffline: () => shell.setOnline(false),
-  onAuthError: () => (location.href = '/pos/login?reason=expired'),
+  onAuthError: () => topNav('/pos/login?reason=expired'), // F-088: trang nhúng → đăng nhập lại cả màn hình
 });
 shell.attach(socket);
 socket?.on('menu.availability_changed', ({ menuItemId, isAvailable }) => {

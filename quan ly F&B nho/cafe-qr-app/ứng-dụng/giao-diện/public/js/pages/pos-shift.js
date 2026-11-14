@@ -4,6 +4,7 @@
 // ADR-006: sổ quỹ ca — chi tiền / thu khác, duyệt khoản chờ (F-033); trưởng ca / quản lý sửa chấm công trong ngày (F-035, F-036).
 // F-074 (ADR-032): danh sách đơn bán lúc mất mạng / phiếu bán tay ghi vào ca + việc cần kiểm; đóng ca khi máy này còn đơn bán tạm chưa gửi → nhắc.
 import { staffApi } from '../api.js';
+import { topNav } from '../embed.js';
 import { attendanceDialog, attendanceTable } from '../attendance.js';
 import { getToken, logout } from '../auth.js';
 import { cashBookTable, cashEntryDialog } from '../cash-book.js';
@@ -631,7 +632,7 @@ const socket = connectRealtime({
     if (reconnected) shell.reloadShift().then(load);
   },
   onOffline: () => shell.setOnline(false),
-  onAuthError: () => (location.href = '/pos/login?reason=expired'),
+  onAuthError: () => topNav('/pos/login?reason=expired'), // F-088: trang nhúng → đăng nhập lại cả màn hình
 });
 shell.attach(socket);
 shell.onShiftChange(() => !closedReport && load());

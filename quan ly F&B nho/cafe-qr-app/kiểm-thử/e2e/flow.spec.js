@@ -3613,3 +3613,431 @@ test('chủ quán chọn thời gian tự trả bàn trống ở Cài đặt →
     await ctx.close();
   }
 });
+
+// ---------- F-088 (ADR-049): màn quầy một màn hình — e2e-server.js để tắt; mỗi bài tự bật rồi trả lại bố cục cũ ----------
+const SINGLE_ON = { singleScreen: true, serveMode: 'TABLE' };
+const SINGLE_OFF = { singleScreen: false, serveMode: 'COUNTER' };
+
+async function ensureShift(request) {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+}
+
+/** Khách quét QR + gửi đơn qua API — đơn còn ở trạng thái Mới. */
+async function guestOrder(qrToken, items) {
+  const g = await browser.newContext();
+  try {
+    await g.request.get('/api/menu');
+    const scan = await (await g.request.post('/api/sessions/scan', { data: { qrToken } })).json();
+    const sessionId = scan.session?.sessionId ?? (await (await g.request.post('/api/sessions', { data: { qrToken } })).json()).session.sessionId;
+    const order = await (await g.request.post('/api/orders', { data: { sessionId, items } })).json();
+    expect(order.orderCode, 'gửi đơn').toBeTruthy();
+    return { sessionId, order };
+  } finally {
+    await g.close();
+  }
+}
+
+async function counterLogin(ctx, name) {
+  const S = await ctx.newPage();
+  watch(S, name);
+  await S.goto('/pos/login');
+  await S.fill('#username', 'staff1');
+  await S.fill('#password', 'Staff@123');
+  await S.click('#submit');
+  await expect(S).toHaveURL(/\/pos$/);
+  await S.getByRole('dialog')
+    .getByRole('button', { name: 'Bỏ qua' })
+    .click({ timeout: 3000 })
+    .catch(() => {}); // hướng dẫn lần đầu (khi chạy riêng bài này)
+  return S;
+}
+
+/** Dọn bàn thử: phiên đã xong hết món → thu tiền; còn đơn Mới → hủy. */
+async function clearTables(request, codes) {
+  for (const code of codes) {
+    const t = (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === code);
+    for (const s of t?.sessions ?? []) {
+      const settle = await request.post(`/api/sessions/${s.sessionId}/settle`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+        data: { amountReceived: 500_000 },
+      });
+      if (!settle.ok()) await apiAs(request, 'post', `/api/sessions/${s.sessionId}/cancel`, { reason: 'Dọn bàn thử màn quầy một màn hình' });
+    }
+  }
+}
+
+test('màn quầy một màn hình: máy quầy 1920 px có vùng Hàng pha + vùng Quầy với thẻ Bàn / Bán mang đi / Gọi món tại bàn / Ca & két; thẻ Bán mang đi (trang nhúng, không thanh trên) bán 1 ly → đơn vào Hàng pha, vẫn ở /pos; "Gọi món" trên Bàn M1 mở thẻ Gọi món đúng Bàn M1; ngăn thu tiền Bàn M2 mở trong vùng Quầy, trong lúc đó Hàng pha vẫn bấm Hoàn tất được (F-088, AC-088-06)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  await apiAs(request, 'put', '/api/admin/settings', SINGLE_ON);
+  await apiAs(request, 'post', '/api/admin/tables', { code: 'M1', name: 'Bàn M1' });
+  const m2 = await apiAs(request, 'post', '/api/admin/tables', { code: 'M2', name: 'Bàn M2' });
+  const quay = await browser.newContext({ viewport: { width: 1920, height: 1080 }, locale: 'vi-VN' });
+  try {
+    const S = await counterLogin(quay, 'mot-man-hinh');
+    await expect(S.getByRole('heading', { name: 'Hàng pha' })).toBeVisible();
+    await expect(S.getByRole('tablist', { name: 'Việc ở quầy' }).getByRole('tab')).toHaveText(['Bàn', 'Bán mang đi', 'Gọi món tại bàn', 'Ca & két']);
+
+    // Thẻ Bán mang đi = trang quầy nhúng (không có thanh trên riêng); bán xong đơn hiện ngay ở Hàng pha
+    const before = new Set((await apiAs(request, 'get', '/api/orders')).map((o) => o.orderId));
+    await S.getByRole('tab', { name: 'Bán mang đi' }).click();
+    const sale = S.frameLocator('#tab-takeaway iframe');
+    // Món không có tùy chọn (giữa lượt E2E, Bạc xỉu được gắn Size — bấm thì mở bảng chọn)
+    await sale.locator('.tile', { hasText: 'Cà phê đen' }).click();
+    await sale.locator('#received').fill('50000');
+    await sale.locator('#pay').click();
+    let sold;
+    await expect
+      .poll(async () => (sold = (await apiAs(request, 'get', '/api/orders')).find((o) => !before.has(o.orderId) && o.type === 'TAKE_AWAY')), {
+        message: 'đơn mang đi vừa bán',
+      })
+      .toBeTruthy();
+    await expect(sale.locator('#today')).toContainText(sold.orderCode);
+    await expect(sale.locator('.pos-top')).toHaveCount(0);
+    await expect(S.locator('.zone-bar .ticket', { hasText: `#${sold.orderCode}` })).toBeVisible();
+    await expect(S).toHaveURL(/\/pos$/);
+
+    // "Gọi món" trên thẻ bàn → thẻ Gọi món tại bàn mở đúng bàn đó
+    await S.getByRole('tab', { name: 'Bàn', exact: true }).click();
+    await S.getByRole('link', { name: 'Gọi món Bàn M1' }).click();
+    await expect(S.getByRole('tab', { name: 'Gọi món tại bàn' })).toHaveAttribute('aria-selected', 'true');
+    await expect(S.frameLocator('#tab-table-order iframe').locator('#target h2')).toHaveText('Bàn M1');
+    await expect(S).toHaveURL(/\/pos$/);
+
+    // Ngăn thu tiền mở trong vùng Quầy — vùng Hàng pha không bị che, người pha vẫn bấm được
+    await guestOrderAccepted(request, m2.qrToken, [{ menuItemId: ids['Cà phê đen'], quantity: 1 }]);
+    await S.getByRole('tab', { name: 'Bàn', exact: true }).click();
+    await S.locator('.tbl-card', { hasText: 'Bàn M2' }).getByRole('button', { name: 'Thu tiền' }).click();
+    const drawer = S.locator('.zone-counter .overlay.in-zone .drawer');
+    await expect(drawer).toBeVisible();
+    await expect(S.locator('.zone-bar .overlay')).toHaveCount(0);
+    await S.locator('#col-PREPARING .ticket', { hasText: 'Bàn M2' }).getByRole('button', { name: 'Hoàn tất' }).click();
+    await expect(S.locator('#col-COMPLETED')).toContainText('Bàn M2');
+    await expect(drawer).toBeVisible();
+    await S.fill('#amount-received', '50000');
+    await drawer.locator('.modal-foot .btn-success').click();
+    await expect(S.locator('.drawer')).toHaveCount(0);
+  } finally {
+    await quay.close();
+    await apiAs(request, 'put', '/api/admin/settings', SINGLE_OFF);
+    await clearTables(request, ['M1', 'M2']);
+  }
+});
+
+test('gom ly + trạm làm món + in phiếu + hết món: hai bàn cùng gọi Cà phê muối → dòng gom "2× Cà phê muối · 2 đơn", chạm → hai thẻ đơn tô sáng; Bánh croissant (trạm Quầy lấy) không vào gom, thẻ đơn ghi "Quầy lấy kèm", đơn chỉ có bánh ở dải "Quầy lấy" → Xong; chạm thẻ đơn → chi tiết có "In phiếu pha" mở khung in phiếu pha; "Hết món" báo hết Cà phê muối → điện thoại khách thấy món hết, mở bán lại → đặt được; quy trình 1 chạm bật (F-088, AC-088-07)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  await apiAs(request, 'put', '/api/admin/settings', { ...SINGLE_ON, oneTap: true }); // quán thật mặc định một chạm (F-076)
+  const all = await apiAs(request, 'get', '/api/admin/menu-items');
+  const croissant = all.find((i) => i.name === 'Bánh croissant');
+  const keep = {
+    categoryId: croissant.categoryId,
+    name: croissant.name,
+    price: croissant.price,
+    imageUrl: croissant.imageUrl ?? null,
+    isAvailable: true,
+    isActive: true,
+  };
+  await apiAs(request, 'put', `/api/admin/menu-items/${croissant.menuItemId}`, { ...keep, station: 'COUNTER' });
+  // Món riêng của bài này → số ly gom không lẫn đơn còn lại của các bài trước (nhóm món nào cũng được — giữa lượt E2E có bài đổi / xóa "Cà phê sữa")
+  const muoi = await apiAs(request, 'post', '/api/admin/menu-items', { categoryId: croissant.categoryId, name: 'Cà phê muối', price: 35_000 });
+  expect(muoi.station).toBe('BAR');
+  const tbl = {};
+  for (const code of ['N1', 'N2', 'N3', 'N4']) tbl[code] = await apiAs(request, 'post', '/api/admin/tables', { code, name: `Bàn ${code}` });
+  const quay = await browser.newContext({ viewport: { width: 1920, height: 1080 }, locale: 'vi-VN' });
+  const phone = await browser.newContext(phoneOpts);
+  try {
+    const a = await guestOrder(tbl.N1.qrToken, [
+      { menuItemId: muoi.menuItemId, quantity: 1 },
+      { menuItemId: croissant.menuItemId, quantity: 1 },
+    ]);
+    const b = await guestOrder(tbl.N2.qrToken, [{ menuItemId: muoi.menuItemId, quantity: 1 }]);
+    const c = await guestOrder(tbl.N3.qrToken, [{ menuItemId: croissant.menuItemId, quantity: 1 }]);
+    const S = await counterLogin(quay, 'gom-ly');
+
+    // Gom ly: chỉ món trạm Bar; chạm → tô sáng đúng hai thẻ
+    const chip = S.locator('#batch .batch-chip', { hasText: 'Cà phê muối' });
+    await expect(chip).toContainText('2× Cà phê muối');
+    await expect(chip).toContainText('2 đơn');
+    await expect(S.locator('#batch')).not.toContainText('Bánh croissant');
+    await chip.click();
+    await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    await expect(S.locator('#board .ticket.batch-hit')).toHaveCount(2);
+    await expect(S.locator('#board .ticket.batch-hit', { hasText: `#${a.order.orderCode}` })).toHaveCount(1);
+    await expect(S.locator('#board .ticket.batch-hit', { hasText: `#${b.order.orderCode}` })).toHaveCount(1);
+
+    // Trạm Quầy lấy: bánh đi kèm đơn cần pha ghi riêng; đơn chỉ có bánh không vào Hàng pha mà ở dải "Quầy lấy"
+    await expect(S.locator('#board .ticket', { hasText: `#${a.order.orderCode}` }).locator('.counter-extra')).toHaveText(/Quầy lấy kèm: 1× Bánh croissant/);
+    await expect(S.locator('#board')).not.toContainText(`#${c.order.orderCode}`);
+    const strip = S.locator('#counter-strip .counter-card', { hasText: 'Bàn N3' });
+    await expect(strip).toContainText('1× Bánh croissant');
+    await expect(strip).not.toContainText(`#${c.order.orderCode}`); // gọn: không ghi mã đơn
+
+    // Thẻ đơn chỉ một nút (Xong); In phiếu pha / Hủy đơn ở chi tiết đơn (chạm thẻ) — chi tiết mở trong vùng Hàng pha
+    const ticketB = S.locator('#board .ticket', { hasText: `#${b.order.orderCode}` });
+    await expect(ticketB.getByRole('button')).toHaveText(['Xong']);
+    await ticketB.locator('.ticket-meta').click();
+    const detail = S.locator('.zone-bar .overlay.in-zone .drawer');
+    await expect(detail.getByRole('button', { name: 'Hủy đơn' })).toBeVisible();
+    await detail.getByRole('button', { name: 'In phiếu pha' }).click();
+    await expect(detail).toHaveCount(0);
+    await expect(S.locator(`iframe[src*="/pos/orders/${b.order.orderId}/receipt?mode=ticket"]`)).toHaveCount(1);
+
+    // Người đứng quầy lấy bánh → Xong ở dải; bánh của bàn → dải "Mang ra" ghi tên món (không "0 ly")
+    await strip.getByRole('button', { name: `Xong đơn #${c.order.orderCode} (quầy lấy)` }).click();
+    await expect(S.locator('.toast', { hasText: `Đã hoàn tất #${c.order.orderCode}` })).toBeVisible();
+    await expect(S.locator('#counter-strip .counter-card', { hasText: 'Bàn N3' })).toHaveCount(0);
+    const serve = S.locator('#serve-strip .serve-card', { hasText: 'Bàn N3' });
+    await expect(serve).toContainText('1× Bánh croissant');
+    await expect(serve).not.toContainText('0 ly');
+
+    // Hết món: người pha báo hết món ngay ở Hàng pha → điện thoại khách đổi ngay; mở bán lại → đặt được
+    // (món của bài này không có công thức → không tự hết vì thiếu nguyên liệu dù các bài trước đã bán nhiều)
+    const G = await phone.newPage();
+    watch(G, 'het-mon');
+    await G.goto(`/t/${tbl.N4.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    const card = G.locator('.c-section.cat .c-item', { hasText: 'Cà phê muối' });
+    await expect(card.locator('.add-btn')).toBeVisible();
+    await S.locator('#soldout-btn').click();
+    const box = S.locator('.zone-bar .overlay.in-zone');
+    await expect(box.getByRole('dialog', { name: 'Báo hết món' })).toBeVisible();
+    await box.getByRole('button', { name: 'Báo hết Cà phê muối' }).click();
+    await expect(S.locator('.toast', { hasText: 'Đã báo hết Cà phê muối' })).toBeVisible();
+    await expect(card.getByText('Hết món')).toBeVisible({ timeout: 2000 });
+    await box.getByRole('button', { name: 'Mở bán lại Cà phê muối' }).click();
+    await expect(card.locator('.add-btn')).toBeVisible({ timeout: 2000 });
+    await box.getByRole('button', { name: 'Xong' }).click();
+    await expect(S.locator('.overlay')).toHaveCount(0);
+  } finally {
+    await Promise.all([quay.close(), phone.close()]);
+    await apiAs(request, 'put', '/api/admin/settings', { ...SINGLE_OFF, oneTap: false });
+    await apiAs(request, 'put', `/api/admin/menu-items/${croissant.menuItemId}`, { ...keep, station: 'BAR' });
+    await clearTables(request, ['N1', 'N2', 'N3', 'N4']);
+  }
+});
+
+test('mang ra bàn: khách Bàn S1 gọi món bằng điện thoại, quầy Tiếp nhận → Hoàn tất → dải "Mang ra" ghi Bàn S1, điện thoại khách báo "nhân viên đang mang ra bàn" (4 bước); bấm "Đã mang" → dải mất, điện thoại khách "Đã mang ra bàn" (F-088, AC-088-08)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  await apiAs(request, 'put', '/api/admin/settings', SINGLE_ON);
+  const s1 = await apiAs(request, 'post', '/api/admin/tables', { code: 'S1', name: 'Bàn S1' });
+  const phone = await browser.newContext(phoneOpts);
+  const quay = await browser.newContext({ viewport: { width: 1920, height: 1080 }, locale: 'vi-VN' });
+  try {
+    const G = await phone.newPage();
+    watch(G, 'mang-ra');
+    await G.goto(`/t/${s1.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .c-item')
+      .filter({ has: G.getByRole('button', { name: 'Nước suối', exact: true }) })
+      .locator('.add-btn')
+      .click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    const order = (await apiAs(request, 'get', '/api/orders')).find((o) => o.table?.name === 'Bàn S1' && o.status === 'PENDING');
+    expect(order, 'đơn của Bàn S1').toBeTruthy();
+
+    const S = await counterLogin(quay, 'mang-ra-quay');
+    await S.locator('#col-PENDING .ticket', { hasText: `#${order.orderCode}` })
+      .getByRole('button', { name: 'Tiếp nhận', exact: true })
+      .click();
+    await S.locator('#col-PREPARING .ticket', { hasText: `#${order.orderCode}` })
+      .getByRole('button', { name: 'Hoàn tất' })
+      .click();
+    const card = S.locator('#serve-strip .serve-card', { hasText: 'Bàn S1' });
+    await expect(card).not.toContainText(`#${order.orderCode}`); // gọn: bàn + số ly, không mã đơn
+    await expect(card).toContainText('1 ly');
+
+    await expect(G.locator('.popup-done')).toContainText('nhân viên đang mang ra bàn');
+    await G.getByRole('button', { name: 'Đã hiểu' }).click();
+    await expect(G.locator('.order-card .badge')).toHaveText('Đã xong — nhân viên đang mang ra bàn');
+    await expect(G.locator('.order-card .progress.four span')).toHaveText(['Đã gửi', 'Đang chuẩn bị', 'Xong', 'Đã mang ra']);
+
+    await card.getByRole('button', { name: `Đã mang đơn #${order.orderCode} ra Bàn S1` }).click();
+    await expect(card).toHaveCount(0);
+    await expect(G.locator('.order-card .badge')).toHaveText('Đã mang ra bàn');
+    await expect(G.locator('.order-card .progress.four span.on')).toHaveCount(4);
+  } finally {
+    await Promise.all([phone.close(), quay.close()]);
+    await apiAs(request, 'put', '/api/admin/settings', SINGLE_OFF);
+    await clearTables(request, ['S1']);
+  }
+});
+
+test('bố cục màn quầy một màn hình: màn 1024 px hai vùng cạnh nhau, không có nút mở vùng Quầy; màn 900 px vùng Quầy là ngăn trượt — nút "Quầy" mở, có thẻ, ← / → đổi thẻ (focus ở lại thẻ), Esc đóng; khách gọi thanh toán → bấm thẻ ở dải trên → ngăn Quầy tự mở kèm bill; chủ quán tắt "Màn quầy một màn hình" ở Cài đặt → /pos về bố cục cũ, mục "Bán mang đi" mở trang riêng (F-088, AC-088-09)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  await apiAs(request, 'put', '/api/admin/settings', SINGLE_ON);
+  const p9 = await apiAs(request, 'post', '/api/admin/tables', { code: 'P9', name: 'Bàn P9' });
+  const quay = await browser.newContext({ viewport: { width: 1024, height: 768 }, locale: 'vi-VN' });
+  const owner = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  try {
+    const S = await counterLogin(quay, 'bo-cuc');
+    const bar = S.locator('.zone-bar');
+    const counter = S.locator('.zone-counter');
+    await expect(bar).toBeVisible();
+    await expect(counter).toBeVisible();
+    await expect(S.locator('#tables-toggle')).toBeHidden();
+    const [bb, cb] = [await bar.boundingBox(), await counter.boundingBox()];
+    expect(cb.x, 'vùng Quầy nằm bên phải Hàng pha').toBeGreaterThanOrEqual(bb.x + bb.width - 1);
+    expect(Math.abs(cb.y - bb.y), 'hai vùng cùng hàng').toBeLessThan(4);
+
+    await S.setViewportSize({ width: 900, height: 700 });
+    const toggle = S.locator('#tables-toggle');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toContainText('Quầy');
+    await expect(counter).toBeHidden();
+    await toggle.click();
+    await expect(counter).toBeVisible();
+    await expect(counter.getByRole('tab', { name: 'Bán mang đi' })).toBeVisible();
+    // Mẫu thẻ ARIA trong ngăn: → đổi thẻ, focus ở lại thẻ (không nhảy về nút Đóng)
+    await counter.getByRole('tab', { name: 'Bàn', exact: true }).focus();
+    await S.keyboard.press('ArrowRight');
+    await expect(counter.getByRole('tab', { name: 'Bán mang đi' })).toBeFocused();
+    await expect(counter.getByRole('tab', { name: 'Bán mang đi' })).toHaveAttribute('aria-selected', 'true');
+    await S.keyboard.press('Home');
+    await expect(counter.getByRole('tab', { name: 'Bàn', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await S.keyboard.press('Escape');
+    await expect(counter).toBeHidden();
+    await expect(toggle).toBeFocused();
+
+    // Khách Bàn P9 gọi thanh toán → thẻ ở dải "Cần xử lý ngay" → ngăn Quầy tự mở, bill hiện (không nằm trong ngăn đang đóng)
+    const g = await browser.newContext();
+    try {
+      await g.request.get('/api/menu');
+      const scan = await (await g.request.post('/api/sessions/scan', { data: { qrToken: p9.qrToken } })).json();
+      const sid = scan.session?.sessionId ?? (await (await g.request.post('/api/sessions', { data: { qrToken: p9.qrToken } })).json()).session.sessionId;
+      const order = await (await g.request.post('/api/orders', { data: { sessionId: sid, items: [{ menuItemId: ids['Nước suối'], quantity: 1 }] } })).json();
+      await apiAs(request, 'post', `/api/orders/${order.orderId}/accept`);
+      expect((await g.request.post(`/api/sessions/${sid}/request-payment`)).ok(), 'khách gọi thanh toán').toBeTruthy();
+    } finally {
+      await g.close();
+    }
+    await S.locator('#pay-strip .pay-card', { hasText: 'Bàn P9' }).click();
+    await expect(counter).toBeVisible();
+    const bill = counter.locator('.overlay.in-zone .drawer');
+    await expect(bill).toBeVisible();
+    await expect(bill).toContainText('Bàn P9');
+    await bill.getByRole('button', { name: 'Đóng' }).first().click();
+    await expect(bill).toHaveCount(0);
+    await S.keyboard.press('Escape');
+    await expect(counter).toBeHidden();
+
+    // Chủ quán tắt ở Cài đặt → bố cục cũ
+    const M = await owner.newPage();
+    watch(M, 'tat-mot-man-hinh');
+    await M.goto('/admin/login');
+    await M.fill('#username', 'admin');
+    await M.fill('#password', 'Admin@123');
+    await M.click('#submit');
+    await expect(M).toHaveURL(/\/admin\/today$/);
+    await M.goto('/admin/settings');
+    const box = M.getByLabel(/Màn quầy một màn hình/);
+    await expect(box).toBeChecked();
+    await box.uncheck();
+    await M.getByRole('button', { name: 'Lưu cài đặt' }).click();
+    await expect(M.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
+    expect((await apiAs(request, 'get', '/api/admin/settings')).singleScreen).toBe(false);
+
+    await S.setViewportSize({ width: 1366, height: 860 });
+    await S.reload();
+    await expect(S.locator('#conn')).toHaveText('Đã kết nối');
+    await expect(S.locator('.counter-tabs')).toHaveCount(0);
+    await expect(S.locator('.zone-bar')).toHaveCount(0);
+    const nav = S.locator('.pos-nav a', { hasText: 'Bán mang đi' });
+    await expect(nav).toHaveAttribute('href', '/pos/takeaway');
+    await nav.click();
+    await expect(S).toHaveURL(/\/pos\/takeaway$/);
+  } finally {
+    await Promise.all([quay.close(), owner.close()]);
+    await apiAs(request, 'put', '/api/admin/settings', SINGLE_OFF);
+    await clearTables(request, ['P9']);
+  }
+});
+
+test('màn quầy gọn: thanh trên một hàng ở 1366 px chỉ Màn quầy / Kho / Giờ công (không trùng thẻ), kết nối là chấm, "?" và máy in tự in là nút biểu tượng; thẻ đơn một nút, chạm thẻ → chi tiết có Hủy đơn / In phiếu pha / Tiếp nhận & Hoàn tất, "Mở bàn / Thu tiền" mở bill ở vùng Quầy; "Đã xong hôm nay" thu gọn, "Xem" mở; thẻ bàn một nút, chạm tên bàn → bill có Chuyển bàn / Ghi chú, "Gọi thêm món" đóng bill mở thẻ Gọi món đúng bàn; hai hộp thoại hai vùng — Esc đóng hộp đang có focus (F-088, AC-088-10)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  await apiAs(request, 'put', '/api/admin/settings', SINGLE_ON);
+  const g1 = await apiAs(request, 'post', '/api/admin/tables', { code: 'G1', name: 'Bàn G1' });
+  const quay = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  try {
+    const { order } = await guestOrder(g1.qrToken, [{ menuItemId: ids['Cà phê đen'], quantity: 1 }]);
+    const S = await counterLogin(quay, 'man-quay-gon');
+
+    // Thanh trên gọn, một hàng — sau lần chạm đầu (trình duyệt mở khóa âm thanh → nút loa chỉ còn biểu tượng)
+    await S.getByRole('heading', { name: 'Hàng pha' }).click();
+    await expect(S.getByRole('button', { name: 'Âm thanh: bật' })).toHaveText('');
+    const nav = S.locator('.pos-nav a');
+    await expect(nav.first()).toHaveText('Màn quầy');
+    for (const dup of ['Gọi món tại bàn', 'Bán mang đi', 'Ca & hoàn tiền']) await expect(nav.filter({ hasText: dup })).toHaveCount(0);
+    await expect(S.locator('.pos-top')).not.toHaveClass(/stacked/);
+    await expect(S.locator('#conn')).toHaveText('Đã kết nối');
+    await expect(S.locator('#conn .conn-text')).toHaveCSS('clip', 'rect(0px, 0px, 0px, 0px)'); // chữ chỉ cho trình đọc màn hình
+    await expect(S.getByRole('button', { name: 'Hướng dẫn' })).toHaveText('');
+    const printer = S.getByRole('button', { name: 'Tự in phiếu pha trên máy này' });
+    await expect(printer).toHaveAttribute('aria-pressed', 'false');
+    await printer.click();
+    await expect(printer).toHaveAttribute('aria-pressed', 'true');
+    await printer.click();
+    await expect(printer).toHaveAttribute('aria-pressed', 'false');
+
+    // Thẻ đơn: một nút; việc phụ trong chi tiết đơn (vùng Hàng pha); "Mở bàn / Thu tiền" → bill ở vùng Quầy
+    const ticket = S.locator('#board .ticket', { hasText: `#${order.orderCode}` });
+    await expect(ticket.getByRole('button')).toHaveText(['Tiếp nhận']);
+    await ticket.locator('.ticket-meta').click();
+    const detail = S.locator('.zone-bar .overlay.in-zone .drawer');
+    for (const name of ['Hủy đơn', 'In phiếu pha', 'Tiếp nhận & Hoàn tất', 'Mở bàn / Thu tiền'])
+      await expect(detail.getByRole('button', { name })).toBeVisible();
+    await detail.getByRole('button', { name: 'Mở bàn / Thu tiền' }).click();
+    const bill = S.locator('.zone-counter .overlay.in-zone .drawer');
+    await expect(bill).toContainText('Bàn G1');
+    await expect(S.locator('.zone-bar .overlay')).toHaveCount(0); // hàng pha không bị che
+    await bill.getByRole('button', { name: 'Đóng' }).first().click();
+    await expect(bill).toHaveCount(0);
+
+    // "Đã xong hôm nay" thu gọn
+    await expect(S.locator('#col-COMPLETED')).toBeHidden();
+    await S.locator('.done-band').getByRole('button', { name: 'Xem' }).click();
+    await expect(S.locator('#col-COMPLETED')).toBeVisible();
+    await S.locator('.done-band').getByRole('button', { name: 'Ẩn' }).click();
+    await expect(S.locator('#col-COMPLETED')).toBeHidden();
+
+    // Thẻ bàn: một nút; chạm tên bàn → bill có việc phụ; "Gọi thêm món" → đóng bill, mở thẻ Gọi món đúng bàn
+    const card = S.locator('.tbl-card', { hasText: 'Bàn G1' });
+    await expect(card.locator('.tc-main').getByRole('button')).toHaveText(['Thu tiền']);
+    await expect(card.locator('.tc-tools')).toHaveCount(0);
+    await card.getByRole('button', { name: 'Mở bill Bàn G1' }).click();
+    await expect(bill.getByRole('button', { name: 'Chuyển bàn' })).toBeVisible();
+    await expect(bill.getByRole('button', { name: 'Ghi chú bàn' })).toBeVisible();
+    await bill.getByRole('link', { name: 'Gọi thêm món' }).click();
+    await expect(bill).toHaveCount(0);
+    await expect(S.getByRole('tab', { name: 'Gọi món tại bàn' })).toHaveAttribute('aria-selected', 'true');
+    await expect(S.frameLocator('#tab-table-order iframe').locator('#target h2')).toHaveText('Bàn G1');
+    await S.getByRole('tab', { name: 'Bàn', exact: true }).click();
+
+    // Hai hộp thoại hai vùng: Esc đóng hộp của người đang thao tác (focus), hộp vùng kia vẫn mở
+    await card.getByRole('button', { name: 'Thu tiền' }).click();
+    await expect(bill).toBeVisible();
+    await S.locator('#soldout-btn').click();
+    const soldout = S.locator('.zone-bar .overlay.in-zone');
+    await expect(soldout.getByRole('dialog', { name: 'Báo hết món' })).toBeVisible();
+    await soldout.getByRole('button', { name: 'Xong' }).focus();
+    await S.keyboard.press('Escape');
+    await expect(soldout).toHaveCount(0);
+    await expect(bill).toBeVisible();
+    await bill.getByRole('button', { name: 'Đóng' }).first().click();
+    await expect(bill).toHaveCount(0);
+  } finally {
+    await quay.close();
+    await apiAs(request, 'put', '/api/admin/settings', SINGLE_OFF);
+    await clearTables(request, ['G1']);
+  }
+});

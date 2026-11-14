@@ -140,6 +140,8 @@ operationsRouter.put('/settings', async (req, res) => {
       alertCostMarginDrop: z.coerce.number().int().min(1).max(100).optional(),
       alertCostMarginMin: z.coerce.number().int().min(0).max(100).optional(),
       oneTap: z.boolean().optional(), // F-076: quy trình 1 chạm ở màn Đơn hàng
+      singleScreen: z.boolean().optional(), // F-088: màn quầy một màn hình
+      serveMode: z.enum(['TABLE', 'COUNTER'], { message: 'Chọn "nhân viên mang ra bàn" hoặc "khách nhận tại quầy"' }).optional(), // F-088
       menuSheetAll: z.boolean().optional(), // F-083: bấm "+" mở bảng chọn cho mọi món (màn khách)
       // F-087: tự đóng bàn trống — Tắt / 15 / 30 / 60 phút
       idleCloseMinutes: z.coerce

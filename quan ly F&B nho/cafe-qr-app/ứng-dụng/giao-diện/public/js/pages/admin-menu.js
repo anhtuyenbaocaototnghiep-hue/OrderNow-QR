@@ -352,6 +352,18 @@ function editItem(item) {
         value: item?.prepSeconds ?? '',
       }),
     ),
+    // F-088 (ADR-049 D-216): trạm làm món — món "Quầy lấy" (bánh, nước chai) không vào hàng pha của người pha
+    el(
+      'div',
+      { class: 'field' },
+      el('label', { for: 'station' }, 'Trạm làm món'),
+      el(
+        'select',
+        { class: 'input', id: 'station', name: 'station' },
+        el('option', { value: 'BAR', selected: (item?.station ?? 'BAR') === 'BAR' }, 'Pha chế (vào hàng pha)'),
+        el('option', { value: 'COUNTER', selected: item?.station === 'COUNTER' }, 'Quầy lấy (bánh, nước chai — không cần pha)'),
+      ),
+    ),
     el('label', { class: 'check' }, el('input', { type: 'checkbox', name: 'isAvailable', checked: item?.isAvailable ?? true }), 'Còn bán'),
     el('label', { class: 'check' }, el('input', { type: 'checkbox', name: 'isActive', checked: item?.isActive ?? true }), 'Hiện trên menu'),
   );
@@ -378,6 +390,7 @@ function editItem(item) {
             isActive: f('isActive').checked,
             groupIds: [...form.querySelectorAll('input[name="groupIds"]:checked')].map((x) => Number(x.value)),
             prepSeconds: f('prepSeconds').value ? Number(f('prepSeconds').value) : null,
+            station: f('station').value, // F-088
           };
           const btn = e.currentTarget; // DEF-024: giữ nút trước await — sau await e.currentTarget là null, nút sẽ khóa mãi khi máy chủ báo lỗi
           setBusy(btn, true);

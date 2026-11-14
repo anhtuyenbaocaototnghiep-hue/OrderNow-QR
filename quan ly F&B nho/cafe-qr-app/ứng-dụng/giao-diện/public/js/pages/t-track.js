@@ -154,6 +154,13 @@ function reviewBlock() {
   );
 }
 
+// F-088 (ADR-049 D-217): quán chọn "nhân viên mang ra bàn" → không mời khách ra quầy nhận
+const serveTable = () => session?.serveMode === 'TABLE';
+// Như máy quầy (BR-126.4): đơn xong quá 60 phút coi như đã mang ra — không treo "đang mang ra bàn" mãi (review G3)
+const SERVE_WINDOW_MS = 60 * 60_000;
+const served = (o) => Boolean(o.servedAt) || (o.completedAt && Date.now() - new Date(o.completedAt).getTime() >= SERVE_WINDOW_MS);
+const doneText = (o) => (serveTable() ? (served(o) ? 'Đã mang ra bàn' : 'Đã xong — nhân viên đang mang ra bàn') : CUSTOMER_STATUS.COMPLETED);
+
 /** Pop-up khi có đơn vừa chuyển sang COMPLETED (AC-004-01). */
 function notifyCompleted() {
   const now = new Map(session.orders.map((o) => [o.orderId, o.status]));
@@ -161,13 +168,14 @@ function notifyCompleted() {
     const done = session.orders.filter((o) => o.status === 'COMPLETED' && prevStatuses.get(o.orderId) !== 'COMPLETED');
     if (done.length) {
       navigator.vibrate?.([200, 100, 200]);
+      const tail = serveTable() ? 'nhân viên đang mang ra bàn' : 'vui lòng nhận tại quầy';
       modal({
         title: 'Món của bạn đã xong',
         body: el(
           'div',
           { class: 'popup-done' },
           el('div', { class: 'big' }, icon('party-popper')),
-          el('p', {}, done.length === 1 ? `Đơn #${done[0].orderCode} đã xong, vui lòng nhận tại quầy.` : `${done.length} đơn đã xong, vui lòng nhận tại quầy.`),
+          el('p', {}, done.length === 1 ? `Đơn #${done[0].orderCode} đã xong, ${tail}.` : `${done.length} đơn đã xong, ${tail}.`),
         ),
         actions: [{ label: 'Đã hiểu', class: 'btn-primary' }],
       });
@@ -178,12 +186,14 @@ function notifyCompleted() {
 
 /** ADR-042 D-193: 3 bước có chữ (trạng thái đọc từ nhãn ở đầu thẻ nên phần này chỉ để nhìn — aria-hidden). */
 const STEPS = ['Đã gửi', 'Đang chuẩn bị', 'Xong'];
-function progress(status) {
-  const step = { PENDING: 1, PREPARING: 2, COMPLETED: 3 }[status] ?? 0;
+function progress(o) {
+  // F-088: mang ra bàn → thêm bước "Đã mang ra"
+  const steps = serveTable() ? [...STEPS, 'Đã mang ra'] : STEPS;
+  const step = o.status === 'COMPLETED' && serveTable() && served(o) ? 4 : ({ PENDING: 1, PREPARING: 2, COMPLETED: 3 }[o.status] ?? 0);
   return el(
     'div',
-    { class: 'progress', 'aria-hidden': 'true' },
-    STEPS.map((label, k) => el('span', { class: [k < step ? 'on' : '', k + 1 === step ? 'now' : ''].join(' ').trim() }, label)),
+    { class: steps.length === 4 ? 'progress four' : 'progress', 'aria-hidden': 'true' },
+    steps.map((label, k) => el('span', { class: [k < step ? 'on' : '', k + 1 === step ? 'now' : ''].join(' ').trim() }, label)),
   );
 }
 
@@ -250,7 +260,16 @@ function holdLine(o) {
 
 function orderCard(o) {
   const hold = holdState(o);
-  const label = o.status === 'VOIDED' ? 'Đã hoàn tiền' : hold?.held ? (hold.mode === 'ARRIVAL' ? 'Chờ bạn tới' : 'Hẹn giờ làm') : CUSTOMER_STATUS[o.status];
+  const label =
+    o.status === 'VOIDED'
+      ? 'Đã hoàn tiền'
+      : hold?.held
+        ? hold.mode === 'ARRIVAL'
+          ? 'Chờ bạn tới'
+          : 'Hẹn giờ làm'
+        : o.status === 'COMPLETED'
+          ? doneText(o) // F-088
+          : CUSTOMER_STATUS[o.status];
   return el(
     'article',
     { class: `order-card ${o.status.toLowerCase()}` },
@@ -260,11 +279,7 @@ function orderCard(o) {
       el('div', {}, el('strong', {}, `Đơn #${o.orderCode}`), el('span', { class: 'muted small' }, ` · ${time(o.createdAt)}`)),
       el('span', { class: `badge ${o.status.toLowerCase()}` }, label),
     ),
-    o.status !== 'CANCELLED' && o.status !== 'VOIDED'
-      ? progress(o.status)
-      : o.cancelReason
-        ? el('div', { class: 'muted small' }, `Lý do: ${o.cancelReason}`)
-        : null,
+    o.status !== 'CANCELLED' && o.status !== 'VOIDED' ? progress(o) : o.cancelReason ? el('div', { class: 'muted small' }, `Lý do: ${o.cancelReason}`) : null,
     holdLine(o),
     el('ul', {}, o.items.map(orderLine)),
     o.orderPromotion ? el('div', { class: 'small save' }, `${o.orderPromotion.name}: −${money(o.orderPromotion.discount)}`) : null,
@@ -694,8 +709,15 @@ function scheduleLoad() {
 
 $('#pay').addEventListener('click', requestPayment);
 
+// F-088: đơn "đang mang ra bàn" vừa quá 60 phút → vẽ lại (thành "Đã mang ra bàn") dù không có sự kiện nào
+let servedCount = -1;
 setInterval(() => {
   updateCallButton();
+  if (serveTable()) {
+    const n = session?.orders?.filter((o) => o.status === 'COMPLETED' && served(o)).length ?? 0;
+    if (servedCount !== -1 && n !== servedCount) render();
+    servedCount = n;
+  }
   if (session?.status !== 'PAYMENT_REQUESTED') return;
   const timer = $('#pay-timer');
   if (timer) timer.textContent = elapsed(session.paymentRequestedAt);
@@ -719,6 +741,7 @@ for (const evt of [
   'order.status_changed',
   'order.cancelled',
   'order.released', // F-066
+  'order.served', // F-088: nhân viên bấm "Đã mang"
   'session.payment_requested',
   'session.payment_cancelled',
   'session.settled',

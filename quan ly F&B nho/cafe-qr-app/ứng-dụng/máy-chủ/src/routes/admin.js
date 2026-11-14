@@ -59,6 +59,7 @@ const itemBody = z.object({
   isActive: zBool().default(true),
   groupIds: z.array(zId()).max(20).optional(), // nhóm tùy chọn món (F-013); vắng = giữ nguyên
   prepSeconds: z.coerce.number().int().min(10, 'Thời gian pha tối thiểu 10 giây').max(3600).nullable().optional(), // F-025; vắng = giữ nguyên
+  station: z.enum(['BAR', 'COUNTER'], { message: 'Trạm làm món là Pha chế hoặc Quầy lấy' }).optional(), // F-088; vắng = giữ nguyên
 });
 adminRouter.get('/menu-items', async (_req, res) => res.json(await adminService.listItems()));
 adminRouter.post('/menu-items', async (req, res) => res.status(201).json(await adminService.createItem(parse(itemBody, req.body), req.user)));

@@ -190,6 +190,16 @@ function render(s) {
   const moduleChecks = MODULE_GROUPS.map(([key]) => el('input', { type: 'checkbox', name: `module-${key}`, value: key, checked: s.uiModules.includes(key) }));
   // F-076 (ADR-034): quy trình 1 chạm ở màn Đơn hàng
   const oneTapCheck = el('input', { type: 'checkbox', name: 'oneTap', id: 'one-tap', checked: s.oneTap });
+  // F-088 (ADR-049 D-214, D-217): màn quầy một màn hình; món tại bàn nhân viên mang ra / khách nhận tại quầy
+  const singleScreenCheck = el('input', { type: 'checkbox', name: 'singleScreen', id: 'single-screen', checked: s.singleScreen });
+  const serveMode = el(
+    'select',
+    { class: 'input', name: 'serveMode', id: 'serve-mode', style: { maxWidth: '360px' } },
+    [
+      ['TABLE', 'Nhân viên mang ra bàn (mặc định)'],
+      ['COUNTER', 'Khách nhận tại quầy'],
+    ].map(([v, label]) => el('option', { value: v, selected: v === s.serveMode }, label)),
+  );
   // F-083 (ADR-041): màn gọi món của khách — "+" mở bảng chọn cho mọi món
   const sheetAllCheck = el('input', { type: 'checkbox', name: 'menuSheetAll', id: 'sheet-all', checked: s.menuSheetAll });
   // F-087 (ADR-048 D-212): tự đóng bàn khách quét QR nhưng không gọi món
@@ -233,6 +243,23 @@ function render(s) {
         'p',
         { class: 'small muted' },
         'Hợp với quán nhỏ 1–2 người pha: bấm Xong là nhận đơn, hoàn tất, trừ kho và báo khách "Món đã xong" cùng lúc. Quán đông nhiều người pha thì tắt để dùng 3 cột (Mới → Đang pha → Xong). Màn quầy đang mở đổi theo khi tải lại.',
+      ),
+      el(
+        'label',
+        { class: 'check' },
+        singleScreenCheck,
+        el('span', {}, el('strong', {}, 'Màn quầy một màn hình'), ' — bên trái hàng pha, bên phải bàn / bán mang đi / gọi món / ca trên cùng một màn hình'),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Hợp với quán chỉ có một màn hình cho hai người: người pha nhìn bên trái, người đứng quầy làm bên phải, hộp thoại của người này không che người kia. Tắt: Bán mang đi, Gọi món tại bàn, Ca là các trang riêng như trước.',
+      ),
+      el('div', { class: 'field' }, el('label', { for: 'serve-mode' }, 'Món tại bàn pha xong'), serveMode),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Mang ra bàn: quầy có dải "Mang ra" và nút "Đã mang", điện thoại khách báo "nhân viên đang mang ra bàn". Nhận tại quầy: khách được mời ra quầy lấy như trước.',
       ),
     ),
     card(
@@ -436,6 +463,8 @@ function render(s) {
                 alertUseStats: alertUseStats.checked,
                 uiModules: moduleChecks.filter((c) => c.checked).map((c) => c.value), // F-061
                 oneTap: oneTapCheck.checked, // F-076
+                singleScreen: singleScreenCheck.checked, // F-088
+                serveMode: serveMode.value, // F-088
                 menuSheetAll: sheetAllCheck.checked, // F-083
                 idleCloseMinutes: Number(idleClose.value), // F-087
                 acceptingOrders: accepting,

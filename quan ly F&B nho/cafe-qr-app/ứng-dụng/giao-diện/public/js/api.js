@@ -1,5 +1,6 @@
 // Gọi REST API: JSON, map lỗi { code, message, details }. Nhân viên gửi kèm Bearer token; khách dùng cookie cf_client.
 import { clearStaffSession, getToken, isAdminArea } from './auth-store.js';
+import { currentPath, topNav } from './embed.js';
 
 export class ApiError extends Error {
   constructor(status, body) {
@@ -56,9 +57,9 @@ async function send(path, { method = 'GET', body, headers = {}, staff = false } 
     const err = new ApiError(res.status, data);
     if (staff && (res.status === 401 || err.code === 'ACCOUNT_LOCKED')) {
       clearStaffSession();
-      const next = encodeURIComponent(location.pathname + location.search);
+      const next = encodeURIComponent(currentPath()); // F-088: trang nhúng → đăng nhập lại cả màn hình, quay về màn chính
       const login = isAdminArea() ? '/admin/login' : '/pos/login'; // F-080: trang Quản lý có trang đăng nhập riêng
-      location.href = `${login}?next=${next}&reason=${err.code === 'ACCOUNT_LOCKED' ? 'locked' : 'expired'}`;
+      topNav(`${login}?next=${next}&reason=${err.code === 'ACCOUNT_LOCKED' ? 'locked' : 'expired'}`);
     }
     if (staff && res.status === 403 && err.details?.capability && accessNotifier) accessNotifier(err);
     throw err;

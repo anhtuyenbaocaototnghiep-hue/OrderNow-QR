@@ -554,6 +554,14 @@ body.customer .c-tabs .chip.active {
   gap: 0.4rem;
   margin-top: 0.75rem;
 }
+/* F-088: mang ra bàn → thêm bước "Đã mang ra" */
+.progress.four {
+  grid-template-columns: repeat(4, 1fr);
+}
+/* 4 bước trên điện thoại hẹp: xuống dòng cân ("Đang / chuẩn bị"), không để một chữ lẻ ở dòng dưới */
+.progress.four span {
+  text-wrap: balance;
+}
 .progress span {
   padding-top: 0.4rem;
   border-top: 3px solid var(--c-border);

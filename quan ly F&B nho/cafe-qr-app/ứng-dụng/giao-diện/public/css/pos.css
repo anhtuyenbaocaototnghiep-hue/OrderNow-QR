@@ -1619,3 +1619,391 @@ body.pos .tc-main .btn {
 .move-card .dest.busy {
   color: var(--c-warning-text);
 }
+
+/* ---------- F-088 (ADR-049): màn quầy một màn hình — vùng Hàng pha (trái) + vùng Quầy có thẻ (phải) ---------- */
+/* Từ 1024 px hai vùng cạnh nhau; nhỏ hơn thì vùng Quầy là ngăn trượt, Hàng pha chiếm cả bề ngang */
+@media (min-width: 1024px) {
+  body.single-screen .pos-main {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+  }
+}
+/* Nút mở vùng Quầy nằm ở hàng công cụ của Hàng pha, chỉ hiện khi vùng Quầy là ngăn trượt */
+body.single-screen .orders-bar,
+body.single-screen .tables-toggle {
+  display: none;
+}
+@media (max-width: 1023px) {
+  body.single-screen .tables-toggle {
+    display: inline-flex;
+  }
+}
+/* Đã xong hôm nay: một cột, tên bàn không bị cắt (vùng Hàng pha hẹp hơn bố cục cũ) */
+body.single-screen .done-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+body.single-screen .ticket.compact .where {
+  flex-shrink: 0;
+  max-width: 45%;
+}
+/* Khung định vị cho hộp thoại trong vùng. Vùng Quầy dạng ngăn trượt (< 1024 px) giữ position: fixed của ngăn —
+   ghi đè thành relative sẽ kéo ngăn vào lưới, chiếm nửa chiều cao của Hàng pha */
+.zone-bar {
+  position: relative;
+}
+@media (min-width: 1200px) {
+  body.single-screen .zone-counter {
+    position: relative;
+  }
+}
+/* D-215: hộp thoại mở từ một vùng chỉ phủ vùng đó — vùng kia vẫn bấm được */
+body.single-screen .zone {
+  overflow: hidden;
+}
+.overlay.in-zone {
+  position: absolute;
+  z-index: 30;
+}
+.zone-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+.zone-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+.zone-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-left: auto;
+}
+/* Hàng thẻ của vùng Quầy: Bàn · Bán mang đi · Gọi món tại bàn · Ca & két */
+.counter-tabs {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--c-border);
+}
+.counter-tablist {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  overflow-x: auto;
+}
+.counter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  color: var(--c-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.counter-tab:hover {
+  background: var(--c-primary-50);
+  color: var(--c-primary);
+}
+.counter-tab[aria-selected='true'] {
+  background: var(--c-primary);
+  color: #fff;
+}
+.counter-tabs .tp-close {
+  margin-left: auto;
+}
+.tab-panel {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tab-panel[hidden] {
+  display: none;
+}
+.tab-frame {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 560px;
+  border: 0;
+  background: var(--c-bg);
+}
+@media (min-width: 760px) and (min-height: 600px) {
+  body.pos-board.single-screen .tab-frame {
+    min-height: 0;
+  }
+}
+/* Hàng pha đọc được từ cách 2 mét */
+body.single-screen .ticket .where {
+  font-size: 1.25rem;
+}
+body.single-screen .ticket ul li {
+  font-size: 1.1rem;
+}
+/* D-216: món trạm Quầy đi kèm đơn cần pha */
+.ticket .counter-extra {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--c-primary-50);
+  color: var(--c-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+/* D-219: gom ly */
+.batch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+}
+.batch[hidden] {
+  display: none;
+}
+.batch .label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 800;
+  color: var(--c-primary);
+}
+.batch-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.batch-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.25rem;
+  min-height: 44px;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-bg);
+  font: inherit;
+  color: var(--c-text);
+  text-align: left;
+  cursor: pointer;
+}
+.batch-chip.on {
+  border-color: var(--c-primary);
+  background: var(--c-primary-50);
+}
+.batch-chip .variants {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--c-muted);
+}
+.ticket.batch-hit {
+  outline: 3px solid var(--c-accent);
+  outline-offset: 2px;
+}
+/* D-216, D-217: dải "Quầy lấy" và "Mang ra" — thẻ không nhấp nháy, nút ở cuối thẻ */
+.strip-card {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.3rem 0.4rem 0.3rem 0.8rem;
+  border: 2px solid var(--c-accent);
+  border-radius: 12px;
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+.strip-card strong {
+  font-size: 1.05rem;
+}
+.serve-strip {
+  background: var(--c-success-50);
+  border-color: #bcd8c2;
+}
+.serve-strip .label {
+  color: var(--c-success);
+}
+.serve-card {
+  border-color: var(--c-success);
+}
+.counter-strip {
+  background: var(--c-primary-50);
+  border-color: #e2cdb8;
+}
+.counter-strip .label {
+  color: var(--c-primary);
+}
+.counter-card {
+  border-color: var(--c-primary);
+}
+/* D-218: danh sách báo hết món */
+.soldout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.soldout-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+.soldout-row .name {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.soldout-row.off .name {
+  color: var(--c-muted);
+  text-decoration: line-through;
+}
+/* Từ 1024 px: hai vùng cạnh nhau (bố cục cũ ADR-018 đổi sang ngăn trượt từ 1199 px) */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  body.single-screen .pos-main {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+  }
+  body.single-screen .tp-close,
+  body.single-screen .tables-backdrop {
+    display: none;
+  }
+  /* Hàng pha chỉ ~440 px: dòng "Đã xong" bỏ tên món (còn bàn, mã, tiền, giờ) thay vì một dấu … lẻ */
+  body.single-screen .ticket.compact .items {
+    display: none;
+  }
+  body.single-screen .tables-panel {
+    position: relative;
+    z-index: auto;
+    width: auto;
+    border-radius: var(--radius);
+    border-width: 1px;
+    box-shadow: none;
+    transform: none;
+    visibility: visible;
+    transition: none;
+  }
+}
+/* Dưới 1024 px vùng Quầy là ngăn trượt — đủ rộng cho trang Bán mang đi */
+@media (max-width: 1023px) {
+  body.single-screen .tables-panel {
+    width: min(760px, 96vw);
+  }
+}
+/* Trang quầy nhúng trong vùng Quầy: không thanh trên, sát mép khung */
+body.pos-embed {
+  min-height: 0;
+}
+
+/* ---------- F-088 (ADR-049 D-220): màn quầy gọn — ít chữ, ít nút, mỗi thẻ một việc chính ---------- */
+/* Thanh trên một hàng: kết nối tốt chỉ là chấm xanh; âm thanh / tự in / hướng dẫn là nút biểu tượng vuông */
+body.pos-compact .pos-tools .conn:not(.offline):not(.connecting) {
+  min-height: 36px;
+  padding: 0 0.6rem;
+}
+body.pos-compact .pos-tools .conn:not(.offline):not(.connecting) .conn-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+body.pos-compact .pos-tools .btn.icon-only {
+  width: 40px;
+  padding: 0;
+  justify-content: center;
+}
+body.pos-compact .pos-tools .btn[aria-pressed='true'] {
+  background: var(--c-success);
+  border-color: var(--c-success);
+}
+body.pos-compact .pos-top {
+  gap: 0.4rem 0.75rem;
+}
+body.pos-compact .pos-nav a {
+  padding-inline: 0.65rem;
+}
+body.pos-compact .pos-tools {
+  gap: 0.5rem;
+}
+body.pos-compact .pos-user {
+  padding-left: 0.5rem;
+}
+@media (max-width: 1500px) {
+  body.pos-compact .pos-top .brand-name {
+    display: none;
+  }
+}
+/* Hàng pha: tên vùng + "Hết món"; nhắc "Đổi người" khi máy đứng tên người không pha */
+.zone-hint {
+  color: var(--c-muted);
+  font-weight: 600;
+}
+/* Thẻ đơn một nút: nút to, hết bề ngang — đứng xa vẫn thấy, bấm không trượt */
+body.single-screen .ticket-actions .btn {
+  flex: 1 1 100%;
+  min-height: 52px;
+  font-size: 1.1rem;
+}
+/* "Đã xong hôm nay" thu gọn một dòng, bấm "Xem" mở */
+body.single-screen .done-band .done-toggle {
+  margin-left: 0.5rem;
+}
+body.single-screen .done-band.collapsed {
+  max-height: none;
+  padding-bottom: 0.65rem;
+}
+body.single-screen .done-band.collapsed .done-list {
+  display: none;
+}
+/* Thẻ "Bàn": chữ "Bàn" đã là tên thẻ → bỏ tiêu đề lặp; thẻ bàn bấm cả thẻ để mở bill */
+body.single-screen #h-tables {
+  display: none;
+}
+.tbl-card.compact-card {
+  cursor: pointer;
+}
+.tbl-card .tc-name {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tbl-card .tc-name .ic {
+  flex: none;
+  color: var(--c-muted);
+}
+body.single-screen .tc-main .btn {
+  min-height: 48px;
+  font-size: 1rem;
+}

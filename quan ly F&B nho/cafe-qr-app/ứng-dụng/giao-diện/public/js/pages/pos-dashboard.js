@@ -29,13 +29,14 @@ import {
   paymentBadge,
   playSound,
   setBusy,
+  setModalHost,
   setMoney,
   statusBadge,
   time,
   toast,
 } from '../ui.js';
 import { icon } from '../icons.js';
-import { hasPosition } from '../roles.js';
+import { canOpenPosPage, hasPosition } from '../roles.js';
 
 const shell = await mountPosShell('orders');
 // F-078 (ADR-036): nút theo vị trí — Pha chế nhận / làm đơn, Thu ngân thu tiền, Phục vụ gọi món tại bàn (máy chủ vẫn chặn)
@@ -57,6 +58,10 @@ if (oneTap) {
   $('#h-pending').textContent = 'Cần làm';
   $('.col-preparing').hidden = true;
 }
+// F-088 (ADR-049): màn quầy một màn hình — vùng Hàng pha (trái) + vùng Quầy có thẻ (phải); món tại bàn nhân viên mang ra (TABLE)
+const singleScreen = Boolean(current.pos?.singleScreen);
+const serveTable = current.pos?.serveMode !== 'COUNTER';
+const canShift = canOpenPosPage(shell.user, 'shift');
 
 // ---------- Tải ảnh chụp ----------
 async function loadOrders() {
@@ -179,6 +184,20 @@ function moveFlag(o, { print = true } = {}) {
   );
 }
 
+// F-088 (ADR-049 D-216): trạm làm món — dòng chỉ có món trạm Quầy (bánh, nước chai) không cần pha (combo: theo từng thành phần)
+const counterLine = (i) => (i.children?.length ? i.children.every((c) => c.station === 'COUNTER') : i.station === 'COUNTER');
+const needsBar = (o) => o.items.some((i) => !counterLine(i));
+const lineText = (i) => `${i.quantity}× ${i.name}`;
+/** F-088 (D-219): các ly cần pha của đơn (combo tách thành phần trạm Bar) — dùng cho gom ly. */
+const batchLines = (o) =>
+  o.items.flatMap((i) =>
+    i.children?.length
+      ? i.children.filter((c) => c.station !== 'COUNTER').map((c) => ({ id: c.menuItemId, name: c.name, qty: c.quantity, opts: '' }))
+      : i.station !== 'COUNTER'
+        ? [{ id: i.menuItemId, name: i.name, qty: i.quantity, opts: (i.options ?? []).map((x) => x.name).join(', ') }]
+        : [],
+  );
+
 /** Dòng món trên phiếu: tùy chọn (F-013) và thành phần combo (F-015) để người pha làm đúng. */
 const itemDetail = (i) => [
   i.options?.length ? el('span', { class: 'opts' }, i.options.map((o) => o.name).join(', ')) : null,
@@ -230,7 +249,8 @@ function heldTicket(o) {
       'div',
       { class: 'ticket-actions' },
       canMake ? el('button', { class: 'btn', type: 'button', ...gate, onclick: (e) => act(e, () => accept(o, e.currentTarget)) }, 'Làm ngay') : null,
-      el('button', { class: 'btn btn-danger', type: 'button', ...gate, onclick: (e) => act(e, () => cancelOrder(o)) }, 'Hủy'),
+      // F-088 (D-220): một màn hình — mỗi thẻ một nút chính; Hủy nằm trong chi tiết đơn (chạm thẻ)
+      singleScreen ? null : el('button', { class: 'btn btn-danger', type: 'button', ...gate, onclick: (e) => act(e, () => cancelOrder(o)) }, 'Hủy'),
     ),
   );
 }
@@ -273,7 +293,19 @@ function ticket(o) {
   if (isHeld(o)) return heldTicket(o);
   const actions = [];
   const gate = shiftGate();
-  if (!canMake) {
+  if (singleScreen) {
+    // F-088 (ADR-049 D-220): mỗi thẻ đúng MỘT nút lớn — Hủy / In phiếu / Tiếp nhận & Hoàn tất ở chi tiết đơn (chạm vào thẻ).
+    // Bớt nút trên thẻ = nhìn nhanh hơn, không bấm nhầm Hủy cạnh Xong
+    const done = (btn) => (o.status === 'PENDING' ? acceptAndComplete(o, btn) : complete(o, btn));
+    const [label, cls, fn] = !canMake
+      ? []
+      : oneTap
+        ? ['Xong', 'btn-success btn-done', done]
+        : o.status === 'PENDING'
+          ? ['Tiếp nhận', 'btn-primary btn-done', (btn) => accept(o, btn)]
+          : ['Hoàn tất', 'btn-success btn-done', (btn) => complete(o, btn)];
+    if (label) actions.push(el('button', { class: `btn ${cls}`, type: 'button', ...gate, onclick: (e) => act(e, () => fn(e.currentTarget)) }, label));
+  } else if (!canMake) {
     // F-078: không phải Pha chế → chỉ xem đơn (đơn mới vẫn Hủy được)
     if (o.status === 'PENDING')
       actions.push(el('button', { class: 'btn btn-danger', type: 'button', ...gate, onclick: (e) => act(e, () => cancelOrder(o)) }, 'Hủy'));
@@ -292,6 +324,8 @@ function ticket(o) {
   } else if (o.status === 'PREPARING') {
     actions.push(el('button', { class: 'btn btn-success', type: 'button', ...gate, onclick: (e) => act(e, () => complete(o, e.currentTarget)) }, 'Hoàn tất'));
   }
+  const barItems = o.items.filter((i) => !counterLine(i));
+  const counterItems = o.items.filter(counterLine);
   const wait = el(
     'span',
     { class: 'wait-chip' },
@@ -306,6 +340,7 @@ function ticket(o) {
       tabindex: 0,
       onclick: () => openOrder(o.orderId),
       onkeydown: openOnKey(o),
+      dataset: { batch: [...new Set(batchLines(o).map((l) => l.id))].join(' ') }, // F-088: tô sáng khi chọn một dòng gom ly
     },
     el('div', { class: 'ticket-head' }, el('span', { class: 'where' }, whereLabel(o)), wait),
     moveFlag(o),
@@ -319,8 +354,10 @@ function ticket(o) {
     el(
       'ul',
       {},
-      o.items.map((i) => el('li', {}, el('span', { class: 'qty' }, `${i.quantity}×`), i.name, itemDetail(i))),
+      barItems.map((i) => el('li', {}, el('span', { class: 'qty' }, `${i.quantity}×`), i.name, itemDetail(i))),
     ),
+    // F-088 (ADR-049 D-216): món trạm Quầy không cần pha — người đứng Quầy lấy kèm khi mang / giao
+    counterItems.length ? el('div', { class: 'counter-extra' }, icon('shopping-bag'), `Quầy lấy kèm: ${counterItems.map(lineText).join(', ')}`) : null,
     o.note ? el('div', { class: 'order-note' }, `Ghi chú đơn: ${o.note}`) : null,
     holdOverdue(o) ? el('div', { class: 'order-note' }, 'Hết giờ giữ — hỏi bàn trước khi làm') : null,
     el('div', { class: 'ticket-foot' }, el('strong', {}, money(o.totalAmount)), paymentBadge(o.paymentStatus)),
@@ -389,7 +426,11 @@ const EMPTY_TEXT = {
 
 function renderBoard() {
   const byStatus = { PENDING: [], PREPARING: [], COMPLETED: [] };
-  for (const o of state.orders.values()) byStatus[o.status]?.push(o);
+  const counterOnly = []; // F-088 (D-216): đơn chỉ có món trạm Quầy → dải "Quầy lấy", không vào Hàng pha
+  for (const o of state.orders.values()) {
+    if ((o.status === 'PENDING' || o.status === 'PREPARING') && !isHeld(o) && !needsBar(o)) counterOnly.push(o);
+    else byStatus[o.status]?.push(o);
+  }
   byStatus.COMPLETED.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
   // F-066: đơn đang giữ xuống cuối cột Mới, cái tới giờ trước nằm trên
   const held = byStatus.PENDING.filter((o) => isHeld(o)).sort((a, b) => new Date(a.holdUntil) - new Date(b.holdUntil));
@@ -412,10 +453,253 @@ function renderBoard() {
     const same = nodes.length === col.children.length && nodes.every((n, i) => col.children[i] === n);
     if (!same) col.replaceChildren(...nodes);
   }
+  renderCounterStrip(counterOnly);
+  renderServeStrip();
+  if (singleScreen) {
+    const queue = [...byStatus.PENDING.filter((o) => !isHeld(o)), ...byStatus.PREPARING]; // đơn cần pha (bỏ đơn giữ, đơn chỉ món Quầy)
+    renderBatch(queue);
+    autoPrintNew(queue);
+  }
   setTimeout(() => {
     state.fresh.clear();
     document.querySelectorAll('.ticket.fresh').forEach((n) => n.classList.remove('fresh'));
   }, 3000);
+}
+
+// ---------- F-088 (ADR-049): dải "Quầy lấy", dải "Mang ra", gom ly, hết món, tự in phiếu ----------
+/** D-216: đơn chỉ có món trạm Quầy — người đứng Quầy lấy rồi bấm Xong (máy chủ cho Thu ngân / Phục vụ / Pha chế). */
+/** Dải chỉ dựng lại khi nội dung đổi — sự kiện realtime tới giữa lúc chạm và nhả không làm mất cú bấm (review G3). */
+function unchanged(strip, key) {
+  if (strip.dataset.key === key) return true;
+  strip.dataset.key = key;
+  return false;
+}
+/** Mã đơn chỉ hiện ở bố cục cũ — một màn hình gọn chỉ ghi bàn + món (mã vẫn có trong tên nút cho trình đọc). */
+const codePrefix = (o) => (singleScreen ? '' : `#${o.orderCode} · `);
+
+function renderCounterStrip(list) {
+  const strip = $('#counter-strip');
+  if (!strip) return;
+  list.sort((a, b) => new Date(readySince(a)) - new Date(readySince(b)));
+  strip.hidden = list.length === 0;
+  const canDo = canMake || canPay || canServe;
+  const key = [shell.shift ? 1 : 0, ...list.map((o) => `${o.orderId}:${o.status}:${whereLabel(o)}:${o.items.map(lineText).join(',')}`)].join('|');
+  if (unchanged(strip, key)) return;
+  clear(
+    strip,
+    el('span', { class: 'label' }, icon('shopping-bag'), 'Quầy lấy'),
+    list.map((o) =>
+      el(
+        'div',
+        { class: 'strip-card counter-card' },
+        el('strong', {}, whereLabel(o)),
+        el('span', {}, `${codePrefix(o)}${o.items.map(lineText).join(', ')}`),
+        canDo
+          ? el(
+              'button',
+              {
+                class: 'btn btn-sm btn-success',
+                type: 'button',
+                ...shiftGate(),
+                'aria-label': `Xong đơn #${o.orderCode} (quầy lấy)`,
+                onclick: (e) => (o.status === 'PENDING' ? acceptAndComplete(o, e.currentTarget) : complete(o, e.currentTarget)),
+              },
+              'Xong',
+            )
+          : null,
+      ),
+    ),
+  );
+}
+
+/** D-217: món tại bàn đã xong mà chưa mang ra (trong 60 phút gần nhất — đơn cũ hơn coi như đã mang). */
+const SERVE_WINDOW_MS = 60 * 60_000;
+const toServe = () =>
+  serveTable
+    ? [...state.orders.values()]
+        .filter(
+          (o) =>
+            o.type === 'DINE_IN' &&
+            o.status === 'COMPLETED' &&
+            !o.servedAt &&
+            o.completedAt &&
+            Date.now() - new Date(o.completedAt).getTime() < SERVE_WINDOW_MS,
+        )
+        .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))
+    : [];
+/** Thẻ "Mang ra": "2 ly · kèm 1× Bánh…"; đơn chỉ có bánh / nước chai ghi tên món, không "0 ly". */
+const serveWhat = (o) => {
+  const cups = o.items.filter((i) => !counterLine(i)).reduce((n, i) => n + i.quantity, 0);
+  const extra = o.items.filter(counterLine).map(lineText).join(', ');
+  return cups ? `${cups} ly${extra ? ` · kèm ${extra}` : ''}` : extra;
+};
+function renderServeStrip() {
+  const strip = $('#serve-strip');
+  if (!strip) return;
+  const list = toServe();
+  strip.hidden = list.length === 0;
+  const canCarry = canPay || canServe;
+  const key = [shell.shift ? 1 : 0, ...list.map((o) => `${o.orderId}:${whereLabel(o)}:${serveWhat(o)}`)].join('|');
+  if (unchanged(strip, key)) return;
+  clear(
+    strip,
+    el('span', { class: 'label' }, icon('utensils'), 'Mang ra'),
+    list.map((o) => {
+      const what = serveWhat(o);
+      return el(
+        'div',
+        { class: 'strip-card serve-card' },
+        el('strong', {}, whereLabel(o)),
+        el('span', {}, `${codePrefix(o)}${what}`),
+        canCarry
+          ? el(
+              'button',
+              {
+                class: 'btn btn-sm btn-primary',
+                type: 'button',
+                ...shiftGate(),
+                'aria-label': `Đã mang đơn #${o.orderCode} ra ${whereLabel(o)}`,
+                onclick: (e) => markServed(o, e.currentTarget),
+              },
+              'Đã mang',
+            )
+          : null,
+      );
+    }),
+  );
+}
+
+async function markServed(o, button) {
+  const r = await run(button, () => staffApi(`/api/orders/${o.orderId}/served`, { method: 'POST' }));
+  upsert(r?.order);
+}
+
+/** D-219: gom ly — món trạm Bar giống nhau có ở ≥ 2 đơn cần làm; chạm một dòng → tô sáng các thẻ đơn có món đó. */
+let batchPick = null;
+function renderBatch(queue) {
+  const box = $('#batch');
+  if (!box) return;
+  const groups = new Map(); // menuItemId → { name, qty, orders, variants: tùy chọn → số ly }
+  for (const o of queue)
+    for (const l of batchLines(o)) {
+      const g = groups.get(l.id) ?? { name: l.name, qty: 0, orders: new Set(), variants: new Map() };
+      g.qty += l.qty;
+      g.orders.add(o.orderId);
+      g.variants.set(l.opts, (g.variants.get(l.opts) ?? 0) + l.qty);
+      groups.set(l.id, g);
+    }
+  const list = [...groups].filter(([, g]) => g.orders.size >= 2).sort((a, b) => b[1].qty - a[1].qty || a[1].name.localeCompare(b[1].name));
+  if (batchPick !== null && !list.some(([id]) => id === batchPick)) batchPick = null;
+  box.hidden = list.length === 0;
+  const variantText = (g) => {
+    const named = [...g.variants].filter(([opts]) => opts);
+    return named.length ? el('span', { class: 'variants' }, named.map(([opts, q]) => `${q} ly: ${opts}`).join(' · ')) : null;
+  };
+  const key = [batchPick, ...list.map(([id, g]) => `${id}:${g.qty}:${g.orders.size}:${[...g.variants].join(';')}`)].join('|');
+  if (unchanged(box, key)) return highlightBatch();
+  clear(
+    box,
+    el('span', { class: 'label', title: 'Món giống nhau ở nhiều đơn — pha chung một lượt' }, icon('coffee'), 'Gom ly'),
+    el(
+      'div',
+      { class: 'batch-list' },
+      list.map(([id, g]) =>
+        el(
+          'button',
+          {
+            class: `batch-chip ${batchPick === id ? 'on' : ''}`,
+            type: 'button',
+            'aria-pressed': String(batchPick === id),
+            onclick: () => {
+              batchPick = batchPick === id ? null : id;
+              renderBatch(queue);
+            },
+          },
+          el('strong', {}, `${g.qty}× ${g.name}`),
+          el('span', { class: 'small muted' }, ` · ${g.orders.size} đơn`),
+          variantText(g),
+        ),
+      ),
+    ),
+  );
+  highlightBatch();
+}
+/** Tô sáng thẻ đơn có món đang chọn ở dòng gom ly (thẻ mới dựng sau sự kiện realtime cũng được tô). */
+function highlightBatch() {
+  document
+    .querySelectorAll('#board .ticket')
+    .forEach((n) => n.classList.toggle('batch-hit', batchPick !== null && (n.dataset.batch ?? '').split(' ').includes(String(batchPick))));
+}
+
+/** D-218: người pha báo hết / còn món ngay ở quầy — menu khách đổi ngay. Món hết vì thiếu nguyên liệu tự hết (F-010). */
+async function openSoldOut() {
+  let menu;
+  try {
+    menu = await staffApi('/api/menu');
+  } catch (err) {
+    return toast(errorMessage(err), 'error');
+  }
+  const rows = menu.categories.flatMap((c) => c.items);
+  const list = el('div', { class: 'soldout-list' });
+  const row = (i) =>
+    el(
+      'div',
+      { class: `soldout-row ${i.isAvailable ? '' : 'off'}` },
+      el('span', { class: 'name' }, i.name),
+      i.soldOut
+        ? el('span', { class: 'badge danger' }, 'Hết nguyên liệu')
+        : el(
+            'button',
+            {
+              class: `btn btn-sm ${i.isAvailable ? '' : 'btn-primary'}`,
+              type: 'button',
+              'aria-pressed': String(!i.isAvailable),
+              'aria-label': i.isAvailable ? `Báo hết ${i.name}` : `Mở bán lại ${i.name}`,
+              onclick: async (e) => {
+                const btn = e.currentTarget;
+                setBusy(btn, true);
+                try {
+                  const item = await staffApi(`/api/menu-items/${i.id}/availability`, { method: 'PATCH', body: { isAvailable: !i.isAvailable } });
+                  i.isAvailable = item.isAvailable;
+                  toast(i.isAvailable ? `Đã mở bán lại ${i.name}` : `Đã báo hết ${i.name} — khách không gọi được nữa`, 'success');
+                  clear(list, rows.map(row));
+                } catch (err) {
+                  setBusy(btn, false);
+                  toast(errorMessage(err), 'error');
+                }
+              },
+            },
+            i.isAvailable ? 'Báo hết' : 'Mở bán lại',
+          ),
+    );
+  clear(list, rows.map(row));
+  modal({
+    title: 'Báo hết món',
+    body: el('div', { class: 'stack' }, el('p', { class: 'small muted' }, 'Món báo hết sẽ ẩn ngay trên điện thoại khách và máy quầy.'), list),
+    actions: [{ label: 'Xong', class: 'btn-primary' }],
+    host: singleScreen ? zoneBar : undefined, // mở sau khi tải thực đơn — chọn vùng sẵn, không theo cú chạm của người kia
+  });
+}
+
+/** D-219: tự in phiếu pha khi đơn vào Hàng pha — bật theo từng máy (lưu trong trình duyệt), mặc định tắt. */
+const AUTO_TICKET_KEY = 'cf_auto_ticket';
+const autoTicket = () => {
+  try {
+    return localStorage.getItem(AUTO_TICKET_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+// In khi đơn VÀO Hàng pha lần đầu — mọi lối: đơn mới, đơn hẹn hết giữ, đơn tới lúc mất mạng (tải bù). Đơn đã có lúc mở trang
+// coi như đã in (tải lại trang không in lặp); chỉ bật sau lần tải đầu (review G3: trước đây sót đơn hết giữ / đơn tải bù, in lặp sau F5)
+const queueSeen = new Set();
+let autoPrintArmed = false;
+function autoPrintNew(queue) {
+  for (const o of queue) {
+    if (queueSeen.has(o.orderId)) continue;
+    queueSeen.add(o.orderId);
+    if (autoPrintArmed && singleScreen && autoTicket()) printSlip(o);
+  }
 }
 
 // ---------- Hành động trên đơn ----------
@@ -426,7 +710,8 @@ async function run(button, fn, okMessage) {
     if (okMessage) toast(okMessage, 'success');
     return result;
   } catch (err) {
-    toast(errorMessage(err), err.code === 'ALREADY_PROCESSED' ? 'warning' : 'error', 5000);
+    // Người khác / máy khác làm trước (đã nhận, đã mang) → nhắc nhẹ, không báo đỏ
+    toast(errorMessage(err), ['ALREADY_PROCESSED', 'ALREADY_SERVED'].includes(err.code) ? 'warning' : 'error', 5000);
     if (err.code === 'NO_OPEN_SHIFT') shell.reloadShift(); // ca đã bị đóng ở máy khác lúc mất kết nối → khóa lại nút
     await loadAll();
     return null;
@@ -475,7 +760,7 @@ async function cancelOrder(o) {
       { label: 'Hủy đơn', class: 'btn-danger', value: true },
     ],
   }).result;
-  if (ok !== true) return;
+  if (ok !== true) return false; // người dùng thôi → chi tiết đơn (nếu mở từ đó) vẫn mở
   const r = await run(
     null,
     () => staffApi(`/api/orders/${o.orderId}/cancel`, { method: 'POST', body: { reason: reason.value.trim() || null } }),
@@ -498,8 +783,16 @@ function openOrder(orderId) {
     actions.push({ label: 'Xong', class: 'btn-success', onClick: () => (o.status === 'PENDING' ? acceptAndComplete(o, null) : complete(o, null)) });
   } else {
     if (o.status === 'PENDING' && shell.shift) actions.push({ label: 'Tiếp nhận', class: 'btn-primary', onClick: () => accept(o, null) });
+    // F-088 (D-220): thẻ đơn một màn hình chỉ còn một nút — "Tiếp nhận & Hoàn tất" chuyển vào đây
+    if (singleScreen && o.status === 'PENDING' && shell.shift && !isHeld(o))
+      actions.push({ label: 'Tiếp nhận & Hoàn tất', onClick: () => acceptAndComplete(o, null) });
     if (o.status === 'PREPARING' && shell.shift) actions.push({ label: 'Hoàn tất', class: 'btn-success', onClick: () => complete(o, null) });
   }
+  // F-088 (D-219, D-220): In phiếu pha + Hủy đơn — trước nằm trên thẻ, nay ở chi tiết đơn (thẻ chỉ một nút)
+  if (singleScreen && (o.status === 'PENDING' || o.status === 'PREPARING'))
+    actions.unshift({ label: 'In phiếu pha', onClick: () => printSlip(o), value: 'print' });
+  if (singleScreen && o.status === 'PENDING' && shell.shift)
+    actions.unshift({ label: 'Hủy đơn', class: 'btn-danger', onClick: async () => (await cancelOrder(o)) !== false });
   modal({
     title: `Đơn #${o.orderCode}`,
     drawer: true,
@@ -652,6 +945,47 @@ function groupCard(s, groupNo) {
   );
 }
 
+/**
+ * F-088 (ADR-049 D-220): thẻ bàn gọn của màn một màn hình — MỘT nút chính theo việc của người đứng máy (Thu tiền / Gọi món /
+ * Xem bill / Đóng bàn); ghi chú, chuyển bàn, gọi thêm món, hủy bàn, tách / gộp bill nằm trong bill (chạm tên bàn hoặc chỗ trống của thẻ).
+ */
+function groupCardCompact(s, groupNo) {
+  const st = groupState(s);
+  const open = () => openSettle(s.sessionId);
+  const orderLink = () => el('a', { class: 'btn', href: tableOrderUrl(s), 'aria-label': `Gọi món ${s.table.name}` }, icon('plus'), 'Gọi món');
+  const primary =
+    s.orderCount > 0
+      ? canPay
+        ? el('button', { class: 'btn btn-primary', type: 'button', onclick: open }, 'Thu tiền')
+        : canServe
+          ? orderLink()
+          : el('button', { class: 'btn', type: 'button', onclick: open }, 'Xem bill')
+      : canServe
+        ? orderLink()
+        : el('button', { class: 'btn', type: 'button', 'aria-label': 'Đóng bàn trống', onclick: () => closeEmpty(s) }, 'Đóng bàn');
+  return el(
+    'div',
+    { class: `tbl-card table-row compact-card ${st}`, onclick: (e) => !e.target.closest('button, a') && open() },
+    el(
+      'div',
+      { class: 'tc-head' },
+      el(
+        'button',
+        { class: 'tc-name', type: 'button', 'aria-label': `Mở bill ${s.table.name}${groupNo ? ` nhóm ${groupNo}` : ''}`, onclick: open },
+        el('span', { class: 'name' }, s.table.name, groupNo ? el('span', { class: 'grp' }, `Nhóm ${groupNo}`) : null),
+        icon('chevron-right'),
+      ),
+    ),
+    el('span', { class: 'tc-state' }, stateText(s, st)),
+    s.orderCount ? el('div', { class: 'tc-amount' }, money(s.amountDue)) : null,
+    el('div', { class: 'tc-meta' }, `mở ${time(s.openedAt)}`),
+    s.splitCount ? el('div', { class: 'tc-meta split-info' }, icon('receipt'), `Chia ${s.splitCount} phần`) : null,
+    s.member ? el('div', { class: 'tc-meta' }, icon('star', { label: 'Hội viên' }), s.member.fullName) : null,
+    s.note ? el('div', { class: 'table-note' }, icon('notebook-pen', { label: 'Ghi chú' }), s.note) : null,
+    el('div', { class: 'tc-main' }, primary),
+  );
+}
+
 const emptyCard = (t) =>
   el(
     'div',
@@ -672,10 +1006,11 @@ function renderTables() {
   const cards = state.tables.map((t) => {
     const groups = byTable.get(t.tableId);
     byTable.delete(t.tableId);
-    return groups ? groups.map((s, i) => groupCard(s, groups.length > 1 ? i + 1 : 0)) : emptyCard(t);
+    const card = singleScreen ? groupCardCompact : groupCard; // F-088 (D-220): thẻ gọn một nút
+    return groups ? groups.map((s, i) => card(s, groups.length > 1 ? i + 1 : 0)) : emptyCard(t);
   });
   // Nhóm ở bàn không còn trong danh sách (vừa bị tắt / thêm sau lần tải) vẫn hiện — không mất yêu cầu thanh toán
-  for (const groups of byTable.values()) cards.push(groups.map((s) => groupCard(s, 0)));
+  for (const groups of byTable.values()) cards.push(groups.map((s) => (singleScreen ? groupCardCompact : groupCard)(s, 0)));
 
   const busy = new Set(state.sessions.map((s) => s.table.tableId)).size;
   const pays = state.sessions.filter((s) => s.status === 'PAYMENT_REQUESTED').length;
@@ -688,7 +1023,12 @@ function renderTables() {
     waits ? el('span', { class: 'waiting' }, `${waits} có đơn chờ`) : null,
     el('span', { class: 'free' }, `${free} bàn trống`),
   );
-  clear($('#tables-toggle'), icon('layout-grid'), `Bàn · ${busy} có khách`, pays ? el('span', { class: 'badge pending' }, `${pays} gọi thanh toán`) : null);
+  clear(
+    $('#tables-toggle'),
+    icon('layout-grid'),
+    `${singleScreen ? 'Quầy' : 'Bàn'} · ${busy} có khách`, // F-088: một màn hình → nút mở cả vùng Quầy (màn < 1024 px)
+    pays ? el('span', { class: 'badge pending' }, `${pays} gọi thanh toán`) : null,
+  );
   const box = $('#tables');
   if (cards.length === 0) return clear(box, el('p', { class: 'muted small' }, 'Chưa có bàn nào — thêm bàn ở Quản lý › Bàn & mã QR.'));
   clear(box, cards);
@@ -1162,7 +1502,8 @@ function openSettle(sessionId) {
   const sessionBilling = billingControls({ sessionId, onChange: () => loadPreview() });
   const partBilling = billingControls({ onChange: () => loadPreview() });
   let billing = sessionBilling;
-  const m = modal({ title: 'Thu tiền bàn', drawer: true, body, onClose: () => (state.drawer = null) });
+  // F-088: ngăn thu tiền luôn ở vùng Quầy — kể cả mở từ chi tiết đơn ở Hàng pha (không che hàng pha của người pha — review G3)
+  const m = modal({ title: 'Thu tiền bàn', drawer: true, body, onClose: () => (state.drawer = null), host: singleScreen ? counterHost() : undefined });
   m.root.append(el('div', { class: 'modal-foot' }, closeBtn, provisionalBtn, settleBtn));
 
   const due = () => preview?.totals.amountDue ?? session?.amountDue ?? 0;
@@ -1774,7 +2115,7 @@ function onOrderEvent(payload) {
     state.fresh.add(order.orderId);
     playSound('ting');
   }
-  upsert(order);
+  upsert(order); // F-088 (D-219): đơn vào Hàng pha → renderBoard tự in phiếu nếu máy này bật
   checkHolds();
   refreshQueueEta();
   if (order.sessionId) refreshSessionsSoon();
@@ -1816,6 +2157,7 @@ async function moveTable(session) {
           ),
     ),
     actions: [{ label: 'Thôi', value: false }],
+    host: singleScreen ? counterHost() : undefined, // mở sau khi tải danh sách bàn — chọn sẵn vùng Quầy
   });
   async function doMove(t, button) {
     const all = [...button.parentElement.querySelectorAll('button')];
@@ -1854,7 +2196,8 @@ function onSessionEvent(payload) {
 const tablesPanel = $('#tables-panel');
 const tablesToggle = $('#tables-toggle');
 const tablesBackdrop = $('#tables-backdrop');
-const drawerMode = matchMedia('(max-width: 1199px)');
+// F-088 (ADR-049 D-214): màn một màn hình — từ 1024 px hai vùng cạnh nhau; nhỏ hơn thì vùng Quầy là ngăn trượt
+const drawerMode = matchMedia(singleScreen ? '(max-width: 1023px)' : '(max-width: 1199px)');
 // Ngăn mở: phần phía sau không bấm / Tab tới được (inert); đóng bằng cách nào cũng trả focus về nút "Bàn" (review G3)
 const behindDrawer = [$('.pos-top'), $('#pos-alerts'), $('.orders-area')];
 function setTablesOpen(open) {
@@ -1865,8 +2208,17 @@ function setTablesOpen(open) {
   tablesBackdrop.hidden = !show;
   tablesToggle.setAttribute('aria-expanded', String(show));
   behindDrawer.forEach((n) => n?.toggleAttribute('inert', show));
-  if (show) $('#tables-close').focus();
-  else if (wasOpen && drawerMode.matches) tablesToggle.focus();
+  // Chỉ đưa focus vào lúc vừa MỞ — ngăn đang mở mà đổi thẻ bằng ← / → thì focus ở lại thẻ (review G3)
+  if (show && !wasOpen) $('#tables-close').focus();
+  else if (!show && wasOpen && drawerMode.matches) tablesToggle.focus();
+}
+/**
+ * F-088: vùng Quầy làm chỗ cho hộp thoại (ngăn thu tiền, chuyển bàn, việc từ dải "Cần xử lý ngay").
+ * Màn < 1024 px vùng Quầy là ngăn trượt — mở ngăn trước, không thì hộp thoại nằm trong ngăn đang đóng, không ai thấy (review G3).
+ */
+function counterHost() {
+  if (drawerMode.matches && !tablesPanel.classList.contains('open')) setTablesOpen(true);
+  return tablesPanel;
 }
 tablesToggle.addEventListener('click', () => setTablesOpen(!tablesPanel.classList.contains('open')));
 $('#tables-close').addEventListener('click', () => setTablesOpen(false));
@@ -1877,12 +2229,223 @@ document.addEventListener('keydown', (e) => {
 });
 drawerMode.addEventListener('change', () => setTablesOpen(false));
 
+// ---------- F-088 (ADR-049 D-214, D-215): màn quầy một màn hình — vùng Hàng pha + vùng Quầy có thẻ ----------
+const zoneBar = $('.orders-area');
+const panels = new Map(); // thẻ → khung nội dung
+const TAB_DEFS = [
+  { key: 'tables', label: 'Bàn', icon: 'layout-grid', show: true },
+  { key: 'takeaway', label: 'Bán mang đi', icon: 'shopping-bag', show: canPay, url: '/pos/takeaway?embed=1' },
+  { key: 'table-order', label: 'Gọi món tại bàn', icon: 'utensils', show: canServe, url: '/pos/table-order?embed=1' },
+  { key: 'shift', label: 'Ca & két', icon: 'wallet', show: canShift, url: '/pos/shift?embed=1' },
+].filter((t) => t.show);
+const EMBED_PAGES = { '/pos/takeaway': 'takeaway', '/pos/table-order': 'table-order', '/pos/shift': 'shift' };
+let tabBar = null;
+
+function openTab(key, url = null) {
+  const panel = panels.get(key);
+  if (!panel) return toast('Việc này không thuộc vị trí của bạn — nhờ người đúng vị trí hoặc trưởng ca', 'warning');
+  for (const [k, p] of panels) p.hidden = k !== key;
+  tabBar.querySelectorAll('[role="tab"]').forEach((b) => {
+    b.setAttribute('aria-selected', String(b.dataset.tab === key));
+    b.tabIndex = b.dataset.tab === key ? 0 : -1;
+  });
+  loadFrame(key, url);
+  if (drawerMode.matches) setTablesOpen(true);
+}
+/**
+ * Khung tải lần đầu khi mở thẻ (hoặc tải sẵn), giữ nguyên khi đổi thẻ; liên kết có tham số (bàn cụ thể) thì mở lại đúng chỗ.
+ * Khung đã tải → `location.replace` (không thêm lịch sử: nút Back của trình duyệt không đưa khung về trang thiếu `embed=1` — review G3).
+ */
+function loadFrame(key, url = null) {
+  const frame = panels.get(key)?.querySelector('iframe');
+  if (!frame) return;
+  const want = url ?? (frame.dataset.loaded ? null : TAB_DEFS.find((t) => t.key === key).url);
+  if (!want) return;
+  try {
+    if (frame.dataset.loaded) frame.contentWindow.location.replace(want);
+    else frame.src = want;
+  } catch {
+    frame.src = want;
+  }
+  frame.dataset.loaded = '1';
+}
+
+if (singleScreen) {
+  document.body.classList.add('single-screen');
+  zoneBar.classList.add('zone', 'zone-bar');
+  zoneBar.setAttribute('role', 'region'); // div có tên vùng → trình đọc màn hình nhận ra (review G3)
+  zoneBar.setAttribute('aria-label', 'Hàng pha');
+  tablesPanel.classList.add('zone', 'zone-counter');
+  tablesPanel.removeAttribute('aria-labelledby');
+  tablesPanel.setAttribute('aria-label', 'Quầy');
+  // Thẻ thay cho hai nút "Gọi món" / "Mang đi" ở đầu lưới bàn
+  $('#go-table-order')?.remove();
+  $('#go-takeaway')?.remove();
+  // D-219, D-220: "Tự in phiếu pha trên máy này" là cài đặt của máy → nút biểu tượng máy in ở thanh trên, cạnh nút âm thanh
+  const printToggle = el(
+    'button',
+    {
+      class: 'btn btn-sm icon-only',
+      type: 'button',
+      id: 'auto-ticket',
+      'aria-pressed': String(autoTicket()),
+      'aria-label': 'Tự in phiếu pha trên máy này',
+      title: 'Tự in phiếu pha khi có đơn mới (chỉ máy này)',
+    },
+    icon('printer'),
+  );
+  printToggle.addEventListener('click', () => {
+    const on = !autoTicket();
+    try {
+      localStorage.setItem(AUTO_TICKET_KEY, on ? '1' : '0');
+    } catch {
+      /* không lưu được: chỉ áp cho lần này */
+    }
+    printToggle.setAttribute('aria-pressed', String(on));
+    toast(on ? 'Máy này sẽ tự in phiếu pha khi có đơn mới' : 'Đã tắt tự in phiếu pha trên máy này', 'info');
+  });
+  $('.pos-status')?.append(printToggle);
+  // Vùng Hàng pha: tiêu đề + Hết món (người pha). Máy đứng tên người không pha → nhắc "Đổi người" (một màn hình, một tài khoản)
+  zoneBar.prepend(
+    el(
+      'div',
+      { class: 'zone-head' },
+      el('h2', {}, 'Hàng pha'),
+      canMake ? null : el('span', { class: 'zone-hint small' }, 'Người pha bấm "Đổi người" để làm đơn'),
+      el(
+        'div',
+        { class: 'zone-tools' },
+        canMake
+          ? el('button', { class: 'btn btn-sm', type: 'button', id: 'soldout-btn', onclick: () => openSoldOut() }, icon('utensils-crossed'), 'Hết món')
+          : null,
+        tablesToggle, // nút mở vùng Quầy khi màn < 1024 px (CSS chỉ hiện lúc đó)
+      ),
+    ),
+  );
+  // D-220: "Đã xong hôm nay" thu gọn một dòng — bấm "Xem" mở danh sách (nhường chỗ cho đơn cần làm)
+  const doneBand = $('.done-band');
+  const doneToggle = el('button', { class: 'btn btn-sm done-toggle', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'col-COMPLETED' }, 'Xem');
+  doneBand.classList.add('collapsed');
+  doneBand.querySelector('.column-head').append(doneToggle);
+  doneToggle.addEventListener('click', () => {
+    const open = doneBand.classList.toggle('collapsed') === false;
+    doneToggle.setAttribute('aria-expanded', String(open));
+    doneToggle.textContent = open ? 'Ẩn' : 'Xem';
+  });
+  // Vùng Quầy: hàng thẻ + khung từng thẻ (lưới bàn giữ nguyên trong thẻ "Bàn")
+  const tabList = el(
+    'div',
+    { class: 'counter-tablist', role: 'tablist', 'aria-label': 'Việc ở quầy' },
+    TAB_DEFS.map((t) =>
+      el(
+        'button',
+        {
+          class: 'counter-tab',
+          type: 'button',
+          role: 'tab',
+          id: `tabbtn-${t.key}`,
+          dataset: { tab: t.key },
+          'aria-selected': String(t.key === 'tables'),
+          'aria-controls': `tab-${t.key}`,
+          tabindex: t.key === 'tables' ? '0' : '-1',
+          onclick: () => openTab(t.key),
+        },
+        icon(t.icon),
+        t.label,
+      ),
+    ),
+  );
+  // Mẫu thẻ ARIA: ← / → / Home / End chuyển thẻ, chỉ thẻ đang chọn nằm trong vòng Tab
+  tabList.addEventListener('keydown', (e) => {
+    const tabs = [...tabList.querySelectorAll('[role="tab"]')];
+    const i = tabs.indexOf(document.activeElement);
+    const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+    if (i < 0 || (step === undefined && e.key !== 'Home' && e.key !== 'End')) return;
+    e.preventDefault();
+    const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : (i + step + tabs.length) % tabs.length;
+    tabs[next].focus();
+    openTab(tabs[next].dataset.tab);
+  });
+  // Nút đóng ngăn trượt (màn < 1024 px) ở cùng hàng nhưng ngoài tablist (tablist chỉ chứa thẻ)
+  tabBar = el('div', { class: 'counter-tabs' }, tabList, $('#tables-close'));
+  const tablesBody = el('div', { class: 'tab-panel', id: 'tab-tables', role: 'tabpanel', 'aria-labelledby': 'tabbtn-tables' }, ...tablesPanel.childNodes);
+  tablesPanel.replaceChildren(tabBar, tablesBody);
+  panels.set('tables', tablesBody);
+  for (const t of TAB_DEFS.filter((d) => d.url)) {
+    const panel = el(
+      'div',
+      { class: 'tab-panel', id: `tab-${t.key}`, role: 'tabpanel', 'aria-labelledby': `tabbtn-${t.key}`, hidden: true },
+      el('iframe', { class: 'tab-frame', title: t.label, name: `pos-${t.key}` }),
+    );
+    tablesPanel.append(panel);
+    panels.set(t.key, panel);
+  }
+  shell.openTab = openTab;
+
+  // D-215: hộp thoại mở trong vùng chứa nút vừa bấm (dải "Cần xử lý ngay" → vùng Quầy); thanh trên, dải nhắc chung (chưa mở ca,
+  // đặt PIN, chấm công…) → cả màn hình. Hộp thoại mở sau khi chờ máy chủ (thu tiền, chuyển bàn, hết món) tự chọn vùng (`host`).
+  let lastDown = { el: null, at: 0 };
+  document.addEventListener('pointerdown', (e) => (lastDown = { el: e.target, at: Date.now() }), true);
+  const zoneOf = (node) => {
+    if (!(node instanceof Element) || node.closest('.pos-top, #pos-alerts > .banner')) return null;
+    if (node.closest('.zone-bar')) return zoneBar;
+    if (node.closest('.zone-counter, #pos-alerts')) return counterHost();
+    return null;
+  };
+  setModalHost((opener) => {
+    const recent = Date.now() - lastDown.at < 1500 && lastDown.el?.isConnected ? lastDown.el : null;
+    return zoneOf(recent ?? opener);
+  });
+
+  // Liên kết sang trang Gọi món / Bán mang đi / Ca (thẻ bàn, ngăn thu tiền, thanh điều hướng) → mở thành thẻ, không rời /pos
+  document.addEventListener(
+    'click',
+    (e) => {
+      const a = e.target.closest?.('a[href]');
+      if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || a.target) return;
+      const u = new URL(a.getAttribute('href'), location.href);
+      if (u.origin !== location.origin) return;
+      const key = u.pathname === '/pos' ? u.searchParams.get('tab') : EMBED_PAGES[u.pathname];
+      if (!key || !panels.has(key)) return;
+      e.preventDefault();
+      // "Gọi thêm món" trong bill: đóng bill trước — không thì bill phủ cả vùng Quầy, thẻ Gọi món mở phía dưới mà không ai thấy (review G3)
+      if (a.closest('.overlay')) state.drawer?.close();
+      if (u.pathname === '/pos') return openTab(key);
+      u.searchParams.set('embed', '1');
+      lastDown = { el: tablesPanel, at: Date.now() };
+      openTab(key, u.pathname + u.search);
+    },
+    true,
+  );
+  // Trang nhúng nhờ màn chính: "Thu tiền bàn này" ở trang Gọi món → ngăn thu tiền trong vùng Quầy
+  window.addEventListener('message', (e) => {
+    if (e.origin !== location.origin || typeof e.data !== 'object' || !e.data) return;
+    if (e.data.type === 'pos:settle' && e.data.sessionId) {
+      lastDown = { el: tablesPanel, at: Date.now() };
+      openTab('tables');
+      // Đưa focus về màn chính: không thì phím (Esc, Tab) còn ở trong khung vừa ẩn, ngăn thu tiền không đóng bằng Esc được
+      $('#tabbtn-tables')?.focus();
+      openSettle(e.data.sessionId);
+    }
+  });
+}
+
 await loadAll();
+autoPrintArmed = true; // F-088: đơn đã có lúc mở trang không tự in lại
+// F-088: tải sẵn thẻ Bán mang đi cho người thu tiền — mất mạng sau khi tải lại trang vẫn bán tạm được (F-074 cần trang đã mở — review G3)
+if (singleScreen && panels.has('takeaway')) setTimeout(() => loadFrame('takeaway'), 1500);
+// Dải "Mang ra": đơn xong quá 60 phút tự rời dải kể cả lúc vắng, không có sự kiện nào (review G3)
+if (serveTable) setInterval(renderServeStrip, 60_000);
 // Từ trang Gọi món tại bàn: /pos?settle=<sessionId> → mở ngay drawer thu tiền
-const settleParam = new URLSearchParams(location.search).get('settle');
+const startParams = new URLSearchParams(location.search);
+const settleParam = startParams.get('settle');
+const tabParam = singleScreen ? startParams.get('tab') : null; // F-088: /pos?tab=takeaway… (thanh điều hướng từ trang khác)
 if (settleParam) {
   history.replaceState(null, '', location.pathname);
   openSettle(settleParam);
+} else if (tabParam) {
+  history.replaceState(null, '', location.pathname);
+  openTab(tabParam);
 }
 
 // ---------- F-061 (ADR-021 D-80): hướng dẫn 5 bước — tự mở cho tài khoản chưa xem; nút "Hướng dẫn" / ?tour=1 mở lại ----------
@@ -1912,9 +2475,12 @@ const tourSteps = () => [
         : 'Bấm bàn đang có khách → chọn Tiền mặt hoặc Chuyển khoản → thu tiền & in bill. Bàn khách bấm "Gọi thanh toán" hiện ở dải trên cùng.',
   },
   {
-    target: '.pos-nav a[href="/pos/shift"]',
+    // F-088 (D-220): một màn hình → không còn mục Ca trên thanh điều hướng, khoanh thẻ "Ca & két" (không có thì nút ca)
+    target: () => $('.pos-nav a[href="/pos/shift"]') ?? $('#tabbtn-shift') ?? $('#shift-btn'),
     title: 'Cuối ca: Đóng ca',
-    text: 'Hết ca vào Ca & hoàn tiền → đếm tiền trong két → Đóng ca. App so với tiền dự kiến và báo lệch. Xem lại hướng dẫn: nút "Hướng dẫn" trên thanh trên.',
+    text: singleScreen
+      ? 'Hết ca mở thẻ Ca & két → đếm tiền trong két → Đóng ca. App so với tiền dự kiến và báo lệch. Xem lại hướng dẫn: nút "?" trên thanh trên.'
+      : 'Hết ca vào Ca & hoàn tiền → đếm tiền trong két → Đóng ca. App so với tiền dự kiến và báo lệch. Xem lại hướng dẫn: nút "Hướng dẫn" trên thanh trên.',
   },
 ];
 function runTour() {
@@ -1949,6 +2515,10 @@ socket?.on('order.created', onOrderEvent);
 socket?.on('order.status_changed', onOrderEvent);
 socket?.on('order.cancelled', onOrderEvent);
 socket?.on('order.released', onOrderEvent); // F-066 khách báo "Bạn đã tới"
+// F-088 (D-217): máy khác bấm "Đã mang" → bỏ khỏi dải "Mang ra" (chỉ đơn đang có trên màn này)
+socket?.on('order.served', (p) => {
+  if (p.order && state.orders.has(p.order.orderId)) upsert(p.order);
+});
 socket?.on('session.payment_requested', (p) => {
   playSound('chime');
   toast(`${p.table?.name ?? 'Một bàn'} gọi thanh toán · ${money(p.amountDue)}`, 'warning', 6000);

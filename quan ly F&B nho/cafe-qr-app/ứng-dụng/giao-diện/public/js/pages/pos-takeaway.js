@@ -5,6 +5,7 @@
 // F-074 (ADR-032): mất kết nối → bán tạm theo giá niêm yết, lưu trên máy này, in bill ngay, có mạng lại tự gửi bù; mỗi giỏ có mã lượt thu
 // (gửi lại không tính hai lần); trưởng ca / quản lý nhập đơn từ phiếu bán tay; in phiếu bán tay trống để dự phòng.
 import { staffApi } from '../api.js';
+import { topNav } from '../embed.js';
 import { billingControls } from '../billing-controls.js';
 import { mountGiftSell } from '../gift-sell.js';
 import { addItem, cartTotal, clearCart, itemQuantity, lineKey, loadCart, MAX_QTY, saveCart, setQuantity, syncWithMenu, toOrderItems } from '../cart.js';
@@ -775,7 +776,7 @@ const socket = connectRealtime({
     clearTimeout(offlineTimer);
     offlineTimer = setTimeout(() => setOffline(true), 4000); // chập chờn vài giây thì không đổi chế độ
   },
-  onAuthError: () => (location.href = '/pos/login?reason=expired'),
+  onAuthError: () => topNav('/pos/login?reason=expired'), // F-088: trang nhúng → đăng nhập lại cả màn hình
 });
 shell.attach(socket);
 socket?.on('menu.availability_changed', ({ menuItemId, isAvailable }) => {

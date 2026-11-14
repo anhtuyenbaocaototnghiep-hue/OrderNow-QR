@@ -52,7 +52,7 @@ publicRouter.get('/auth/me', requireStaff, async (req, res) => {
     shop: await settingsService.shopInfo(),
     modules: s.uiModules,
     attendance: { mode: s.attendanceMode, moneyPin: s.moneyPin },
-    pos: { oneTap: s.oneTap }, // F-076
+    pos: { oneTap: s.oneTap, singleScreen: s.singleScreen, serveMode: s.serveMode }, // F-076, F-088
   });
 });
 // ADR-045: đã đăng nhập trang Quản lý (gõ mật khẩu) → mở máy quầy không đăng nhập lại: chấm công vào như đăng nhập quầy (chế độ

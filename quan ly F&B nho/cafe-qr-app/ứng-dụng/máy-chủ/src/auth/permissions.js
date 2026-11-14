@@ -295,6 +295,8 @@ export const STORE_MGR_SETTINGS = [
   'etaDefaultItemSeconds',
   'oneTap',
   'menuSheetAll', // F-083
+  'singleScreen', // F-088 (ADR-049): vận hành quầy như oneTap
+  'serveMode', // F-088
 ];
 
 /** Loại cảnh báo chỉ chủ quán xem (khóa đăng nhập; giá món do quản lý cửa hàng đổi; cấp quyền dính tiền). */
@@ -307,15 +309,18 @@ export const isProbation = (user) => user?.role === 'STAFF' && user.level === 'P
 /** Vai dùng để tính ngưỡng giảm giá tay (thử việc → 'PROBATION' = 0). */
 export const discountRole = (user) => (isProbation(user) ? 'PROBATION' : user?.role);
 
+/** Lỗi 403 POSITION_REQUIRED (kèm quyền xin được) — dùng chung cho middleware và service kiểm theo nội dung đơn (F-088). */
+export function positionError(...positions) {
+  const names = positions.map((p) => POSITION_LABEL[p]).join(' / ');
+  return noAccess(`Việc này của vị trí ${names} — nhờ người đúng vị trí, trưởng ca, hoặc bấm Xin quyền`, 'POSITION_REQUIRED', POSITION_CAP[positions[0]]);
+}
+
 /** Middleware: việc của vị trí `positions` (403 POSITION_REQUIRED). Đặt sau requireStaff / requirePermission. Mang `.positions` cho Tra cứu API. */
 export function requirePosition(...positions) {
   const middleware = async (req, _res, next) => {
     const user = req.user ?? (await userFromToken(bearer(req)));
     if (!user) throw unauthorized();
-    if (!hasPosition(user, ...positions)) {
-      const names = positions.map((p) => POSITION_LABEL[p]).join(' / ');
-      throw noAccess(`Việc này của vị trí ${names} — nhờ người đúng vị trí, trưởng ca, hoặc bấm Xin quyền`, 'POSITION_REQUIRED', POSITION_CAP[positions[0]]);
-    }
+    if (!hasPosition(user, ...positions)) throw positionError(...positions);
     req.user = withActorPin(req, user);
     next();
   };

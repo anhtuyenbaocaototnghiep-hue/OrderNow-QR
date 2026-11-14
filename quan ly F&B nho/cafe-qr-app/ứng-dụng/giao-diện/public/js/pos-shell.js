@@ -9,20 +9,31 @@ import { brandMark, icon } from './icons.js';
 import { canOpenPosPage, firstAdminHref, hasAdminPages, hasCap, hasPosition, isProbation, posPageCap, positionsText, ROLE_BADGE, ROLE_LABEL } from './roles.js';
 import { registerAccessPrompter } from './access.js';
 import { kioskDialog, registerPinPrompter, setPinDialog, switchUserDialog } from './staff-pin.js';
+import { embedded, topNav } from './embed.js';
+
+/** F-088 (ADR-049 D-214): trang quầy ↔ thẻ của vùng Quầy trên màn một màn hình. */
+export const POS_TABS = { tables: 'table-order', takeaway: 'takeaway', shift: 'shift' };
 
 export async function mountPosShell(active) {
   const user = await requireStaffPage();
-  // F-078: trang không thuộc vị trí của nhân viên → về Đơn hàng (máy chủ vẫn chặn từng việc)
+  // F-078: trang không thuộc vị trí của nhân viên → về Đơn hàng (máy chủ vẫn chặn từng việc). F-088: trang nhúng → cả màn hình
   if (!canOpenPosPage(user, active)) {
-    location.replace(`/pos?denied=position&cap=${posPageCap(active)}`); // F-079: mời "Xin quyền"
+    topNav(`/pos?denied=position&cap=${posPageCap(active)}`, { replace: true }); // F-079: mời "Xin quyền"
     return new Promise(() => {});
   }
+  const singleScreen = Boolean(current.pos?.singleScreen);
+  // F-088 (ADR-049 D-220): một màn hình → thanh trên gọn một hàng (bỏ mục trùng thẻ vùng Quầy, nút trạng thái thành biểu tượng)
+  const compact = singleScreen && !embedded;
+  if (embedded) document.body.classList.add('pos-embed');
+  if (compact) document.body.classList.add('pos-compact');
   const canPay = hasPosition(user, 'CASHIER');
   const { shop } = current;
   registerPinPrompter(); // F-072: thao tác tiền cần PIN → hỏi PIN rồi gửi lại
   registerAccessPrompter(); // F-079: bị chặn vì thiếu quyền cấp được → thanh "Xin quyền"
-  // Chưa kết nối xong: trạng thái trung tính, không đỏ (đỏ chỉ khi mất kết nối thật — DEF-011)
-  const conn = el('span', { class: 'conn connecting', id: 'conn' }, 'Đang kết nối…');
+  // Chưa kết nối xong: trạng thái trung tính, không đỏ (đỏ chỉ khi mất kết nối thật — DEF-011).
+  // F-088 (D-220): thanh gọn — đang kết nối tốt chỉ còn chấm xanh (chữ vẫn có cho trình đọc màn hình)
+  const connText = el('span', { class: 'conn-text' }, 'Đang kết nối…');
+  const conn = el('span', { class: 'conn connecting', id: 'conn', title: 'Kết nối máy chủ' }, connText);
   const soundBtn = el(
     'button',
     { class: 'btn btn-sm', type: 'button', title: 'Trình duyệt chỉ phát âm thanh sau khi bạn bấm nút này' },
@@ -33,7 +44,10 @@ export async function mountPosShell(active) {
   const storeBtn = el('button', { class: 'btn btn-sm', type: 'button', id: 'store-btn', title: 'Bật/tắt nhận đơn khách gọi qua QR' }, 'QR…');
   const refreshSound = () => {
     const on = audioReady();
-    soundBtn.replaceChildren(icon(on ? 'volume-2' : 'volume-x'), on ? 'Âm thanh: bật' : 'Bật âm thanh');
+    // Thanh gọn: đã bật thì chỉ còn biểu tượng loa (tên nút giữ nguyên cho trình đọc); chưa bật thì có chữ để nhân viên bấm
+    soundBtn.replaceChildren(...[icon(on ? 'volume-2' : 'volume-x'), compact && on ? null : on ? 'Âm thanh: bật' : 'Bật âm thanh'].filter(Boolean));
+    if (compact) soundBtn.setAttribute('aria-label', on ? 'Âm thanh: bật' : 'Bật âm thanh');
+    soundBtn.classList.toggle('icon-only', compact && on);
     soundBtn.classList.toggle('sound-on', on);
     fitHeader();
   };
@@ -54,16 +68,21 @@ export async function mountPosShell(active) {
     { once: true },
   );
 
+  // F-088: một màn hình → Gọi món / Bán mang đi / Ca là thẻ của vùng Quầy trên /pos (trang riêng vẫn mở được bằng đường dẫn)
+  const tabHref = (key, href) => (singleScreen && POS_TABS[key] ? `/pos?tab=${POS_TABS[key]}` : href);
   const nav = [
-    ['orders', '/pos', 'Đơn hàng', 'ticket'],
-    ['tables', '/pos/table-order', 'Gọi món tại bàn', 'utensils'],
-    ['takeaway', '/pos/takeaway', 'Bán mang đi', 'shopping-bag'],
+    ['orders', '/pos', singleScreen ? 'Màn quầy' : 'Đơn hàng', 'ticket'],
+    ['tables', tabHref('tables', '/pos/table-order'), 'Gọi món tại bàn', 'utensils'],
+    ['takeaway', tabHref('takeaway', '/pos/takeaway'), 'Bán mang đi', 'shopping-bag'],
     // F-061 (ADR-021 D-79): "Kho & sơ chế" theo nhóm Kho hàng (ẩn mục, trang vẫn mở được bằng đường dẫn)
     ...(current.modules.includes('inventory') ? [['stock', '/pos/stock', 'Kho & sơ chế', 'package']] : []),
-    ['shift', '/pos/shift', 'Ca & hoàn tiền', 'wallet'],
+    ['shift', tabHref('shift', '/pos/shift'), 'Ca & hoàn tiền', 'wallet'],
     ['me', '/pos/me', 'Giờ công', 'timer'], // F-072 / F-073: giờ công, lương tạm tính, phiếu lương của chính mình
   ];
-  const ownNav = nav.filter(([key]) => canOpenPosPage(user, key)); // F-078: mục theo vị trí
+  // F-078: mục theo vị trí. F-088 (D-220): thanh gọn bỏ mục đã là thẻ của vùng Quầy (Gọi món / Bán mang đi / Ca), "Kho" ngắn gọn
+  const ownNav = nav
+    .filter(([key]) => canOpenPosPage(user, key) && !(compact && POS_TABS[key]))
+    .map(([key, href, label, ic]) => [key, href, compact && key === 'stock' ? 'Kho' : label, ic]);
   nav.length = 0;
   nav.push(...ownNav);
   // F-077 / F-079: có quyền trang Quản lý nào → "Quản lý" (trang đầu tiên được mở); chỉ có Hôm nay (trưởng ca) → "Hôm nay" bản gọn
@@ -75,12 +94,22 @@ export async function mountPosShell(active) {
   const header = el(
     'header',
     { class: 'pos-top' },
-    el('div', { class: 'brand' }, brandMark(), shop?.name || 'Quầy'),
+    el('div', { class: 'brand' }, brandMark(), el('span', { class: 'brand-name' }, shop?.name || 'Quầy')),
     el(
       'nav',
       { class: 'pos-nav', 'aria-label': 'Điều hướng quầy' },
       nav.map(([key, href, label, ic]) =>
-        el('a', { href, class: key === active ? 'active' : '', 'aria-current': key === active ? 'page' : null }, icon(ic), label),
+        el(
+          'a',
+          {
+            href,
+            class: key === active ? 'active' : '',
+            'aria-current': key === active ? 'page' : null,
+            dataset: singleScreen && POS_TABS[key] ? { tab: POS_TABS[key] } : {}, // F-088: màn chính bắt để đổi thẻ, không tải lại
+          },
+          icon(ic),
+          label,
+        ),
       ),
     ),
     el(
@@ -96,7 +125,10 @@ export async function mountPosShell(active) {
           user.fullName,
           // Mác vai cạnh tên cho mọi người đứng quầy (chủ dự án 08/11: nhân viên cũng có mác) — cùng màu với trang Tài khoản (ROLE_BADGE):
           // Nhân viên trung tính, Trưởng ca xanh lá, Quản lý cửa hàng xanh dương. Chủ quán không đứng quầy (F-084)
-          user.role !== 'ADMIN' ? el('span', { class: `badge ${ROLE_BADGE[user.role] ?? ''}` }, ROLE_LABEL[user.role]) : null,
+          // F-088 (D-220): thanh gọn bỏ mác "Nhân viên" (vai thường) — vẫn hiện Trưởng ca / Quản lý cửa hàng / Thử việc
+          user.role !== 'ADMIN' && !(compact && user.role === 'STAFF')
+            ? el('span', { class: `badge ${ROLE_BADGE[user.role] ?? ''}` }, ROLE_LABEL[user.role])
+            : null,
           isProbation(user) ? el('span', { class: 'badge pending', title: 'Giảm giá tay, chi quỹ, sửa / xóa món cần trưởng ca duyệt' }, 'Thử việc') : null,
         ),
         // F-072: màn chấm công chung (PIN riêng) + đổi người đứng máy
@@ -110,14 +142,15 @@ export async function mountPosShell(active) {
         el(
           'button',
           {
-            class: 'btn btn-sm',
+            class: compact ? 'btn btn-sm icon-only' : 'btn btn-sm',
             type: 'button',
             id: 'tour-btn',
             title: 'Hướng dẫn 5 bước dùng màn quầy',
+            'aria-label': compact ? 'Hướng dẫn' : null, // thanh gọn: chỉ biểu tượng "?"
             onclick: () => (shell.tourHandler ? shell.tourHandler() : (location.href = '/pos?tour=1')),
           },
           icon('circle-help'),
-          'Hướng dẫn',
+          compact ? null : 'Hướng dẫn',
         ),
         el('button', { class: 'btn btn-sm', type: 'button', onclick: logout }, icon('log-out'), 'Đăng xuất'),
       ),
@@ -147,7 +180,10 @@ export async function mountPosShell(active) {
   const remind = el('div', { class: 'banner att-remind', id: 'att-remind', role: 'status', hidden: true });
   // Trang có vùng "Cần xử lý ngay" (màn Đơn hàng) thì dải chưa mở ca đứng đầu vùng đó
   const alerts = $('#pos-alerts');
-  if (alerts) {
+  // F-088: trang nhúng trong vùng Quầy — màn chính đã có thanh trên + dải nhắc; không gắn vào trang (vẫn dựng để giữ nguyên `shell`)
+  if (embedded) {
+    /* không gắn */
+  } else if (alerts) {
     document.body.prepend(header);
     alerts.prepend(noShift);
     if (noPin) alerts.prepend(noPin);
@@ -171,7 +207,8 @@ export async function mountPosShell(active) {
   if (new URLSearchParams(location.search).get('denied') === 'position' && !new URLSearchParams(location.search).get('cap'))
     toast(`Trang đó không thuộc vị trí của bạn (${positionsText(user)}) — nhờ chủ quán đổi ở Tài khoản nếu cần`, 'warning', 6000);
   // F-063 (ADR-021 D-82): QR trên bàn in ở địa chỉ cũ → nhân viên biết vì sao khách quét lỗi, báo quản lý in lại
-  staffApi('/api/qr-check')
+  // F-088: trang nhúng không kiểm lại (màn chính đã báo)
+  (embedded ? Promise.resolve({}) : staffApi('/api/qr-check'))
     .then((q) => {
       if (!q.mismatch && !q.unreachable) return;
       const b = el(
@@ -196,7 +233,7 @@ export async function mountPosShell(active) {
     setOnline(online) {
       conn.classList.remove('connecting');
       conn.classList.toggle('offline', !online);
-      conn.textContent = online ? 'Đã kết nối' : 'Mất kết nối';
+      connText.textContent = online ? 'Đã kết nối' : 'Mất kết nối';
       $('#offline-banner')?.toggleAttribute('hidden', online);
     },
     /** Trang đăng ký nhận thông báo khi ca thay đổi (bật/tắt nút thu tiền). */
@@ -226,21 +263,26 @@ export async function mountPosShell(active) {
     openShiftDialog,
     /** F-061: trang Đơn hàng gắn hàm mở hướng dẫn (nút "Hướng dẫn"). */
     tourHandler: null,
+    /** F-088: màn một màn hình gắn hàm mở thẻ của vùng Quầy (nút Ca ở thanh trên). */
+    openTab: null,
   };
 
   function renderShift() {
     const s = shell.shift;
     shiftBtn.classList.toggle('btn-danger', !s);
-    shiftBtn.replaceChildren(...(s ? [`Ca #${s.shiftId} · từ ${time(s.openedAt)}`] : [icon('triangle-alert'), 'Chưa mở ca']));
+    const opened = compact ? time(s?.openedAt) : `từ ${time(s?.openedAt)}`; // thanh gọn: "Ca #3 · 07:02"
+    shiftBtn.replaceChildren(...(s ? [`Ca #${s.shiftId} · ${opened}`] : [icon('triangle-alert'), 'Chưa mở ca']));
     // F-078: chỉ thu ngân (hoặc trưởng ca trở lên) vào trang Ca / mở ca
-    shiftBtn.onclick = !canPay ? () => toast('Mở / đóng ca là việc của thu ngân', 'info') : s ? () => (location.href = '/pos/shift') : () => openShiftDialog();
+    // F-088: một màn hình → mở thẻ "Ca & két" ngay trên màn chính (shell.openTab do màn chính gắn)
+    const toShift = () => (shell.openTab ? shell.openTab('shift') : (location.href = singleScreen ? '/pos?tab=shift' : '/pos/shift'));
+    shiftBtn.onclick = !canPay ? () => toast('Mở / đóng ca là việc của thu ngân', 'info') : s ? toShift : () => openShiftDialog();
     noShift.hidden = Boolean(s) || active === 'shift';
     fitHeader();
   }
 
   function renderStore() {
     const on = shell.store?.acceptingOrders !== false;
-    storeBtn.textContent = on ? 'QR: đang nhận đơn' : 'QR: tạm ngưng';
+    storeBtn.textContent = on ? (compact ? 'QR: nhận đơn' : 'QR: đang nhận đơn') : 'QR: tạm ngưng';
     storeBtn.classList.toggle('btn-danger', !on);
     fitHeader();
   }
@@ -417,10 +459,13 @@ export async function mountPosShell(active) {
     );
     pushBanner.hidden = false;
   }
-  setInterval(loadPushItems, 10 * 60_000);
-  loadPushItems();
+  // F-088: dải "Nên mời khách" và nhắc chấm công chỉ ở màn chính (trang nhúng không tải lặp)
+  if (!embedded) {
+    setInterval(loadPushItems, 10 * 60_000);
+    loadPushItems();
+  }
 
-  if (current.attendance.mode === 'KIOSK') {
+  if (current.attendance.mode === 'KIOSK' && !embedded) {
     setInterval(loadReminders, 60_000);
     document.addEventListener('visibilitychange', loadReminders);
     loadReminders();

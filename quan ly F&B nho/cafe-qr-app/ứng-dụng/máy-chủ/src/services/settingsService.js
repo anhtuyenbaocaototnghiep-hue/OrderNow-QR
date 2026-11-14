@@ -61,6 +61,10 @@ function toSettings(map) {
     moneyPin: map.get('security.money_pin') !== 'false',
     // F-076 (ADR-034 D-153): màn Đơn hàng "Quy trình 1 chạm" — gộp Mới + Đang pha thành "Cần làm", một nút "Xong" (mặc định bật)
     oneTap: map.get('pos.one_tap') !== 'false',
+    // F-088 (ADR-049 D-214, D-217): màn quầy một màn hình hai vùng (mặc định bật); món tại bàn nhân viên mang ra (TABLE, mặc định)
+    // hay khách nhận tại quầy (COUNTER — như trước F-088)
+    singleScreen: map.get('pos.single_screen') !== 'false',
+    serveMode: map.get('pos.serve_mode') === 'COUNTER' ? 'COUNTER' : 'TABLE',
     // F-083 (ADR-041 D-185): màn gọi món của khách — bấm "+" mở bảng chọn cho MỌI món (mặc định bật; tắt: món không tùy chọn thêm ngay)
     menuSheetAll: map.get('menu.sheet_all') !== 'false',
     // F-087 (ADR-048 D-212): tự đóng bàn trống (khách quét QR rồi không gọi món) — 0 = tắt, 15 / 30 / 60 phút; mặc định 30
@@ -163,6 +167,8 @@ const KEYS = {
   attendanceMode: 'attendance.mode',
   moneyPin: 'security.money_pin',
   oneTap: 'pos.one_tap',
+  singleScreen: 'pos.single_screen',
+  serveMode: 'pos.serve_mode',
   menuSheetAll: 'menu.sheet_all',
   idleCloseMinutes: 'tables.idle_close_minutes',
   staffMaxAmount: 'discount.staff_max_amount',

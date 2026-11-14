@@ -205,6 +205,7 @@ export async function getDetail(sessionId, viewer) {
       viewer.user ? p : { paymentId: p.paymentId, splitId: p.splitId, amountDue: p.amountDue, paidAt: p.paidAt, memberDiscount: p.memberDiscount },
     ),
     bill,
+    serveMode: (await getSettings()).serveMode, // F-088 (ADR-049 D-217): món tại bàn nhân viên mang ra (TABLE) / khách nhận tại quầy
   };
   if (viewer.user) return detail;
   // F-057: phiên đã thu chung vào nhóm khác → điện thoại mở bill chung (đã là thành viên nhóm đó) ngay dưới URL bàn của mình;

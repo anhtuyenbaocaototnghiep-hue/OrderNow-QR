@@ -30,9 +30,10 @@ describe('Quy trình 1 chạm (ADR-034)', () => {
     ok(await call(admin, 'put', '/api/admin/settings', { shopName: 'Quán thử' })); // lưu cài đặt khác → bộ nhớ đệm đọc lại
     assert.equal(ok(await call(admin, 'get', '/api/admin/settings')).oneTap, true, 'chưa đặt → mặc định bật');
     assert.equal(ok(await call(admin, 'put', '/api/admin/settings', { oneTap: false })).oneTap, false);
-    assert.deepEqual(ok(await call(staff, 'get', '/api/auth/me')).pos, { oneTap: false });
+    // `pos` còn có singleScreen / serveMode (F-088, AC-088-01) — ở đây chỉ xét oneTap
+    assert.equal(ok(await call(staff, 'get', '/api/auth/me')).pos.oneTap, false);
     ok(await call(admin, 'put', '/api/admin/settings', { oneTap: true }));
-    assert.deepEqual(ok(await call(staff, 'get', '/api/auth/me')).pos, { oneTap: true });
+    assert.equal(ok(await call(staff, 'get', '/api/auth/me')).pos.oneTap, true);
     assert.equal((await call(staff, 'put', '/api/admin/settings', { oneTap: false })).status, 403);
   });
 

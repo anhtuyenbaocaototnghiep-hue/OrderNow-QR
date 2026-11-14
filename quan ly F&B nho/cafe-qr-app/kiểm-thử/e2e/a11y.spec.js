@@ -562,3 +562,50 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
   await focusVisible(A, 'quan-ly-reports');
   await ctx.close();
 });
+
+test('quầy một màn hình (F-088): hai vùng Hàng pha + Quầy có thẻ (← / → chuyển thẻ), hộp Báo hết món trong vùng, ngăn Quầy ở màn 900 px — nhãn, tương phản, vùng chạm, dấu focus', async ({
+  request,
+}) => {
+  const auth = { Authorization: `Bearer ${adminToken}` };
+  await request.put('/api/admin/settings', { headers: auth, data: { singleScreen: true, serveMode: 'TABLE' } });
+  const ctx = await browser.newContext(desk);
+  try {
+    await ensureGuestOrder();
+    const P = await ctx.newPage();
+    await login(P, 'staff1', 'Staff@123');
+    await P.getByRole('dialog')
+      .getByRole('button', { name: 'Bỏ qua' })
+      .click({ timeout: 3000 })
+      .catch(() => {}); // hướng dẫn lần đầu (khi chạy riêng bài này)
+    await expect(P.getByRole('tablist', { name: 'Việc ở quầy' })).toBeVisible();
+    await check(P, 'quay-mot-man-hinh');
+    await focusVisible(P, 'quay-mot-man-hinh', 5);
+    // Mẫu thẻ ARIA: chỉ thẻ đang chọn trong vòng Tab; ← / → / Home chuyển thẻ
+    const first = P.getByRole('tab', { name: 'Bàn', exact: true });
+    await expect(first).toHaveAttribute('tabindex', '0');
+    await expect(P.getByRole('tab', { name: 'Bán mang đi' })).toHaveAttribute('tabindex', '-1');
+    await first.focus();
+    await P.keyboard.press('ArrowRight');
+    await expect(P.getByRole('tab', { name: 'Bán mang đi' })).toBeFocused();
+    await expect(P.getByRole('tab', { name: 'Bán mang đi' })).toHaveAttribute('aria-selected', 'true');
+    await P.keyboard.press('Home');
+    await expect(first).toHaveAttribute('aria-selected', 'true');
+    // Hộp thoại trong vùng: không aria-modal (vùng kia vẫn dùng được)
+    await P.locator('#soldout-btn').click();
+    const dialog = P.getByRole('dialog', { name: 'Báo hết món' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).not.toHaveAttribute('aria-modal', 'true');
+    await check(P, 'quay-mot-man-hinh-het-mon');
+    await P.keyboard.press('Escape');
+    await expect(P.getByRole('dialog')).toHaveCount(0);
+    await P.setViewportSize({ width: 900, height: 700 });
+    await P.click('#tables-toggle');
+    await expect(P.locator('#tables-panel')).toBeVisible();
+    await check(P, 'quay-mot-man-hinh-ngan-quay');
+    await P.keyboard.press('Escape');
+    await expect(P.locator('#tables-panel')).toBeHidden();
+  } finally {
+    await request.put('/api/admin/settings', { headers: auth, data: { singleScreen: false, serveMode: 'COUNTER' } });
+    await ctx.close();
+  }
+});

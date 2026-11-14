@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { requirePosition } from '../auth/permissions.js';
 import { requireStaff } from '../middleware/auth.js';
 import { paramGuid, paramId, parse, zGuid, zId, zManualDiscount, zMoney, zOrderItems, zText } from '../middleware/validate.js';
+import * as adminService from '../services/adminService.js';
 import * as attendanceService from '../services/attendanceService.js';
 import * as orderService from '../services/orderService.js';
 import * as refundService from '../services/refundService.js';
@@ -98,12 +99,26 @@ staffRouter.post('/orders/takeaway', cashier, async (req, res) => {
   res.status(r.duplicate ? 200 : 201).json(r);
 });
 
-staffRouter.post('/orders/:id/accept', barista, async (req, res) => {
-  res.json({ order: await orderService.accept(paramId(req)) });
+// F-088 (ADR-049 D-216): đơn chỉ có món trạm Quầy — Thu ngân / Phục vụ cũng nhận / xong được (service kiểm trạm từng món)
+const maker = requirePosition('BARISTA', 'CASHIER', 'SERVER');
+
+staffRouter.post('/orders/:id/accept', maker, async (req, res) => {
+  res.json({ order: await orderService.accept(paramId(req), req.user) });
 });
 
-staffRouter.post('/orders/:id/complete', barista, async (req, res) => {
+staffRouter.post('/orders/:id/complete', maker, async (req, res) => {
   res.json(await orderService.complete(paramId(req), req.user));
+});
+
+// F-088 (ADR-049 D-217): "Đã mang" món ra bàn — người đứng Quầy (Thu ngân / Phục vụ)
+staffRouter.post('/orders/:id/served', requirePosition('CASHIER', 'SERVER'), async (req, res) => {
+  res.json({ order: await orderService.markServed(paramId(req), req.user) });
+});
+
+// F-088 (ADR-049 D-218): báo hết / còn món ngay ở quầy — người pha
+staffRouter.patch('/menu-items/:id/availability', barista, async (req, res) => {
+  const { isAvailable } = parse(z.object({ isAvailable: z.boolean() }), req.body);
+  res.json(await adminService.setAvailability(paramId(req), isAvailable));
 });
 
 staffRouter.post('/orders/:id/cancel', async (req, res) => {

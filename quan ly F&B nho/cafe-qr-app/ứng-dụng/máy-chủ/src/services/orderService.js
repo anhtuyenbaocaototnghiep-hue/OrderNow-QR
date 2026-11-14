@@ -3,7 +3,7 @@
 // ADR-005: giá mỗi dòng do bộ pricing tính (khuyến mãi, combo, tùy chọn) rồi truyền vào SP; mang đi tính thêm hội viên + giảm tay.
 // Ghi kho/thu tiền chỉ qua SP; realtime phát sau commit.
 import { sqlErrorNumber, withDeadlockRetry } from '../db.js';
-import { discountRole } from '../auth/permissions.js'; // F-078: ngưỡng giảm tay theo cấp
+import { discountRole, hasPosition, positionError } from '../auth/permissions.js'; // F-078: ngưỡng giảm tay theo cấp; F-088: trạm làm món
 import { AppError, conflict, forbidden, fromSqlError, idsFromMessage, notFound } from '../errors.js';
 import * as ordersRepo from '../repositories/ordersRepo.js';
 import * as sessionsRepo from '../repositories/sessionsRepo.js';
@@ -163,8 +163,23 @@ export function listForDashboard({ statuses, since, type }) {
   });
 }
 
-export async function accept(orderId) {
+/** F-088 (ADR-049 D-216): đơn cần pha khi có món trạm Bar (combo: theo từng thành phần). */
+export const needsBar = (order) => order.items.some((i) => (i.children?.length ? i.children.some((c) => c.station !== 'COUNTER') : i.station !== 'COUNTER'));
+
+/**
+ * F-088 (ADR-049 D-216): đơn chỉ có món trạm Quầy (bánh, nước chai) — người đứng Quầy (Thu ngân / Phục vụ) tự nhận / xong được;
+ * đơn có món trạm Bar vẫn là việc của Pha chế (F-078, 403 POSITION_REQUIRED). Route đã chặn người không có vị trí nào trong ba.
+ */
+async function assertMayMake(orderId, user) {
+  if (!user || hasPosition(user, 'BARISTA')) return;
+  const order = await ordersRepo.getById(orderId);
+  if (!order) throw notFound('Không tìm thấy đơn hàng');
+  if (needsBar(order)) throw positionError('BARISTA');
+}
+
+export async function accept(orderId, user = null) {
   await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
+  await assertMayMake(orderId, user);
   const { changed, status } = await ordersRepo.accept(orderId);
   if (!status) throw notFound('Không tìm thấy đơn hàng');
   if (!changed) {
@@ -195,6 +210,7 @@ export async function release(orderId, viewer) {
 
 export async function complete(orderId, user) {
   await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
+  await assertMayMake(orderId, user);
   const deducted = await withDeadlockRetry(() => ordersRepo.complete(orderId, user.userId));
   const order = await ordersRepo.getById(orderId);
   invalidateQueue();
@@ -212,6 +228,23 @@ export async function complete(orderId, user) {
   }
   refreshAvailability();
   return { order, inventoryDeducted: deducted.map((d) => ({ ingredientId: d.ingredientId, name: d.name, qty: d.qty, unit: d.unit })) };
+}
+
+/**
+ * F-088 (ADR-049 D-217): người đứng Quầy bấm "Đã mang" sau khi mang món của đơn tại bàn (đã hoàn tất) ra bàn.
+ * Chỉ ghi giờ + người; phát `order.served` (quầy + điện thoại trong phiên) sau khi ghi.
+ */
+export async function markServed(orderId, user) {
+  await assertShiftOpen(); // F-055: việc ở quầy cần ca đang mở
+  const r = await ordersRepo.markServed(orderId, user.userId);
+  if (!r) throw notFound('Không tìm thấy đơn hàng');
+  if (!r.changed) {
+    if (r.servedAt) throw conflict('ALREADY_SERVED', 'Đơn này đã được mang ra bàn');
+    throw conflict('INVALID_STATE', r.type !== 'DINE_IN' ? 'Đơn mang đi không cần mang ra bàn' : 'Đơn chưa pha xong hoặc đã hủy');
+  }
+  const order = await ordersRepo.getById(orderId);
+  publishOrderEvent('order.served', order, { orderId, sessionId: order.sessionId, servedAt: order.servedAt, order });
+  return order;
 }
 
 export async function cancel(orderId, user, reason) {

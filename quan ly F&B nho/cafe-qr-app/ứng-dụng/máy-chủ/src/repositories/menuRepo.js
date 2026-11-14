@@ -130,6 +130,7 @@ const mapItem = (r) =>
     hideFromSuggestions: Boolean(r.HideFromSuggestions),
     groupIds: r.GroupIds ? String(r.GroupIds).split(',').map(Number) : [],
     prepSeconds: r.PrepSeconds ?? null, // F-025
+    station: r.Station ?? 'BAR', // F-088: trạm làm món — BAR pha chế, COUNTER quầy lấy
   };
 
 const ITEM_SELECT = `
@@ -164,6 +165,8 @@ const itemParams = (d) => ({
   ac: [sql.Bit, d.isActive],
   keepPrep: [sql.Bit, d.prepSeconds === undefined],
   prep: [sql.Int, d.prepSeconds ?? null],
+  keepStation: [sql.Bit, d.station === undefined], // F-088: vắng = giữ nguyên (tạo mới → BAR)
+  station: [sql.VarChar(10), d.station ?? 'BAR'],
 });
 
 async function replaceGroups(tx, id, groupIds) {
@@ -177,8 +180,8 @@ export async function createItem(d) {
   const id = await inTransaction(async (tx) => {
     const r = await txQuery(
       tx,
-      `INSERT dbo.MenuItems (CategoryId, Name, Price, ImageUrl, IsAvailable, IsActive, PrepSeconds) OUTPUT inserted.MenuItemId
-       VALUES (@c, @n, @p, @img, @av, @ac, @prep)`,
+      `INSERT dbo.MenuItems (CategoryId, Name, Price, ImageUrl, IsAvailable, IsActive, PrepSeconds, Station) OUTPUT inserted.MenuItemId
+       VALUES (@c, @n, @p, @img, @av, @ac, @prep, @station)`,
       itemParams(d),
     );
     const newId = r.recordset[0].MenuItemId;
@@ -193,7 +196,8 @@ export async function updateItem(id, d) {
     const r = await txQuery(
       tx,
       `UPDATE dbo.MenuItems SET CategoryId = @c, Name = @n, Price = @p, ImageUrl = @img, IsAvailable = @av, IsActive = @ac,
-              PrepSeconds = CASE WHEN @keepPrep = 1 THEN PrepSeconds ELSE @prep END
+              PrepSeconds = CASE WHEN @keepPrep = 1 THEN PrepSeconds ELSE @prep END,
+              Station = CASE WHEN @keepStation = 1 THEN Station ELSE @station END
        WHERE MenuItemId = @id AND DeletedAt IS NULL AND ItemType = 'SINGLE'`,
       { id: [sql.Int, id], ...itemParams(d) },
     );

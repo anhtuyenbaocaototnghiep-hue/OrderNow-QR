@@ -139,6 +139,12 @@ export function announce(message) {
 export const errorMessage = (err) => err?.message || 'Có lỗi xảy ra, vui lòng thử lại';
 
 // ---------- Modal / drawer ----------
+// F-088 (ADR-049 D-215): màn quầy một màn hình gắn hàm chọn vùng chứa hộp thoại (theo nút vừa bấm); null = cả màn hình như cũ
+let modalHostFor = null;
+export function setModalHost(fn) {
+  modalHostFor = fn;
+}
+
 /**
  * Mở modal. actions: [{ label, class, value, onClick }]. onClick(close) trả false để giữ modal mở.
  * `foot` (tùy chọn): node chân hộp thoại tự dựng thay cho hàng nút `actions` (ví dụ bảng chọn món: số lượng + nút thêm — ADR-042).
@@ -146,8 +152,10 @@ export const errorMessage = (err) => err?.message || 'Có lỗi xảy ra, vui l�
  * ADR-042 D-191: đóng có hiệu ứng ra nhưng hộp thoại rời trang ngay — hiệu ứng chạy trên ảnh chụp của View Transitions
  * (không để lại bản sao trong trang cho trình đọc màn hình / bộ chọn bắt nhầm); focus trở về nút đã mở hộp thoại;
  * sheet kéo đầu bảng xuống để đóng.
+ * `host` (F-088): vùng chứa hộp thoại do nơi gọi chọn sẵn — dùng khi hộp thoại mở sau một lần chờ máy chủ (lúc đó người kia
+ * có thể vừa chạm vùng khác); `null` = cả màn hình; vắng = theo hàm `setModalHost`.
  */
-export function modal({ title, body, actions = [], foot: customFoot = null, drawer = false, sheet = false, dismissable = true, onClose }) {
+export function modal({ title, body, actions = [], foot: customFoot = null, drawer = false, sheet = false, dismissable = true, onClose, host: fixedHost }) {
   const kind = drawer ? 'drawer' : sheet ? 'sheet' : 'modal';
   const opener = document.activeElement;
   let resolveResult;
@@ -173,7 +181,14 @@ export function modal({ title, body, actions = [], foot: customFoot = null, draw
     box.removeAttribute('aria-modal');
     box.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
     const gone = () => overlay.isConnected && overlay.remove();
-    if (reducedMotion() || typeof document.startViewTransition !== 'function' || document.documentElement.dataset.vtLeave) return gone();
+    // F-088: hộp thoại trong vùng gỡ ngay — hiệu ứng View Transition phủ cả trang, nuốt cú chạm của người ở vùng kia
+    if (
+      overlay.classList.contains('in-zone') ||
+      reducedMotion() ||
+      typeof document.startViewTransition !== 'function' ||
+      document.documentElement.dataset.vtLeave
+    )
+      return gone();
     box.style.viewTransitionName = 'vt-dialog';
     overlay.style.viewTransitionName = 'vt-scrim';
     const root = document.documentElement;
@@ -186,10 +201,13 @@ export function modal({ title, body, actions = [], foot: customFoot = null, draw
     t.finished.then(done, done);
     setTimeout(() => (gone(), done()), 600);
   };
-  // Esc chỉ đóng hộp thoại TRÊN CÙNG (giỏ + ô SĐT chồng nhau: trước đây Esc đóng cả hai — sửa 10/11/2026)
+  // Esc chỉ đóng hộp thoại TRÊN CÙNG (giỏ + ô SĐT chồng nhau: trước đây Esc đóng cả hai — sửa 10/11/2026).
+  // F-088: hai vùng cùng mở hộp thoại → đóng hộp đang chứa focus (người bấm Esc), không phải hộp mở sau cùng
   const onKey = (e) => {
     if (e.key !== 'Escape' || !dismissable || e.defaultPrevented) return;
-    if ([...document.querySelectorAll('.overlay:not([inert])')].at(-1) !== overlay) return;
+    const open = [...document.querySelectorAll('.overlay:not([inert])')];
+    const focused = open.filter((o) => o.contains(document.activeElement)).at(-1);
+    if ((focused ?? open.at(-1)) !== overlay) return;
     e.preventDefault();
     close(null);
   };
@@ -238,7 +256,12 @@ export function modal({ title, body, actions = [], foot: customFoot = null, draw
   });
   if (kind === 'sheet' && dismissable) dragToDismiss(box, [head, box.firstElementChild], () => close(null));
   document.addEventListener('keydown', onKey);
-  document.body.append(overlay);
+  const host = fixedHost !== undefined ? fixedHost : (modalHostFor?.(opener) ?? null);
+  if (host) {
+    overlay.classList.add('in-zone'); // F-088: chỉ phủ vùng chứa nút vừa bấm — vùng kia vẫn bấm được
+    box.removeAttribute('aria-modal'); // vùng kia vẫn dùng được → trình đọc màn hình không được ẩn nó đi
+    host.append(overlay);
+  } else document.body.append(overlay);
   box.querySelector('input, select, textarea, .btn-primary')?.focus();
   return { close, root: box, result };
 }

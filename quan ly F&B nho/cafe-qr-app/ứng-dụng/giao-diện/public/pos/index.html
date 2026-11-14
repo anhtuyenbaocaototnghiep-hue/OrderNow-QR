@@ -16,12 +16,17 @@
       <section class="pay-strip" id="pay-strip" hidden aria-label="Bàn gọi thanh toán"></section>
       <section class="pay-strip call-strip" id="call-strip" hidden aria-label="Bàn gọi nhân viên"></section>
       <section class="pay-strip call-strip review-strip" id="review-strip" hidden aria-label="Khách đánh giá thấp"></section>
+      <!-- F-088 (ADR-049): món tại bàn đã xong chờ mang ra; đơn chỉ có món trạm Quầy (bánh, nước chai) -->
+      <section class="pay-strip serve-strip" id="serve-strip" hidden aria-label="Mang ra bàn"></section>
+      <section class="pay-strip counter-strip" id="counter-strip" hidden aria-label="Quầy lấy"></section>
     </section>
     <main class="pos-main" id="pos-main">
       <div class="orders-area">
         <div class="orders-bar">
           <button class="btn tables-toggle" type="button" id="tables-toggle" aria-controls="tables-panel" aria-expanded="false">Bàn</button>
         </div>
+        <!-- F-088 (ADR-049 D-219): gom ly — chỉ ở màn một màn hình -->
+        <section class="batch" id="batch" hidden aria-label="Gom ly"></section>
         <div class="board" id="board">
           <section class="column col-pending" aria-labelledby="h-pending">
             <div class="column-head">

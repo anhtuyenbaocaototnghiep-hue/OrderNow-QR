@@ -85,6 +85,7 @@ const RULES = [
   ['POST', /^\/offline-sales$/, 'order.offline-sale', 'Order'], // F-074: gửi bù đơn bán lúc mất mạng / phiếu bán tay
   ['POST', /^\/ingredients\/(\d+)\/discard-open$/, 'inventory.discard-open', 'Ingredient'], // F-075: bỏ phần hộp đã mở
   ['POST', /^\/orders\/(\d+)\/cancel$/, 'order.cancel', 'Order'],
+  ['PATCH', /^\/menu-items\/(\d+)\/availability$/i, 'menu.availability', 'MenuItem'], // F-088: báo hết / còn món ở quầy (Express không phân biệt hoa / thường)
   ['POST', /^\/order-items\/(\d+)\/void$/, 'order.item-void', 'OrderItem'], // F-046
   ['POST', /^\/orders\/(\d+)\/void$/, 'order.void', 'Order'],
   ['POST', /^\/sessions\/([0-9a-f-]{36})\/cancel$/i, 'session.cancel', 'Session'],

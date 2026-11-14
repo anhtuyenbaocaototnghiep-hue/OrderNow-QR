@@ -139,7 +139,10 @@ describe('Vị trí + cấp nhân viên (F-078)', () => {
     const docs = ok(await call(admin, 'get', '/api/admin/api-docs'));
     const find = (m, p) => docs.endpoints.find((e) => e.method === m && e.path === p);
     assert.deepEqual(find('POST', '/api/orders/takeaway').positions, ['CASHIER']);
-    assert.deepEqual(find('POST', '/api/orders/:id/accept').positions, ['BARISTA']);
+    // F-088 (ADR-049 D-216): tiếp nhận / hoàn tất mở cho Thu ngân / Phục vụ ở đơn chỉ có món trạm Quầy — đơn có món pha
+    // vẫn chỉ Pha chế (Thu ngân bị chặn ở trên); việc chỉ của Pha chế vẫn ghi đúng một vị trí
+    assert.deepEqual(find('POST', '/api/orders/:id/accept').positions, ['BARISTA', 'CASHIER', 'SERVER']);
+    assert.deepEqual(find('POST', '/api/prep/batches').positions, ['BARISTA']);
     assert.deepEqual(find('POST', '/api/sessions/:id/orders').positions, ['SERVER']);
     assert.equal(find('GET', '/api/orders').positions, null);
     assert.equal(find('POST', '/api/orders/takeaway').access, 'STAFF');
