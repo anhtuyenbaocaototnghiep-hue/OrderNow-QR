@@ -15,7 +15,7 @@ export const ROLE_SUMMARY = [
     'STORE_MGR',
     'Như trưởng ca + trang Quản lý phần vận hành: thực đơn & giá (đổi giá thì chủ quán được báo), kho & nhà cung cấp, khuyến mãi & hội viên, bàn & QR, xếp lịch làm, sửa chấm công mọi ngày, duyệt chi quỹ tới 3 × ngưỡng trưởng ca; xem báo cáo bán hàng, sổ quỹ, ca, cảnh báo. Không xem lương từng người, lãi / lỗ, tài khoản, cài đặt chung.',
   ],
-  ['ADMIN', 'Toàn quyền: tài khoản & phân quyền, cài đặt, lương, lãi / lỗ, chi phí cố định, phân tích, nhật ký thao tác.'],
+  ['ADMIN', 'Toàn quyền: tài khoản & phân quyền, cài đặt, lương, thu chi, chi phí cố định, phân tích, nhật ký thao tác.'],
 ];
 
 // ---- F-079 (ADR-037): quyền đang có = user.caps (máy chủ tính: mặc định theo vai / vị trí + quyền riêng chủ quán đặt) ----

@@ -178,7 +178,7 @@ Ngoài vai trò / vị trí, chủ quán đặt riêng cho từng người (tr�
 | Mở bàn, gọi món tại bàn, chuyển bàn | Phục vụ / chưa đặt vị trí / trưởng ca trở lên |
 | Kiểm kê, điều chỉnh kho ở quầy · Sửa / thêm chấm công người khác · Trang Hôm nay | Trưởng ca trở lên |
 | Báo cáo bán hàng & ca (tiền) · Thực đơn & giá · Kho hàng · Khách hàng & khuyến mãi · Bàn & QR · Nhân sự · Sổ quỹ (tiền) · Cảnh báo | Quản lý cửa hàng |
-| Lãi / lỗ & phân tích (tiền) · Lương (tiền) · Nhật ký thao tác | Chỉ chủ quán (cấp riêng được) |
+| Thu chi & phân tích (tiền) · Lương (tiền) · Nhật ký thao tác | Chỉ chủ quán (cấp riêng được) |
 | Tài khoản & phân quyền, cài đặt chung, cách chấm công, email cảnh báo, việc chạy nền khác, danh mục thu chi (sửa), ẩn danh hội viên, Tra cứu API, duyệt xin quyền | Chỉ chủ quán — **không cấp được** |
 
 Bị chặn ở quyền cấp được → thanh "Xin quyền" → chủ quán duyệt (hết hôm nay / 7 ngày / luôn) hoặc từ chối. Test: `access-grants.test.js` (AC-079-01…06), E2E AC-079-07.

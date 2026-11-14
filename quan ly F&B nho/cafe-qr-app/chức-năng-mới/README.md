@@ -42,7 +42,7 @@ Mở app và chạy test: xem [`../hướng-dẫn/README.md`](../hướng-dẫn/
 | 17 | [Trưởng ca & phân quyền](17-trưởng-ca-và-phân-quyền.md) | Vai trò Trưởng ca: tự duyệt giảm giá, hoàn tiền, chi quỹ, chấm công, kiểm kê ở quầy | Quản lý · Trưởng ca |
 | 18 | [Sổ quỹ](18-sổ-quỹ.md) | Ghi chi tiền / thu khác ngoài bán hàng (mua đá, tiền lẻ…), khoản lớn chờ duyệt; két cuối ca khớp | Quầy · Trưởng ca · Quản lý |
 | 19 | [Chấm công, lịch làm, nhật ký thao tác](19-chấm-công-lịch-làm-nhật-ký.md) | Đăng nhập = vào ca, đăng xuất = ra ca; xếp lịch tuần, báo đi muộn / vắng; năng suất; ai đã làm gì | Quầy · Trưởng ca · Quản lý |
-| 20 | [Lãi / lỗ](20-lãi-lỗ.md) | Lãi / lỗ ước tính theo ngày / tháng, chi phí cố định, doanh thu hòa vốn mỗi ngày | Quản lý |
+| 20 | [Thu chi (lãi / lỗ)](20-lãi-lỗ.md) | Lãi / lỗ ước tính theo ngày / tháng, chi phí cố định, doanh thu hòa vốn mỗi ngày | Quản lý |
 | 21 | [Tích điểm, tem, voucher, giới thiệu bạn](21-tích-điểm-tem-voucher-giới-thiệu.md) | 10.000đ = 1 điểm đổi quà; thẻ tem 10 ly tặng 1; voucher; giới thiệu bạn cả hai nhận voucher | Khách · Quầy · Quản lý |
 | 22 | [Chiến dịch](22-chiến-dịch.md) | Lọc nhóm khách, tặng voucher riêng, xuất danh sách gửi tin, đo khách quay lại | Quản lý |
 | 23 | [Phân tích & menu engineering](23-phân-tích-và-menu-engineering.md) | Món nào giữ / đẩy / bỏ; giờ cao điểm; dự báo doanh thu; so sánh kỳ; bàn ngồi lâu | Quản lý |

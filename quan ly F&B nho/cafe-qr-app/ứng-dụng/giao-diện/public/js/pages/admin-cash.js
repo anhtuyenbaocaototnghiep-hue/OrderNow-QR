@@ -232,7 +232,7 @@ async function renderBook() {
                 el(
                   'tr',
                   {},
-                  el('td', {}, c.name, c.isExpense ? el('span', { class: 'pill', title: 'Tính vào chi phí ở trang Lãi / lỗ' }, ' chi phí') : null),
+                  el('td', {}, c.name, c.isExpense ? el('span', { class: 'pill', title: 'Tính vào chi phí ở trang Thu chi' }, ' chi phí') : null),
                   el('td', { class: 'num' }, `${c.count} lần`),
                   el('td', { class: `num ${c.direction === 'OUT' ? 'neg' : ''}` }, `${c.direction === 'OUT' ? '−' : '+'}${money(c.amount)}`),
                 ),
@@ -255,7 +255,7 @@ function renderCategories() {
       el(
         'span',
         { class: 'small muted' },
-        '"Chi phí" = trừ vào lãi ở trang Lãi / lỗ (bỏ tích với khoản không phải chi phí, như nộp tiền về két tổng). "Cần duyệt" = mọi khoản chi danh mục này đều chờ trưởng ca / quản lý duyệt và phải ghi rõ nội dung.',
+        '"Chi phí" = trừ vào lãi ở trang Thu chi (bỏ tích với khoản không phải chi phí, như nộp tiền về két tổng). "Cần duyệt" = mọi khoản chi danh mục này đều chờ trưởng ca / quản lý duyệt và phải ghi rõ nội dung.',
       ),
     ),
     el(
@@ -338,7 +338,7 @@ function editCategory(c) {
     {},
     el('div', { class: 'field' }, el('label', {}, 'Tên danh mục'), name),
     el('div', { class: 'field' }, el('label', {}, 'Loại'), dir),
-    el('label', { class: 'check' }, expense, 'Là chi phí của quán (trừ vào lãi ở trang Lãi / lỗ)'),
+    el('label', { class: 'check' }, expense, 'Là chi phí của quán (trừ vào lãi ở trang Thu chi)'),
     el('label', { class: 'check' }, approval, 'Khoản chi nào cũng phải duyệt (và ghi rõ nội dung)'),
     el('div', { class: 'field' }, el('label', {}, 'Thứ tự hiện (số nhỏ đứng trước)'), sort),
   );

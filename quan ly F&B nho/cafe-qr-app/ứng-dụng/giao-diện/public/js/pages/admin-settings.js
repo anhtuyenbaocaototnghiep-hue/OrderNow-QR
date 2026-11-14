@@ -184,7 +184,7 @@ function render(s) {
     ['inventory', 'Kho hàng', 'Nguyên liệu, Nhập kho & kiểm kê, Nhà cung cấp; mục "Kho & sơ chế" ở màn quầy'],
     ['customers', 'Khách hàng & khuyến mãi', 'Hội viên, Tích điểm & voucher, Khuyến mãi, Gợi ý & ghim, Đánh giá món'],
     ['finance', 'Sổ quỹ & nhân sự', 'Sổ quỹ, Nhân sự & chấm công'],
-    ['analytics', 'Phân tích & lãi lỗ', 'Phân tích & menu engineering, Lãi / lỗ'],
+    ['analytics', 'Phân tích & thu chi', 'Phân tích & menu engineering, Thu chi'],
     ['advanced', 'Công cụ nâng cao', 'Lịch thực đơn, Nhật ký thao tác, Tra cứu API'],
   ];
   const moduleChecks = MODULE_GROUPS.map(([key]) => el('input', { type: 'checkbox', name: `module-${key}`, value: key, checked: s.uiModules.includes(key) }));

@@ -143,7 +143,7 @@ export const CAPABILITIES = [
   {
     key: 'admin.pnl',
     group: 'Trang Quản lý',
-    label: 'Lãi / lỗ, chi phí cố định, phân tích',
+    label: 'Thu chi, chi phí cố định, phân tích',
     money: true,
     byRole: () => false,
     full: ['fixed-costs', 'reports/menu-engineering'],

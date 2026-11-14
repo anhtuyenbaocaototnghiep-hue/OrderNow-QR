@@ -2851,7 +2851,7 @@ test('quy trình 1 chạm: quản lý bật ở Cài đặt → màn Đơn hàng
   await apiAs(request, 'put', '/api/admin/settings', { oneTap: false }); // trả lại 3 cột cho các test sau
 });
 
-test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở Tài khoản (có bảng "Mỗi vai trò làm được gì?"); quản lý cửa hàng đăng nhập → máy quầy có "Quản lý" → trang Quản lý chỉ có mục vận hành (không Lãi / lỗ, Lương, Tài khoản, Cài đặt); đổi giá món → chủ quán thấy cảnh báo đổi giá; mở thẳng Lãi / lỗ → về Hôm nay kèm thanh Xin quyền (F-077, AC-077-08)', async ({
+test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở Tài khoản (có bảng "Mỗi vai trò làm được gì?"); quản lý cửa hàng đăng nhập → máy quầy có "Quản lý" → trang Quản lý chỉ có mục vận hành (không Thu chi, Lương, Tài khoản, Cài đặt); đổi giá món → chủ quán thấy cảnh báo đổi giá; mở thẳng Thu chi → về Hôm nay kèm thanh Xin quyền (F-077, AC-077-08)', async ({
   request,
 }) => {
   await P.goto('/admin/users');
@@ -2903,13 +2903,13 @@ test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở
   await dlg.getByRole('button', { name: 'Lưu' }).click();
   await expect(dlg).toHaveCount(0);
 
-  // Sổ quỹ: không có tab Danh mục thu chi; Lãi / lỗ mở thẳng → về quầy
+  // Sổ quỹ: không có tab Danh mục thu chi; Thu chi (tên cũ Lãi / lỗ) mở thẳng → về quầy
   await S.goto('/admin/cash');
   await expect(S.locator('.tabs')).toContainText('Sổ quỹ');
   await expect(S.locator('.tabs')).not.toContainText('Danh mục thu chi');
   await S.goto('/admin/pnl');
   await expect(S).toHaveURL(/\/admin\/today\?cap=admin\.pnl$/); // F-080: ở lại trang Quản lý, mời Xin quyền
-  await expect(S.locator('#access-bar')).toContainText('Lãi / lỗ');
+  await expect(S.locator('#access-bar')).toContainText('Thu chi'); // TASK-108: trang Lãi / lỗ đổi tên Thu chi
   await ctx.close();
 
   await P.goto('/admin/alerts');

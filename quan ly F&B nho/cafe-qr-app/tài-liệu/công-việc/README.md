@@ -123,6 +123,7 @@
 | [TASK-105](TASK-105.md) | Hoàn thiện đổi bàn (F-087): nhãn đổi bàn + phiếu pha, thời gian tự trả bàn, bàn đích có người; ADR-048; sửa DEF-029 | FEATURE-087 | TASK-104 | Agent | — | chủ dự án 10/11 | READY_FOR_REVIEW |
 | [TASK-106](TASK-106.md) | Màn quầy một màn hình (F-088): hai vùng Hàng pha / Quầy, trạm làm món, mang ra bàn, báo hết món tại quầy, gom ly + In phiếu; ADR-049; migration 0058 — đợt 1/5 của bản thiết kế quán cà phê | FEATURE-088 | TASK-105 | Agent | — | chủ dự án 13/11 | READY_FOR_REVIEW |
 | [TASK-107](TASK-107.md) | Bỏ "Đổi người" ở máy quầy (nút, hộp chọn người, `POST /api/auth/switch`); ADR-050 | FEATURE-072 | TASK-106 | Agent | — | chủ dự án 14/11 | READY_FOR_REVIEW |
+| [TASK-108](TASK-108.md) | Đổi tên trang "Lãi / lỗ" → "Thu chi"; nhóm "Thu chi & nhân sự" → "Quỹ & nhân sự" | FEATURE-034 | TASK-107 | Agent | — | chủ dự án 14/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

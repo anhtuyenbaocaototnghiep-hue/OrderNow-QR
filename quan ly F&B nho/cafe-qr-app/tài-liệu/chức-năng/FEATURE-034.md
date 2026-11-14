@@ -1,6 +1,7 @@
 # FEATURE-034 — Lãi / lỗ đơn giản & điểm hòa vốn
 
 > **Nguồn:** skill `advanced-features` §4 F-034. Quyết định: [ADR-006](../quyết-định/ADR-006-mo-rong-giai-doan-4-8.md) D-31.
+> **Bổ sung 14/11/2026 (TASK-108):** trang đổi tên **"Thu chi"** (chủ dự án: "lãi lỗ đổi tên thành thu chi") — đường dẫn `/admin/pnl`, API, cách tính không đổi.
 
 - **Status:** CONFIRMED (ADR-006 D-31) · Triển khai: READY_FOR_REVIEW (17/10/2026)
 - **Actor:** ADMIN (MANAGER → 403).

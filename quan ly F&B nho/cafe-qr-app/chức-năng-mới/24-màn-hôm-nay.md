@@ -39,7 +39,7 @@ Không còn việc gì: *"✔ Không có việc tồn đọng."*
 
 - **Mỗi đêm 00:30** máy tự tính số liệu của **hôm qua** và lưu lại, nên mở màn hình rất nhanh.
 - Bấm **Tính lại hôm nay** để tính ngay số của hôm nay (và tính bù hôm qua nếu còn thiếu) → *"Đã tính lại số liệu hôm nay"*. Cả quản lý và trưởng ca đều bấm được.
-- Doanh thu thuần, giá vốn, lãi gộp tính **cùng cách với trang [Lãi / lỗ](20-lãi-lỗ.md)**, nên số khớp nhau.
+- Doanh thu thuần, giá vốn, lãi gộp tính **cùng cách với trang [Thu chi](20-lãi-lỗ.md)**, nên số khớp nhau.
 - Phần "Việc cần làm" luôn đếm trực tiếp lúc mở trang.
 
 ## Bản của trưởng ca khác gì

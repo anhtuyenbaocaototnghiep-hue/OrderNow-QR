@@ -1,8 +1,8 @@
-# 20. Lãi / lỗ (ước tính) & điểm hòa vốn
+# 20. Thu chi — lãi / lỗ (ước tính) & điểm hòa vốn
 
 > Chủ quán xem nhanh: tháng này **lãi hay lỗ** bao nhiêu, và **mỗi ngày phải bán được bao nhiêu** mới đủ bù chi phí cố định (mặt bằng, lương cố định…). Đây là số **ước tính** để quản lý quán, không phải báo cáo kế toán / thuế.
 
-**Ai dùng:** chỉ quản lý. Trang: **Quản lý → Lãi / lỗ** (nhóm Tài chính & nhân sự). Trưởng ca không xem được.
+**Ai dùng:** chỉ quản lý. Trang: **Quản lý → Thu chi** (nhóm Tổng quan; tên cũ "Lãi / lỗ", đổi 14/11/2026). Trưởng ca không xem được.
 
 ## Bước 1 — Khai báo chi phí cố định (một lần)
 

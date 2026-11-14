@@ -17,7 +17,7 @@ const NAV = [
     items: [
       ['reports', '/admin/reports', 'Báo cáo & lịch sử'],
       ['analytics', '/admin/analytics', 'Phân tích', 'Phân tích & menu engineering'],
-      ['pnl', '/admin/pnl', 'Lãi / lỗ'],
+      ['pnl', '/admin/pnl', 'Thu chi'], // TASK-108: tên cũ "Lãi / lỗ"
     ],
   },
   {
@@ -55,7 +55,7 @@ const NAV = [
   },
   {
     id: 'finance',
-    title: 'Thu chi & nhân sự',
+    title: 'Quỹ & nhân sự', // TASK-108: tránh trùng chữ với trang "Thu chi"
     icon: 'wallet',
     items: [
       ['shifts', '/admin/shifts', 'Ca & hoàn tiền'],
