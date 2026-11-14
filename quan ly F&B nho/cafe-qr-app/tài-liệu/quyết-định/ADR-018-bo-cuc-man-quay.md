@@ -1,6 +1,7 @@
 # ADR-018 — Bố cục màn quầy "Đơn hàng": đơn cần làm + lưới bàn
 
 - **Trạng thái:** ACCEPTED (23/10/2026). Chủ dự án gửi ảnh màn quầy và yêu cầu "sắp xếp lại bố cục cho rõ ràng, đẹp mắt, dễ thao tác sử dụng và chuyên nghiệp"; chọn phương án "Đơn cần làm + lưới bàn" và "dùng như nhau trên máy tính và máy tính bảng".
+- **Bổ sung (13/11/2026, [ADR-049](ADR-049-man-quay-mot-man-hinh.md) D-214):** bật "Màn quầy một màn hình" (`pos.single_screen`, mặc định bật) → trang Đơn hàng thành hai vùng **Hàng pha** (đơn cần làm) / **Quầy** (lưới bàn thành thẻ "Bàn", thêm thẻ Bán mang đi · Gọi món tại bàn · Ca & két); ngưỡng ngăn trượt là **1024 px** thay cho 1200 px. Tắt → bố cục của ADR-018 như cũ.
 - **Bối cảnh** (ảnh chủ dự án gửi, màn 1900 px):
   - Thanh trên chật: 6 mục điều hướng + 6 nút trạng thái (ca, QR, kết nối, âm thanh, tên, đăng xuất) cùng một hàng, xuống dòng tùy độ rộng.
   - "Chưa mở ca" hiện hai lần (nút đỏ trên thanh + dải dưới).

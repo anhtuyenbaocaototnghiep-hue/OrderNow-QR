@@ -196,3 +196,16 @@ Chủ dự án: "tài khoản admin chỉ ở trong này thôi không có ra mà
 | In lại hóa đơn từ Báo cáo | Bằng phiên Quản lý (`?area=admin`) | Như cũ |
 | Duyệt hộ ở quầy (nhập tài khoản vào hộp duyệt) | **Có** (không mở phiên máy quầy) | Như cũ |
 | Gọi API không gửi `area` (công cụ, script) | Có | Có |
+
+## 4.9. Bổ sung F-088 — màn quầy một màn hình (ADR-049, 13/11/2026)
+
+Thêm vào bảng vị trí của F-078 (chỉ áp cho vai Nhân viên; để trống vị trí = mọi việc; trưởng ca, quản lý cửa hàng không bị giới hạn; thiếu vị trí → `403 POSITION_REQUIRED` kèm "Xin quyền" như F-079):
+
+| Việc ở quầy | Thu ngân | Pha chế | Phục vụ |
+| --- | --- | --- | --- |
+| "Đã mang" — món tại bàn đã mang ra (`POST /api/orders/{id}/served`) | Có | — | Có |
+| "Báo hết" / "Mở bán lại" món ngay ở quầy (`PATCH /api/menu-items/{id}/availability`) | — | Có | — |
+| Nhận + Xong đơn **chỉ có** món trạm Quầy lấy (dải "Quầy lấy") | Có | Có | Có |
+| Nhận / Xong đơn có món trạm Bar | — | Có | — (như F-078) |
+
+Thẻ của vùng Quầy hiện theo vị trí: Bán mang đi ← Thu ngân, Gọi món tại bàn ← Phục vụ, Ca & két ← người mở được trang Ca; nút "Hết món" ← Pha chế. Cài đặt "Màn quầy một màn hình", "Món tại bàn pha xong": chủ quán ở Quản lý → Cài đặt (API `PUT /api/admin/settings` nhận cả quản lý cửa hàng như "Quy trình 1 chạm" — F-077; trang Cài đặt chỉ chủ quán mở — F-079). Trạm làm món của món: ai sửa được thực đơn. Test: `single-screen.test.js` (AC-088-01…05).

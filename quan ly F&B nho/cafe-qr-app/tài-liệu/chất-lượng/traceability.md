@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 480 test, sửa lúc 2026-11-10 08:47 UTC
-- `npm run test:e2e` (JSON): 85 test, sửa lúc 2026-11-10 08:55 UTC
+- `npm test` (JUnit): 485 test, sửa lúc 2026-11-14 06:01 UTC
+- `npm run test:e2e` (JSON): 91 test, sửa lúc 2026-11-14 06:12 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 188 |
-| Acceptance Criteria | 517 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 517 |
+| User Story | 191 |
+| Acceptance Criteria | 527 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 527 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -34,10 +34,11 @@
 - **BR chưa gắn Story nào:** 0 — mọi BR đều có Story
 - **Màn hình (SCR trong sitemap) chưa gắn Story nào:** 0 — mọi màn hình đều có Story
 - **Test FAIL bất kỳ (kể cả test không gắn AC, file test không nạp được):** 0 — không có
-- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 57
+- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 58
   - kiểm-thử/e2e/a11y.spec.js › khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn nhóm, màn cảm ơn + đánh giá — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px
   - kiểm-thử/e2e/a11y.spec.js › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm
   - kiểm-thử/e2e/a11y.spec.js › quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính
+  - kiểm-thử/e2e/a11y.spec.js › quầy một màn hình (F-088): hai vùng Hàng pha + Quầy có thẻ (← / → chuyển thẻ), hộp Báo hết món trong vùng, ngăn Quầy ở màn 900 px — nhãn, tương phản, vùng chạm, dấu focus
   - kiểm-thử/e2e/flow.spec.js › báo lỗi xong vẫn lưu được (DEF-024): thêm bàn trùng mã / nhân viên trùng tên đăng nhập / món có ảnh sai → máy chủ báo lỗi, nút không bị khóa → sửa lại → lưu được ngay trong cùng hộp
   - kiểm-thử/e2e/flow.spec.js › bố cục quầy (ADR-018): lưới bàn hiện cả bàn trống; màn 1024 px lưới bàn là ngăn trượt — nút "Bàn" mở, Esc / nền mờ đóng, focus trả về nút (TASK-072)
   - kiểm-thử/e2e/flow.spec.js › chuyển giữa các mục quầy: rời trang không làm hiện "Mất kết nối" (app tự đóng kết nối, không phải mất mạng) (DEF-011, TASK-059)
@@ -614,4 +615,14 @@
 | AC-087-03 | TC-087-03 | F-087 | US-087-2 | ACT-ADMIN, ACT-STAFF, EXT-SCHEDULER | UC-01, UC-18 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-33 | BR-125 | Integration: `table-move-followup.test.js` › AC-087-03: yêu cầu "xin chuyển bàn" ghi bàn đích đang có bao nhiêu nhóm khác — sang Bàn H2 đang có 1 nhóm → openGroups 1 (danh sách + sự kiện quầy); đổi ý sang Bàn H3 trống → 0; Gọi nhân viên thường không có bàn đích; khách quét QR mở nhóm mới → quầy nhận session.opened (byGuest) để thẻ / lưới bàn cập nhật ngay — **PASS** | **PASS** |
 | AC-087-04 | TC-087-04 | F-087 | US-087-1 | ACT-STAFF, ACT-LEAD | UC-03 | MOD-ORDER | SCR-10, SCR-12 | BR-125 | E2E: `flow.spec.js` › hoàn thiện đổi bàn: khách gửi món ở Bàn X5 (quầy đã tiếp nhận) rồi nhờ quầy chuyển sang Bàn X6 → thẻ xin chuyển ghi "Bàn X6 đang trống", có nhóm khác vào Bàn X6 thì tự đổi "đang có 1 nhóm khác"; bấm "Chuyển" → nhắc "Thu chung với bàn khác" + "mang ra Bàn X6"; thẻ đơn có nhãn "Đổi bàn: Bàn X5 → Bàn X6" + nút "In phiếu bàn mới"; phiếu pha ghi to Bàn X6, đổi từ Bàn X5, món, không giá (F-087, AC-087-04) — **PASS** | **PASS** |
 | AC-087-05 | TC-087-05 | F-087 | US-087-2 | ACT-ADMIN, ACT-STAFF, EXT-SCHEDULER | UC-01, UC-18 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-33 | BR-125 | E2E: `flow.spec.js` › chủ quán chọn thời gian tự trả bàn trống ở Cài đặt → "Sau 60 phút" → lưu, tải lại vẫn 60 (F-087, AC-087-05) — **PASS** | **PASS** |
+| AC-088-01 | TC-088-01 | F-088 | US-088-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN, ACT-STORE | UC-03, UC-04, UC-05, UC-08 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-13, SCR-14, SCR-16, SCR-33 | BR-126 | Integration: `single-screen.test.js` › AC-088-01: cài đặt mặc định một màn hình + mang ra bàn; /api/auth/me trả pos.singleScreen, pos.serveMode; lưu được, giá trị lạ → 400; quản lý cửa hàng đổi được; phiên khách có serveMode — **PASS** | **PASS** |
+| AC-088-02 | TC-088-02 | F-088 | US-088-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03, UC-14 | MOD-ORDER, MOD-MENU | SCR-10, SCR-12, SCR-21 | BR-126 | Integration: `single-screen.test.js` › AC-088-02: món có trạm làm món — tạo "Quầy lấy" trả COUNTER, sửa không gửi trạm thì giữ nguyên, tạo không gửi trạm là BAR, trạm lạ → 400; đơn có món đó ghi station ở danh sách đơn quầy và chi tiết đơn — **PASS** | **PASS** |
+| AC-088-03 | TC-088-03 | F-088 | US-088-3 | ACT-STAFF, ACT-GUEST | UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-10, SCR-05 | BR-126 | Integration: `single-screen.test.js` › AC-088-03: "Đã mang" đơn tại bàn đã xong — Phục vụ ghi được (servedAt, sự kiện order.served tới quầy + phiên, phiên khách thấy servedAt); lần 2 → 409 ALREADY_SERVED; đơn chưa xong / đã hủy / mang đi → 409 INVALID_STATE; chỉ Pha chế → 403; không đăng nhập → 401; người chỉ từng bấm "Đã mang" xóa tài khoản → lưu trữ (không lỗi) — **PASS** | **PASS** |
+| AC-088-04 | TC-088-04 | F-088 | US-088-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03, UC-14 | MOD-ORDER, MOD-MENU | SCR-10, SCR-12, SCR-21 | BR-126 | Integration: `single-screen.test.js` › AC-088-04: báo hết món ngay ở quầy — Pha chế tắt Latte → menu khách không đặt được, phát menu.availability_changed, có nhật ký menu.availability; bật lại đặt được; chỉ Thu ngân → 403 POSITION_REQUIRED; món không có → 404 — **PASS** | **PASS** |
+| AC-088-05 | TC-088-05 | F-088 | US-088-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03, UC-14 | MOD-ORDER, MOD-MENU | SCR-10, SCR-12, SCR-21 | BR-126 | Integration: `single-screen.test.js` › AC-088-05: đơn chỉ có món trạm Quầy — Thu ngân / Phục vụ (không có vị trí Pha chế) nhận + xong được; đơn có món trạm Bar → Thu ngân bị chặn 403 POSITION_REQUIRED như F-078 — **PASS** | **PASS** |
+| AC-088-06 | TC-088-06 | F-088 | US-088-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN, ACT-STORE | UC-03, UC-04, UC-05, UC-08 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-13, SCR-14, SCR-16, SCR-33 | BR-126 | E2E: `flow.spec.js` › màn quầy một màn hình: máy quầy 1920 px có vùng Hàng pha + vùng Quầy với thẻ Bàn / Bán mang đi / Gọi món tại bàn / Ca & két; thẻ Bán mang đi (trang nhúng, không thanh trên) bán 1 ly → đơn vào Hàng pha, vẫn ở /pos; "Gọi món" trên Bàn M1 mở thẻ Gọi món đúng Bàn M1; ngăn thu tiền Bàn M2 mở trong vùng Quầy, trong lúc đó Hàng pha vẫn bấm Hoàn tất được (F-088, AC-088-06) — **PASS** | **PASS** |
+| AC-088-07 | TC-088-07 | F-088 | US-088-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03, UC-14 | MOD-ORDER, MOD-MENU | SCR-10, SCR-12, SCR-21 | BR-126 | E2E: `flow.spec.js` › gom ly + trạm làm món + in phiếu + hết món: hai bàn cùng gọi Cà phê muối → dòng gom "2× Cà phê muối · 2 đơn", chạm → hai thẻ đơn tô sáng; Bánh croissant (trạm Quầy lấy) không vào gom, thẻ đơn ghi "Quầy lấy kèm", đơn chỉ có bánh ở dải "Quầy lấy" → Xong; chạm thẻ đơn → chi tiết có "In phiếu pha" mở khung in phiếu pha; "Hết món" báo hết Cà phê muối → điện thoại khách thấy món hết, mở bán lại → đặt được; quy trình 1 chạm bật (F-088, AC-088-07) — **PASS** | **PASS** |
+| AC-088-08 | TC-088-08 | F-088 | US-088-3 | ACT-STAFF, ACT-GUEST | UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-10, SCR-05 | BR-126 | E2E: `flow.spec.js` › mang ra bàn: khách Bàn S1 gọi món bằng điện thoại, quầy Tiếp nhận → Hoàn tất → dải "Mang ra" ghi Bàn S1, điện thoại khách báo "nhân viên đang mang ra bàn" (4 bước); bấm "Đã mang" → dải mất, điện thoại khách "Đã mang ra bàn" (F-088, AC-088-08) — **PASS** | **PASS** |
+| AC-088-09 | TC-088-09 | F-088 | US-088-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN, ACT-STORE | UC-03, UC-04, UC-05, UC-08 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-13, SCR-14, SCR-16, SCR-33 | BR-126 | E2E: `flow.spec.js` › bố cục màn quầy một màn hình: màn 1024 px hai vùng cạnh nhau, không có nút mở vùng Quầy; màn 900 px vùng Quầy là ngăn trượt — nút "Quầy" mở, có thẻ, ← / → đổi thẻ (focus ở lại thẻ), Esc đóng; khách gọi thanh toán → bấm thẻ ở dải trên → ngăn Quầy tự mở kèm bill; chủ quán tắt "Màn quầy một màn hình" ở Cài đặt → /pos về bố cục cũ, mục "Bán mang đi" mở trang riêng (F-088, AC-088-09) — **PASS** | **PASS** |
+| AC-088-10 | TC-088-10 | F-088 | US-088-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN, ACT-STORE | UC-03, UC-04, UC-05, UC-08 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-13, SCR-14, SCR-16, SCR-33 | BR-126 | E2E: `flow.spec.js` › màn quầy gọn: thanh trên một hàng ở 1366 px chỉ Màn quầy / Kho / Giờ công (không trùng thẻ), kết nối là chấm, "?" và máy in tự in là nút biểu tượng; thẻ đơn một nút, chạm thẻ → chi tiết có Hủy đơn / In phiếu pha / Tiếp nhận & Hoàn tất, "Mở bàn / Thu tiền" mở bill ở vùng Quầy; "Đã xong hôm nay" thu gọn, "Xem" mở; thẻ bàn một nút, chạm tên bàn → bill có Chuyển bàn / Ghi chú, "Gọi thêm món" đóng bill mở thẻ Gọi món đúng bàn; hai hộp thoại hai vùng — Esc đóng hộp đang có focus (F-088, AC-088-10) — **PASS** | **PASS** |
 

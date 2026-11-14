@@ -52,3 +52,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-103-plan.md](TASK-103-plan.md) — ảnh nguyên liệu ở kho (F-085, ADR-046).
 - [TASK-104-plan.md](TASK-104-plan.md) — khách đổi bàn khi quét QR (F-086, ADR-047).
 - [TASK-105-plan.md](TASK-105-plan.md) — hoàn thiện đổi bàn (F-087, ADR-048).
+- [TASK-106-plan.md](TASK-106-plan.md) — màn quầy một màn hình (F-088, ADR-049).

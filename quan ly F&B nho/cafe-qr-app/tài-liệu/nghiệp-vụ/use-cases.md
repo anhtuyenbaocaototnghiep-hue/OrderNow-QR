@@ -17,18 +17,18 @@
 | --- | --- | --- | --- | --- |
 | UC-01 | Quét QR vào bàn (tách / gộp phiên) | ACT-GUEST | F-001 (F-024, F-086, F-087) | SCR-01, SCR-02 |
 | UC-02 | Khách gọi món qua QR | ACT-GUEST | F-002, F-003, F-004 (F-013, F-015, F-016, F-017, F-025, F-040, F-055, F-081, F-082, F-083) | SCR-02, SCR-03, SCR-05, SCR-57 |
-| UC-03 | Quầy tiếp nhận / hoàn tất / hủy đơn (giữ & trừ kho) | ACT-STAFF | F-007 (F-025, F-028, F-031, F-055, F-087) | SCR-10, SCR-11 |
+| UC-03 | Quầy tiếp nhận / hoàn tất / hủy đơn (giữ & trừ kho) | ACT-STAFF | F-007 (F-025, F-028, F-031, F-055, F-087, F-088) | SCR-10, SCR-11 |
 | UC-04 | Gọi thanh toán & thu tiền tại bàn, in bill | ACT-GUEST, ACT-STAFF, EXT-PRINTER | F-005, F-006 (F-018, F-022, F-047) | SCR-05, SCR-04, SCR-10, SCR-14, SCR-12 |
-| UC-05 | Bán mang đi | ACT-STAFF, EXT-PRINTER | F-008 (F-013, F-015, F-022, F-040, F-045) | SCR-13, SCR-12, SCR-10 |
+| UC-05 | Bán mang đi | ACT-STAFF, EXT-PRINTER | F-008 (F-013, F-015, F-022, F-040, F-045, F-088) | SCR-13, SCR-12, SCR-10 |
 | UC-06 | Chia bill thu từng phần | ACT-GUEST, ACT-STAFF | F-026 | SCR-05, SCR-14, SCR-12 |
 | UC-07 | Hoàn tiền sau khi thu | ACT-LEAD, ACT-ADMIN, ACT-STAFF (có duyệt) | F-019 (F-036, F-039, F-046) | SCR-15, SCR-32 |
-| UC-08 | Nhân viên mở bàn & gọi món tại bàn (gắn hội viên) | ACT-STAFF | F-024, F-047 | SCR-16, SCR-14 |
+| UC-08 | Nhân viên mở bàn & gọi món tại bàn (gắn hội viên) | ACT-STAFF | F-024, F-047 (F-088) | SCR-16, SCR-14 |
 | UC-09 | Sửa / xóa món, xóa đơn, hủy bàn | ACT-STAFF, ACT-LEAD, ACT-ADMIN | F-046 | SCR-14, SCR-10 |
 | UC-10 | Hội viên: gắn SĐT, tích điểm / tem, đổi quà, voucher, giới thiệu, xem Thẻ thành viên | ACT-GUEST → ACT-MEMBER, ACT-STAFF | F-014, F-038, F-039, F-045, F-047 | SCR-02, SCR-03, SCR-05, SCR-13, SCR-14, SCR-12 |
 | UC-11 | Mở / đóng ca và sổ quỹ | ACT-STAFF, ACT-LEAD, ACT-ADMIN | F-018, F-033 (F-036, F-054) | SCR-10, SCR-15, SCR-32, SCR-36 |
 | UC-12 | Chấm công, lịch làm | ACT-STAFF, ACT-LEAD, ACT-ADMIN, EXT-SCHEDULER | F-035 | SCR-09, SCR-15, SCR-37 |
 | UC-13 | Kho: nhập hàng / PO / kiểm kê / hao hụt / sơ chế / lô | ACT-STAFF, ACT-LEAD, ACT-ADMIN, EXT-SCHEDULER | F-011, F-023, F-027…F-032, F-036, F-085 | SCR-17, SCR-23, SCR-24, SCR-31, SCR-35 |
-| UC-14 | Quản lý menu, BOM, tùy chọn, combo, khuyến mãi, lịch thực đơn | ACT-ADMIN | F-010, F-011, F-013, F-015, F-016, F-017, F-020, F-040 | SCR-21, SCR-22, SCR-24, SCR-27…SCR-30, SCR-34 |
+| UC-14 | Quản lý menu, BOM, tùy chọn, combo, khuyến mãi, lịch thực đơn | ACT-ADMIN | F-010, F-011, F-013, F-015, F-016, F-017, F-020, F-040, F-088 | SCR-21, SCR-22, SCR-24, SCR-27…SCR-30, SCR-34 |
 | UC-15 | Chiến dịch marketing | ACT-ADMIN, EXT-SCHEDULER, EXT-ZALO | F-037 (F-038) | SCR-40, SCR-26 |
 | UC-16 | Báo cáo, lãi lỗ, phân tích, dashboard Hôm nay | ACT-ADMIN, ACT-LEAD, EXT-SCHEDULER | F-012, F-034, F-041, F-042, F-043 | SCR-42, SCR-25, SCR-39, SCR-41 |
 | UC-17 | Tài khoản, phân quyền, nhật ký thao tác | ACT-ADMIN, ACT-STORE, ACT-STAFF | F-009, F-036, F-035 (F-052, F-053, F-077, F-084) | SCR-09, SCR-20, SCR-33, SCR-38, SCR-46 |

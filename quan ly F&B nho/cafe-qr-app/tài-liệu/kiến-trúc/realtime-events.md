@@ -140,3 +140,11 @@ Bỏ lỡ sự kiện (mất mạng): `GET /api/sessions/{id}` của người tr
 | `session.opened` | staff | `{ sessionId, table, session, byGuest: true }` | **khách** quét QR mở nhóm mới (bàn trống / "Gọi món riêng" / "Tạo đơn cá nhân") — trước chỉ khi nhân viên mở bàn (DEF-029); máy quầy tải lại nhóm, vẽ lại lưới bàn + thẻ "xin chuyển bàn" |
 | `order.created`, `order.status_changed`, … | như cũ | `order.tableMove` | đơn của nhóm đã đổi bàn — máy quầy hiện nhãn "Đổi bàn" 10 phút |
 | `session.staff_called` | `staff`, `session:{id}` | yêu cầu `MOVE` thêm `toTable.openGroups` | máy quầy ghi "(đang có n nhóm)" trong thông báo |
+
+## Bổ sung F-088 — màn quầy một màn hình (ADR-049, 13/11/2026)
+
+| Sự kiện | Room | Payload | Phát khi |
+| --- | --- | --- | --- |
+| `order.served` | `staff`, `session:{id}` | `{ orderId, sessionId, servedAt, order }` | nhân viên bấm "Đã mang" (`POST /api/orders/{id}/served`) — máy quầy bỏ thẻ khỏi dải "Mang ra", điện thoại khách đổi sang "Đã mang ra bàn" |
+| `order.*` | như cũ | `order.items[].station`, `order.servedAt` | máy quầy chia Hàng pha / dải "Quầy lấy", gom ly, dải "Mang ra" |
+| `menu.availability_changed` | như cũ | như cũ | thêm lối phát: người pha "Báo hết" / "Mở bán lại" ở quầy (`PATCH /api/menu-items/{id}/availability`) |

@@ -839,3 +839,20 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - Job `close-idle-tables` (`POST /api/admin/jobs/close-idle-tables/run`): `info = { minutes, checked, closed }`; cài đặt Tắt → `{ off: true, checked: 0, closed: 0 }`.
 - `GET /api/staff-calls`, sự kiện `session.staff_called`: yêu cầu `MOVE` có `toTable.openGroups` (số nhóm chưa đóng ở bàn đích, trừ nhóm xin chuyển).
 - Trang in `/pos/orders/{id}/receipt?mode=ticket` (phiếu pha: đơn tại bàn hoặc mang đi, không giá) đọc `GET /api/orders/{id}`.
+
+## Bổ sung F-088 — màn quầy một màn hình (ADR-049, TASK-106, 13/11/2026)
+
+- `GET/POST/PUT /api/admin/menu-items`: thêm `station` ∈ {`BAR`, `COUNTER`} (mặc định `BAR`; `PUT` không gửi → giữ nguyên; giá trị khác → `400 VALIDATION_ERROR` "Trạm làm món là Pha chế hoặc Quầy lấy").
+- Đơn (`GET /api/orders`, `GET /api/orders/{id}`, phần `order` của `POST /api/orders`, sự kiện `order.*`, `GET /api/sessions/{id}`): `items[].station`, `items[].children[].station`, `servedAt` (giờ bấm "Đã mang", `null` nếu chưa). Không trả người mang.
+- `POST /api/orders/{id}/served` (không body) → `{ order }` (đơn có `servedAt`). Chỉ đơn **tại bàn** đã `COMPLETED`. Lỗi: `409 ALREADY_SERVED` (đã mang), `409 INVALID_STATE` (đơn mang đi / chưa xong / đã hủy), `404`, `409 NO_OPEN_SHIFT`, `403 POSITION_REQUIRED` (nhân viên không có vị trí Thu ngân / Phục vụ; trưởng ca trở lên luôn được).
+- `PATCH /api/menu-items/{id}/availability` `{ isAvailable: boolean }` → món (như `PATCH /api/admin/menu-items/{id}/availability`): nhân viên vị trí Pha chế, trưởng ca trở lên; `403 POSITION_REQUIRED`, `404`. Ghi nhật ký `menu.availability`, phát `menu.availability_changed`.
+- `POST /api/orders/{id}/accept`, `/complete`: đơn **chỉ có** món trạm Quầy → Thu ngân / Phục vụ cũng làm được; đơn có món trạm Bar → chỉ Pha chế (`403 POSITION_REQUIRED` như F-078).
+- `GET /api/auth/me` → `pos: { oneTap, singleScreen, serveMode }`. `GET/PUT /api/admin/settings`: `singleScreen` (boolean, mặc định `true`), `serveMode` (`TABLE` mặc định \| `COUNTER`; khác → `400`) — chủ quán và quản lý cửa hàng.
+- `GET /api/sessions/{id}` (khách) → `serveMode` (điện thoại chọn lời "nhân viên đang mang ra bàn" hay "vui lòng nhận tại quầy").
+- Trang quầy nhúng: `/pos/takeaway?embed=1`, `/pos/table-order?embed=1`, `/pos/shift?embed=1` (chỉ có tác dụng khi nằm trong khung của `/pos` cùng nguồn; mở thẳng → như trang thường).
+
+| Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
+| --- | --- | --- | --- | --- |
+| `POST /api/orders/{id}/served` | STAFF vị trí Thu ngân / Phục vụ (trưởng ca trở lên luôn được) | — | `200 { order }` có `servedAt`; phát `order.served` | `409 ALREADY_SERVED`, `409 INVALID_STATE` (mang đi / chưa xong / đã hủy), `404`, `409 NO_OPEN_SHIFT`, `403 POSITION_REQUIRED` |
+| `PATCH /api/menu-items/{id}/availability` | STAFF vị trí Pha chế (trưởng ca trở lên luôn được) | `{ isAvailable: boolean }` | `200` món; phát `menu.availability_changed`; nhật ký `menu.availability` | `404`, `400 VALIDATION_ERROR`, `403 POSITION_REQUIRED` |
+| `POST /api/orders/{id}/complete` | Pha chế; Thu ngân / Phục vụ chỉ khi đơn **chỉ có** món trạm Quầy (F-088) | — | như cũ | đơn có món trạm Bar mà không phải Pha chế → `403 POSITION_REQUIRED` |
