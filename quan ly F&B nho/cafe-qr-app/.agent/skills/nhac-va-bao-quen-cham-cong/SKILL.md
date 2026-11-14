@@ -9,12 +9,12 @@ Ghi lại phần **quên PIN + nhắc + báo quên chấm công** (làm ngày 06
 
 Nền là skill `cham-cong-tinh-luong` (F-072 / F-073, ADR-030) — đọc nó trước. Nguồn chính là tài liệu trong repo; lệch nhau → làm theo tài liệu, ghi câu hỏi vào `tài-liệu/open-questions.md`.
 
-| Tài liệu | Đường dẫn |
-| --- | --- |
-| Quyết định | `tài-liệu/quyết-định/ADR-031-nhac-va-bao-quen-cham-cong.md` (D-135…D-139) |
-| Feature + AC | `tài-liệu/chức-năng/FEATURE-072.md` — US-072-4, quy tắc 7–9, AC-072-08…12 |
-| Business rule | `tài-liệu/nghiệp-vụ/business-rules.md` BR-111 |
-| Task, kế hoạch | `tài-liệu/công-việc/TASK-090.md`, `tài-liệu/kế-hoạch/TASK-090-plan.md` |
+| Tài liệu               | Đường dẫn                                                                        |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| Quyết định             | `tài-liệu/quyết-định/ADR-031-nhac-va-bao-quen-cham-cong.md` (D-135…D-139)        |
+| Feature + AC           | `tài-liệu/chức-năng/FEATURE-072.md` — US-072-4, quy tắc 7–9, AC-072-08…12        |
+| Business rule          | `tài-liệu/nghiệp-vụ/business-rules.md` BR-111                                    |
+| Task, kế hoạch         | `tài-liệu/công-việc/TASK-090.md`, `tài-liệu/kế-hoạch/TASK-090-plan.md`           |
 | API, dữ liệu, màn hình | `api-contract.md`, `data-model.md`, `screens-flows.md` — mục "Bổ sung … ADR-031" |
 
 # Khi dùng
@@ -47,7 +47,7 @@ Nền là skill `cham-cong-tinh-luong` (F-072 / F-073, ADR-030) — đọc nó t
 
 # 4. Giao diện
 
-- `pinPad({ …, onForgot })`: có `onForgot` → dòng "Quên PIN? Đặt lại bằng mật khẩu đăng nhập" — bấm thì đóng bàn phím (trả `null`) rồi gọi `onForgot()`. Hỏi PIN thao tác tiền → `setPinDialog()` (của chính mình); màn chung / Đổi người → `kioskPinDialog(người đó)`.
+- `pinPad({ …, onForgot })`: có `onForgot` → dòng "Quên PIN? Đặt lại bằng mật khẩu đăng nhập" — bấm thì đóng bàn phím (trả `null`) rồi gọi `onForgot()`. Hỏi PIN thao tác tiền → `setPinDialog()` (của chính mình); màn chung → `kioskPinDialog(người đó)` ("Đổi người" đã bỏ — ADR-050).
 - `pos-shell.js`: `#att-remind` sau dải "Chưa mở ca"; `loadReminders()` lúc mở trang, mỗi 60 giây, khi quay lại tab, sau khi đóng hộp Chấm công; **Ẩn** lưu chữ ký `kind:userId,…` vào `sessionStorage` (`att-remind-hidden`) — đọc / ghi bọc `try`.
 - `/pos/me`: thẻ "Quên chấm công?" (ngày vắng + báo quên đã gửi), nút chung `#missed-btn` ở thẻ Chấm công (chỉ tháng còn trong hạn 7 ngày). Hộp báo quên: `#mp-date` (min = hôm nay − 7), `#mp-in`, `#mp-out` (giờ ra ≤ giờ vào = hôm sau), `#mp-note`.
 - `/admin/payroll`: việc chờ `MISSED_PUNCH` → **Duyệt…** (`#mpa-date`, `#mpa-in`, `#mpa-out`, `#mpa-note`) / **Không duyệt** (`reasonDialog`).
@@ -64,14 +64,14 @@ Nền là skill `cham-cong-tinh-luong` (F-072 / F-073, ADR-030) — đọc nó t
 
 # 6. Xử lý thắc mắc của chủ quán
 
-| Thắc mắc | Trả lời / kiểm |
-| --- | --- |
+| Thắc mắc                            | Trả lời / kiểm                                                                                                                                                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | "Nhân viên quên chấm công thì sao?" | Quên vào: máy quầy nhắc sau 10 phút; quên cả ngày: nhân viên bấm "Báo quên chấm công" ở Giờ công → bạn duyệt ở Lương. Quên ra: người đóng ca chấm ra hộ / app tự đóng sau 14 giờ → bạn chọn tính theo lịch / giờ thật / không tính |
-| "Quên PIN" | Màn Chấm công → chạm tên → "Quên PIN?" → mật khẩu đăng nhập + PIN mới. Quên cả mật khẩu → Tài khoản → đặt lại mật khẩu |
-| "Bị khóa PIN 15 phút" | Đặt PIN mới (như trên) là hết khóa ngay; hoặc quản lý bấm Xóa PIN |
-| "Dải nhắc hiện hoài" | Người đó nghỉ có báo → xóa lịch của họ ở Nhân sự, hoặc bấm Ẩn |
-| "Không chốt được lương" | Còn báo quên chưa duyệt / không duyệt trong Việc chờ |
-| "Nhân viên báo khống" | Không duyệt (ghi lý do — nhân viên thấy); báo quên không xóa được, có tên người gửi |
+| "Quên PIN"                          | Màn Chấm công → chạm tên → "Quên PIN?" → mật khẩu đăng nhập + PIN mới. Quên cả mật khẩu → Tài khoản → đặt lại mật khẩu                                                                                                             |
+| "Bị khóa PIN 15 phút"               | Đặt PIN mới (như trên) là hết khóa ngay; hoặc quản lý bấm Xóa PIN                                                                                                                                                                  |
+| "Dải nhắc hiện hoài"                | Người đó nghỉ có báo → xóa lịch của họ ở Nhân sự, hoặc bấm Ẩn                                                                                                                                                                      |
+| "Không chốt được lương"             | Còn báo quên chưa duyệt / không duyệt trong Việc chờ                                                                                                                                                                               |
+| "Nhân viên báo khống"               | Không duyệt (ghi lý do — nhân viên thấy); báo quên không xóa được, có tên người gửi                                                                                                                                                |
 
 # 7. Làm lại từ đầu (bản code chưa có TASK-090)
 

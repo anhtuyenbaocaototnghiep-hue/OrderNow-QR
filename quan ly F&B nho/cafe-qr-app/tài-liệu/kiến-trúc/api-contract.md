@@ -665,7 +665,6 @@ Chi tiết: [FEATURE-072](../chức-năng/FEATURE-072.md), [FEATURE-073](../ch�
 | Method & path | Quyền | Kết quả |
 | --- | --- | --- |
 | `POST /api/auth/pin` | Nhân viên | `{ password, pin }` → `{ hasPin: true }`; mật khẩu sai `403 PASSWORD_INVALID`; PIN yếu `400 PIN_WEAK` |
-| `POST /api/auth/switch` | Nhân viên | `{ userId, pin }` → `{ accessToken, user }` (nhân viên / trưởng ca); PIN sai `403 PIN_INVALID`; chưa đặt `403 PIN_NOT_SET`; khóa `429 PIN_LOCKED` |
 | `GET /api/attendance/board` | Nhân viên | `{ mode, people: [{ userId, fullName, role, hasPin, workingSince, roster }] }` (không có quản lý) |
 | `POST /api/attendance/punch` | Nhân viên | `{ userId, pin, action: IN | OUT }` → bản ghi; `409 ALREADY_IN` / `NOT_IN` / `KIOSK_OFF` |
 | `GET /api/attendance/shift/{id}` | Nhân viên | `{ mode, rows }` — lần chấm công giao với ca, `self` = của người đang xem |
@@ -856,3 +855,7 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 | `POST /api/orders/{id}/served` | STAFF vị trí Thu ngân / Phục vụ (trưởng ca trở lên luôn được) | — | `200 { order }` có `servedAt`; phát `order.served` | `409 ALREADY_SERVED`, `409 INVALID_STATE` (mang đi / chưa xong / đã hủy), `404`, `409 NO_OPEN_SHIFT`, `403 POSITION_REQUIRED` |
 | `PATCH /api/menu-items/{id}/availability` | STAFF vị trí Pha chế (trưởng ca trở lên luôn được) | `{ isAvailable: boolean }` | `200` món; phát `menu.availability_changed`; nhật ký `menu.availability` | `404`, `400 VALIDATION_ERROR`, `403 POSITION_REQUIRED` |
 | `POST /api/orders/{id}/complete` | Pha chế; Thu ngân / Phục vụ chỉ khi đơn **chỉ có** món trạm Quầy (F-088) | — | như cũ | đơn có món trạm Bar mà không phải Pha chế → `403 POSITION_REQUIRED` |
+
+## Bỏ "Đổi người" (ADR-050, TASK-107, 14/11/2026)
+
+- `POST /api/auth/switch` (đổi phiên máy quầy bằng PIN — F-072) **đã bỏ**: đường dẫn không còn, gọi → `404 NOT_FOUND`, không cấp phiên. Người khác đứng máy: `POST /api/auth/logout` rồi `POST /api/auth/login`. PIN vẫn dùng cho `POST /api/attendance/punch` (màn chung) và header `X-Actor-Pin` (thao tác tiền).
