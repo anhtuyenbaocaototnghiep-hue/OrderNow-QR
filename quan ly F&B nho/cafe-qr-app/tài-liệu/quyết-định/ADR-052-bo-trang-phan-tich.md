@@ -19,4 +19,4 @@
 
 - **Mã nguồn:** `routes/pages.js` (bỏ trang, thêm chuyển hướng), `js/admin-shell.js` (thanh bên, `MODULE_OF`), `js/roles.js` (trang ↔ quyền, mô tả vai Chủ quán), `js/pages/admin-settings.js` (nhóm "Thu chi"), `auth/permissions.js` (nhãn + trang của `admin.pnl`). CSS biểu đồ dùng chung với Thu chi giữ nguyên.
 - **Test:** `analytics.test.js` thêm AC-042-06 (chuyển hướng 302, API vẫn 200 cho chủ quán, trưởng ca 403, nhãn quyền); E2E bài "phân tích + dashboard" → "bỏ trang Phân tích … dashboard" (AC-042-06 + AC-043-02 / 03); a11y bỏ các bước quét trang Phân tích. Test API F-041 / F-042 giữ nguyên.
-- **Tài liệu:** FEATURE-041, FEATURE-042 (giao diện đã bỏ, AC-042-06), screens-flows (S-41), sitemap (SCR-41), roles-permissions, use-cases (UC-16), user-stories (US-041-1, US-042-1…3), tc-map, hướng dẫn `chức-năng-mới/23` + README.
+- **Tài liệu:** FEATURE-041, FEATURE-042 (giao diện đã bỏ, AC-042-06), screens-flows (S-41), sitemap (SCR-41), roles-permissions, use-cases (UC-16), user-stories (US-042-4 mới — gắn AC-042-06), tc-map, hướng dẫn `chức-năng-mới/23` + README.
