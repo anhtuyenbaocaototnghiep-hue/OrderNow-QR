@@ -259,4 +259,20 @@ describe('Phân tích + dashboard trên dữ liệu thật (F-041, F-042, F-043)
     await api.post('/api/admin/jobs/daily-summary/run').set(auth(admin));
     assert.equal((await q1(`SELECT COUNT(*) AS N FROM dbo.DailySummaries WHERE SummaryDate = '${y}'`))[0].N, 1);
   });
+
+  test('AC-042-06: bỏ trang Phân tích (ADR-052) — /admin/analytics chuyển về /admin/pnl; API phân tích vẫn trả số cho chủ quán; quyền Thu chi đổi tên, trưởng ca vẫn 403', async () => {
+    const page = await api.get('/admin/analytics');
+    assert.deepEqual([page.status, page.headers.location], [302, '/admin/pnl']);
+    const apis = [
+      '/api/admin/reports/menu-engineering',
+      `/api/admin/reports/heatmap?from=${today}&to=${today}`,
+      '/api/admin/reports/revenue-forecast?days=7',
+      '/api/admin/reports/compare?period=week',
+      `/api/admin/reports/tables?from=${today}&to=${today}`,
+    ];
+    for (const path of apis) assert.equal((await api.get(path).set(auth(admin))).status, 200, path);
+    assert.equal((await api.get('/api/admin/reports/menu-engineering').set(auth(lead))).status, 403);
+    const cap = (await api.get('/api/access/capabilities').set(auth(staff))).body.find((c) => c.key === 'admin.pnl');
+    assert.equal(cap.label, 'Thu chi, chi phí cố định');
+  });
 });

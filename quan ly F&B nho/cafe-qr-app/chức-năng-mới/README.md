@@ -45,7 +45,7 @@ Mở app và chạy test: xem [`../hướng-dẫn/README.md`](../hướng-dẫn/
 | 20 | [Thu chi (lãi / lỗ)](20-lãi-lỗ.md) | Lãi / lỗ ước tính theo ngày / tháng, chi phí cố định, doanh thu hòa vốn mỗi ngày | Quản lý |
 | 21 | [Tích điểm, tem, voucher, giới thiệu bạn](21-tích-điểm-tem-voucher-giới-thiệu.md) | 10.000đ = 1 điểm đổi quà; thẻ tem 10 ly tặng 1; voucher; giới thiệu bạn cả hai nhận voucher | Khách · Quầy · Quản lý |
 | 22 | [Chiến dịch](22-chiến-dịch.md) | Lọc nhóm khách, tặng voucher riêng, xuất danh sách gửi tin, đo khách quay lại | Quản lý |
-| 23 | [Phân tích & menu engineering](23-phân-tích-và-menu-engineering.md) | Món nào giữ / đẩy / bỏ; giờ cao điểm; dự báo doanh thu; so sánh kỳ; bàn ngồi lâu | Quản lý |
+| 23 | [Phân tích & menu engineering](23-phân-tích-và-menu-engineering.md) — **đã bỏ 14/11/2026** | (trang đã bỏ — xem Hôm nay, Báo cáo, Thu chi) | — |
 | 24 | [Màn "Hôm nay"](24-màn-hôm-nay.md) | Tóm tắt hôm qua + việc cần làm, xem nhanh trên điện thoại | Quản lý · Trưởng ca |
 
 ### Sau giai đoạn 4–8 (18/10/2026)

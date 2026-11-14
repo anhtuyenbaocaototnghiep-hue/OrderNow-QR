@@ -2,7 +2,7 @@
 
 > **Nguồn:** skill `advanced-features` §4 F-042. Quyết định: [ADR-006](../quyết-định/ADR-006-mo-rong-giai-doan-4-8.md) (dự báo dùng cách D-22).
 
-- **Status:** CONFIRMED · Triển khai: READY_FOR_REVIEW (18/10/2026)
+- **Status:** CONFIRMED · Triển khai: READY_FOR_REVIEW (18/10/2026) · **Giao diện đã bỏ 14/11/2026 ([ADR-052](../quyết-định/ADR-052-bo-trang-phan-tich.md), TASK-111):** không còn trang Phân tích (`/admin/analytics` → Thu chi); API giờ cao điểm, dự báo, so sánh kỳ, theo bàn giữ nguyên (AC-042-06). Phần "Màn hình" dưới đây là mô tả cũ.
 - **Actor:** ADMIN.
 - **Màn hình:** **Quản lý → Phân tích & menu engineering**, 4 tab:
   - **Giờ cao điểm:** bảng HTML 7 × 24 tô màu theo mức (không thư viện), ô đậm nhất viền nổi; chọn số đơn / doanh thu.
@@ -47,6 +47,7 @@
 - AC-042-03: Dự báo hôm nay = WMA 4 cùng thứ (100k, 200k, 300k, 400k → 200k).
 - AC-042-04: Bàn 3 ngồi 3 giờ doanh thu 60.000đ → bị gắn cờ.
 - AC-042-05: Xem giờ cao điểm với `from > to` → 400. _(bổ sung — TASK-057, 20/10/2026)_
+- AC-042-06: _(ADR-052, TASK-111, 14/11/2026)_ Trang Phân tích đã bỏ: `GET /admin/analytics` → `302` về `/admin/pnl` (Thu chi); thanh bên không còn "Phân tích", Cài đặt có nhóm nâng cao "Thu chi" (không còn "Phân tích & thu chi"); API menu engineering / giờ cao điểm / dự báo / so sánh / theo bàn vẫn `200` cho chủ quán, trưởng ca `403`; quyền `admin.pnl` tên "Thu chi, chi phí cố định".
 
 ## Bằng chứng
 

@@ -143,12 +143,12 @@ export const CAPABILITIES = [
   {
     key: 'admin.pnl',
     group: 'Trang Quản lý',
-    label: 'Thu chi, chi phí cố định, phân tích',
+    label: 'Thu chi, chi phí cố định',
     money: true,
     byRole: () => false,
     full: ['fixed-costs', 'reports/menu-engineering'],
     read: ['reports/pnl', 'reports/compare', 'reports/heatmap', 'reports/revenue-forecast', 'reports/tables', 'categories', 'expiry'],
-    pages: ['pnl', 'analytics'],
+    pages: ['pnl'], // ADR-052: bỏ trang Phân tích — API phân tích (menu engineering, giờ cao điểm, dự báo, so sánh, theo bàn) vẫn thuộc quyền này
   },
   {
     key: 'admin.payroll',

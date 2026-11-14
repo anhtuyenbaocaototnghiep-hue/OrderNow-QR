@@ -16,7 +16,6 @@ const NAV = [
     icon: 'chart-column',
     items: [
       ['reports', '/admin/reports', 'Báo cáo & lịch sử'],
-      ['analytics', '/admin/analytics', 'Phân tích', 'Phân tích & menu engineering'],
       ['pnl', '/admin/pnl', 'Thu chi'], // TASK-108: tên cũ "Lãi / lỗ"
     ],
   },
@@ -92,8 +91,7 @@ export const MODULE_OF = {
   reviews: 'customers',
   cash: 'finance',
   staff: 'finance',
-  analytics: 'analytics',
-  pnl: 'analytics',
+  pnl: 'analytics', // nhóm 'analytics' nay chỉ còn Thu chi (trang Phân tích đã bỏ — ADR-052)
   schedules: 'advanced',
   audit: 'advanced',
   'api-docs': 'advanced',

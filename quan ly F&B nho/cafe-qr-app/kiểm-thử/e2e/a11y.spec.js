@@ -457,8 +457,7 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
   const routes = [
     'reports',
     'today',
-    'analytics',
-    'pnl',
+    'pnl', // trang Phân tích đã bỏ (ADR-052)
     'menu',
     `menu/${items[0].menuItemId}/bom`,
     'modifiers',
@@ -525,9 +524,9 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
   await expect(A.getByRole('button', { name: 'Lưu ly tặng' })).toBeVisible();
   await check(A, 'quan-ly-loyalty-ly-tang', { narrow: true });
   await A.setViewportSize(desk.viewport);
-  // DEF-014: Phân tích, Lãi / lỗ không cuộn ngang ở 320 / 390 px (WCAG 1.4.10) — trước đây 441 / 638 px
+  // DEF-014: Thu chi (Lãi / lỗ) không cuộn ngang ở 320 / 390 px (WCAG 1.4.10) — trước đây 441 / 638 px
   // F-064: Cảnh báo có bảng món tụt lãi — flow để lại một cảnh báo giá vốn
-  for (const r of ['analytics', 'pnl', 'alerts']) {
+  for (const r of ['pnl', 'alerts']) {
     await A.goto(`/admin/${r}`);
     await A.waitForLoadState('networkidle');
     for (const w of [320, 390]) {
@@ -537,11 +536,7 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     }
     await A.setViewportSize(desk.viewport);
   }
-  // Biểu đồ dự báo + lãi / lỗ khi đang mở hộp số liệu (TASK-069): tương phản chữ trong hộp, chú thích
-  await A.goto('/admin/analytics');
-  await A.locator('.tabs button', { hasText: 'Dự báo doanh thu' }).click();
-  await A.locator('svg.fc-chart').hover();
-  await check(A, 'quan-ly-analytics-du-bao');
+  // Biểu đồ lãi / lỗ khi đang mở hộp số liệu (TASK-069): tương phản chữ trong hộp, chú thích (biểu đồ dự báo bỏ cùng trang Phân tích — ADR-052)
   await A.goto('/admin/pnl');
   await A.locator('.pnl-detail > summary').click(); // TASK-080: biểu đồ nằm trong "Xem chi tiết"
   await A.locator('svg.pnl-chart').hover();
@@ -565,11 +560,6 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     );
   };
   for (const w of [320, 390]) expect(await chartsFit(w), `biểu đồ lãi / lỗ tràn màn ${w}px`).toBe(true);
-  await A.setViewportSize(desk.viewport);
-  await A.goto('/admin/analytics');
-  await A.locator('.tabs button', { hasText: 'Dự báo doanh thu' }).click();
-  await expect(A.locator('svg.fc-chart')).toBeVisible();
-  for (const w of [320, 390]) expect(await chartsFit(w), `biểu đồ dự báo tràn màn ${w}px`).toBe(true);
   await A.setViewportSize(desk.viewport);
   // Tra cứu API: phần chi tiết dựng khi mở dòng — mở một dòng rồi quét lại (review G3 TASK-064)
   await A.goto('/admin/api-docs');

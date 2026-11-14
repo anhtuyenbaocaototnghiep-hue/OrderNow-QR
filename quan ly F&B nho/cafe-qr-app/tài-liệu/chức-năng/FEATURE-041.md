@@ -2,7 +2,7 @@
 
 > **Nguồn:** skill `advanced-features` §4 F-041. Quyết định: [ADR-006](../quyết-định/ADR-006-mo-rong-giai-doan-4-8.md) D-30.
 
-- **Status:** CONFIRMED (ADR-006 D-30) · Triển khai: READY_FOR_REVIEW (18/10/2026)
+- **Status:** CONFIRMED (ADR-006 D-30) · Triển khai: READY_FOR_REVIEW (18/10/2026) · **Giao diện đã bỏ 14/11/2026 ([ADR-052](../quyết-định/ADR-052-bo-trang-phan-tich.md), TASK-111):** không còn trang Phân tích; API `GET /api/admin/reports/menu-engineering`, `POST …/pin` giữ nguyên (chủ quán / quyền Thu chi). Phần "Màn hình" dưới đây là mô tả cũ.
 - **Actor:** ADMIN (MANAGER → 403).
 - **Màn hình:** **Quản lý → Phân tích & menu engineering → tab Menu engineering**
   - Lọc ngày (mặc định 30 ngày), danh mục, nhóm.

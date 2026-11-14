@@ -781,21 +781,21 @@ test('CRM: quầy đăng ký khách mới có người giới thiệu, thấy đ
   await expect(P.locator('.drawer').getByRole('button', { name: /Tải danh sách/ })).toBeVisible();
 });
 
-test('phân tích + dashboard: quản lý xem menu engineering, giờ cao điểm, dự báo, so sánh, theo bàn; trưởng ca mở "Hôm nay" trên điện thoại không cuộn ngang, không thấy lãi (F-041, F-042, F-043)', async () => {
+test('bỏ trang Phân tích: /admin/analytics chuyển về Thu chi, thanh bên và Cài đặt không còn "Phân tích"; dashboard: trưởng ca mở "Hôm nay" trên điện thoại không cuộn ngang, không thấy lãi (F-042 AC-042-06, F-043)', async ({
+  request,
+}) => {
+  // TASK-111 (ADR-052): trang Phân tích đã bỏ — địa chỉ cũ về Thu chi; API phân tích vẫn chạy cho chủ quán
   await P.goto('/admin/analytics');
-  await expect(P.locator('#content table')).toContainText('Lãi / món');
-  await expect(P.locator('#content .badge').first()).toBeVisible();
-  await P.locator('.tabs button', { hasText: 'Giờ cao điểm' }).click();
-  await expect(P.locator('table.heatmap')).toBeVisible();
-  await P.locator('.tabs button', { hasText: 'Dự báo doanh thu' }).click();
-  await expect(P.locator('svg.fc-chart')).toBeVisible();
-  await expect(P.locator('#content .legend')).toContainText('Dự báo');
-  await P.locator('svg.fc-chart').hover(); // TASK-069: rê chuột → hộp số liệu ngày gần nhất
-  await expect(P.locator('.chart-tip')).toBeVisible();
-  await P.locator('.tabs button', { hasText: 'So sánh kỳ' }).click();
-  await expect(P.locator('.kpi', { hasText: 'Doanh thu thuần' })).toBeVisible();
-  await P.locator('.tabs button', { hasText: 'Theo bàn' }).click();
-  await expect(P.locator('#content table')).toContainText('Doanh thu / giờ ngồi');
+  await expect(P).toHaveURL(/\/admin\/pnl$/);
+  await expect(P.locator('#page-title')).toHaveText('Thu chi');
+  const side = P.locator('#side');
+  await expect(side.locator('a[href="/admin/pnl"]')).toHaveCount(1);
+  await expect(side.locator('a[href="/admin/analytics"]')).toHaveCount(0);
+  await expect(side).not.toContainText('Phân tích');
+  await P.goto('/admin/settings');
+  await expect(P.getByRole('checkbox', { name: /^Thu chi/ })).toHaveCount(1);
+  await expect(P.locator('#content')).not.toContainText('Phân tích & thu chi');
+  expect(Array.isArray((await apiAs(request, 'get', '/api/admin/reports/menu-engineering')).items)).toBe(true); // API giữ (ADR-052)
 
   await P.goto('/admin/today');
   await expect(P.locator('.today-card', { hasText: 'Doanh thu hôm qua' })).toContainText('Lãi gộp ước tính');

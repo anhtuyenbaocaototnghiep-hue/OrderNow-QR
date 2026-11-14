@@ -1,5 +1,7 @@
 # 23. Phân tích & menu engineering
 
+> **Đã bỏ (14/11/2026 — ADR-052):** chủ quán thấy trang này không cần nên trang **Phân tích** không còn ở trang Quản lý; mở địa chỉ cũ `/admin/analytics` sẽ về trang **Thu chi**. Xem doanh thu, món bán chạy ở **Hôm nay**, **Báo cáo & lịch sử**; lãi / lỗ ở **Thu chi**. Nội dung dưới đây chỉ để tra cứu.
+
 > Trang giúp chủ quán ra quyết định từ số liệu bán hàng:
 >
 > - **Menu engineering:** món nào nên giữ, nên đẩy, nên tăng giá, nên bỏ.

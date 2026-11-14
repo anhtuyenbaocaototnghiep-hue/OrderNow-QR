@@ -56,8 +56,7 @@ const PAGES = {
   '/admin/pnl': 'admin/pnl.html',
   // Giai đoạn 7 — CRM
   '/admin/loyalty': 'admin/loyalty.html',
-  // Giai đoạn 8 — phân tích + dashboard chủ quán (/admin/today: quản lý + trưởng ca)
-  '/admin/analytics': 'admin/analytics.html',
+  // Giai đoạn 8 — dashboard chủ quán (/admin/today: quản lý + trưởng ca). Trang Phân tích đã bỏ (ADR-052) — xem chuyển hướng bên dưới
   '/admin/today': 'admin/today.html',
   '/admin/login': 'admin/login.html', // F-080: đăng nhập Quản lý riêng (SCR-56)
   '/admin/api-docs': 'admin/api-docs.html', // F-052 tra cứu API
@@ -70,6 +69,8 @@ for (const [route, file] of Object.entries(PAGES)) {
 }
 // F-080: địa chỉ chủ quán lưu — vào Hôm nay (chưa đăng nhập → /admin/login; không có Hôm nay → trang Quản lý đầu tiên được mở)
 pagesRouter.get('/admin', (_req, res) => res.redirect('/admin/today'));
+// TASK-111 (ADR-052 D-225): bỏ trang Phân tích — địa chỉ cũ (đã lưu / đánh dấu) về trang Thu chi (cùng quyền admin.pnl)
+pagesRouter.get('/admin/analytics', (_req, res) => res.redirect('/admin/pnl'));
 
 export function notFoundPage(_req, res) {
   res.status(404).sendFile('404.html', { root: publicDir });
