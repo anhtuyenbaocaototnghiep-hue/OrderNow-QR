@@ -2,6 +2,7 @@
 
 - **Trạng thái:** ACCEPTED (08/11/2026). Chủ dự án 07/11/2026: "nâng cấp đồ án F&B về mặt UX UI trở nên mượt mà sang trọng đẳng cấp dễ thao tác mà không bị quá AI hóa"; đề xuất 4 đợt (nền tảng → màn khách → máy quầy → trang Quản lý), chủ dự án trả lời "ok" → làm đợt 1 + 2 trước, gửi ảnh trước / sau rồi mới làm đợt 3, 4.
 - **Sửa sau khi chủ dự án xem (08/11/2026):** chủ dự án mở thực đơn trên máy tính 1920 px: "bạn thiết kế khó nhìn quá làm lại đi" → **D-195** thay một phần D-188, D-189, D-190, D-193 (bảng dưới). Phần chuyển động (D-191), phản hồi tại chỗ (D-192), quy tắc "không AI hóa" (D-194) giữ nguyên.
+- **Thay một phần (16/11/2026):** phần "Máy tính" của D-195 (cột 720 / 1040 px, thẻ món 2 cột từ 1024 px) được thay bằng [ADR-055](ADR-055-man-khach-chi-cho-dien-thoai.md) D-230 — màn khách chỉ thiết kế cho điện thoại (cột tối đa 480 px ở giữa màn rộng).
 - **Bối cảnh:**
   - Giao diện "Mộc" (ADR-012, ADR-013) đã có token màu, phông tự lưu, biểu tượng SVG, đạt WCAG AA. Nhưng khảo sát 13 màn (khách 390 px, quầy / quản lý 1366 px — ảnh chụp ngày 07/11/2026) cho thấy các dấu hiệu "giao diện do AI làm":
     - Nền kem + tiêu đề Lora + nâu đất — đúng bộ màu mặc định của giao diện AI hiện nay; bộ dò Impeccable dự án dùng cũng báo `cream-palette` (trước để ngoại lệ — ADR-013 D-57).
