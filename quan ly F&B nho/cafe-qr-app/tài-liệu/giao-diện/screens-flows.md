@@ -604,3 +604,9 @@ flowchart LR
 - **SCR-01 `/t/{qrToken}` sau khi vào nhóm** (điện thoại, tối đa 480 px): tên quán (h1) + ghim địa chỉ · khung màu espresso → nâu rang: "GỌI MÓN TẠI BÀN" / **Chọn món ngay trên điện thoại** / "Pha xong, nhân viên mang ra tận bàn" (hoặc "quán mời bạn ra quầy nhận") / chip ưu đãi đang chạy, biểu tượng ly cà phê · lời chào có biểu tượng mặt trời / trăng: "Chào buổi …, **Quý khách**" (hoặc tên hội viên che) · "Quán sẽ mang món ra cho bạn tại [Bàn 05]" (chip viền) · dải quán tạm ngưng / chưa mở ca · ô hội viên ("Nhập SĐT để nhận ưu đãi" / thẻ hội viên) · lưới 3 ô: **Gọi thanh toán** (ví — "Chưa có món" / "Tạm tính …" / "Đã gọi…"), **Gọi nhân viên** (bàn tay — hộp chọn nhanh), **Đánh giá** (ngôi sao — hộp giải thích) · nút lớn **Xem thực đơn – Gọi món** (dao nĩa, ›) · "Đơn của bạn · N đơn đã gửi ›" khi có đơn. 320 px: các ô vẫn 3 cột, chữ xuống dòng, không cuộn ngang.
 - **SCR-02 thực đơn:** tên quán ở đầu trang là liên kết về màn chào (khi bật). **SCR-05 theo dõi đơn:** `?act=pay` mở sẵn hộp "Gọi thanh toán".
 - **SCR-33 Cài đặt → Màn gọi món của khách:** ô "Màn chào khi khách quét QR" (mặc định bật) + giải thích.
+
+## TASK-114 — Màn khách chỉ cho điện thoại — SCR-01, 02, 03, 05, 48, 49, 50 (F-093, ADR-055, 16/11/2026)
+
+- **Mọi trang khách** là một cột tối đa 480 px. Điện thoại: như cũ. Máy tính bảng / máy tính: cột ở giữa màn, hai bên nền xám ấm đậm (`#ddd7cf`), cột có viền tóc + bóng mảnh — nhìn như màn điện thoại đặt giữa màn hình.
+- Đầu trang espresso, thanh nhóm món, thanh giỏ nâu rang, thanh nút đáy ở Theo dõi đơn, bảng chọn món / giỏ (kéo từ đáy), hộp thoại, thông báo đều gọn trong cột. Thẻ món luôn một cột (bỏ 2 cột trên máy tính của D-195).
+- Màn quầy Bán mang đi / Gọi món tại bàn không đổi.

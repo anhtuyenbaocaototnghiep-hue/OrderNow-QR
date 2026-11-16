@@ -4385,3 +4385,87 @@ test('màn chào khi quét QR: quán bật ở Cài đặt → điện thoại q
     await clearTables(request, ['W1', 'W2']);
   }
 });
+
+// ---------- TASK-114 (F-093, ADR-055): màn khách chỉ cho điện thoại ----------
+test('màn khách chỉ cho điện thoại: máy tính 1366 px — màn chào, thực đơn, giỏ, theo dõi đơn nằm trong một cột 480 px ở giữa, hai bên nền khác màu, thẻ món một cột, thanh giỏ / bảng giỏ / thanh nút đáy trong cột; điện thoại 390 px — cột đủ bề ngang, không cuộn ngang (F-093, AC-093-01, AC-093-02)', async ({
+  request,
+}) => {
+  await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: true });
+  const shift = await apiAs(request, 'get', '/api/shifts/current');
+  if (!shift.shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 }); // gửi đơn cần ca đang mở
+  const k1 = await apiAs(request, 'post', '/api/admin/tables', { code: 'K1' });
+  const k2 = await apiAs(request, 'post', '/api/admin/tables', { code: 'K2' });
+  const desk = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  const phone = await browser.newContext(phoneOpts);
+  // Khung của phần tử (px, làm tròn) và kiểm "nằm trọn trong cột" = trong khung của body
+  const box = (page, sel) =>
+    page
+      .locator(sel)
+      .first()
+      .evaluate((e) => {
+        const r = e.getBoundingClientRect();
+        return { l: Math.round(r.left), r: Math.round(r.right), w: Math.round(r.width) };
+      });
+  const inColumn = async (page, sel) => {
+    const col = await box(page, 'body');
+    const b = await box(page, sel);
+    expect(b.l, sel + ' mép trái').toBeGreaterThanOrEqual(col.l - 1);
+    expect(b.r, sel + ' mép phải').toBeLessThanOrEqual(col.r + 1);
+  };
+  try {
+    // Máy tính 1366 px: màn chào là một cột 480 px giữa màn, hai bên nền khác màu
+    const W = await desk.newPage();
+    watch(W, 'may-tinh');
+    await W.goto('/t/' + k1.qrToken);
+    await expect(W.locator('.c-home')).toBeVisible();
+    const col = await box(W, 'body');
+    expect(col.w).toBe(480);
+    const vw = await W.evaluate(() => globalThis.document.documentElement.clientWidth);
+    expect(Math.abs(col.l - (vw - col.r)), 'cột nằm giữa').toBeLessThanOrEqual(1);
+    const [htmlBg, bodyBg] = await W.evaluate(() => [
+      globalThis.getComputedStyle(globalThis.document.documentElement).backgroundColor,
+      globalThis.getComputedStyle(globalThis.document.body).backgroundColor,
+    ]);
+    expect(htmlBg).not.toBe('rgba(0, 0, 0, 0)');
+    expect(htmlBg).not.toBe(bodyBg);
+    await inColumn(W, '.c-home');
+
+    // Thực đơn: đầu trang + thanh nhóm món rộng đúng cột, thẻ món một cột; thanh giỏ, bảng giỏ trong cột
+    await W.getByRole('link', { name: 'Xem thực đơn – Gọi món' }).click();
+    await expect(W).toHaveURL(/\/menu$/);
+    await expect(W.locator('.c-item').nth(1)).toBeVisible();
+    expect(await box(W, '.c-header')).toEqual(col);
+    expect(await box(W, '#tabs')).toEqual(col);
+    const lefts = await W.locator('.c-item').evaluateAll((els) => [...new Set(els.map((e) => Math.round(e.getBoundingClientRect().left)))]);
+    expect(lefts, 'mọi thẻ món thẳng một cột').toHaveLength(1);
+    await W.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).first().locator('.add-btn').click();
+    await expect(W.locator('#cartbar')).toBeVisible();
+    await inColumn(W, '#cartbar');
+    await W.click('#open-cart');
+    await expect(W.locator('.sheet')).toBeVisible();
+    await inColumn(W, '.sheet');
+
+    // Theo dõi đơn: thanh nút đáy (Gọi thêm món / Gọi thanh toán) trong cột
+    await W.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(W).toHaveURL(/\/track$/);
+    await expect(W.locator('#actions')).toBeVisible();
+    await inColumn(W, '#actions');
+
+    // Điện thoại 390 px: cột đủ bề ngang (như trước), thanh giỏ trải hết, không cuộn ngang
+    const M = await phone.newPage();
+    watch(M, 'dien-thoai');
+    await M.goto('/t/' + k2.qrToken);
+    await M.getByRole('link', { name: 'Xem thực đơn – Gọi món' }).click();
+    await expect(M).toHaveURL(/\/menu$/);
+    await M.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).first().locator('.add-btn').click();
+    await expect(M.locator('#cartbar')).toBeVisible();
+    expect(await box(M, 'body')).toEqual({ l: 0, r: 390, w: 390 });
+    expect(await box(M, '#cartbar')).toEqual({ l: 0, r: 390, w: 390 });
+    expect(await M.evaluate(() => globalThis.document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  } finally {
+    await desk.close();
+    await phone.close();
+    await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: false });
+    await clearTables(request, ['K1', 'K2']);
+  }
+});

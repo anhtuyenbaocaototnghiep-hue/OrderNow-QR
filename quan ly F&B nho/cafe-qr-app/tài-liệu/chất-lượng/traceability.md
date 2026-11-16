@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 491 test, sửa lúc 2026-11-16 06:54 UTC
-- `npm run test:e2e` (JSON): 98 test, sửa lúc 2026-11-16 07:00 UTC
+- `npm test` (JUnit): 491 test, sửa lúc 2026-11-16 11:22 UTC
+- `npm run test:e2e` (JSON): 99 test, sửa lúc 2026-11-16 11:36 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 199 |
-| Acceptance Criteria | 545 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 545 |
+| User Story | 200 |
+| Acceptance Criteria | 547 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 547 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -641,4 +641,6 @@
 | AC-092-02 | TC-092-02 | F-092 | US-092-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER, MOD-NOTIFY | SCR-01, SCR-02, SCR-33 | BR-024 | E2E: `flow.spec.js` › màn chào khi quét QR: quán bật ở Cài đặt → điện thoại quét QR thấy tên + địa chỉ quán, lời chào theo giờ, "Quán sẽ mang món ra cho bạn tại Bàn W1", ô hội viên, Gọi thanh toán / Gọi nhân viên / Đánh giá, nút lớn "Xem thực đơn – Gọi món"; chưa có món thì Gọi thanh toán nhắc gọi món trước; Gọi nhân viên tới quầy; gọi món xong quay lại màn chào thấy "Đơn của bạn", Gọi thanh toán mở thẳng hộp xác nhận; tắt → quét QR vào thẳng thực đơn (F-092, AC-092-02, AC-092-03) — **PASS** | **PASS** |
 | AC-092-03 | TC-092-03 | F-092 | US-092-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER, MOD-NOTIFY | SCR-01, SCR-02, SCR-33 | BR-024 | E2E: `flow.spec.js` › màn chào khi quét QR: quán bật ở Cài đặt → điện thoại quét QR thấy tên + địa chỉ quán, lời chào theo giờ, "Quán sẽ mang món ra cho bạn tại Bàn W1", ô hội viên, Gọi thanh toán / Gọi nhân viên / Đánh giá, nút lớn "Xem thực đơn – Gọi món"; chưa có món thì Gọi thanh toán nhắc gọi món trước; Gọi nhân viên tới quầy; gọi món xong quay lại màn chào thấy "Đơn của bạn", Gọi thanh toán mở thẳng hộp xác nhận; tắt → quét QR vào thẳng thực đơn (F-092, AC-092-02, AC-092-03) — **PASS** | **PASS** |
 | AC-092-04 | TC-092-04 | F-092 | US-092-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER, MOD-NOTIFY | SCR-01, SCR-02, SCR-33 | BR-024 | E2E: `a11y.spec.js` › khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn nhóm, màn cảm ơn + đánh giá — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px — **PASS** | **PASS** |
+| AC-093-01 | TC-093-01 | F-093 | US-093-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05 | — | E2E: `flow.spec.js` › màn khách chỉ cho điện thoại: máy tính 1366 px — màn chào, thực đơn, giỏ, theo dõi đơn nằm trong một cột 480 px ở giữa, hai bên nền khác màu, thẻ món một cột, thanh giỏ / bảng giỏ / thanh nút đáy trong cột; điện thoại 390 px — cột đủ bề ngang, không cuộn ngang (F-093, AC-093-01, AC-093-02) — **PASS** | **PASS** |
+| AC-093-02 | TC-093-02 | F-093 | US-093-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05 | — | E2E: `flow.spec.js` › màn khách chỉ cho điện thoại: máy tính 1366 px — màn chào, thực đơn, giỏ, theo dõi đơn nằm trong một cột 480 px ở giữa, hai bên nền khác màu, thẻ món một cột, thanh giỏ / bảng giỏ / thanh nút đáy trong cột; điện thoại 390 px — cột đủ bề ngang, không cuộn ngang (F-093, AC-093-01, AC-093-02) — **PASS** | **PASS** |
 

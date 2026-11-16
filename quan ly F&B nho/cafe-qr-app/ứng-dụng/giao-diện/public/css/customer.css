@@ -1,15 +1,36 @@
-/* Giao diện khách — mobile-first (NFR-004), màn hình ≥ 360px. */
+/* Giao diện khách — chỉ thiết kế cho điện thoại (NFR-004; ADR-055 D-230 thay phần máy tính của D-195).
+   Mọi trang khách là MỘT cột rộng tối đa --phone: điện thoại → cột = cả màn; màn rộng hơn → cột ở giữa, hai bên nền đậm hơn.
+   Thanh giỏ, thanh nút đáy, bảng chọn, hộp thoại, thông báo đều nằm trong cột (xem các khối "trong cột" bên dưới). */
 body.customer {
-  --page: 720px; /* bề ngang cột nội dung: đầu trang, nhóm món, thực đơn, thanh giỏ cùng thẳng một cột */
-  --gutter: max(1rem, calc((100% - var(--page)) / 2 + 1rem));
+  --phone: 480px;
+  --page: var(--phone); /* .c-menu và các khối cũ đọc --page */
+  --gutter: 1rem;
+  --phone-inset: max(0px, calc(50% - var(--phone) / 2)); /* mép trái / phải của cột so với khung nhìn — cho phần tử position: fixed */
+  max-width: var(--phone);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin-inline: auto;
   background: var(--c-bg);
   padding-bottom: calc(96px + env(safe-area-inset-bottom));
 }
-/* Máy tính / máy tính bảng ngang: cột rộng hơn, thẻ món xếp 2 cột (không để một dải hẹp giữa màn trống) */
-@media (min-width: 1024px) {
-  body.customer {
-    --page: 1040px;
+/* Màn rộng hơn điện thoại: cột nổi trên nền xám ấm đậm, viền tóc + bóng mảnh — nhìn như màn điện thoại đặt giữa màn hình */
+@media (min-width: 481px) {
+  html:has(> body.customer) {
+    --c-phone-surround: #ddd7cf;
+    background: var(--c-phone-surround);
   }
+  body.customer {
+    box-shadow:
+      0 0 0 1px var(--c-border),
+      0 12px 48px -16px rgba(34, 26, 20, 0.28);
+  }
+}
+/* Bảng chọn kéo từ đáy và hộp thoại: không rộng hơn cột */
+body.customer .sheet {
+  width: min(var(--phone), 100%);
+}
+body.customer .modal {
+  width: min(calc(var(--phone) - 2rem), 100%);
 }
 /* Vùng chạm trên điện thoại ≥ 44 px (ADR-012 D-54) */
 body.customer .btn:not(.btn-sm):not(.btn-lg) {
@@ -167,18 +188,6 @@ body.customer .c-tabs .chip.active {
   border-radius: 10px;
   background: var(--c-surface-2);
 }
-/* Máy tính: thẻ món 2 cột; tiêu đề nhóm, ưu đãi, "lần trước bạn gọi" trải hết bề ngang */
-@media (min-width: 1024px) {
-  body.customer .c-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 0.75rem;
-    align-items: stretch;
-  }
-  body.customer .c-section > :not(.c-item) {
-    grid-column: 1 / -1;
-  }
-}
 .c-item.soldout {
   opacity: 0.55;
 }
@@ -283,8 +292,8 @@ body.customer .c-tabs .chip.active {
   font-variant-numeric: tabular-nums;
 }
 
-/* Thanh giỏ nổi nâu rang, nằm giữa màn (máy tính không còn dạt trái); thêm món → thanh nảy nhẹ, số món / tổng tiền đổi ngay
-   (thay thông báo xanh — ADR-042 D-192) */
+/* Thanh giỏ nổi nâu rang; thêm món → thanh nảy nhẹ, số món / tổng tiền đổi ngay (thay thông báo xanh — ADR-042 D-192).
+   Trang khách: nằm trong cột điện thoại (D-230) */
 .c-cartbar {
   position: fixed;
   left: 0;
@@ -605,6 +614,12 @@ body.customer .c-tabs .chip.active {
 .c-actions .btn {
   flex: 1;
   padding-inline: 0.6rem;
+}
+/* Thanh giỏ và thanh nút đáy của trang khách: trong cột điện thoại (D-230); màn quầy dùng chung lớp này vẫn trải hết bề ngang */
+body.customer .c-cartbar,
+body.customer .c-actions {
+  left: var(--phone-inset);
+  right: var(--phone-inset);
 }
 @media (max-width: 340px) {
   .c-actions .btn {
