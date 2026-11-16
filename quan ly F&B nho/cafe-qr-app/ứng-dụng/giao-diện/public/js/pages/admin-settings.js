@@ -274,7 +274,7 @@ function render(s) {
           'span',
           {},
           el('strong', {}, 'Màn chào khi khách quét QR'),
-          ' — tên quán, bàn, nút Gọi thanh toán / Gọi nhân viên / Đánh giá, nút lớn "Xem thực đơn – Gọi món"',
+          ' — khách thấy quán, bàn đang ngồi, nút Gọi thanh toán / Gọi nhân viên / Đánh giá và nút lớn "Xem thực đơn – Gọi món" trước khi vào thực đơn',
         ),
       ),
       el('p', { class: 'small muted' }, 'Tắt: quét QR là vào thẳng thực đơn (nhanh hơn 1 chạm). Địa chỉ quán trên màn chào lấy từ ô Địa chỉ ở trên.'),

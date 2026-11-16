@@ -47,7 +47,7 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
     const s = await shopEverywhere();
     assert.deepEqual(s.settings, { name: config.shop.name, address: config.shop.address });
     assert.deepEqual(s.me, { name: config.shop.name, address: config.shop.address });
-    assert.deepEqual(s.menu, { name: config.shop.name });
+    assert.deepEqual(s.menu, { name: config.shop.name, address: config.shop.address }); // F-092: thực đơn công khai có cả địa chỉ (màn chào)
     assert.deepEqual(s.receipt, { name: config.shop.name, address: config.shop.address });
   });
 
@@ -65,7 +65,7 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
     const want = { name: 'Cà phê Mộc Test', address: '12 Lê Lợi, phường Bến Nghé' };
     assert.deepEqual(s.settings, want);
     assert.deepEqual(s.me, want);
-    assert.deepEqual(s.menu, { name: want.name });
+    assert.deepEqual(s.menu, want); // F-092: màn chào khi quét QR hiện cả địa chỉ
     assert.deepEqual(s.receipt, want);
     // Lần đổi thứ hai: nhật ký có tên cũ (BeforeJson) → tên mới (AfterJson)
     assert.equal((await call(admin, 'put', '/api/admin/settings', { shopName: 'Cà phê Mộc 2' })).status, 200);
