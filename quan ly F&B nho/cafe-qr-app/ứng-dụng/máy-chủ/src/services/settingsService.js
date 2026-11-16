@@ -67,6 +67,9 @@ function toSettings(map) {
     serveMode: map.get('pos.serve_mode') === 'COUNTER' ? 'COUNTER' : 'TABLE',
     // F-083 (ADR-041 D-185): màn gọi món của khách — bấm "+" mở bảng chọn cho MỌI món (mặc định bật; tắt: món không tùy chọn thêm ngay)
     menuSheetAll: map.get('menu.sheet_all') !== 'false',
+    // F-092 (ADR-054 D-228): khách quét QR → màn chào của quán (tên, bàn, gọi thanh toán / nhân viên, xem thực đơn) — mặc định bật;
+    // tắt: vào thẳng thực đơn như trước
+    guestWelcome: map.get('guest.welcome') !== 'false',
     // F-087 (ADR-048 D-212): tự đóng bàn trống (khách quét QR rồi không gọi món) — 0 = tắt, 15 / 30 / 60 phút; mặc định 30
     idleCloseMinutes: IDLE_CLOSE_CHOICES.includes(num(map.get('tables.idle_close_minutes'), 30)) ? num(map.get('tables.idle_close_minutes'), 30) : 30,
     staffMaxAmount: num(map.get('discount.staff_max_amount'), 20000),
@@ -170,6 +173,7 @@ const KEYS = {
   singleScreen: 'pos.single_screen',
   serveMode: 'pos.serve_mode',
   menuSheetAll: 'menu.sheet_all',
+  guestWelcome: 'guest.welcome', // F-092
   idleCloseMinutes: 'tables.idle_close_minutes',
   staffMaxAmount: 'discount.staff_max_amount',
   etaBaseSeconds: 'kitchen.base_seconds',

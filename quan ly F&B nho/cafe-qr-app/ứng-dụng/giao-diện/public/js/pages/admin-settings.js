@@ -202,6 +202,8 @@ function render(s) {
   );
   // F-083 (ADR-041): màn gọi món của khách — "+" mở bảng chọn cho mọi món
   const sheetAllCheck = el('input', { type: 'checkbox', name: 'menuSheetAll', id: 'sheet-all', checked: s.menuSheetAll });
+  // F-092 (ADR-054): màn chào khi khách quét QR
+  const welcomeCheck = el('input', { type: 'checkbox', name: 'guestWelcome', id: 'guest-welcome', checked: s.guestWelcome });
   // F-087 (ADR-048 D-212): tự đóng bàn khách quét QR nhưng không gọi món
   const idleClose = el(
     'select',
@@ -264,6 +266,18 @@ function render(s) {
     ),
     card(
       'Màn gọi món của khách',
+      el(
+        'label',
+        { class: 'check' },
+        welcomeCheck,
+        el(
+          'span',
+          {},
+          el('strong', {}, 'Màn chào khi khách quét QR'),
+          ' — tên quán, bàn, nút Gọi thanh toán / Gọi nhân viên / Đánh giá, nút lớn "Xem thực đơn – Gọi món"',
+        ),
+      ),
+      el('p', { class: 'small muted' }, 'Tắt: quét QR là vào thẳng thực đơn (nhanh hơn 1 chạm). Địa chỉ quán trên màn chào lấy từ ô Địa chỉ ở trên.'),
       el(
         'label',
         { class: 'check' },
@@ -466,6 +480,7 @@ function render(s) {
                 singleScreen: singleScreenCheck.checked, // F-088
                 serveMode: serveMode.value, // F-088
                 menuSheetAll: sheetAllCheck.checked, // F-083
+                guestWelcome: welcomeCheck.checked, // F-092
                 idleCloseMinutes: Number(idleClose.value), // F-087
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,

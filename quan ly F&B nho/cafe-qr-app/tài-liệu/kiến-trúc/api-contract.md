@@ -875,3 +875,9 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `POST /api/admin/users`, `PUT /api/admin/users/{id}`: thêm `phone` (chuỗi, không bắt buộc). Nhận `0xxxxxxxxx` / `+84…` / `84…` (bỏ dấu cách, chấm, gạch, ngoặc) → lưu `+84` + 9 chữ số; sai → `400 VALIDATION_ERROR` (`fields[].path = "phone"`, "Số điện thoại không hợp lệ — ví dụ 0912 345 678"). `PUT` không gửi `phone` → giữ số cũ; `''` / `null` → xóa. Phản hồi có `phone` (`'0xxxxxxxxx' | null`).
 - `GET /api/admin/users`: chủ quán nhận thêm `phone`; người khác gọi được danh sách (quyền Nhân sự / Lương) **không** có trường `phone`.
 - Trang mới `/admin/permissions` dùng API sẵn có: `GET /api/admin/users`, `GET / PUT /api/admin/users/{id}/grants`, `GET /api/admin/access-requests`, `POST …/approve`, `POST …/reject` (F-079 — không đổi).
+
+## Bổ sung F-092 — màn chào khi quét QR (ADR-054, TASK-113, 16/11/2026)
+
+- `GET /api/menu` (công khai): `shop.address` (`string | null` — địa chỉ ở Cài đặt, in trên hóa đơn); `ui.welcome` (boolean — quán bật "Màn chào khi khách quét QR").
+- `GET / PUT /api/admin/settings`: `guestWelcome` (boolean, mặc định `true`). Quản lý cửa hàng đổi được (`STORE_MGR_SETTINGS`); sai kiểu → `400 VALIDATION_ERROR`.
+- Màn chào gọi lại API sẵn có: `POST /api/sessions/scan`, `GET /api/sessions/{id}`, `POST /api/sessions/{id}/call-staff`; "Gọi thanh toán" sang `/t/{qr}/track?act=pay` (trang tự mở hộp xác nhận rồi gọi `POST /api/sessions/{id}/request-payment`).

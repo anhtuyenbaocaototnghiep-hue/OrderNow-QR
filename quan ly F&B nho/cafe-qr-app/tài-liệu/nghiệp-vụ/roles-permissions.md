@@ -225,3 +225,7 @@ Thẻ của vùng Quầy hiện theo vị trí: Bán mang đi ← Thu ngân, G�
 | Thêm / sửa số điện thoại tài khoản; thấy cột Số điện thoại | Có | — (đọc danh sách tài khoản để xếp lịch nhưng không nhận SĐT) | — |
 
 Test: `staff-phone.test.js` (AC-091-01), E2E AC-091-02, AC-091-03.
+
+## 4.12. Bổ sung F-092 — màn chào khi quét QR (ADR-054, 16/11/2026)
+
+Cài đặt "Màn chào khi khách quét QR" (`guestWelcome`): chủ quán và quản lý cửa hàng đổi được (như "+" mở bảng chọn — F-083); trang Cài đặt vẫn chỉ chủ quán mở. Khách không cần đăng nhập; các việc trên màn chào (gọi nhân viên, gọi thanh toán, hội viên) giữ quyền / giới hạn như F-005, F-014, F-021. Test: `guest-welcome.test.js` (AC-092-01).

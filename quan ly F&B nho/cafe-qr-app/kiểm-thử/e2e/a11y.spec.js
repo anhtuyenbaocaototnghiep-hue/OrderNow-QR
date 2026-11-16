@@ -285,6 +285,22 @@ test.afterAll(async ({ request }) => {
 test('khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn nhóm, màn cảm ơn + đánh giá — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px', async ({
   request,
 }) => {
+  // F-092 (TASK-113): màn chào khi quét QR — bật tạm, quét một bàn riêng, quét khả năng tiếp cận (cả 320 / 390 px), tắt lại
+  const admin = { Authorization: `Bearer ${adminToken}` };
+  await request.put('/api/admin/settings', { headers: admin, data: { guestWelcome: true } });
+  const welcomeTable = await (await request.post('/api/admin/tables', { headers: admin, data: { code: 'AW1' } })).json();
+  const wctx = await browser.newContext(phone);
+  try {
+    const W = await wctx.newPage();
+    await W.goto(`/t/${welcomeTable.qrToken}`);
+    await expect(W.locator('.c-home .h-tile')).toHaveCount(3);
+    await check(W, 'khach-man-chao', { narrow: true });
+    await focusVisible(W, 'khach-man-chao');
+  } finally {
+    await wctx.close();
+    await request.put('/api/admin/settings', { headers: admin, data: { guestWelcome: false } });
+  }
+
   const ctx = await browser.newContext(phone);
   const C = await ctx.newPage();
   await C.goto(`/t/${table.qrToken}`);

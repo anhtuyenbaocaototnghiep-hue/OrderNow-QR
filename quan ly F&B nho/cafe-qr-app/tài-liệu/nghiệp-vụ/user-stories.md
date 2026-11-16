@@ -232,6 +232,7 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-090-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn cho phép hoặc không cho phép riêng từng việc cho một người bằng một công tắc ngay trong hộp tài khoản ("Quyền nâng cao"), để cấp thêm / bỏ bớt nhanh, ít lựa chọn khó hiểu. | AC-090-02, AC-090-03, AC-090-04 | — | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | F-090 | DONE |
 | US-091-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn một trang riêng cho quyền nâng cao — thấy ai đang xin quyền, chọn từng người để cho phép / không cho phép từng việc — để hộp tài khoản gọn và việc phân quyền ở một chỗ. | AC-091-03, AC-091-04 | — | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-58, SCR-20 | F-091 | DONE |
 | US-091-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn lưu số điện thoại của từng nhân viên trong tài khoản và bấm gọi ngay từ danh sách, để liên lạc khi cần mà không phải tìm ở chỗ khác. | AC-091-01, AC-091-02, AC-091-04 | BR-024 | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | F-091 | DONE |
+| US-092-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách, khi quét QR trên bàn tôi muốn thấy ngay quán nào, bàn nào, món sẽ mang ra đâu, và các việc hay cần (gọi thanh toán, gọi nhân viên, nhập SĐT tích điểm, xem thực đơn) trên một màn hình, để không phải tìm nút ở nhiều trang. | AC-092-01, AC-092-02, AC-092-03, AC-092-04 | BR-024 | UC-01 | MOD-ORDER, MOD-NOTIFY | SCR-01, SCR-02, SCR-33 | F-092 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

@@ -143,6 +143,7 @@ operationsRouter.put('/settings', async (req, res) => {
       singleScreen: z.boolean().optional(), // F-088: màn quầy một màn hình
       serveMode: z.enum(['TABLE', 'COUNTER'], { message: 'Chọn "nhân viên mang ra bàn" hoặc "khách nhận tại quầy"' }).optional(), // F-088
       menuSheetAll: z.boolean().optional(), // F-083: bấm "+" mở bảng chọn cho mọi món (màn khách)
+      guestWelcome: z.boolean().optional(), // F-092: màn chào khi khách quét QR
       // F-087: tự đóng bàn trống — Tắt / 15 / 30 / 60 phút
       idleCloseMinutes: z.coerce
         .number()

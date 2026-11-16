@@ -1,18 +1,35 @@
 // S-01 — Vào bàn: quét QR → phiên mới / vào lại phiên cũ / chọn Gộp chung nhóm hay Tạo đơn cá nhân (FEATURE-001, BR-008).
+// F-092 (ADR-054): có nhóm rồi → màn chào của quán (tên, địa chỉ, lời chào, bàn, hội viên, Gọi thanh toán / Gọi nhân viên / Đánh giá,
+// nút lớn "Xem thực đơn – Gọi món"); quán tắt màn chào ở Cài đặt → vào thẳng thực đơn như trước.
 import { api } from '../api.js';
-import { $, clear, el, errorMessage, setBusy, time, toast } from '../ui.js';
+import { $, clear, el, errorMessage, modal, money, setBusy, time, toast } from '../ui.js';
+import { mountMemberBox } from '../member-box.js';
+import { callStaffSheet } from '../call-staff.js';
 import { clearSessionId, qrToken, setFlash, setSessionId, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
 
 const qr = qrToken();
 const app = $('#app');
 
-const flash = takeFlash();
-if (flash) toast(flash.message, flash.type, 6000);
+// Lời nhắn từ trang trước (vd "bàn trống đã đóng, giỏ vẫn còn" — F-086): báo ở màn chào / màn chọn; vào thẳng thực đơn thì chuyển tiếp
+let pendingFlash = takeFlash();
+function showFlash() {
+  if (pendingFlash) toast(pendingFlash.message, pendingFlash.type, 6000);
+  pendingFlash = null;
+}
 
-function enter(sessionId) {
+/** Đã có nhóm: quán bật màn chào → màn chào; tắt (hoặc không tải được) → vào thẳng thực đơn như trước. */
+async function enter(sessionId) {
   setSessionId(qr, sessionId);
-  location.replace(`/t/${qr}/menu`);
+  const [menu, session] = await Promise.all([api('/api/menu').catch(() => null), api(`/api/sessions/${sessionId}`).catch(() => null)]);
+  if (!menu?.ui?.welcome || !session || session.status === 'CLOSED') {
+    if (pendingFlash) setFlash(pendingFlash.message, pendingFlash.type);
+    return location.replace(`/t/${qr}/menu`);
+  }
+  showFlash();
+  const later = takeFlash(); // lời nhắn đặt ngay trên trang này (vd vừa chuyển bàn)
+  if (later) toast(later.message, later.type, 6000);
+  showHome(menu, session);
 }
 
 function loading(text = 'Đang mở thực đơn…') {
@@ -23,11 +40,8 @@ async function start() {
   loading();
   try {
     const res = await api('/api/sessions/scan', { method: 'POST', body: { qrToken: qr } });
-    if (res.state === 'NEW' || res.state === 'MEMBER') {
-      // Vào thẳng thực đơn: chuyển tiếp lời nhắn (vd "bàn trống đã đóng, giỏ vẫn còn") — trang này chuyển đi ngay, khách không kịp đọc (F-086)
-      if (flash) setFlash(flash.message, flash.type);
-      return enter(res.session.sessionId);
-    }
+    if (res.state === 'NEW' || res.state === 'MEMBER') return enter(res.session.sessionId);
+    showFlash();
     if (res.state === 'ELSEWHERE') return showElsewhere(res); // F-086
     showChoice(res);
   } catch (err) {
@@ -199,6 +213,7 @@ async function createOwn(button, silent = false) {
 }
 
 function showInvalid() {
+  showFlash();
   clear(
     app,
     el(
@@ -223,6 +238,153 @@ function showError(err) {
     ),
     el('button', { class: 'btn btn-primary btn-lg btn-block', type: 'button', onclick: start }, 'Thử lại'),
   );
+}
+
+// ---------- F-092 (ADR-054): màn chào khi quét QR ----------
+const TZ = 'Asia/Ho_Chi_Minh';
+/** Lời chào theo giờ quán (giờ Việt Nam): sáng 5–10, trưa 11–13, chiều 14–17, tối còn lại. */
+function greeting(now = new Date()) {
+  const h = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: TZ }).format(now));
+  if (h >= 5 && h < 11) return { text: 'Chào buổi sáng', day: true };
+  if (h >= 11 && h < 14) return { text: 'Chào buổi trưa', day: true };
+  if (h >= 14 && h < 18) return { text: 'Chào buổi chiều', day: true };
+  return { text: 'Chào buổi tối', day: false };
+}
+const activeOrders = (s) => s.orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
+
+function showHome(menu, first) {
+  let session = first;
+  const sessionId = session.sessionId;
+  document.title = `${menu.shop.name} · ${session.table.name}`;
+  const serveAtTable = session.serveMode !== 'COUNTER';
+  const store = menu.store ?? {};
+  const closedText =
+    store.acceptingOrders === false ? store.closedMessage : store.shiftOpen === false ? 'Quán chưa mở ca nên chưa nhận đơn — bạn vẫn xem thực đơn được.' : null;
+  const promo = menu.promotions?.[0];
+
+  const greet = el('p', { class: 'h-greet' });
+  const paintGreet = () => {
+    const g = greeting();
+    clear(
+      greet,
+      el('span', { class: 'h-greet-ic', 'aria-hidden': 'true' }, icon(g.day ? 'sun' : 'moon')),
+      `${g.text}, `,
+      el('strong', {}, session.member?.maskedName || 'Quý khách'),
+    );
+  };
+  const memberSlot = el('div', { class: 'h-member' });
+  const tiles = el('div', { class: 'h-tiles' });
+  const ordersSlot = el('div');
+
+  const tile = (id, iconName, label, sub, onclick) =>
+    el(
+      'button',
+      { class: `h-tile h-tile-${iconName}`, type: 'button', id, onclick },
+      el('span', { class: 'h-tile-ic', 'aria-hidden': 'true' }, icon(iconName)),
+      el('strong', {}, label),
+      el('span', { class: 'h-tile-sub' }, sub),
+    );
+  const paintTiles = () => {
+    const active = activeOrders(session);
+    const due = session.bill?.amountDue ?? session.amountDue ?? 0;
+    const paySub = session.status === 'PAYMENT_REQUESTED' ? 'Đã gọi — nhân viên đang tới' : active.length ? `Tạm tính ${money(due)}` : 'Chưa có món';
+    clear(
+      tiles,
+      tile('home-pay', 'wallet', 'Gọi thanh toán', paySub, () => {
+        if (!activeOrders(session).length) return toast('Bạn chưa gọi món nào — mời bạn xem thực đơn và gọi món trước nhé.', 'info');
+        location.href = `/t/${qr}/track${session.status === 'OPEN' ? '?act=pay' : ''}`;
+      }),
+      tile('home-staff', 'hand', 'Gọi nhân viên', 'Nước, đá, khăn giấy…', async () => {
+        const r = await callStaffSheet(sessionId);
+        if (r.sent) await refresh();
+      }),
+      tile('home-review', 'star', 'Đánh giá', 'Sau khi dùng món', () =>
+        modal({
+          title: 'Đánh giá món',
+          sheet: true,
+          body: el(
+            'div',
+            { class: 'stack' },
+            el('p', {}, 'Sau khi thanh toán, màn cảm ơn mời bạn chấm sao từng món đã gọi và góp ý cho quán — chỉ mất vài giây.'),
+            el('p', { class: 'small muted' }, 'Món chưa ngon? Bấm "Gọi nhân viên" để quán xử lý ngay trong lúc bạn còn ngồi.'),
+          ),
+          actions: [{ label: 'Đã hiểu', class: 'btn-primary' }],
+        }),
+      ),
+    );
+    clear(
+      ordersSlot,
+      active.length
+        ? el(
+            'a',
+            { class: 'h-orders', href: `/t/${qr}/track` },
+            icon('receipt'),
+            el('span', { class: 'grow' }, el('strong', {}, 'Đơn của bạn'), ` · ${active.length} đơn đã gửi`),
+            icon('chevron-right'),
+          )
+        : null,
+    );
+  };
+  async function refresh() {
+    try {
+      session = await api(`/api/sessions/${sessionId}`);
+    } catch {
+      return;
+    }
+    paintGreet();
+    paintTiles();
+    memberBox.render();
+  }
+  const memberBox = mountMemberBox(memberSlot, { sessionId, getSession: () => session, onChange: refresh });
+
+  clear(
+    app,
+    el(
+      'div',
+      { class: 'c-home' },
+      el(
+        'header',
+        { class: 'h-top' },
+        el('h1', { class: 'h-shop' }, menu.shop.name),
+        menu.shop.address ? el('p', { class: 'h-addr' }, el('span', { 'aria-hidden': 'true' }, icon('map-pin')), menu.shop.address) : null,
+      ),
+      el(
+        'section',
+        { class: 'h-hero', 'aria-label': 'Gọi món tại bàn' },
+        el(
+          'div',
+          { class: 'h-hero-text' },
+          el('span', { class: 'h-kicker' }, 'Gọi món tại bàn'),
+          el('strong', { class: 'h-hero-title' }, 'Chọn món ngay trên điện thoại'),
+          el('span', { class: 'h-hero-sub' }, serveAtTable ? 'Pha xong, nhân viên mang ra tận bàn' : 'Pha xong, quán mời bạn ra quầy nhận'),
+          promo ? el('span', { class: 'h-promo' }, icon('sparkles'), promo.name) : null,
+        ),
+        el('div', { class: 'h-hero-art', 'aria-hidden': 'true' }, icon('coffee')),
+      ),
+      greet,
+      el(
+        'p',
+        { class: 'h-table' },
+        serveAtTable ? 'Quán sẽ mang món ra cho bạn tại ' : 'Bạn đang ngồi ',
+        el('span', { class: 'h-table-chip' }, session.table.name),
+        serveAtTable ? null : ' · nhận món tại quầy',
+      ),
+      closedText ? el('div', { class: 'alert warning', role: 'status' }, closedText) : null,
+      memberSlot,
+      tiles,
+      el(
+        'a',
+        { class: 'h-cta', href: `/t/${qr}/menu`, id: 'home-menu' },
+        el('span', { class: 'h-cta-ic', 'aria-hidden': 'true' }, icon('utensils')),
+        el('span', { class: 'grow' }, 'Xem thực đơn – Gọi món'),
+        icon('chevron-right'),
+      ),
+      ordersSlot,
+    ),
+  );
+  paintGreet();
+  paintTiles();
+  memberBox.render();
 }
 
 start();

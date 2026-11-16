@@ -4312,3 +4312,76 @@ test('trang Quyền nâng cao: thanh bên Hệ thống có "Quyền nâng cao" n
   const view = await apiAs(request, 'get', '/api/admin/users/' + a.userId + '/grants');
   expect(view.items.filter((i) => i.override)).toEqual([]);
 });
+
+// ---------- TASK-113 (F-092, ADR-054): màn chào khi quét QR ----------
+test('màn chào khi quét QR: quán bật ở Cài đặt → điện thoại quét QR thấy tên + địa chỉ quán, lời chào theo giờ, "Quán sẽ mang món ra cho bạn tại Bàn W1", ô hội viên, Gọi thanh toán / Gọi nhân viên / Đánh giá, nút lớn "Xem thực đơn – Gọi món"; chưa có món thì Gọi thanh toán nhắc gọi món trước; Gọi nhân viên tới quầy; gọi món xong quay lại màn chào thấy "Đơn của bạn", Gọi thanh toán mở thẳng hộp xác nhận; tắt → quét QR vào thẳng thực đơn (F-092, AC-092-02, AC-092-03)', async ({
+  request,
+}) => {
+  const before = await apiAs(request, 'get', '/api/admin/settings');
+  await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: true, serveMode: 'TABLE', shopAddress: 'Số 12 Đường Thử, Quận 1' });
+  const shift = await apiAs(request, 'get', '/api/shifts/current');
+  if (!shift.shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 }); // gửi đơn cần ca đang mở
+  const w1 = await apiAs(request, 'post', '/api/admin/tables', { code: 'W1' });
+  const w2 = await apiAs(request, 'post', '/api/admin/tables', { code: 'W2' });
+  const ctx = await browser.newContext(phoneOpts);
+  const ctx2 = await browser.newContext(phoneOpts);
+  try {
+    const G = await ctx.newPage();
+    watch(G, 'man-chao');
+    await G.goto('/t/' + w1.qrToken);
+    const home = G.locator('.c-home');
+    await expect(home.locator('h1')).toHaveText(before.shopName);
+    await expect(home.locator('.h-addr')).toHaveText('Số 12 Đường Thử, Quận 1');
+    await expect(home.locator('.h-greet')).toHaveText(/^Chào buổi (sáng|trưa|chiều|tối), Quý khách$/);
+    await expect(home.locator('.h-table')).toHaveText('Quán sẽ mang món ra cho bạn tại Bàn W1');
+    await expect(home.locator('.member-box')).toContainText('Nhập SĐT để nhận ưu đãi');
+    await expect(home.locator('.h-tile strong')).toHaveText(['Gọi thanh toán', 'Gọi nhân viên', 'Đánh giá']);
+    await expect(G.getByRole('link', { name: 'Xem thực đơn – Gọi món' })).toHaveAttribute('href', '/t/' + w1.qrToken + '/menu');
+    await expect(G).toHaveURL(new RegExp('/t/' + w1.qrToken + '$'));
+
+    // Chưa có món: Gọi thanh toán nhắc gọi món trước; Đánh giá giải thích; Gọi nhân viên tới quầy
+    await G.locator('#home-pay').click();
+    await expect(G.locator('.toast', { hasText: 'Bạn chưa gọi món nào' })).toBeVisible();
+    await G.locator('#home-review').click();
+    const rv = G.getByRole('dialog', { name: 'Đánh giá món' });
+    await expect(rv).toContainText('Sau khi thanh toán');
+    await rv.getByRole('button', { name: 'Đã hiểu' }).click();
+    await G.locator('#home-staff').click();
+    const call = G.getByRole('dialog', { name: 'Gọi nhân viên' });
+    await call.getByRole('button', { name: 'Dọn bàn' }).click();
+    await call.getByRole('button', { name: 'Gọi nhân viên' }).click();
+    await expect(G.locator('.toast', { hasText: 'Đã gọi nhân viên' })).toBeVisible();
+    const calls = await apiAs(request, 'get', '/api/staff-calls');
+    expect(calls.some((c) => c.table.code === 'W1' && c.message === 'Dọn bàn')).toBe(true);
+
+    // Xem thực đơn → gọi món → quay lại màn chào (tên quán ở đầu thực đơn)
+    await G.getByRole('link', { name: 'Xem thực đơn – Gọi món' }).click();
+    await expect(G).toHaveURL(/\/menu$/);
+    await expect(G.locator('#shop a')).toHaveAttribute('href', '/t/' + w1.qrToken);
+    await G.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).first().locator('.add-btn').click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    await G.goto('/t/' + w1.qrToken); // quét lại QR (hoặc bấm tên quán ở thực đơn) → màn chào
+    await expect(G.locator('.h-orders')).toContainText('Đơn của bạn · 1 đơn đã gửi');
+    await expect(G.locator('#home-pay')).toContainText('Tạm tính');
+    await G.locator('#home-pay').click();
+    await expect(G).toHaveURL(/\/track$/);
+    const pay = G.getByRole('dialog', { name: 'Gọi thanh toán' });
+    await pay.getByRole('button', { name: 'Xác nhận' }).click();
+    await expect(G.locator('.toast', { hasText: 'Đã báo quầy' })).toBeVisible();
+
+    // Tắt màn chào → điện thoại khác quét QR vào thẳng thực đơn (như trước F-092)
+    await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: false });
+    const H = await ctx2.newPage();
+    watch(H, 'khong-man-chao');
+    await H.goto('/t/' + w2.qrToken);
+    await expect(H).toHaveURL(/\/menu$/);
+    await expect(H.locator('#shop a')).toHaveCount(0);
+  } finally {
+    await ctx.close();
+    await ctx2.close();
+    await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: false, serveMode: before.serveMode, shopAddress: before.shopAddress ?? '' });
+    await clearTables(request, ['W1', 'W2']);
+  }
+});

@@ -2,6 +2,7 @@
 
 > **Nguồn:** `tài-liệu/nguồn/huong-dan-web-app-v1.2.md` §8 (bản 1.2, 14/10/2026). **Trạng thái tài liệu:** BẢN NHÁP — trạng thái từng mục ghi tại chỗ (CONFIRMED / PROPOSED / NEEDS_CONFIRMATION / UNKNOWN / N/A). Quyết định đã chốt: [ADR-000](../quyết-định/ADR-000-thanh-toan-tien-mat.md) (D-1/D-2/D-3).
 
+- **Cập nhật 16/11/2026 ([F-092](FEATURE-092.md), ADR-054):** khi quán bật "Màn chào khi khách quét QR" (mặc định), vào được nhóm là thấy màn chào của quán trước (nút lớn "Xem thực đơn – Gọi món"); tắt → vào thẳng thực đơn như mô tả dưới đây.
 - **Status:** CONFIRMED. Phần đóng phiên đã chốt theo ADR-000 (D-2: phiên đóng khi nhân viên bấm "Đã thu tiền"). Cách hiểu "giỏ hàng chung" khi Gộp còn mở ở Q-012
 - **Source:** demo.docx US1 (cả 2 bản), User flow bước 1–3, Module 1.1
 - **Actor:** Khách

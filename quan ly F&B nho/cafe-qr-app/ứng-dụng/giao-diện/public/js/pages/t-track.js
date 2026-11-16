@@ -9,6 +9,7 @@ import { connectRealtime } from '../socket.js';
 import { $, clear, el, elapsed, errorMessage, modal, money, setBusy, time, toast } from '../ui.js';
 import { CUSTOMER_STATUS, clearSessionId, followMerged, followTable, getSessionId, goEntry, holdState, qrToken, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
+import { CALL_COOLDOWN_MS, callStaffSheet } from '../call-staff.js';
 
 const qr = qrToken();
 const sessionId = getSessionId(qr);
@@ -19,8 +20,6 @@ if (!sessionId) {
 
 const RECALL_AFTER_MS = 2 * 60 * 1000; // cho "Gọi lại" sau 2 phút
 const BUSY_AFTER_MS = 5 * 60 * 1000; // sau 5 phút gợi ý ra quầy
-const CALL_COOLDOWN_MS = 60 * 1000; // gọi nhân viên: 60 giây/phiên (F-021)
-const CALL_CHOICES = ['Xin nước lọc', 'Xin thêm đá', 'Xin khăn giấy', 'Dọn bàn'];
 
 let session = null;
 let eta = null; // F-025
@@ -656,50 +655,16 @@ async function requestPayment() {
   }
 }
 
-/** F-021: chọn nhanh yêu cầu hoặc ghi chú → quầy nhận dải "Gọi nhân viên" + chuông. */
+/** F-021: chọn nhanh yêu cầu hoặc ghi chú → quầy nhận dải "Gọi nhân viên" + chuông (hộp dùng chung với màn chào — F-092). */
 async function callStaff() {
-  const other = el('input', { class: 'input', maxlength: 100, placeholder: 'Yêu cầu khác (không bắt buộc)' });
-  let chosen = CALL_CHOICES[0];
-  const chips = el(
-    'div',
-    { class: 'note-chips' },
-    CALL_CHOICES.map((c, i) =>
-      el(
-        'button',
-        {
-          class: 'chip',
-          type: 'button',
-          'aria-pressed': String(i === 0),
-          onclick: (e) => {
-            chosen = c;
-            chips.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b === e.currentTarget)));
-          },
-        },
-        c,
-      ),
-    ),
-  );
-  const ok = await modal({
-    title: 'Gọi nhân viên',
-    sheet: true,
-    body: el('div', { class: 'stack' }, el('p', { class: 'small muted' }, 'Chọn nhanh yêu cầu của bạn:'), chips, other),
-    actions: [
-      { label: 'Hủy', value: false },
-      { label: 'Gọi nhân viên', class: 'btn-primary', value: true },
-    ],
-  }).result;
-  if (ok !== true) return;
-  const message = other.value.trim() || chosen;
-  try {
-    await api(`/api/sessions/${sessionId}/call-staff`, { method: 'POST', body: { message } });
+  const r = await callStaffSheet(sessionId);
+  if (r.sent) {
     lastCall = { at: Date.now(), handled: false };
-    toast('Đã gọi nhân viên, vui lòng chờ trong giây lát.', 'success');
     await load();
-  } catch (err) {
-    if (err.code === 'TOO_SOON') lastCall = { at: Date.now() - (CALL_COOLDOWN_MS - (err.details?.retryAfter ?? 60) * 1000), handled: false };
-    toast(errorMessage(err), err.status === 429 ? 'warning' : 'error');
-    updateCallButton();
+    return;
   }
+  if (r.retryAfter !== null) lastCall = { at: Date.now() - (CALL_COOLDOWN_MS - r.retryAfter * 1000), handled: false };
+  updateCallButton();
 }
 
 function scheduleLoad() {
@@ -726,7 +691,11 @@ setInterval(() => {
   updatePayButton();
 }, 1000);
 
+// F-092 (ADR-054): màn chào gửi sang với ?act=pay → mở ngay hộp "Gọi thanh toán" (bỏ tham số khỏi địa chỉ — tải lại không mở lại)
+const act = new URLSearchParams(location.search).get('act');
+if (act) history.replaceState(null, '', location.pathname);
 await load();
+if (act === 'pay' && session && session.status === 'OPEN' && session.orders.some((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED')) requestPayment();
 const socket = connectRealtime({
   sessionId,
   onOnline: (reconnected) => {
