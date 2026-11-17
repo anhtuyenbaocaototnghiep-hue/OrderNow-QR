@@ -236,6 +236,7 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-093-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách, tôi muốn màn gọi món luôn là giao diện điện thoại gọn một cột — kể cả khi mở trên máy tính bảng hay máy tính — để chữ, nút bấm và thanh giỏ quen tay như một ứng dụng điện thoại. | AC-093-01, AC-093-02 | — | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05 | F-093 | DONE |
 | US-094-1 | Could | ACT-GUEST, ACT-MEMBER, ACT-ADMIN, ACT-STORE | Là khách, tôi muốn màn gọi món dịu mắt khi ngồi quán buổi tối và có không khí theo buổi, theo mùa, để dùng thoải mái và thấy quán chăm chút; là chủ quán, tôi muốn bật / tắt được việc này. | AC-094-01, AC-094-02, AC-094-03, AC-094-04 | — | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05, SCR-33 | F-094 | DONE |
 | US-095-1 | Should | ACT-ADMIN, ACT-GUEST, ACT-STAFF | Là chủ quán, tôi muốn tải logo của quán lên một lần để khách thấy logo khi quét QR, trên thực đơn, hóa đơn và thẻ QR, nhân viên thấy trên màn quầy — quán trông chuyên nghiệp và dễ nhận ra. | AC-095-01, AC-095-02, AC-095-03 | — | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | F-095 | DONE |
+| US-096-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn tạo thêm tài khoản chủ quán (toàn quyền) cho người cùng làm chủ, có bước xác nhận bằng mật khẩu của tôi và báo cho các chủ quán khác, để chia việc quản lý mà vẫn an toàn. | AC-096-01, AC-096-02 | — | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-47 | F-096 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

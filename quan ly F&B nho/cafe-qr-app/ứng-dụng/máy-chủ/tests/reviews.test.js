@@ -257,7 +257,13 @@ describe('Đánh giá sau khi dùng món (F-051)', () => {
   });
 
   test('AC-051-03 (review G3): tài khoản chỉ từng xử lý đánh giá thấp (quản lý — không chấm công) → xóa mềm, không lỗi khóa ngoại', async () => {
-    const u = await call(admin, 'post', '/api/admin/users', { username: 'handler1', password: 'Pass@123', fullName: 'QL xử lý đánh giá', role: 'ADMIN' });
+    const u = await call(admin, 'post', '/api/admin/users', {
+      username: 'handler1',
+      password: 'Pass@123',
+      fullName: 'QL xử lý đánh giá',
+      role: 'ADMIN',
+      confirmPassword: 'Admin@123',
+    });
     assert.equal(u.status, 201, JSON.stringify(u.body));
     const handler = await app.login('handler1', 'Pass@123');
     const g = await paidGroup('03', [['Cà phê đen', 1]]);

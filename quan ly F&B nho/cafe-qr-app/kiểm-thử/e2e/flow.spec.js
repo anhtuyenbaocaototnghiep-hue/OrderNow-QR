@@ -266,7 +266,7 @@ test('máy quầy P đứng bằng quản lý cửa hàng — chủ quán chỉ 
 
 test('quản lý: tạo nhân viên trùng tên báo lỗi; BOM -10 bị từ chối (AC-009-02, AC-011-02)', async () => {
   await P.goto('/admin/users');
-  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  await P.getByRole('button', { name: '+ Thêm tài khoản' }).click();
   await P.fill('.modal [name="username"]', 'STAFF1');
   await P.fill('.modal [name="password"]', '123456');
   await P.fill('.modal [name="fullName"]', 'Trùng tên');
@@ -2863,7 +2863,7 @@ test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở
   await guide.locator('summary').click();
   await expect(guide).toContainText('Quản lý cửa hàng');
   await expect(guide).toContainText('Chủ quán');
-  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  await P.getByRole('button', { name: '+ Thêm tài khoản' }).click();
   const form = P.getByRole('dialog');
   await form.locator('input[name="username"]').fill('store-e2e');
   await form.locator('input[name="password"]').fill('Store@123');
@@ -2932,7 +2932,7 @@ test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở
 
 test('vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", cấp "Thử việc" ở Tài khoản; người đó đăng nhập → máy quầy chỉ có Đơn hàng, Kho & sơ chế, Giờ công + nhãn "Thử việc"; mở thẳng Bán mang đi → về Đơn hàng kèm lời nhắc (F-078, AC-078-06)', async () => {
   await P.goto('/admin/users');
-  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  await P.getByRole('button', { name: '+ Thêm tài khoản' }).click();
   const form = P.getByRole('dialog');
   await form.locator('input[name="username"]').fill('phache-e2e');
   await form.locator('input[name="password"]').fill('Phache@123');
@@ -3397,7 +3397,7 @@ test('báo lỗi xong vẫn lưu được (DEF-024): thêm bàn trùng mã / nh�
 
   // Tài khoản: tên đăng nhập đã có → lỗi trong hộp → đổi tên → tạo được
   await P.goto('/admin/users');
-  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  await P.getByRole('button', { name: '+ Thêm tài khoản' }).click();
   dialog = P.getByRole('dialog');
   await dialog.locator('input[name="username"]').fill('staff1');
   await dialog.locator('input[name="password"]').fill('Def024@123');
@@ -4154,8 +4154,8 @@ test('tạo tài khoản: chọn vai trò → hiện ngay "Vai trò này đượ
   request,
 }) => {
   await P.goto('/admin/users');
-  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
-  const dlg = P.getByRole('dialog', { name: 'Thêm nhân viên' });
+  await P.getByRole('button', { name: '+ Thêm tài khoản' }).click();
+  const dlg = P.getByRole('dialog', { name: 'Thêm tài khoản' });
   const base = dlg.locator('.perm-base li');
   await expect(base).toHaveText([CASHIER_CAP, 'Nhận / làm đơn, sơ chế, hủy hàng, nhận hàng', SERVER_CAP]);
   await expect(dlg.locator('.perm-head')).toHaveText('Vai trò này được làm 3 / 17 việc');
@@ -4252,13 +4252,13 @@ test('quyền nâng cao: nhãn "Có quyền nâng cao" ở Tài khoản mở tra
 });
 
 // ---------- TASK-112 (F-091, ADR-053): trang Quyền nâng cao riêng + số điện thoại tài khoản ----------
-test('số điện thoại tài khoản: + Thêm nhân viên có ô Số điện thoại (không bắt buộc) — số sai báo ngay dưới ô, số đúng hiện ở cột Số điện thoại (bấm gọi được); Sửa đổi số (F-091, AC-091-02)', async ({
+test('số điện thoại tài khoản: + Thêm tài khoản có ô Số điện thoại (không bắt buộc) — số sai báo ngay dưới ô, số đúng hiện ở cột Số điện thoại (bấm gọi được); Sửa đổi số (F-091, AC-091-02)', async ({
   request,
 }) => {
   await P.goto('/admin/users');
   await expect(P.locator('thead th').nth(2)).toHaveText('Số điện thoại');
-  await P.getByRole('button', { name: '+ Thêm nhân viên' }).click();
-  const dlg = P.getByRole('dialog', { name: 'Thêm nhân viên' });
+  await P.getByRole('button', { name: '+ Thêm tài khoản' }).click();
+  const dlg = P.getByRole('dialog', { name: 'Thêm tài khoản' });
   await dlg.getByLabel('Tên đăng nhập').fill('tc-sdt');
   await dlg.getByLabel('Mật khẩu (tối thiểu 6 ký tự)').fill('Pass@123');
   await dlg.getByLabel('Họ tên').fill('Nhân viên có số E2E');
@@ -4715,5 +4715,62 @@ test('logo quán: chủ quán chọn ảnh ở Cài đặt → Thông tin quán 
     await request.delete('/api/admin/settings/logo', { headers: { Authorization: `Bearer ${adminToken}` } });
     await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: false });
     await clearTables(request, ['LG1']);
+  }
+});
+
+// ---------- TASK-117 (F-096, ADR-058): thêm tài khoản chủ quán ----------
+test('thêm tài khoản chủ quán: Tài khoản → "+ Thêm tài khoản" → vai trò Chủ quán hiện cảnh báo toàn quyền + ô Mật khẩu của bạn; sai mật khẩu báo dưới ô, đúng → tạo xong có nhãn Chủ quán; chủ quán mới đăng nhập trang Quản lý thấy Tài khoản; trang Cảnh báo có tin tạo chủ quán (F-096, AC-096-02)', async ({
+  request,
+}) => {
+  const desk = { viewport: { width: 1366, height: 860 }, locale: 'vi-VN' };
+  const [ownerCtx, newCtx] = await Promise.all([browser.newContext(desk), browser.newContext(desk)]);
+  const open = async (ctx, name) => {
+    const page = await ctx.newPage();
+    page.setDefaultTimeout(15_000);
+    watch(page, name);
+    return page;
+  };
+  const adminLogin = async (page, username, password) => {
+    await page.goto('/admin/login');
+    await page.fill('#username', username);
+    await page.fill('#password', password);
+    await page.click('#submit');
+    await expect(page).toHaveURL(/\/admin\/today$/);
+  };
+  try {
+    const O = await open(ownerCtx, 'them-chu-quan');
+    await adminLogin(O, 'admin', 'Admin@123');
+    await O.goto('/admin/users');
+    await O.getByRole('button', { name: '+ Thêm tài khoản' }).click();
+    const dlg = O.getByRole('dialog', { name: 'Thêm tài khoản' });
+    await dlg.getByLabel('Tên đăng nhập').fill('chuquan_e2e');
+    await dlg.getByLabel('Mật khẩu (tối thiểu 6 ký tự)').fill('Pass@123');
+    await dlg.getByLabel('Họ tên').fill('Chủ quán E2E');
+    await expect(dlg.locator('.owner-confirm')).toBeHidden(); // nhân viên: không cần xác nhận
+    await dlg.getByLabel('Vai trò').selectOption('ADMIN');
+    await expect(dlg.locator('.owner-confirm')).toBeVisible();
+    await expect(dlg.locator('.owner-confirm')).toContainText('Chủ quán có toàn quyền như bạn');
+    await dlg.getByLabel('Mật khẩu của bạn (để xác nhận)').fill('sai-mat-khau');
+    await dlg.getByRole('button', { name: 'Tạo tài khoản' }).click();
+    await expect(dlg.locator('.field-error')).toHaveText('Mật khẩu của bạn không đúng');
+    await expect(dlg).toBeVisible();
+    await dlg.getByLabel('Mật khẩu của bạn (để xác nhận)').fill('Admin@123');
+    await dlg.getByRole('button', { name: 'Tạo tài khoản' }).click();
+    await expect(O.locator('.toast', { hasText: 'Đã tạo tài khoản Chủ quán' })).toBeVisible();
+    await expect(O.locator('tr', { hasText: 'chuquan_e2e' }).locator('.badge', { hasText: 'Chủ quán' })).toBeVisible();
+
+    // Chủ quán mới đăng nhập trang Quản lý → Hôm nay, mở được Tài khoản
+    const N = await open(newCtx, 'chu-quan-moi');
+    await adminLogin(N, 'chuquan_e2e', 'Pass@123');
+    await N.goto('/admin/users');
+    await expect(N.getByRole('button', { name: '+ Thêm tài khoản' })).toBeVisible();
+
+    // Trang Cảnh báo của chủ quán có tin tạo tài khoản Chủ quán
+    await O.goto('/admin/alerts');
+    await expect(O.locator('.alert-card', { hasText: 'tạo tài khoản Chủ quán (toàn quyền) cho Chủ quán E2E' })).toBeVisible();
+  } finally {
+    await Promise.all([ownerCtx.close(), newCtx.close()]);
+    const u = (await apiAs(request, 'get', '/api/admin/users')).find((x) => x.username === 'chuquan_e2e');
+    if (u) await apiAs(request, 'patch', '/api/admin/users/' + u.userId + '/active', { isActive: false }); // không để chủ quán thử hoạt động
   }
 });

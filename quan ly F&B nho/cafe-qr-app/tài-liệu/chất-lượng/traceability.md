@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 493 test, sửa lúc 2026-11-17 06:53 UTC
-- `npm run test:e2e` (JSON): 104 test, sửa lúc 2026-11-17 06:48 UTC
+- `npm test` (JUnit): 494 test, sửa lúc 2026-11-17 07:07 UTC
+- `npm run test:e2e` (JSON): 105 test, sửa lúc 2026-11-17 07:13 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 202 |
-| Acceptance Criteria | 554 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 554 |
+| User Story | 203 |
+| Acceptance Criteria | 556 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 556 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -634,7 +634,7 @@
 | AC-090-03 | TC-090-03 | F-090 | US-090-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | — | E2E: `flow.spec.js` › quyền nâng cao: nhãn "Có quyền nâng cao" ở Tài khoản mở trang Quyền nâng cao chọn sẵn người đó — quyền tạm ghi "tạm đến …", lưu mà không chạm vẫn giữ hạn (sửa tài khoản cũng không đụng quyền); "Về như vai trò" → Lưu quyền → hết quyền riêng (F-090, AC-090-03) — **PASS** | **PASS** |
 | AC-090-04 | TC-090-04 | F-090 | US-090-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | — | E2E: `a11y.spec.js` › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm — **PASS** | **PASS** |
 | AC-091-01 | TC-091-01 | F-091 | US-091-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | BR-024 | Integration: `staff-phone.test.js` › AC-091-01: số điện thoại tài khoản — tạo kèm số (có dấu cách / +84 / 84) lưu chuẩn +84, danh sách trả số nội địa; sai định dạng → 400 ô phone; sửa không gửi số thì giữ, gửi số mới thì đổi, gửi rỗng thì xóa; quản lý cửa hàng xem danh sách không thấy số; nhật ký thao tác che số — **PASS** | **PASS** |
-| AC-091-02 | TC-091-02 | F-091 | US-091-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | BR-024 | E2E: `flow.spec.js` › số điện thoại tài khoản: + Thêm nhân viên có ô Số điện thoại (không bắt buộc) — số sai báo ngay dưới ô, số đúng hiện ở cột Số điện thoại (bấm gọi được); Sửa đổi số (F-091, AC-091-02) — **PASS** | **PASS** |
+| AC-091-02 | TC-091-02 | F-091 | US-091-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | BR-024 | E2E: `flow.spec.js` › số điện thoại tài khoản: + Thêm tài khoản có ô Số điện thoại (không bắt buộc) — số sai báo ngay dưới ô, số đúng hiện ở cột Số điện thoại (bấm gọi được); Sửa đổi số (F-091, AC-091-02) — **PASS** | **PASS** |
 | AC-091-03 | TC-091-03 | F-091 | US-091-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-58, SCR-20 | — | E2E: `flow.spec.js` › trang Quyền nâng cao: thanh bên Hệ thống có "Quyền nâng cao" ngay sau "Tài khoản"; danh sách người không có chủ quán; đổi công tắc rồi chọn người khác → hỏi "Bỏ thay đổi chưa lưu?" — Hủy thì ở lại, Bỏ thay đổi thì sang người kia và không lưu gì (F-091, AC-091-03) — **PASS** | **PASS** |
 | AC-091-04 | TC-091-04 | F-091 | US-091-1, US-091-2 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-58, SCR-20 | BR-024 | E2E: `a11y.spec.js` › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm — **PASS** | **PASS** |
 | AC-092-01 | TC-092-01 | F-092 | US-092-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER, MOD-NOTIFY | SCR-01, SCR-02, SCR-33 | BR-024 | Integration: `guest-welcome.test.js` › AC-092-01: cài đặt màn chào mặc định bật, thực đơn công khai trả ui.welcome + tên và địa chỉ quán; tắt → ui.welcome = false; quản lý cửa hàng đổi được, nhân viên không; giá trị sai → 400 — **PASS** | **PASS** |
@@ -650,4 +650,6 @@
 | AC-095-01 | TC-095-01 | F-095 | US-095-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | — | Integration: `shop-logo.test.js` › AC-095-01: chủ quán tải logo png → logoUrl ở /shop, /menu, /auth/me, ảnh trả đúng; ảnh mới thay ảnh cũ (tệp cũ bị xóa); sai định dạng / quá 1 MB → 400; quản lý cửa hàng, nhân viên 403, chưa đăng nhập 401; bỏ logo → null, ảnh 404 — **PASS** | **PASS** |
 | AC-095-02 | TC-095-02 | F-095 | US-095-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | — | E2E: `flow.spec.js` › logo quán: chủ quán chọn ảnh ở Cài đặt → Thông tin quán → xem trước, lưu ngay; logo hiện ở màn chào và đầu thực đơn của khách, thanh bên Quản lý, thanh quầy, phiếu tạm tính, thẻ QR in; Bỏ logo → về biểu tượng ly cà phê (F-095, AC-095-02) — **PASS** | **PASS** |
 | AC-095-03 | TC-095-03 | F-095 | US-095-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | — | E2E: `a11y.spec.js` › logo quán (F-095): ô Logo quán ở Cài đặt, màn chào và thực đơn có logo — nhãn, ảnh có chữ thay thế, tương phản, vùng chạm (AC-095-03) — **PASS** | **PASS** |
+| AC-096-01 | TC-096-01 | F-096 | US-096-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-47 | — | Integration: `owner-accounts.test.js` › AC-096-01: tạo / nâng tài khoản Chủ quán cần mật khẩu của người thao tác (thiếu 400, sai 403, sai 5 lần 429); chủ quán mới vào được trang Quản lý, không vào máy quầy; có cảnh báo cho chủ quán; quản lý cửa hàng không tạo được — **PASS** | **PASS** |
+| AC-096-02 | TC-096-02 | F-096 | US-096-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-47 | — | E2E: `flow.spec.js` › thêm tài khoản chủ quán: Tài khoản → "+ Thêm tài khoản" → vai trò Chủ quán hiện cảnh báo toàn quyền + ô Mật khẩu của bạn; sai mật khẩu báo dưới ô, đúng → tạo xong có nhãn Chủ quán; chủ quán mới đăng nhập trang Quản lý thấy Tài khoản; trang Cảnh báo có tin tạo chủ quán (F-096, AC-096-02) — **PASS** | **PASS** |
 

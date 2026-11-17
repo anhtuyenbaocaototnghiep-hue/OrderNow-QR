@@ -581,11 +581,16 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
     await A.goto(`/admin/${r}`);
     await check(A, `quan-ly-${r.replace(/\//g, '-').replace(/-\d+-/, '-id-')}`);
   }
-  // F-090 / F-091 (TASK-110, TASK-112): hộp Thêm nhân viên (ô Số điện thoại + "Vai trò này được làm"); trang Quyền nâng cao (công tắc Cho phép / Không cho phép)
+  // F-090 / F-091 (TASK-110, TASK-112): hộp Thêm tài khoản (ô Số điện thoại + "Vai trò này được làm"); trang Quyền nâng cao (công tắc Cho phép / Không cho phép)
   await A.goto('/admin/users');
-  await A.getByRole('button', { name: '+ Thêm nhân viên' }).click();
+  await A.getByRole('button', { name: '+ Thêm tài khoản' }).click();
   await expect(A.locator('.perm-head')).toBeVisible();
   await check(A, 'quan-ly-users-them', { narrow: true });
+  await A.setViewportSize(desk.viewport);
+  // F-096 (TASK-117): chọn vai Chủ quán → khung cảnh báo toàn quyền + ô "Mật khẩu của bạn"
+  await A.getByRole('dialog', { name: 'Thêm tài khoản' }).getByLabel('Vai trò').selectOption('ADMIN');
+  await expect(A.locator('.owner-confirm')).toBeVisible();
+  await check(A, 'quan-ly-users-them-chu-quan', { narrow: true });
   await A.setViewportSize(desk.viewport);
   await A.keyboard.press('Escape');
   await A.goto('/admin/permissions');

@@ -9,7 +9,7 @@ import { LEVEL_LABEL, POSITION_HINT, POSITION_LABEL, positionsText, ROLE_BADGE, 
 
 const me = await mountAdminShell('users');
 
-clear($('#head-actions'), el('button', { class: 'btn btn-primary', type: 'button', onclick: () => createUser() }, '+ Thêm nhân viên'));
+clear($('#head-actions'), el('button', { class: 'btn btn-primary', type: 'button', onclick: () => createUser() }, '+ Thêm tài khoản'));
 
 // F-036: Trưởng ca = quyền quầy + giảm tay 20 %/50k, hoàn tiền trong ca, duyệt chi quỹ, sửa chấm công trong ngày, kiểm kê, điều chỉnh kho
 // F-077 (ADR-035): Quản lý cửa hàng = trưởng ca + trang Quản lý phần vận hành; ADMIN hiện là "Chủ quán"
@@ -284,8 +284,42 @@ const roleSelect = (value) =>
   el(
     'select',
     { class: 'input', id: 'user-role', name: 'role' },
-    Object.entries(ROLE).map(([v, l]) => el('option', { value: v, selected: v === value }, l)),
+    Object.entries(ROLE).map(([v, l]) => el('option', { value: v, selected: v === value }, v === 'ADMIN' ? 'Chủ quán (toàn quyền)' : l)),
   );
+
+/**
+ * F-096 (ADR-058 D-236): chọn vai Chủ quán cho người chưa là chủ quán → khung cảnh báo toàn quyền + ô "Mật khẩu của bạn" (máy chủ đòi
+ * mật khẩu của người thao tác). Trả { node, value() } — value() = mật khẩu đã nhập khi khung đang hiện, không thì undefined.
+ */
+function ownerConfirm(form, currentRole = null) {
+  const input = el('input', {
+    class: 'input',
+    id: 'confirm-password',
+    name: 'confirmPassword',
+    type: 'password',
+    maxlength: 100,
+    autocomplete: 'current-password',
+  });
+  const node = el(
+    'div',
+    { class: 'owner-confirm', hidden: true },
+    el(
+      'div',
+      { class: 'alert warning', role: 'note' },
+      el('strong', {}, 'Chủ quán có toàn quyền như bạn'),
+      ': tài khoản & phân quyền, cài đặt, lương, thu chi, nhật ký thao tác. Chỉ dùng trang Quản lý (không đăng nhập máy quầy). Các chủ quán khác sẽ nhận cảnh báo.',
+    ),
+    el('div', { class: 'field' }, el('label', { for: 'confirm-password' }, 'Mật khẩu của bạn (để xác nhận)'), input),
+  );
+  const select = form.elements.namedItem('role');
+  const sync = () => {
+    node.hidden = !(select.value === 'ADMIN' && currentRole !== 'ADMIN');
+    if (node.hidden) input.value = '';
+  };
+  select.addEventListener('change', sync);
+  sync();
+  return { node, value: () => (node.hidden ? undefined : input.value) };
+}
 
 function formModal({ title, form, submitLabel, send }) {
   modal({
@@ -344,8 +378,10 @@ function createUser() {
   const f = (n) => form.elements.namedItem(n);
   const staffValues = staffFields(form);
   form.append(roleSummary(form).node); // F-090: vai trò này được làm gì (bật / tắt từng việc: trang Quyền nâng cao)
+  const owner = ownerConfirm(form); // F-096
+  form.append(owner.node);
   formModal({
-    title: 'Thêm nhân viên',
+    title: 'Thêm tài khoản',
     form,
     submitLabel: 'Tạo tài khoản',
     send: async () => {
@@ -358,9 +394,13 @@ function createUser() {
           phone: f('phone').value,
           role: f('role').value,
           ...staffValues(),
+          confirmPassword: owner.value(), // F-096
         },
       });
-      toast('Đã tạo tài khoản — nhân viên có thể đăng nhập ngay', 'success');
+      toast(
+        f('role').value === 'ADMIN' ? 'Đã tạo tài khoản Chủ quán — đăng nhập ở trang Quản lý' : 'Đã tạo tài khoản — nhân viên có thể đăng nhập ngay',
+        'success',
+      );
     },
   });
 }
@@ -382,6 +422,8 @@ function editUser(u) {
   if (u.userId === me.userId) f('role').disabled = true;
   const staffValues = staffFields(form, u); // F-078
   form.append(roleSummary(form, u).node); // F-090: vai trò này được làm gì · F-091: liên kết Quyền nâng cao của người này
+  const owner = ownerConfirm(form, u.role); // F-096: nâng thành Chủ quán cần xác nhận
+  form.append(owner.node);
   formModal({
     title: `Sửa ${u.username}`,
     form,
@@ -390,7 +432,7 @@ function editUser(u) {
       const role = u.userId === me.userId ? u.role : f('role').value;
       await staffApi(`/api/admin/users/${u.userId}`, {
         method: 'PUT',
-        body: { fullName: f('fullName').value, phone: f('phone').value, role, ...staffValues() },
+        body: { fullName: f('fullName').value, phone: f('phone').value, role, ...staffValues(), confirmPassword: owner.value() },
       });
       toast('Đã lưu', 'success');
     },

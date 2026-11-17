@@ -311,6 +311,33 @@ async function checkAccessGrant({ target, capabilities, actor, expiresAt }) {
 }
 
 /**
+ * F-096 (ADR-058 D-237): có chủ quán mới (tạo tài khoản Chủ quán / nâng vai trò) → cảnh báo ACCESS_GRANT (chỉ chủ quán xem) + email
+ * tức thì theo cài đặt. Một cảnh báo mỗi lần.
+ */
+export const onOwnerAdded = (info) => withDeadlockRetry(() => checkOwnerAdded(info));
+
+async function checkOwnerAdded({ target, actor, promoted }) {
+  const s = await getSettings();
+  const alert = await immediateAlert({
+    kind: 'ACCESS_GRANT',
+    severity: 'HIGH',
+    userId: target.userId,
+    title: promoted
+      ? `${actor.fullName} đổi ${target.fullName} thành Chủ quán (toàn quyền)`
+      : `${actor.fullName} tạo tài khoản Chủ quán (toàn quyền) cho ${target.fullName}`,
+    detail: { role: 'ADMIN', to: target.fullName, username: target.username, by: actor.fullName, promoted: Boolean(promoted) },
+    dedupeKey: `OWNER:${target.userId}:${Date.now()}`,
+  });
+  if (!alert) return { alert: null, email: null };
+  const rows = [
+    ['Tài khoản', `${target.fullName} (@${target.username})`, true],
+    ['Vai trò', 'Chủ quán — toàn quyền', true],
+    ['Người thực hiện', actor.fullName, false],
+  ];
+  return { alert, email: await enqueueImmediate(s, alert, rows, 'Không phải bạn hoặc người quán tin tưởng? Vào Tài khoản khóa ngay tài khoản này.') };
+}
+
+/**
  * F-075 (ADR-033 D-150): 06:00 còn nguyên liệu sắp / đã hết hạn trong 2 ngày có giá trị → một cảnh báo mỗi ngày (khóa theo ngày),
  * ghi số tiền sẽ phải bỏ + món nên mời khách để dùng kịp.
  */

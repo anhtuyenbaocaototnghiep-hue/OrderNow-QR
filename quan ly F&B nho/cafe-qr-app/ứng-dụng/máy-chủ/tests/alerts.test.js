@@ -477,7 +477,16 @@ describe('Trang Cảnh báo bất thường (F-060, BR-095)', () => {
     assert.match(evt.alert.title, /thiếu 123\.000đ/);
     assert.equal(await toStaff, 'không nhận', 'nhân viên không nhận cảnh báo');
     // Quản lý chỉ từng xử lý cảnh báo vẫn xóa được tài khoản → xóa mềm (cảnh báo giữ tên người xử lý), không lỗi khóa ngoại
-    ok(await call(admin, 'post', '/api/admin/users', { username: 'admin2', password: 'Pass@123', fullName: 'Quản lý 2', role: 'ADMIN' }), 201);
+    ok(
+      await call(admin, 'post', '/api/admin/users', {
+        username: 'admin2',
+        password: 'Pass@123',
+        fullName: 'Quản lý 2',
+        role: 'ADMIN',
+        confirmPassword: 'Admin@123',
+      }),
+      201,
+    );
     const admin2 = await app.login('admin2', 'Pass@123');
     ok(await call(admin2, 'patch', `/api/admin/alerts/${evt.alert.alertId}`, { status: 'SEEN' }));
     const [{ UserId: admin2Id }] = await q1("SELECT UserId FROM dbo.Users WHERE Username = 'admin2'");

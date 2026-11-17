@@ -1,12 +1,13 @@
 // Đăng nhập (FEATURE-009) và quản lý tài khoản nhân viên (ADMIN). BR-004 (username duy nhất, không phân biệt hoa/thường), BR-017.
 import bcrypt from 'bcryptjs';
 import { sqlErrorNumber, withDeadlockRetry } from '../db.js';
-import { badRequest, conflict, forbidden, notFound, unauthorized } from '../errors.js';
+import { AppError, badRequest, conflict, forbidden, notFound, unauthorized } from '../errors.js';
 import { signToken } from '../middleware/auth.js';
 import * as usersRepo from '../repositories/usersRepo.js';
 import { config } from '../config.js';
 import { onLogin } from './attendanceService.js';
 import * as authGuard from './authGuardService.js';
+import { onOwnerAdded } from './alertService.js';
 
 const BCRYPT_COST = 10;
 // Hash giả để so sánh khi không có user → thời gian phản hồi như nhau (không lộ username tồn tại hay không)
@@ -57,26 +58,57 @@ export const list = async ({ withPhone = false } = {}) => {
   return withPhone ? users : users.map(({ phone: _phone, ...u }) => u);
 };
 
-export async function create({ username, password, fullName, role, positions = null, level = 'OFFICIAL', phone = null }) {
+/**
+ * F-096 (ADR-058 D-236): tạo tài khoản Chủ quán / nâng ai đó thành Chủ quán (toàn quyền) phải nhập đúng mật khẩu của CHÍNH người thao tác.
+ * Thiếu → 400 (ô confirmPassword); sai → 403 OWNER_CONFIRM_INVALID (cũng chỉ vào ô); sai 5 lần / 15 phút → 429 (bộ đếm "tài khoản duyệt"
+ * F-071 — khóa theo người thao tác, cảnh báo AUTH_LOCK cho chủ quán).
+ */
+async function confirmOwnerGrant(actor, confirmPassword) {
+  const field = (message) => ({ fields: [{ path: 'confirmPassword', message }] });
+  if (!confirmPassword) {
+    throw badRequest('VALIDATION_ERROR', 'Nhập mật khẩu của bạn để xác nhận tạo tài khoản Chủ quán', field('Nhập mật khẩu của bạn để xác nhận'));
+  }
+  const attempt = { username: actor.username, actor };
+  await authGuard.assertNotLocked('APPROVAL', attempt);
+  const me = await usersRepo.findByUsernameWithHash(actor.username);
+  const ok = await bcrypt.compare(confirmPassword, me?.passwordHash ?? DUMMY_HASH);
+  if (!me || !ok || me.userId !== actor.userId) {
+    await authGuard.recordFailure('APPROVAL', attempt);
+    throw new AppError(403, 'OWNER_CONFIRM_INVALID', 'Mật khẩu của bạn không đúng', field('Mật khẩu của bạn không đúng'));
+  }
+}
+
+/** F-096 (ADR-058 D-237): có chủ quán mới → cảnh báo cho mọi chủ quán (+ email). Lỗi gửi không làm hỏng việc tạo / sửa tài khoản. */
+const notifyOwnerAdded = (target, actor, promoted) =>
+  onOwnerAdded({ target, actor, promoted }).catch((err) => console.error('Không gửi được cảnh báo chủ quán mới:', err.message));
+
+export async function create({ username, password, fullName, role, positions = null, level = 'OFFICIAL', phone = null, confirmPassword }, actor) {
+  if (role === 'ADMIN') await confirmOwnerGrant(actor, confirmPassword);
+  let user;
   try {
-    return await usersRepo.create({ username, passwordHash: await bcrypt.hash(password, BCRYPT_COST), fullName, role, positions, level, phone });
+    user = await usersRepo.create({ username, passwordHash: await bcrypt.hash(password, BCRYPT_COST), fullName, role, positions, level, phone });
   } catch (err) {
     const n = sqlErrorNumber(err);
     if (n === 2627 || n === 2601) throw conflict('USERNAME_TAKEN', 'Tên đăng nhập đã tồn tại, vui lòng chọn tên khác');
     throw err;
   }
+  if (role === 'ADMIN') await notifyOwnerAdded(user, actor, false);
+  return user;
 }
 
 /**
  * Đổi họ tên / vai trò (+ vị trí, cấp của nhân viên — F-078). Không tự đổi vai trò; không hạ quản lý cuối cùng (409 LAST_ADMIN — kiểm
  * nguyên tử trong SQL). Vắng `positions` / `level` → giữ như cũ.
  */
-export async function update(id, { fullName, role, positions, level, phone }, actor) {
+export async function update(id, { fullName, role, positions, level, phone, confirmPassword }, actor) {
   if (id === actor.userId && role !== actor.role) throw badRequest('CANNOT_CHANGE_OWN_ROLE', 'Không thể tự đổi vai trò của chính mình');
-  const cur = positions === undefined || level === undefined ? await usersRepo.findById(id) : null;
+  const cur = await usersRepo.findById(id);
+  const promoted = role === 'ADMIN' && Boolean(cur) && cur.role !== 'ADMIN'; // F-096: nâng thành Chủ quán cần xác nhận
+  if (promoted) await confirmOwnerGrant(actor, confirmPassword);
   const next = { fullName, role, positions: positions === undefined ? cur?.positions : positions, level: level ?? cur?.level ?? 'OFFICIAL', phone };
   const user = await withDeadlockRetry(() => usersRepo.update(id, next));
   if (!user) throw notFound('Không tìm thấy tài khoản');
+  if (promoted) await notifyOwnerAdded(user, actor, true);
   return user;
 }
 

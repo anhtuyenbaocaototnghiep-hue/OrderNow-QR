@@ -19,7 +19,14 @@ const today = todayVn();
 const yesterdayUtc = () => new Date(Date.now() - 30 * 3600e3);
 
 async function createUser(username, role, password = 'Pass@123') {
-  const r = await call(admin, 'post', '/api/admin/users', { username, password, fullName: `TK ${username}`, role });
+  // F-096: tạo tài khoản Chủ quán cần mật khẩu của người thao tác (admin thử)
+  const r = await call(admin, 'post', '/api/admin/users', {
+    username,
+    password,
+    fullName: `TK ${username}`,
+    role,
+    ...(role === 'ADMIN' ? { confirmPassword: 'Admin@123' } : {}),
+  });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   return r.body.userId;
 }

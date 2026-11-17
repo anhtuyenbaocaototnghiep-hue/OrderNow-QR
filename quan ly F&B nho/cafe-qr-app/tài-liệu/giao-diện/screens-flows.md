@@ -625,3 +625,8 @@ flowchart LR
 - **Khách:** màn chào có logo trên tên quán; thực đơn có logo tròn trước tên quán ở đầu trang.
 - **Quầy, Quản lý:** logo thay biểu tượng ly cà phê ở thanh quầy, thanh bên Quản lý, trang Hôm nay, trang đăng nhập Quản lý.
 - **Giấy in:** hóa đơn / phiếu tạm tính và thẻ QR in có logo trên tên quán.
+
+## TASK-117 — Thêm tài khoản chủ quán — SCR-20, SCR-47 (F-096, ADR-058, 16/11/2026)
+
+- **SCR-20 Tài khoản:** nút đầu trang "+ Thêm tài khoản". Hộp Thêm / Sửa: ô Vai trò có "Chủ quán (toàn quyền)"; chọn → khung cảnh báo (toàn quyền như bạn, chỉ dùng trang Quản lý) + ô "Mật khẩu của bạn" (bắt buộc); sai mật khẩu → lỗi dưới ô, hộp còn mở.
+- **SCR-47 Cảnh báo:** tin "<A> tạo tài khoản Chủ quán cho <B>" / "<A> đổi <B> thành Chủ quán" (chỉ chủ quán thấy).

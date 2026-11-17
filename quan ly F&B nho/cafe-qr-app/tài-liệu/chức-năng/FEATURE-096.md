@@ -23,7 +23,7 @@
 
 ## Acceptance Criteria
 
-- AC-096-01: Chủ quán tạo tài khoản vai ADMIN kèm mật khẩu của mình đúng → 201; tài khoản mới đăng nhập trang Quản lý, gọi được `GET /api/admin/users`, không đăng nhập máy quầy (403 `OWNER_ADMIN_ONLY`); thiếu `confirmPassword` → 400; sai → 403 `OWNER_CONFIRM_INVALID`; tạo nhân viên không cần xác nhận; đổi vai trò nhân viên thành ADMIN cũng cần xác nhận; sai 5 lần → 429; có cảnh báo ACCESS_GRANT "… tạo tài khoản Chủ quán cho …" (quản lý cửa hàng không thấy); quản lý cửa hàng gọi `POST /api/admin/users` → 403; hai chủ quán khóa / hạ nhau còn một → 409 `LAST_ADMIN`.
+- AC-096-01: Chủ quán tạo tài khoản vai ADMIN kèm mật khẩu của mình đúng → 201; tài khoản mới đăng nhập trang Quản lý, gọi được `GET /api/admin/users`, không đăng nhập máy quầy (403 `OWNER_ADMIN_ONLY`); thiếu `confirmPassword` → 400; sai → 403 `OWNER_CONFIRM_INVALID`; tạo nhân viên không cần xác nhận; đổi vai trò nhân viên thành ADMIN cũng cần xác nhận; sai 5 lần → 429; có cảnh báo ACCESS_GRANT "… tạo tài khoản Chủ quán cho …" (quản lý cửa hàng không thấy); quản lý cửa hàng gọi `POST /api/admin/users` → 403. Chốt luôn còn một chủ quán (409 `LAST_ADMIN`) giữ nguyên — đã có test ở `finance.test.js` (F-036).
 - AC-096-02: (E2E máy tính) Tài khoản → "+ Thêm tài khoản" → chọn vai trò Chủ quán → hiện cảnh báo toàn quyền + ô "Mật khẩu của bạn"; nhập sai → lỗi dưới ô, hộp còn mở; đúng → tạo xong, danh sách có nhãn Chủ quán; đăng nhập trang Quản lý bằng tài khoản mới → vào Hôm nay, mở được Tài khoản; trang Cảnh báo có tin tạo tài khoản Chủ quán.
 
 ## Bằng chứng

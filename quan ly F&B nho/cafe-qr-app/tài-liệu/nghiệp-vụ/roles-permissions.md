@@ -237,3 +237,7 @@ Hai cài đặt "Tự đổi sáng / tối theo giờ" (`guestDaypartTheme`) và
 ## 4.14. Bổ sung F-095 — logo quán (ADR-057, 16/11/2026)
 
 Tải / bỏ logo (`PUT` / `DELETE /api/admin/settings/logo`): **chỉ chủ quán** (như tên, địa chỉ quán). Ảnh logo `GET /api/shop/logo` công khai (khách thấy trên màn chào, thực đơn). Test: `shop-logo.test.js` (AC-095-01).
+
+## 4.15. Bổ sung F-096 — thêm tài khoản chủ quán (ADR-058, 16/11/2026)
+
+Nhiều tài khoản **Chủ quán** (toàn quyền) được phép. Chỉ chủ quán tạo / sửa / xóa tài khoản (như cũ; người được cấp quyền khác chỉ xem danh sách). Tạo tài khoản Chủ quán hoặc nâng ai đó thành Chủ quán phải nhập đúng mật khẩu của chính mình (sai 5 lần → khóa tạm 15 phút); mọi chủ quán nhận cảnh báo. Luôn còn ít nhất một chủ quán đang hoạt động (LAST_ADMIN); không tự đổi vai trò / khóa / xóa mình; chủ quán không đăng nhập máy quầy (F-084). Test: `owner-accounts.test.js` (AC-096-01).

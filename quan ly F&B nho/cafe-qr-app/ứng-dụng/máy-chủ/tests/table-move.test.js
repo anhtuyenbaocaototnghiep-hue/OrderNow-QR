@@ -165,7 +165,13 @@ describe('Chuyển bàn (F-049)', () => {
     const sc = await C.post('/api/sessions/scan', { qrToken: t.body.qrToken });
     const s = sc.body.session.sessionId;
     assert.equal((await C.get(`/api/sessions/${s}`)).body.table.qrToken, undefined, 'nhóm chưa từng chuyển bàn: không gửi mã QR');
-    const u = await call(admin, 'post', '/api/admin/users', { username: 'mover1', password: 'Pass@123', fullName: 'QL chuyển bàn', role: 'ADMIN' });
+    const u = await call(admin, 'post', '/api/admin/users', {
+      username: 'mover1',
+      password: 'Pass@123',
+      fullName: 'QL chuyển bàn',
+      role: 'ADMIN',
+      confirmPassword: 'Admin@123',
+    });
     assert.equal(u.status, 201, JSON.stringify(u.body));
     const mover = await app.login('mover1', 'Pass@123');
     assert.equal((await move(s, '03', mover)).status, 200);

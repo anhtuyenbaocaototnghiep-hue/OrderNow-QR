@@ -893,3 +893,7 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `DELETE /api/admin/settings/logo` (chỉ chủ quán) → `200 { logoUrl: null }`.
 - `GET /api/shop/logo` (công khai): tệp ảnh logo (`Cache-Control: public, max-age=31536000, immutable`); chưa có → `404 NOT_FOUND`.
 - `logoUrl` (`string | null`, dạng `/api/shop/logo?v=<tên tệp>`) thêm vào `shop` của `GET /api/shop`, `GET /api/menu`, `GET /api/auth/me` và dữ liệu phiếu in (`GET /api/sessions/{id}/receipt`, `GET /api/orders/{id}/receipt`).
+
+## Bổ sung F-096 — thêm tài khoản chủ quán (ADR-058, TASK-117, 16/11/2026)
+
+- `POST /api/admin/users`, `PUT /api/admin/users/{id}` (chỉ chủ quán): thêm `confirmPassword` (chuỗi). Bắt buộc khi `role = "ADMIN"` mà tài khoản chưa là chủ quán (tạo mới hoặc nâng vai trò): thiếu → `400 VALIDATION_ERROR` (ô `confirmPassword`); sai → `403 OWNER_CONFIRM_INVALID`; sai 5 lần / 15 phút → `429 APPROVAL_LOCKED`. Thành công → cảnh báo `ACCESS_GRANT` cho chủ quán. Mật khẩu xác nhận không ghi nhật ký.

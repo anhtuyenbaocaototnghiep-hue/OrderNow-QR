@@ -196,13 +196,17 @@ adminRouter.post('/users', async (req, res) => {
       fullName: zText(100).min(1, 'Nhập họ tên'),
       role: role(),
       ...staffFields,
+      confirmPassword: z.string().max(100).optional(), // F-096: mật khẩu của người thao tác khi tạo Chủ quán
     }),
     req.body,
   );
-  res.status(201).json(await userService.create(body));
+  res.status(201).json(await userService.create(body, req.user));
 });
 adminRouter.put('/users/:id', async (req, res) => {
-  const body = parse(z.object({ fullName: zText(100).min(1, 'Nhập họ tên'), role: role(), ...staffFields }), req.body);
+  const body = parse(
+    z.object({ fullName: zText(100).min(1, 'Nhập họ tên'), role: role(), ...staffFields, confirmPassword: z.string().max(100).optional() }), // F-096
+    req.body,
+  );
   res.json(await userService.update(paramId(req), body, req.user));
 });
 adminRouter.post('/users/:id/reset-password', async (req, res) => {
