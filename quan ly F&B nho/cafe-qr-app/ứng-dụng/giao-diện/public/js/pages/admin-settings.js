@@ -368,7 +368,7 @@ function render(s) {
       el(
         'p',
         { class: 'small muted' },
-        'Điện thoại khách đang bật chế độ tối thì màn gọi món tối cả ban ngày. Đang mở mà qua 18 giờ là tự chuyển, không cần tải lại. Tắt: luôn nền sáng như trước.',
+        'Màu đổi theo giờ của quán — điện thoại khách, máy tính đều như nhau. Đang mở mà qua 18 giờ là tự chuyển, không cần tải lại. Tắt: luôn nền sáng như trước.',
       ),
       el(
         'label',

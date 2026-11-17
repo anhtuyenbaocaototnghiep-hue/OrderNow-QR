@@ -1699,7 +1699,7 @@ body.customer .alert.info {
    Thuộc tính trên <html> do js/guest-theme.js đặt trước khi trang vẽ — chỉ ba trang khách t/index, t/menu, t/track
    (quầy dùng chung customer.css không có các thuộc tính này nên không đổi). Tỷ lệ tương phản ghi ở design-system.md. */
 
-/* Giao diện tối (D-231): 18:00–4:59 hoặc điện thoại bật chế độ tối — đổi token, giữ bố cục */
+/* Giao diện tối (D-231, ADR-060 D-240): 18:00–4:59 giờ quán, không theo chế độ tối của máy — đổi token, giữ bố cục */
 :root[data-theme='dark'] {
   color-scheme: dark;
   --c-bg: #16100c;

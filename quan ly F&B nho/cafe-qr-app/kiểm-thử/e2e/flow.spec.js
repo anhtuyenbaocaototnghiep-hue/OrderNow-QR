@@ -4487,7 +4487,7 @@ const lumOf = (page, sel, prop = 'backgroundColor') =>
       return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
     }, prop);
 
-test('giao diện khách theo giờ: 8 giờ sáng có ánh nắng ở khung giới thiệu, 8 giờ tối màn chào / thực đơn / theo dõi đơn chuyển nền tối, đang mở lúc 17:59 tự chuyển tối khi qua 18:00 (lời chào đổi theo), điện thoại bật chế độ tối thì tối cả ban ngày; tắt cài đặt → tối vẫn sáng (F-094, AC-094-02)', async ({
+test('giao diện khách theo giờ: 8 giờ sáng có ánh nắng ở khung giới thiệu, 8 giờ tối màn chào / thực đơn / theo dõi đơn chuyển nền tối, đang mở lúc 17:59 tự chuyển tối khi qua 18:00 (lời chào đổi theo), máy bật chế độ tối vẫn theo giờ quán (ban ngày sáng); tắt cài đặt → tối vẫn sáng (F-094, AC-094-02)', async ({
   request,
 }) => {
   await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: true, guestDaypartTheme: true, guestSeasonDecor: true });
@@ -4555,15 +4555,16 @@ test('giao diện khách theo giờ: 8 giờ sáng có ánh nắng ở khung gi�
     await expect.poll(() => lumOf(P, 'body')).toBeLessThan(0.05);
     await expect(P).toHaveURL(new RegExp('/t/' + t.TG3.qrToken + '$'));
 
-    // Điện thoại bật chế độ tối lúc 10:00 → tối dù là buổi sáng
+    // Máy bật chế độ tối lúc 10:00 → vẫn theo giờ quán: buổi sáng, nền sáng (ADR-060 D-240 — máy nào cũng như nhau)
     const Q = await phonePage('che-do-toi', { colorScheme: 'dark' });
     await Q.clock.setFixedTime(vnTime('2026-11-16T10:00:00'));
     await Q.goto('/t/' + t.TG4.qrToken);
     await expect(Q.locator('.c-home')).toBeVisible();
     await expect(Q.locator('html')).toHaveAttribute('data-daypart', 'morning');
-    await expect(Q.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(Q.locator('html')).not.toHaveAttribute('data-theme', 'dark');
+    expect(await lumOf(Q, 'body')).toBeGreaterThan(0.8);
 
-    // Tắt "Tự đổi sáng / tối theo giờ" → 20:00 vẫn sáng (cả điện thoại bật chế độ tối), không còn data-daypart
+    // Tắt "Tự đổi sáng / tối theo giờ" → 20:00 vẫn sáng, không còn data-daypart
     await apiAs(request, 'put', '/api/admin/settings', { guestDaypartTheme: false });
     const shopCall = N.waitForRequest((r) => new URL(r.url()).pathname === '/api/shop');
     await N.goto('/t/' + t.TG2.qrToken);
