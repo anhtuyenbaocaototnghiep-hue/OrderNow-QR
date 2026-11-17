@@ -96,9 +96,12 @@ export async function list({ fromUtc, toUtc, userId = null }) {
   return r.recordset.map(map);
 }
 
-export async function update(id, { clockIn, clockOut, reason, editedBy }) {
+/** clearDecision (ADR-061 D-243): bỏ quyết định trả lương đã có — giờ đổi thì phải duyệt lại. */
+export async function update(id, { clockIn, clockOut, reason, editedBy, clearDecision = false }) {
   await query(
-    `UPDATE dbo.Attendance SET ClockIn = @i, ClockOut = @o, EditedBy = @e, EditReason = @r, EditedAt = SYSUTCDATETIME()
+    `UPDATE dbo.Attendance SET ClockIn = @i, ClockOut = @o, EditedBy = @e, EditReason = @r, EditedAt = SYSUTCDATETIME(),
+       PayDecision = CASE WHEN @cd = 1 THEN NULL ELSE PayDecision END, DecisionNote = CASE WHEN @cd = 1 THEN NULL ELSE DecisionNote END,
+       DecidedBy = CASE WHEN @cd = 1 THEN NULL ELSE DecidedBy END, DecidedAt = CASE WHEN @cd = 1 THEN NULL ELSE DecidedAt END
      WHERE AttId = @id`,
     {
       id: [sql.Int, id],
@@ -106,9 +109,20 @@ export async function update(id, { clockIn, clockOut, reason, editedBy }) {
       o: [sql.DateTime2(0), clockOut],
       e: [sql.Int, editedBy],
       r: [sql.NVarChar(200), reason],
+      cd: [sql.Bit, clearDecision],
     },
   );
   return getById(id);
+}
+
+/** Có lần chấm công giao với [fromUtc, toUtc) (đang mở tính tới bây giờ)? — ADR-061: ngày lễ vào ngày mình làm. */
+export async function workedBetween(userId, fromUtc, toUtc) {
+  const r = await query(`SELECT TOP 1 1 AS X FROM dbo.Attendance WHERE UserId = @u AND ClockIn < @t AND ISNULL(ClockOut, SYSUTCDATETIME()) > @f`, {
+    u: [sql.Int, userId],
+    f: [sql.DateTime2(0), fromUtc],
+    t: [sql.DateTime2(0), toUtc],
+  });
+  return r.recordset.length > 0;
 }
 
 export async function createManual({ userId, clockIn, clockOut, reason, editedBy }) {
@@ -353,6 +367,15 @@ export async function disputes({ userId = null, attIds = null, openOnly = false 
     { u: [sql.Int, userId], ids: attIds ? ids(attIds) : [sql.VarChar(4000), null], open: [sql.Bit, openOnly] },
   );
   return r.recordset.map(mapDispute);
+}
+
+export async function disputeById(id) {
+  const r = await query(
+    `SELECT d.*, u.FullName, ru.FullName AS ResolvedByName FROM dbo.AttendanceDisputes d
+     JOIN dbo.Users u ON u.UserId = d.UserId LEFT JOIN dbo.Users ru ON ru.UserId = d.ResolvedBy WHERE d.DisputeId = @id`,
+    { id: [sql.Int, id] },
+  );
+  return r.recordset[0] ? mapDispute(r.recordset[0]) : null;
 }
 
 export async function resolveDispute(id, { resolution, by }) {

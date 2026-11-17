@@ -31,6 +31,10 @@
   - chênh "đã trả";
   - việc chờ tạm ứng, có nút "Duyệt ở Sổ quỹ".
 
+- **Phụ:**
+  - `sp_DeleteUser` coi lịch sử chấm công / lương / tạm ứng là "đã có thao tác", nên chỉ ẩn tài khoản, tránh lỗi khóa ngoại khi xóa hẳn. Khi xóa hẳn tài khoản thì xóa luôn hồ sơ lương chưa dùng.
+  - Trang Cảnh báo có thêm nhãn "Cấp quyền" và "Đổi lương / mở lại bảng lương", kèm nội dung chi tiết. Trước đây loại cảnh báo này hiện mã thô và dòng "Giá trị: undefined".
+
 **Ngoài phạm vi** (đợt chấm công sau): máy quầy đăng ký, ảnh khi chấm công, sửa giờ của người khác thành việc chờ, lịch làm của mình / ngày đã qua, đóng ca, xem chi tiết ca, đổi mật khẩu / PIN.
 
 ## Test

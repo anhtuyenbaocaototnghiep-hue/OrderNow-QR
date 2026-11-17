@@ -23,6 +23,8 @@ const KIND = {
   OFFLINE_SALE: 'Bán lúc mất mạng cần kiểm', // F-074
   EXPIRY_RISK: 'Nguyên liệu sắp hết hạn', // F-075
   PRICE_CHANGE: 'Quản lý cửa hàng đổi giá món', // F-077
+  ACCESS_GRANT: 'Cấp quyền', // F-079, F-096
+  PAYROLL_CHANGE: 'Đổi lương / mở lại bảng lương', // F-098 (ADR-061 D-242)
 };
 const STATUS = { NEW: 'Mới', SEEN: 'Đã xem', RESOLVED: 'Đã xử lý' };
 const state = { status: 'NEW' };
@@ -183,6 +185,14 @@ function facts(a) {
     lines.push(
       `Khoản #${d.cashTxnId} · ${d.category ?? ''}: ${money(d.amount)}${d.newAmount !== null && d.newAmount !== undefined ? ` → ${money(d.newAmount)}` : ' (hủy)'}`,
     );
+  else if (a.kind === 'PAYROLL_CHANGE')
+    lines.push(
+      ...(d.kind === 'REOPEN'
+        ? [`Bảng lương tháng ${d.month?.slice(5)}/${d.month?.slice(0, 4)} mở lại — chốt lại thì bản cũ còn ở Lịch sử chốt`]
+        : (d.changes ?? []).map((c) => `${c.label}: ${c.from} → ${c.to}`)),
+      `Người làm: ${d.by} — chưa đúng thì sửa lại ở trang Lương, hoặc thu quyền Lương ở Tài khoản → Quyền`,
+    );
+  else if (a.kind === 'ACCESS_GRANT') lines.push(d.labels?.length ? `Quyền: ${d.labels.join(', ')} → ${d.to}` : `Tài khoản: ${d.to}`, `Người cấp: ${d.by}`);
   else lines.push(`Giá trị: ${d.value}${unit} · ngưỡng ${d.fixed}${unit}`);
   if (d.normal)
     lines.push(

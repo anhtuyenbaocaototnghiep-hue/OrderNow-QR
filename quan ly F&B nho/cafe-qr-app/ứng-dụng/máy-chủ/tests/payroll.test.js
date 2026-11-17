@@ -223,9 +223,9 @@ describe('Tính lương từ chấm công (F-073)', () => {
     const relocked = ok(await call(admin, 'post', `/api/admin/payroll/${M}/lock`));
     const l = lineOf(relocked, 'thuha');
     assert.deepEqual(
-      [l.netPay, l.paidMethod, Boolean(l.paidAt), Boolean(l.ackAt)],
-      [736_666, 'CASH', true, true],
-      'giữ "đã trả" / "đã xem" của lần chốt trước',
+      [l.netPay, l.paidMethod, Boolean(l.paidAt), l.paidAmount, Boolean(l.ackAt)],
+      [736_666, 'CASH', true, 686_666, false],
+      'giữ "đã trả" (kèm số đã trả) của lần chốt trước; thực nhận đổi → bỏ "đã xem" (ADR-061 D-244)',
     );
   });
 

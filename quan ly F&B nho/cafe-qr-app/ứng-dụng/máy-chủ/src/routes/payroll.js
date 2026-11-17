@@ -103,7 +103,7 @@ payrollAdminRouter.post('/payroll/:month/adjustments', async (req, res) => {
   );
   res.status(201).json(await payrollService.addAdjustment({ month: monthParam(req), ...body }, req.user));
 });
-payrollAdminRouter.delete('/payroll/adjustments/:id', async (req, res) => res.json({ result: await payrollService.removeAdjustment(paramId(req)) }));
+payrollAdminRouter.delete('/payroll/adjustments/:id', async (req, res) => res.json({ result: await payrollService.removeAdjustment(paramId(req), req.user) }));
 payrollAdminRouter.post('/payroll/team-bonus', async (req, res) => {
   const body = parse(z.object({ shiftId: zId(), amount: zMoney().min(1000, 'Tối thiểu 1.000đ'), reason: zText(150).min(3, 'Nhập lý do') }), req.body);
   res.status(201).json(await payrollService.teamBonus(body, req.user));
@@ -161,12 +161,12 @@ payrollAdminRouter.get('/holidays', async (req, res) => {
 payrollAdminRouter.put('/holidays/:date', async (req, res) => {
   const { date } = parse(z.object({ date: zIsoDate() }), req.params);
   const { name } = parse(z.object({ name: zText(100).min(1, 'Nhập tên ngày lễ') }), req.body);
-  await payrollService.saveHoliday(date, name);
+  await payrollService.saveHoliday(date, name, req.user);
   res.json({ date, name });
 });
 payrollAdminRouter.delete('/holidays/:date', async (req, res) => {
   const { date } = parse(z.object({ date: zIsoDate() }), req.params);
-  res.json({ result: await payrollService.removeHoliday(date) });
+  res.json({ result: await payrollService.removeHoliday(date, req.user) });
 });
 
 payrollAdminRouter.post('/attendance/:id/decision', async (req, res) => {

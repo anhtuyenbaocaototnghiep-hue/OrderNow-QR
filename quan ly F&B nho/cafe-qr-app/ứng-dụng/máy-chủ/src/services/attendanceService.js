@@ -87,7 +87,17 @@ export async function update(id, { clockIn, clockOut, reason }, user) {
   if (await attendanceRepo.overlaps(att.user.userId, clockIn, clockOut, id)) {
     throw conflict('ATTENDANCE_OVERLAP', 'Trùng thời gian với một lần chấm công khác của người này');
   }
-  return attendanceRepo.update(id, { clockIn, clockOut, reason, editedBy: user.userId });
+  // ADR-061 D-243: người không phải chủ quán đổi giờ của lần đã duyệt "Tính giờ thật" / "Tính theo lịch" → bỏ quyết định, chờ duyệt lại.
+  // "Không tính" giữ (không làm tăng lương). So theo giây (DATETIME2(0)).
+  const sec = (d) => (d ? Math.round(new Date(d).getTime() / 1000) : null);
+  const timesChanged = sec(att.clockIn) !== sec(clockIn) || sec(att.clockOut) !== sec(clockOut);
+  const clearDecision = user.role !== 'ADMIN' && timesChanged && ['ACTUAL', 'SCHEDULE'].includes(att.payDecision);
+  return attendanceRepo.update(id, { clockIn, clockOut, reason, editedBy: user.userId, clearDecision });
+}
+
+/** ADR-061 D-241: việc lương của chính mình (quyết định giờ công, báo sai, báo quên) — chỉ chủ quán tự làm được. */
+function assertNotOwnPay(user, userId, message) {
+  if (user.role !== 'ADMIN' && userId === user.userId) throw forbidden(message, 'PAYROLL_SELF');
 }
 
 export async function createManual({ userId, clockIn, clockOut, reason }, user) {
@@ -223,6 +233,7 @@ export async function applyShiftClose({ clockOut = [], present = [], absent = []
 export async function decide(id, { decision, note }, user) {
   const att = await attendanceRepo.getById(id);
   if (!att) throw notFound('Không tìm thấy bản ghi chấm công');
+  assertNotOwnPay(user, att.user.userId, 'Không tự quyết định giờ công của chính mình — nhờ chủ quán');
   if (!att.clockOut) throw conflict('ATTENDANCE_OPEN', 'Người này chưa chấm ra — chấm ra hoặc sửa giờ ra trước');
   await assertMonthOpen(att.clockIn);
   return attendanceRepo.decide(id, { decision, note, by: user.userId });
@@ -239,6 +250,9 @@ export async function dispute(attId, note, user) {
 }
 
 export async function resolveDispute(id, resolution, user) {
+  const d = await attendanceRepo.disputeById(id);
+  if (!d || d.resolvedAt) throw notFound('Không tìm thấy báo sai đang chờ');
+  assertNotOwnPay(user, d.user.userId, 'Không tự xử lý báo sai giờ công của chính mình — nhờ chủ quán');
   if (!(await attendanceRepo.resolveDispute(id, { resolution, by: user.userId }))) throw notFound('Không tìm thấy báo sai đang chờ');
   return { resolved: true };
 }
@@ -312,6 +326,7 @@ export async function reportMissed({ clockIn, clockOut, note }, user) {
 export async function resolveMissed(id, { approve, clockIn, clockOut, note }, user) {
   const req = await attendanceRepo.missedById(id);
   if (!req || req.status !== 'PENDING') throw notFound('Không tìm thấy báo quên chấm công đang chờ');
+  assertNotOwnPay(user, req.user.userId, 'Không tự duyệt báo quên chấm công của chính mình — nhờ chủ quán');
   if (!approve) {
     if (!(await attendanceRepo.rejectMissed(id, { resolution: note, by: user.userId }))) throw notFound('Không tìm thấy báo quên chấm công đang chờ');
     return { status: 'REJECTED' };

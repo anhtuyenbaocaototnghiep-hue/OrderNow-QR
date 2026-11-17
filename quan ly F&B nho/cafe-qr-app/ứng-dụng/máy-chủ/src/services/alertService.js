@@ -338,6 +338,39 @@ async function checkOwnerAdded({ target, actor, promoted }) {
 }
 
 /**
+ * F-098 (ADR-061 D-242): người không phải chủ quán đổi hồ sơ lương của người khác (lương, ngân hàng, số tài khoản — ghi cũ → mới) hoặc mở lại
+ * bảng lương đã chốt → cảnh báo PAYROLL_CHANGE (chỉ chủ quán xem) + email tức thì theo cài đặt. Một cảnh báo mỗi lần.
+ */
+export const onPayrollChange = (info) => withDeadlockRetry(() => checkPayrollChange(info));
+
+async function checkPayrollChange({ kind, actor, target = null, changes = [], created = false, month = null, reason = null }) {
+  const s = await getSettings();
+  const monthText = month ? `${month.slice(5)}/${month.slice(0, 4)}` : '';
+  const title =
+    kind === 'REOPEN'
+      ? `${actor.fullName} mở lại bảng lương tháng ${monthText} đã chốt`
+      : `${actor.fullName} ${created ? 'tạo' : 'đổi'} hồ sơ lương của ${target.fullName}: ${changes.map((c) => c.label.toLowerCase()).join(', ')}`;
+  const alert = await immediateAlert({
+    kind: 'PAYROLL_CHANGE',
+    severity: kind === 'REOPEN' || changes.some((c) => c.bank) ? 'HIGH' : 'MEDIUM',
+    userId: target?.userId ?? actor.userId,
+    title: title.slice(0, 200),
+    detail: { kind, by: actor.fullName, to: target?.fullName ?? null, month, reason: reason ? maskPhones(reason) : null, changes, created },
+    dedupeKey: `PAYROLL:${kind}:${target?.userId ?? month}:${Date.now()}`,
+  });
+  if (!alert) return { alert: null, email: null };
+  const rows =
+    kind === 'REOPEN'
+      ? [
+          ['Tháng', monthText, true],
+          ['Người mở lại', actor.fullName, false],
+          ['Lý do', maskPhones(reason), false],
+        ]
+      : [['Nhân viên', target.fullName, true], ...changes.map((c) => [c.label, `${c.from} → ${c.to}`, c.bank]), ['Người sửa', actor.fullName, false]];
+  return { alert, email: await enqueueImmediate(s, alert, rows, 'Không đúng? Vào trang Lương sửa lại, hoặc thu quyền Lương ở Tài khoản → Quyền.') };
+}
+
+/**
  * F-075 (ADR-033 D-150): 06:00 còn nguyên liệu sắp / đã hết hạn trong 2 ngày có giá trị → một cảnh báo mỗi ngày (khóa theo ngày),
  * ghi số tiền sẽ phải bỏ + món nên mời khách để dùng kịp.
  */

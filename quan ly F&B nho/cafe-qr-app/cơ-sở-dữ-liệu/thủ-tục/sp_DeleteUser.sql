@@ -48,6 +48,16 @@ BEGIN
      OR EXISTS (SELECT 1 FROM dbo.Alerts WHERE UserId = @UserId OR HandledBy = @UserId)  -- F-060: cảnh báo bất thường (người liên quan / người xử lý)
      OR EXISTS (SELECT 1 FROM dbo.AccessRequests WHERE UserId = @UserId OR DecidedBy = @UserId)   -- F-079: xin quyền / người duyệt
      OR EXISTS (SELECT 1 FROM dbo.UserGrants WHERE GrantedBy = @UserId AND UserId <> @UserId)     -- F-079: người đã cấp quyền cho người khác
+     -- F-072 / F-073 / F-098: lịch sử chấm công, lương, tạm ứng (khóa ngoại — xóa hẳn sẽ lỗi 547)
+     OR EXISTS (SELECT 1 FROM dbo.Attendance WHERE ClosedBy = @UserId OR CheckedBy = @UserId OR DecidedBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.AttendanceDisputes WHERE UserId = @UserId OR ResolvedBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.MissedPunches WHERE UserId = @UserId OR ResolvedBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.CashTransactions WHERE EmployeeId = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.PayProfiles WHERE UpdatedBy = @UserId AND UserId <> @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.PayrollAdjustments WHERE UserId = @UserId OR CreatedBy = @UserId OR DeletedBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.PayrollLines WHERE UserId = @UserId OR PaidBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.PayrollRuns WHERE LockedBy = @UserId OR ReopenedBy = @UserId)
+     OR EXISTS (SELECT 1 FROM dbo.PayrollRunVersions WHERE LockedBy = @UserId OR ReopenedBy = @UserId OR SupersededBy = @UserId)
   BEGIN
     UPDATE dbo.Users SET DeletedAt = SYSUTCDATETIME(), IsActive = 0 WHERE UserId = @UserId;
     SET @Result = 'ARCHIVED';
@@ -56,6 +66,7 @@ BEGIN
   BEGIN
     DELETE dbo.Rosters WHERE UserId = @UserId;   -- lịch phân ca chưa làm (không phải lịch sử)
     DELETE dbo.UserGrants WHERE UserId = @UserId; -- F-079: quyền riêng là cấu hình của tài khoản
+    DELETE dbo.PayProfiles WHERE UserId = @UserId; -- F-073: hồ sơ lương chưa dùng (chưa có dòng lương / chấm công) là cấu hình
     DELETE dbo.Users WHERE UserId = @UserId;
     SET @Result = 'DELETED';
   END

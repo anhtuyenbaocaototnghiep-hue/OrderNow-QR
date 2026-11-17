@@ -173,4 +173,5 @@ export const ISSUE_LABEL = {
   DISPUTED: 'Người đóng ca báo không có mặt',
   EMPLOYEE_DISPUTE: 'Nhân viên báo sai giờ',
   MISSED_PUNCH: 'Nhân viên báo quên chấm công — duyệt thì thêm lần chấm công này', // ADR-031 D-137
+  ADVANCE_PENDING: 'Tạm ứng lương chưa duyệt — duyệt hoặc từ chối ở Sổ quỹ rồi mới chốt', // ADR-061 D-244
 };

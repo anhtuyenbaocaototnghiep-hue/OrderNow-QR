@@ -230,8 +230,16 @@ function pendingCard() {
             {},
             el('strong', {}, p.user.fullName),
             rec ? ` · ${dateOnly(rec.clockIn)} ${time(rec.clockIn)}–${rec.clockOut ? time(rec.clockOut) : '…'}` : null,
+            p.code === 'ADVANCE_PENDING' ? ` · ${money(p.amount)}, ghi lúc ${dateTime(p.createdAt)}` : null,
           ),
-          el('div', { class: 'small' }, p.label, dispute ? `: "${dispute.note}"` : null, p.code === 'MISSED_PUNCH' ? `: "${p.note}"` : null),
+          el(
+            'div',
+            { class: 'small' },
+            p.label,
+            dispute ? `: "${dispute.note}"` : null,
+            p.code === 'MISSED_PUNCH' ? `: "${p.note}"` : null,
+            p.code === 'ADVANCE_PENDING' && p.note ? `: "${p.note}"` : null,
+          ),
           el(
             'div',
             { class: 'row wrap' },
@@ -282,6 +290,7 @@ function pendingCard() {
                 ]
               : []),
             ['OPEN', 'AUTO_CLOSED', 'EMPLOYEE_DISPUTE'].includes(p.code) ? el('a', { class: 'btn btn-sm', href: '/admin/staff' }, 'Sửa giờ ở Nhân sự') : null,
+            p.code === 'ADVANCE_PENDING' ? el('a', { class: 'btn btn-sm', href: '/admin/cash' }, 'Duyệt ở Sổ quỹ') : null,
           ),
         );
       }),
@@ -290,6 +299,18 @@ function pendingCard() {
 }
 
 // ---------- Bảng lương ----------
+/** ADR-061 D-244: đã trả — chốt lại mà thực nhận khác số đã trả thì hiện phần còn thiếu / trả dư. */
+function paidBadge(l) {
+  const how = l.paidMethod === 'TRANSFER' ? 'CK' : 'TM';
+  const diff = l.paidAmount === null || l.paidAmount === undefined ? 0 : l.netPay - l.paidAmount;
+  if (!diff) return el('span', { class: 'badge ok' }, `Đã trả ${how}`);
+  return el(
+    'span',
+    { class: 'badge pending', title: `Đã trả ${money(l.paidAmount)} trước khi chốt lại` },
+    `Đã trả ${how} ${money(l.paidAmount)} · ${diff > 0 ? `còn thiếu ${money(diff)}` : `trả dư ${money(-diff)}`}`,
+  );
+}
+
 function linesCard() {
   const d = state.data;
   const locked = d.status === 'LOCKED';
@@ -337,7 +358,7 @@ function linesCard() {
                 el('button', { class: 'btn btn-sm', type: 'button', onclick: () => payslip(l) }, 'Phiếu'),
                 locked
                   ? l.paidAt
-                    ? el('span', { class: 'badge ok' }, `Đã trả ${l.paidMethod === 'TRANSFER' ? 'CK' : 'TM'}`)
+                    ? paidBadge(l)
                     : el('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: () => payDialog(l) }, 'Trả lương')
                   : null,
               ),
@@ -494,6 +515,25 @@ function adjustCard() {
           ),
         )
       : el('p', { class: 'muted small' }, 'Chưa có khoản nào.'),
+    d.deletedAdjustments?.length
+      ? el(
+          'details',
+          { class: 'deleted-adjustments' },
+          el('summary', { class: 'small' }, `Đã xóa (${d.deletedAdjustments.length})`),
+          el(
+            'ul',
+            { class: 'plain-list' },
+            d.deletedAdjustments.map((a) =>
+              el(
+                'li',
+                { class: 'small muted' },
+                el('s', {}, `${a.fullName}: ${a.amount > 0 ? '+' : ''}${money(a.amount)} — ${a.reason}`),
+                ` · xóa bởi ${a.deletedBy ?? '?'} lúc ${dateTime(a.deletedAt)}`,
+              ),
+            ),
+          ),
+        )
+      : null,
     locked
       ? null
       : [
@@ -741,6 +781,73 @@ async function holidaysCard() {
   );
 }
 
+// ---------- Lịch sử chốt (ADR-061 D-244) ----------
+function versionDialog(v) {
+  modal({
+    title: `Bản chốt lúc ${dateTime(v.lockedAt)}`,
+    body: el(
+      'div',
+      { class: 'table-wrap' },
+      el(
+        'table',
+        { class: 'table' },
+        el(
+          'thead',
+          {},
+          el(
+            'tr',
+            {},
+            ['Người', 'Giờ', 'Thực nhận', 'Đã trả'].map((h) => el('th', {}, h)),
+          ),
+        ),
+        el(
+          'tbody',
+          {},
+          v.lines.map((l) =>
+            el(
+              'tr',
+              {},
+              el('td', {}, l.fullName),
+              el('td', {}, hours(l.minutes)),
+              el('td', {}, money(l.netPay)),
+              el('td', {}, l.paidAt ? `${money(l.paidAmount ?? l.netPay)} (${l.paidMethod === 'TRANSFER' ? 'CK' : 'TM'})` : '—'),
+            ),
+          ),
+        ),
+      ),
+    ),
+    actions: [{ label: 'Đóng', value: null }],
+  });
+}
+
+function versionsCard() {
+  const vs = state.data.versions ?? [];
+  if (!vs.length) return null;
+  return el(
+    'section',
+    { class: 'card' },
+    el('h2', {}, `Lịch sử chốt (${vs.length})`),
+    el('p', { class: 'small muted' }, 'Mỗi lần mở lại rồi chốt lại, bản chốt trước được giữ ở đây — không xóa được.'),
+    el(
+      'ul',
+      { class: 'plain-list' },
+      vs.map((v) =>
+        el(
+          'li',
+          { class: 'row between wrap' },
+          el(
+            'span',
+            {},
+            `Chốt ${v.lockedAt ? dateTime(v.lockedAt) : '?'}${v.lockedBy ? ` bởi ${v.lockedBy}` : ''} · thực nhận ${money(v.totalNet)}`,
+            v.reopenedAt ? el('div', { class: 'small muted' }, `Mở lại ${dateTime(v.reopenedAt)} bởi ${v.reopenedBy ?? '?'} — ${v.reopenReason ?? ''}`) : null,
+          ),
+          el('button', { class: 'btn btn-sm', type: 'button', onclick: () => versionDialog(v) }, 'Xem'),
+        ),
+      ),
+    ),
+  );
+}
+
 async function render() {
   const d = state.data;
   clear(
@@ -749,6 +856,7 @@ async function render() {
     pendingCard(),
     linesCard(),
     adjustCard(),
+    versionsCard(),
     profilesCard(),
     await holidaysCard(),
     d.run?.reopenedAt

@@ -303,7 +303,7 @@ export const STORE_MGR_SETTINGS = [
 ];
 
 /** Loại cảnh báo chỉ chủ quán xem (khóa đăng nhập; giá món do quản lý cửa hàng đổi; cấp quyền dính tiền). */
-export const OWNER_ONLY_ALERTS = ['AUTH_LOCK', 'PRICE_CHANGE', 'ACCESS_GRANT'];
+export const OWNER_ONLY_ALERTS = ['AUTH_LOCK', 'PRICE_CHANGE', 'ACCESS_GRANT', 'PAYROLL_CHANGE']; // ADR-061 D-242: đổi lương / tài khoản, mở lại bảng lương
 
 /** Có ít nhất một trong các vị trí? (F-078; F-079: theo quyền pos.cashier / pos.barista / pos.server — đặt riêng được.) */
 export const hasPosition = (user, ...positions) => positions.some((p) => hasCap(user, POSITION_CAP[p]));

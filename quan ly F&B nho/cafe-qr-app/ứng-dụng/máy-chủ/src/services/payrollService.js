@@ -14,10 +14,43 @@ import * as payrollRepo from '../repositories/payrollRepo.js';
 import * as shiftsRepo from '../repositories/shiftsRepo.js';
 import * as usersRepo from '../repositories/usersRepo.js';
 import { addDays, eachDay, todayVn, vnDayStartUtc } from '../utils/time.js';
+import { onPayrollChange } from './alertService.js';
 import { MISSED_PUNCH_DAYS } from './attendanceService.js';
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 export const currentMonth = () => todayVn().slice(0, 7);
+
+// ---- ADR-061 D-241 / D-242: không ai trừ chủ quán làm việc lương cho chính mình; đổi của người khác thì báo chủ quán ----
+const isOwner = (user) => user?.role === 'ADMIN';
+function assertNotSelf(user, userId, message) {
+  if (user && !isOwner(user) && userId === user.userId) throw forbidden(message, 'PAYROLL_SELF');
+}
+const notifyOwner = (info) => onPayrollChange(info).catch((err) => console.error('Không gửi được cảnh báo lương:', err.message));
+
+const PROFILE_FIELDS = [
+  ['payType', 'Cách trả lương', (v) => ({ HOURLY: 'theo giờ', MONTHLY: 'theo tháng' })[v] ?? v],
+  ['hourlyRate', 'Lương giờ', (v) => vnd(v)],
+  ['monthlySalary', 'Lương tháng', (v) => vnd(v)],
+  ['nightAllowance', 'Phụ cấp tối / giờ', (v) => vnd(v)],
+  ['nightStart', 'Giờ tính tối', (v) => v],
+  ['holidayMultiplier', 'Hệ số ngày lễ', (v) => `× ${v}`],
+  ['attendanceBonus', 'Chuyên cần', (v) => vnd(v)],
+  ['bankBin', 'Ngân hàng', (v) => bankName(v) ?? v, true],
+  ['bankAccount', 'Số tài khoản', (v) => `••••${String(v).slice(-4)}`, true],
+  ['bankAccountName', 'Tên chủ tài khoản', (v) => v, true],
+];
+const vnd = (v) => `${Number(v ?? 0).toLocaleString('vi-VN')}đ`;
+const blank = (v) => v === null || v === undefined || v === '';
+/** Các ô hồ sơ lương đổi (cũ → mới); hồ sơ mới thì mọi ô có giá trị. */
+function profileChanges(before, after) {
+  return PROFILE_FIELDS.flatMap(([key, label, fmt, bank]) => {
+    const [a, b] = [before?.[key], after[key]];
+    const same =
+      blank(a) && blank(b) ? true : typeof b === 'number' || typeof a === 'number' ? Number(a ?? 0) === Number(b ?? 0) : String(a ?? '') === String(b ?? '');
+    if (same) return [];
+    return [{ key, label, from: blank(a) ? '(trống)' : fmt(a), to: blank(b) ? '(trống)' : fmt(b), bank: Boolean(bank) }];
+  });
+}
 
 export function monthRange(month) {
   if (!MONTH_RE.test(month ?? '')) throw badRequest('VALIDATION_ERROR', 'Tháng phải có dạng YYYY-MM');
@@ -77,15 +110,29 @@ const missedRows = (list) =>
     user: m.user,
   }));
 
+/** ADR-061 D-244: tạm ứng lương còn chờ duyệt trong tháng — duyệt / từ chối ở Sổ quỹ rồi mới chốt. */
+const advanceRows = (list) =>
+  list.map((a) => ({
+    code: 'ADVANCE_PENDING',
+    label: ISSUE_LABEL.ADVANCE_PENDING,
+    attId: null,
+    cashTxnId: a.cashTxnId,
+    amount: a.amount,
+    createdAt: a.createdAt,
+    note: a.reason,
+    user: a.user,
+  }));
+
 /** Bảng lương nháp của tháng (tính trực tiếp). */
 export async function compute(month) {
   const { from, to, fromUtc, toUtc } = monthRange(month);
   const data = await load(from, to);
-  const [advances, adjustments, users, missed] = await Promise.all([
+  const [advances, adjustments, users, missed, waitingAdvances] = await Promise.all([
     payrollRepo.advances(fromUtc, toUtc),
     payrollRepo.adjustments(month),
     usersRepo.list(),
     attendanceRepo.missedIn({ fromUtc, toUtc, pendingOnly: true }),
+    payrollRepo.pendingAdvances(fromUtc, toUtc),
   ]);
   const ids = new Set([
     ...data.profiles.keys(),
@@ -94,7 +141,7 @@ export async function compute(month) {
     ...adjustments.map((a) => a.userId),
   ]);
   const lines = [];
-  const pending = missedRows(missed);
+  const pending = [...missedRows(missed), ...advanceRows(waitingAdvances)];
   for (const userId of ids) {
     const user = users.find((u) => u.userId === userId) ?? { userId, fullName: `#${userId}`, role: '' };
     const evs = data.records.filter((a) => a.user.userId === userId).map((a) => evalRecord(a, data.rosters));
@@ -143,9 +190,10 @@ export async function compute(month) {
   return { month, lines, pending, totals, adjustments };
 }
 
-/** Bảng lương: đã chốt → các dòng đã lưu; chưa → nháp. */
+/** Bảng lương: đã chốt → các dòng đã lưu; chưa → nháp. Kèm khoản cộng / trừ đã ẩn và các bản chốt trước (ADR-061 D-244). */
 export async function get(month) {
   const run = await payrollRepo.run(month);
+  const [deletedAdjustments, versions] = await Promise.all([payrollRepo.deletedAdjustments(month), payrollRepo.versions(month)]);
   if (run?.status === 'LOCKED') {
     const lines = await payrollRepo.lines(month);
     const totals = lines.reduce((t, l) => ({ netPay: t.netPay + l.netPay, minutes: t.minutes + l.minutes, advances: t.advances + l.advances }), {
@@ -153,9 +201,9 @@ export async function get(month) {
       minutes: 0,
       advances: 0,
     });
-    return { month, status: 'LOCKED', run, lines, pending: [], totals, adjustments: await payrollRepo.adjustments(month) };
+    return { month, status: 'LOCKED', run, lines, pending: [], totals, adjustments: await payrollRepo.adjustments(month), deletedAdjustments, versions };
   }
-  return { ...(await compute(month)), status: 'DRAFT', run, monthEnded: month < currentMonth() };
+  return { ...(await compute(month)), status: 'DRAFT', run, monthEnded: month < currentMonth(), deletedAdjustments, versions };
 }
 
 export async function lock(month, user) {
@@ -174,6 +222,7 @@ export async function lock(month, user) {
 export async function reopen(month, reason, user) {
   monthRange(month);
   if (!(await payrollRepo.reopen(month, reason, user.userId))) throw conflict('PAYROLL_NOT_LOCKED', 'Bảng lương tháng này chưa chốt');
+  if (!isOwner(user)) await notifyOwner({ kind: 'REOPEN', actor: user, month, reason }); // ADR-061 D-242
   return get(month);
 }
 
@@ -183,16 +232,19 @@ async function assertDraft(month) {
 
 export async function addAdjustment({ month, userId, amount, reason }, user) {
   monthRange(month);
+  assertNotSelf(user, userId, 'Không tự thêm thưởng / khấu trừ cho chính mình — nhờ chủ quán');
   await assertDraft(month);
   if (!(await usersRepo.findById(userId))) throw notFound('Không tìm thấy nhân viên');
   return { adjId: await payrollRepo.addAdjustment({ month, userId, amount, reason, by: user.userId }) };
 }
 
-export async function removeAdjustment(id) {
+/** ADR-061 D-244: xóa = ẩn (ghi người xóa, lúc xóa) — trang Lương vẫn hiện ở mục "Đã xóa". */
+export async function removeAdjustment(id, user) {
   const adj = await payrollRepo.adjustment(id);
   if (!adj) throw notFound('Không tìm thấy khoản cộng / trừ');
+  assertNotSelf(user, adj.userId, 'Không tự xóa thưởng / khấu trừ của chính mình — nhờ chủ quán');
   await assertDraft(adj.month);
-  await payrollRepo.removeAdjustment(id);
+  if (!(await payrollRepo.removeAdjustment(id, user.userId))) throw notFound('Không tìm thấy khoản cộng / trừ');
   return 'DELETED';
 }
 
@@ -200,6 +252,9 @@ export async function removeAdjustment(id) {
 export async function teamBonus({ shiftId, amount, reason }, user) {
   const rows = await attendanceRepo.forShift(shiftId);
   if (!rows.length) throw notFound('Ca này chưa có ai chấm công');
+  if (!isOwner(user) && rows.some((a) => a.user.userId === user.userId)) {
+    throw forbidden('Bạn có chấm công trong ca này — nhờ chủ quán chia thưởng chung', 'PAYROLL_SELF'); // ADR-061 D-241
+  }
   const month = vnDate(rows[0].clockIn).slice(0, 7);
   await assertDraft(month);
   const { rosters } = await load(addDays(vnDate(rows[0].clockIn), -1), vnDate(rows[0].clockIn));
@@ -246,6 +301,7 @@ export async function payQr(month, userId) {
 }
 
 export async function markPaid(month, userId, method, user) {
+  assertNotSelf(user, userId, 'Không tự đánh dấu đã trả lương cho chính mình — nhờ chủ quán');
   if (!(await payrollRepo.markPaid(month, userId, method, user.userId))) throw conflict('PAY_NOT_ALLOWED', 'Chưa chốt bảng lương hoặc đã đánh dấu trả');
   return (await payrollRepo.lines(month, userId))[0];
 }
@@ -256,16 +312,35 @@ export const profiles = () => payrollRepo.profiles();
 export async function saveProfile(userId, body, user) {
   const target = await usersRepo.findById(userId);
   if (!target) throw notFound('Không tìm thấy tài khoản');
+  assertNotSelf(user, userId, 'Không tự sửa hồ sơ lương của chính mình — nhờ chủ quán');
   if (body.payType === 'HOURLY' && !(body.hourlyRate > 0)) throw badRequest('VALIDATION_ERROR', 'Nhập lương theo giờ');
   if (body.payType === 'MONTHLY' && !(body.monthlySalary > 0)) throw badRequest('VALIDATION_ERROR', 'Nhập lương tháng');
   if (body.bankAccount && !body.bankBin) throw badRequest('VALIDATION_ERROR', 'Chọn ngân hàng của số tài khoản');
   if (body.bankBin && !bankName(body.bankBin)) throw badRequest('VALIDATION_ERROR', 'Ngân hàng không có trong danh sách');
-  return payrollRepo.saveProfile(userId, body, user.userId);
+  const before = await payrollRepo.profile(userId);
+  const saved = await payrollRepo.saveProfile(userId, body, user.userId);
+  if (!isOwner(user)) {
+    const changes = profileChanges(before, saved);
+    if (changes.length) await notifyOwner({ kind: 'PROFILE', actor: user, target, changes, created: !before }); // ADR-061 D-242
+  }
+  return saved;
 }
 
 export const holidays = (year) => payrollRepo.holidays(`${year}-01-01`, `${year}-12-31`);
-export const saveHoliday = (date, name) => payrollRepo.saveHoliday(date, name);
-export async function removeHoliday(date) {
+
+/** ADR-061 D-241: người không phải chủ quán không đặt / bỏ ngày lễ vào ngày mình có chấm công (giờ ngày lễ được nhân hệ số). */
+async function assertNotOwnHoliday(user, date) {
+  if (!user || isOwner(user)) return;
+  if (await attendanceRepo.workedBetween(user.userId, vnDayStartUtc(date), vnDayStartUtc(addDays(date, 1)))) {
+    throw forbidden('Bạn có chấm công ngày này — nhờ chủ quán đặt / bỏ ngày lễ', 'PAYROLL_SELF');
+  }
+}
+export async function saveHoliday(date, name, user) {
+  await assertNotOwnHoliday(user, date);
+  return payrollRepo.saveHoliday(date, name);
+}
+export async function removeHoliday(date, user) {
+  await assertNotOwnHoliday(user, date);
   if (!(await payrollRepo.removeHoliday(date))) throw notFound('Không có ngày lễ này');
   return 'DELETED';
 }
