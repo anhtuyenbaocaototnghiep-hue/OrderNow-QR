@@ -636,3 +636,12 @@ flowchart LR
 - **SCR-01:** bàn có 1 nhóm → không còn màn "Bạn đi cùng nhóm hay đi lẻ?": vào thẳng màn chào / thực đơn, thông báo "Đã vào nhóm của Bàn … — món cả nhóm gọi chung một hóa đơn. Ai muốn trả riêng thì dùng Chia bill theo người". Bàn có ≥ 2 nhóm → "Bàn đang có N nhóm. Bạn đi cùng nhóm nào?" — mỗi nhóm một thẻ "Vào nhóm này" (tên nhóm · số món · giờ mở), không có thẻ "Tạo đơn cá nhân".
 - **SCR-01 đổi bàn (F-086):** thẻ "Gọi món riêng ở Bàn …" → "Gọi món ở Bàn …" (vào nhóm của bàn mới nếu có).
 - **SCR-01 màn chào:** nhóm đã có món → dưới "Đơn của bạn" có dòng chữ nhỏ "Trả riêng từng người? **Chia bill theo người**" (chạm 44 px) → SCR-05 mở sẵn hộp Chia bill.
+
+## TASK-122 — Chuyển khoản bằng VietQR — SCR-05, SCR-10, SCR-12, SCR-13, SCR-14, SCR-33 (F-099, ADR-062, 17/11/2026)
+
+- **SCR-33 Cài đặt → "Nhận chuyển khoản (VietQR)"** (chỉ chủ quán): công tắc, ngân hàng, "Số tài khoản / Số thẻ", số, tên chủ tài khoản, mã thử 1.000đ để quét kiểm.
+- **SCR-05 "Gọi thanh toán"** (quán đã bật): hai nút lớn "Tiền mặt" và "Chuyển khoản (quét QR)". Chọn chuyển khoản → khung mã QR to (số tiền, ngân hàng, số tài khoản / thẻ, tên chủ, nội dung — nút "Chép" từng dòng, "Lưu ảnh mã QR"), dòng "Nhân viên xác nhận khi tiền vào tài khoản quán". Khung "Đã gọi thanh toán" ghi "(chuyển khoản)" + nút "Xem mã QR".
+- **SCR-10 dải Gọi thanh toán:** thẻ bàn có nhãn "Chuyển khoản"; thông báo "Bàn … gọi thanh toán · chuyển khoản".
+- **SCR-14 hộp Thu tiền:** khách chọn chuyển khoản → "Chuyển khoản" chọn sẵn; chọn "Chuyển khoản" → mã QR đúng số phải thu + nội dung, nút "Phóng to cho khách quét".
+- **SCR-13 Bán mang đi:** chọn "Chuyển khoản" → mã QR đúng số phải thu.
+- **SCR-12 phiếu tạm tính:** "QUÉT ĐỂ CHUYỂN KHOẢN" + mã + ngân hàng, số, tên chủ, nội dung.

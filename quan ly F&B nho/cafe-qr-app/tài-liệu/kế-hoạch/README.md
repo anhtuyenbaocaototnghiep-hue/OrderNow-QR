@@ -63,3 +63,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-116-plan.md](TASK-116-plan.md) — logo quán (F-095, ADR-057).
 - [TASK-117-plan.md](TASK-117-plan.md) — thêm tài khoản chủ quán (F-096, ADR-058).
 - [TASK-120-plan.md](TASK-120-plan.md) — lương không tự duyệt cho mình, duyệt lại khi sửa giờ, giữ lịch sử (F-098, ADR-061).
+- [TASK-122-plan.md](TASK-122-plan.md) — chuyển khoản bằng VietQR, nhân viên xác nhận (F-099, ADR-062).

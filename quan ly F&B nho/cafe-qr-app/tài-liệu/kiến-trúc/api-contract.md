@@ -900,3 +900,13 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 ## Bổ sung F-096 — thêm tài khoản chủ quán (ADR-058, TASK-117, 16/11/2026)
 
 - `POST /api/admin/users`, `PUT /api/admin/users/{id}` (chỉ chủ quán): thêm `confirmPassword` (chuỗi). Bắt buộc khi `role = "ADMIN"` mà tài khoản chưa là chủ quán (tạo mới hoặc nâng vai trò): thiếu → `400 VALIDATION_ERROR` (ô `confirmPassword`); sai → `403 OWNER_CONFIRM_INVALID`; sai 5 lần / 15 phút → `429 APPROVAL_LOCKED`. Thành công → cảnh báo `ACCESS_GRANT` cho chủ quán. Mật khẩu xác nhận không ghi nhật ký.
+
+## Bổ sung F-099 — chuyển khoản bằng VietQR (ADR-062, TASK-122, 17/11/2026)
+
+- `GET /api/shop` (công khai): thêm `transfer: { enabled }` — `true` khi chủ quán bật và nhập đủ ngân hàng, số, tên chủ.
+- `PUT /api/admin/settings` (chỉ chủ quán — quản lý cửa hàng `403 OWNER_ONLY`): `transferEnabled` (bool), `bankBin` (BIN trong danh sách VietQR, `""` / `null` = xóa), `bankNumber` (4–19 chữ / số), `bankKind` (`ACCOUNT` | `CARD`), `bankHolder` (≤ 100). Ngân hàng ngoài danh sách → `400 VALIDATION_ERROR`.
+- `POST /api/sessions/{id}/request-payment` (khách): thân `{ method?: "CASH" | "TRANSFER" }` (mặc định `CASH`) → thêm `payMethod`; `TRANSFER` khi quán chưa bật → `409 TRANSFER_OFF`. Sự kiện `session.payment_requested` thêm `payMethod`; phiên (`GET /api/sessions`, `GET /api/sessions/{id}`) thêm `payMethod` (`CASH` | `TRANSFER` | `null`).
+- `GET /api/sessions/{id}/transfer` (khách trong nhóm của bàn) → `{ amount, content, bankName, kind, number, holder, payload, qr }` (`qr` = ảnh PNG dạng data URL); quán chưa bật → `409 TRANSFER_OFF`; bàn đã đóng → `409 SESSION_CLOSED`; chưa có món → `409 NO_ORDERS`.
+- `POST /api/payments/transfer-qr` (thu ngân) `{ amount, sessionId?, part? }` → như trên; không `sessionId` → nội dung "CF MANG DI <giờ>".
+- `GET /api/sessions/{id}/receipt?mode=provisional`: thêm `transfer: { qr, amount, content, bankName, kind, number, holder } | null`.
+- Ghi đã trả: không đổi — `POST /api/sessions/{id}/settle` `{ method: "TRANSFER" }` của thu ngân (ADR-019).

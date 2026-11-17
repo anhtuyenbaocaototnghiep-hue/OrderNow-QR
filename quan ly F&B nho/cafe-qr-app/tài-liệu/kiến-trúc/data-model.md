@@ -1371,3 +1371,11 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | --- | --- |
 | `0060_luong_khong_tu_duyet.sql` | `PayrollAdjustments.DeletedAt DATETIME2(0) NULL`, `DeletedBy INT NULL → Users` — xóa khoản cộng / trừ = ẩn; `TR_PayrollAdjustments_NoDelete` (50250 `HISTORY_NO_DELETE`). `PayrollLines.PaidAmount DECIMAL(12,0) NULL` — số tiền lúc đánh dấu đã trả (dòng đã trả trước đó điền bằng `NetPay`). Bảng `PayrollRunVersions` (`VersionId`, `Month`, `LockedAt`, `LockedBy`, `ReopenedAt`, `ReopenedBy`, `ReopenReason`, `SupersededAt`, `SupersededBy`, `TotalNet`, `LinesJson`) — bản chốt trước mỗi lần chốt lại; `TR_PayrollRunVersions_NoDelete`. `CK_Alerts_Kind` thêm `PAYROLL_CHANGE`. |
 | Ghi | `payrollRepo.lock` (một transaction): đã có dòng cũ → chèn `PayrollRunVersions` (thông tin `PayrollRuns` + dòng cũ) rồi thay dòng; `AckAt` giữ khi `NetPay` không đổi, bỏ khi đổi; `PaidAt` / `PaidBy` / `PaidMethod` / `PaidAmount` giữ. `markPaid` ghi `PaidAmount = NetPay`. `removeAdjustment` = `UPDATE … SET DeletedAt, DeletedBy`. |
+
+## Chuyển khoản bằng VietQR (FEATURE-099, ADR-062 D-245…D-248, 17/11/2026)
+
+| Migration / đối tượng | Thay đổi |
+| --- | --- |
+| `0061_chuyen_khoan_vietqr.sql` | `Sessions.PayMethodHint VARCHAR(10) NULL` + `CK_Sessions_PayMethodHint` (`CASH` \| `TRANSFER`) — cách trả khách chọn lúc gọi thanh toán; chỉ là gợi ý cho quầy, không phải trạng thái thanh toán. |
+| `sp_RequestPayment` | Thêm `@Method VARCHAR(10) = NULL` → ghi `PayMethodHint` (khác `CASH` / `TRANSFER` → `CASH`). |
+| Cài đặt | `pay.transfer_enabled` (`'true'` = bật; mặc định tắt), `pay.bank_bin`, `pay.bank_number`, `pay.bank_kind` (`ACCOUNT` \| `CARD`), `pay.bank_holder`. |
