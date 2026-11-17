@@ -134,6 +134,10 @@ body.receipt-page {
 
 /* F-065: QR vòng quay may mắn cuối hóa đơn */
 .receipt .spin-qr {
+  /* F-099: mã QR nằm trên chữ chìm "TẠM TÍNH" (chữ chìm đè lên mã → máy quét đọc sai trên giấy in nhiệt) */
+  position: relative;
+  z-index: 1;
+  background: #fff;
   display: block;
   width: 30mm;
   height: 30mm;

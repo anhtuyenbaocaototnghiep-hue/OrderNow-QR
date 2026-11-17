@@ -450,6 +450,49 @@ test('khách giao diện tối (8 giờ tối): màn chào, thực đơn, bảng
   }
 });
 
+// F-099 (TASK-122, ADR-062): khách chuyển khoản — bật tạm nhận chuyển khoản (tài khoản giả), bàn riêng AQ1, trả cài đặt ở finally
+test('khách chuyển khoản (F-099): hộp Gọi thanh toán chọn cách trả, khung mã VietQR có số tiền + nội dung + nút Chép / Lưu ảnh, theo dõi đơn có nút Xem mã chuyển khoản — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px (AC-099-05)', async ({
+  request,
+}) => {
+  const admin = { Authorization: `Bearer ${adminToken}` };
+  const before = await (await request.get('/api/admin/settings', { headers: admin })).json();
+  await request.put('/api/admin/settings', {
+    headers: admin,
+    data: { guestWelcome: false, transferEnabled: true, bankBin: '970403', bankNumber: '060123456789', bankKind: 'ACCOUNT', bankHolder: 'NGUYEN VAN A' },
+  });
+  const qrTable = await (await request.post('/api/admin/tables', { headers: admin, data: { code: 'AQ1' } })).json();
+  const ctx = await browser.newContext(phone);
+  try {
+    const T = await ctx.newPage();
+    T.setDefaultTimeout(15_000); // hỏng thì báo nhanh — còn thời gian trả cài đặt ở finally
+    await T.goto(`/t/${qrTable.qrToken}`);
+    await expect(T).toHaveURL(/\/menu$/);
+    await T.locator('.c-item', { hasText: 'Nước suối' }).first().locator('.add-btn').click();
+    await T.click('#open-cart');
+    await T.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(T).toHaveURL(/\/track$/);
+    await T.locator('#pay').click();
+    const ask = T.getByRole('dialog', { name: 'Gọi thanh toán' });
+    await expect(ask.getByRole('button', { name: 'Chuyển khoản (quét QR)' })).toBeVisible();
+    await check(T, 'khach-goi-thanh-toan-cach-tra', { narrow: true });
+    await ask.getByRole('button', { name: 'Chuyển khoản (quét QR)' }).click();
+    const qr = T.getByRole('dialog', { name: 'Chuyển khoản' });
+    await expect(qr.locator('.tq-img')).toBeVisible();
+    await expect(qr).toContainText('CF AQ1');
+    await check(T, 'khach-chuyen-khoan-ma-qr', { narrow: true });
+    await qr.locator('.modal-foot').getByRole('button', { name: 'Đóng' }).click();
+    await expect(T.locator('#show-transfer')).toBeVisible();
+    await check(T, 'khach-cho-chuyen-khoan', { narrow: true });
+  } finally {
+    await ctx.close();
+    await request.put('/api/admin/settings', { headers: admin, data: { transferEnabled: before.transferEnabled, guestWelcome: before.guestWelcome } });
+    // Dọn nhóm của bàn AQ1 (đơn chưa thu) để ca đóng được ở afterAll
+    const tb = (await (await request.get('/api/tables', { headers: admin })).json()).find((x) => x.code === 'AQ1');
+    for (const s of tb?.sessions ?? [])
+      await request.post(`/api/sessions/${s.sessionId}/cancel`, { headers: admin, data: { reason: 'Dọn bàn kiểm tra a11y chuyển khoản' } });
+  }
+});
+
 // F-095 (TASK-116, ADR-057): logo quán — tải tạm qua API, quét Cài đặt (máy tính) + màn chào / thực đơn (điện thoại), bỏ logo ở finally
 test('logo quán (F-095): ô Logo quán ở Cài đặt, màn chào và thực đơn có logo — nhãn, ảnh có chữ thay thế, tương phản, vùng chạm (AC-095-03)', async ({
   request,

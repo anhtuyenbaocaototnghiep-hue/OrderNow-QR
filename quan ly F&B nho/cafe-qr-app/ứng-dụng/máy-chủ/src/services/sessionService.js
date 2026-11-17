@@ -20,7 +20,8 @@ import * as luckySpinService from './luckySpinService.js';
 import { partOrders } from '../pricing/pricing.js';
 import { maskName, maskPhone } from './memberService.js';
 import { paymentBreakdown, receiptLines } from './orderService.js';
-import { getSettings, shopInfo } from './settingsService.js';
+import { getSettings, shopInfo, transferReady } from './settingsService.js';
+import { contentFor, transferQr } from './transferService.js';
 import { assertShiftOpen, requireOpenShift } from './shiftService.js';
 
 const publicTable = (t) => ({ tableId: t.tableId, code: t.code, name: t.name });
@@ -217,9 +218,13 @@ export async function getDetail(sessionId, viewer) {
   return customerView({ ...detail, table: { ...detail.table, qrToken: table?.qrToken } });
 }
 
-export async function requestPayment(sessionId, clientToken) {
+/** F-099 (ADR-062 D-246): method = cách trả khách chọn — CASH (mặc định) | TRANSFER (quán phải đang nhận chuyển khoản bằng QR). */
+export async function requestPayment(sessionId, clientToken, method = 'CASH') {
   await assertViewer(sessionId, { clientToken });
-  const { requestedAt } = await withDeadlockRetry(() => sessionsRepo.requestPayment(sessionId));
+  if (method === 'TRANSFER' && !transferReady(await getSettings())) {
+    throw conflict('TRANSFER_OFF', 'Quán chưa nhận chuyển khoản bằng mã QR — chọn tiền mặt hoặc hỏi nhân viên');
+  }
+  const { requestedAt } = await withDeadlockRetry(() => sessionsRepo.requestPayment(sessionId, method));
   const session = await sessionsRepo.findById(sessionId);
   const bill = await estimate(session, await ordersRepo.listBySession(sessionId));
   const amountDue = bill?.amountDue ?? session.amountDue;
@@ -229,8 +234,23 @@ export async function requestPayment(sessionId, clientToken) {
     amountDue,
     requestedAt,
     orderCount: session.orderCount,
+    payMethod: method,
   });
-  return { status: 'PAYMENT_REQUESTED', amountDue, requestedAt };
+  return { status: 'PAYMENT_REQUESTED', amountDue, requestedAt, payMethod: method };
+}
+
+/**
+ * F-099 (ADR-062 D-247): mã VietQR chuyển khoản cho điện thoại khách — số tiền như lúc gọi thanh toán (tạm tính; quầy xác nhận
+ * lại khi thu), nội dung riêng của bàn. Chỉ người trong nhóm của bàn xem được (như xem phiên).
+ */
+export async function transferForCustomer(sessionId, clientToken) {
+  await assertViewer(sessionId, { clientToken });
+  const session = await sessionsRepo.findById(sessionId);
+  if (!session || session.status === 'CLOSED') throw conflict('SESSION_CLOSED', 'Bàn đã thanh toán / đã đóng');
+  const bill = await estimate(session, await ordersRepo.listBySession(sessionId));
+  const amountDue = bill?.amountDue ?? session.amountDue;
+  if (!(amountDue > 0)) throw conflict('NO_ORDERS', 'Chưa có món cần thanh toán');
+  return transferQr({ amount: amountDue, content: contentFor({ tableCode: session.table.code, sessionId }) });
 }
 
 export const listByStatus = async (statuses) => (await sessionsRepo.listByStatus(statuses)).map((s) => ({ ...s, member: memberView(s.member, true) }));
@@ -465,6 +485,13 @@ export async function closeEmpty(sessionId, user) {
 /** Tên các bàn có đơn trên bill (bàn chính trước) — bill thu chung (F-057) in món theo từng bàn. */
 const tablesOf = (orders, main) => [...new Set([main.name, ...orders.map((o) => o.table?.name).filter(Boolean)])];
 
+/** F-099: mã chuyển khoản cho phiếu tạm tính — chỉ khi quán đủ thông tin nhận chuyển khoản; không có thì phiếu in như cũ. */
+async function receiptTransfer(session, sessionId, amount) {
+  if (!transferReady(await getSettings())) return null;
+  const t = await transferQr({ amount, content: contentFor({ tableCode: session.table.code, sessionId }) });
+  return { qr: t.qr, amount: t.amount, content: t.content, bankName: t.bankName, kind: t.kind, number: t.number, holder: t.holder };
+}
+
 /** Dữ liệu in hóa đơn phiên: final chỉ khi đã thu tiền (BR-014); provisional = phiếu tạm tính (ước tính hội viên). */
 export async function receipt(sessionId, mode, mergeIds = []) {
   const session = await sessionsRepo.findById(sessionId);
@@ -481,6 +508,7 @@ export async function receipt(sessionId, mode, mergeIds = []) {
   const ordersTotal = orders.reduce((s, o) => s + o.totalAmount, 0);
   const est = payments.length ? null : await estimate(session, all);
   const splitPaid = payments.length > 0 && !payment; // chia bill: tổng các phần (bill từng phần in riêng)
+  const amountDue = payment?.amountDue ?? (splitPaid ? payments.reduce((s, p) => s + p.amountDue, 0) : (est?.amountDue ?? ordersTotal));
   return {
     kind: 'session',
     mode,
@@ -490,8 +518,10 @@ export async function receipt(sessionId, mode, mergeIds = []) {
     session: { sessionId, code: sessionId.slice(0, 8).toUpperCase(), openedAt: session.openedAt, closedAt: session.closedAt },
     orders: orders.map((o) => ({ orderCode: o.orderCode, createdAt: o.createdAt, table: o.table?.name ?? null })),
     lines: orders.flatMap((o) => receiptLines(o.items).map((l) => ({ ...l, table: o.table?.name ?? null }))),
-    amountDue: payment?.amountDue ?? (splitPaid ? payments.reduce((s, p) => s + p.amountDue, 0) : (est?.amountDue ?? ordersTotal)),
+    amountDue,
     breakdown: payment ? paymentBreakdown(payment, ordersTotal) : splitPaid ? null : (est?.breakdown ?? null),
+    // F-099 (ADR-062 D-247): phiếu tạm tính in kèm mã VietQR chuyển khoản đúng số tiền (khi quán đang nhận chuyển khoản)
+    transfer: mode === 'provisional' && !payments.length && amountDue > 0 ? await receiptTransfer(session, sessionId, amountDue) : null,
     payment,
     splitPayments: splitPaid ? payments.map((p) => ({ paymentId: p.paymentId, amountDue: p.amountDue, paidAt: p.paidAt })) : null,
     memberCard: payment ? await loyaltyService.receiptCard(payment.member?.memberId) : null, // F-047 D-38

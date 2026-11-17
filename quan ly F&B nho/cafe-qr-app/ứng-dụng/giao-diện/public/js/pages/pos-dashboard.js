@@ -37,6 +37,7 @@ import {
 } from '../ui.js';
 import { icon } from '../icons.js';
 import { canOpenPosPage, hasPosition } from '../roles.js';
+import { showBigQr } from '../transfer-qr.js';
 
 const shell = await mountPosShell('orders');
 // F-078 (ADR-036): nút theo vị trí — Pha chế nhận / làm đơn, Thu ngân thu tiền, Phục vụ gọi món tại bàn (máy chủ vẫn chặn)
@@ -865,6 +866,7 @@ function renderPayStrip() {
         { class: 'pay-card', type: 'button', onclick: () => openSettle(s.sessionId) },
         el('strong', {}, s.table.name),
         el('span', {}, money(s.amountDue)),
+        s.payMethod === 'TRANSFER' ? el('span', { class: 'badge preparing pay-kind' }, 'Chuyển khoản') : null, // F-099
         el('span', { class: 'wait', dataset: { since: s.paymentRequestedAt } }, elapsed(s.paymentRequestedAt)),
       ),
     ),
@@ -1460,6 +1462,7 @@ function openSettle(sessionId) {
   let splitData = null; // F-026: bàn đã chia bill
   let partId = null; // phần đang thu
   let method = 'CASH'; // F-056: CASH | TRANSFER
+  let methodPicked = false; // F-099: lần tải đầu chọn sẵn theo cách khách chọn khi gọi thanh toán; sau đó giữ lựa chọn của nhân viên
   let mergeIds = []; // F-057: các phiên thu chung với bàn này
   let merged = []; // chi tiết các phiên đó (đơn, bàn)
 
@@ -1480,12 +1483,46 @@ function openSettle(sessionId) {
     { class: 'transfer-note', hidden: true },
     'Khách chuyển khoản vào tài khoản quán — xem tiền đã về rồi bấm "Đã nhận chuyển khoản & In bill". Không có tiền thừa, không tính vào tiền mặt trong két.',
   );
+  // F-099 (ADR-062 D-247): chọn "Chuyển khoản" → mã VietQR đúng số phải thu + nội dung của bàn (khách quét); "Đã nhận" vẫn do nhân viên bấm
+  const qrBox = el('div', { class: 'transfer-qr-box', id: 'settle-qr', hidden: true });
+  let qrSeq = 0;
+  let qrAmount = null;
+  async function refreshQr() {
+    if (method !== 'TRANSFER' || !preview) {
+      qrBox.hidden = true;
+      return;
+    }
+    const amount = preview.totals.amountDue;
+    if (amount === qrAmount && !qrBox.hidden) return;
+    const my = ++qrSeq;
+    try {
+      const d = await staffApi('/api/payments/transfer-qr', { method: 'POST', body: { amount, sessionId } });
+      if (my !== qrSeq) return;
+      qrAmount = amount;
+      clear(
+        qrBox,
+        el('img', { src: d.qr, alt: `Mã VietQR chuyển ${money(d.amount)}`, width: 132, height: 132 }),
+        el(
+          'div',
+          { class: 'stack small' },
+          el('strong', {}, `Khách quét mã — ${money(d.amount)}`),
+          el('span', {}, `${d.bankName} · ${d.number}`),
+          el('span', { class: 'muted' }, `Nội dung: ${d.content}`),
+          el('button', { class: 'btn btn-sm', type: 'button', onclick: () => showBigQr(d) }, 'Phóng to cho khách quét'),
+        ),
+      );
+      qrBox.hidden = false;
+    } catch {
+      if (my === qrSeq) qrBox.hidden = true; // quán chưa bật nhận chuyển khoản bằng QR → giữ dòng nhắc như cũ
+    }
+  }
   const payBox = el(
     'div',
     {},
     methodBox,
     cashFields,
     transferNote,
+    qrBox,
     el('p', { class: 'muted small' }, 'Không ghi nợ / trả thiếu. Trả một phần tiền mặt, một phần chuyển khoản: bấm "Tách hóa đơn" rồi thu từng phần.'),
   );
   function setMethod(next) {
@@ -1496,6 +1533,7 @@ function openSettle(sessionId) {
     transferNote.hidden = next !== 'TRANSFER';
     settleBtn.textContent = next === 'TRANSFER' ? 'Đã nhận chuyển khoản & In bill' : 'Đã thu tiền & In bill';
     updateChange();
+    refreshQr();
   }
 
   // Hội viên của cả phiên (gắn vào phiên) hoặc của một phần (chỉ áp cho lượt thu phần đó)
@@ -1560,6 +1598,7 @@ function openSettle(sessionId) {
     }
     renderQuick();
     updateChange();
+    refreshQr(); // F-099: số phải thu đổi (hội viên, giảm tay, phần) → mã mới
   }
 
   /** F-046: nút bút chì trên dòng món chưa thu → sửa số lượng / xóa món. */
@@ -1590,6 +1629,8 @@ function openSettle(sessionId) {
       provisionalBtn.disabled = true;
       return;
     }
+    if (!methodPicked && session.payMethod === 'TRANSFER') setMethod('TRANSFER'); // F-099: khách chọn chuyển khoản khi gọi thanh toán
+    methodPicked = true;
     const [splits, voids] = await Promise.all([
       session.splitCount > 0 ? staffApi(`/api/sessions/${sessionId}/splits`).catch(() => null) : null,
       staffApi(`/api/sessions/${sessionId}/voids`).catch(() => []),
@@ -1625,7 +1666,11 @@ function openSettle(sessionId) {
           merged.length ? `Thu chung: ${[session.table.name, ...merged.map((x) => x.table.name)].join(' + ')}` : session.table.name,
         ),
         session.status === 'PAYMENT_REQUESTED'
-          ? el('span', { class: 'badge pending' }, `Gọi thanh toán · ${elapsed(session.paymentRequestedAt)}`)
+          ? el(
+              'span',
+              { class: 'badge pending' },
+              `Gọi thanh toán${session.payMethod === 'TRANSFER' ? ' · chuyển khoản' : ''} · ${elapsed(session.paymentRequestedAt)}`,
+            )
           : el('span', { class: 'badge preparing' }, 'Đang phục vụ'),
       ),
       el('p', { class: 'muted small' }, `Mở lúc ${time(session.openedAt)} · ${active.length} đơn`),
@@ -2521,7 +2566,7 @@ socket?.on('order.served', (p) => {
 });
 socket?.on('session.payment_requested', (p) => {
   playSound('chime');
-  toast(`${p.table?.name ?? 'Một bàn'} gọi thanh toán · ${money(p.amountDue)}`, 'warning', 6000);
+  toast(`${p.table?.name ?? 'Một bàn'} gọi thanh toán${p.payMethod === 'TRANSFER' ? ' · chuyển khoản' : ''} · ${money(p.amountDue)}`, 'warning', 6000);
   onSessionEvent(p);
 });
 socket?.on('session.payment_cancelled', onSessionEvent);

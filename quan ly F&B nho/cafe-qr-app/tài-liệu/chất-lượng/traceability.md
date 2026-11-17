@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 500 test, sửa lúc 2026-11-17 12:47 UTC
-- `npm run test:e2e` (JSON): 106 test, sửa lúc 2026-11-17 13:22 UTC
+- `npm test` (JUnit): 504 test, sửa lúc 2026-11-17 13:57 UTC
+- `npm run test:e2e` (JSON): 107 test, sửa lúc 2026-11-17 14:04 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 205 |
-| Acceptance Criteria | 566 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 566 |
+| User Story | 206 |
+| Acceptance Criteria | 571 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 571 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -662,4 +662,9 @@
 | AC-098-04 | TC-098-04 | F-098 | US-098-1 | ACT-ADMIN, ACT-STORE | UC-12 | MOD-FINANCE | SCR-51 | BR-110, BR-127 | Integration: `payroll-guard.test.js` › AC-098-04: xóa khoản cộng / trừ = ẩn (người xóa, lúc xóa), bảng lương không tính nữa; CSDL chặn xóa cứng (HISTORY_NO_DELETE) — **PASS** | **PASS** |
 | AC-098-05 | TC-098-05 | F-098 | US-098-1 | ACT-ADMIN, ACT-STORE | UC-12 | MOD-FINANCE | SCR-51 | BR-110, BR-127 | Integration: `payroll-guard.test.js` › AC-098-05: tạm ứng lương còn chờ duyệt trong tháng → việc chờ ADVANCE_PENDING, chốt 409 PAYROLL_PENDING; duyệt xong thì chốt được và trừ tạm ứng — **PASS** | **PASS** |
 | AC-098-06 | TC-098-06 | F-098 | US-098-1 | ACT-ADMIN, ACT-STORE | UC-12 | MOD-FINANCE | SCR-51 | BR-110, BR-127 | Integration: `payroll-guard.test.js` › AC-098-06: mở lại rồi chốt lại → bản chốt trước vào lịch sử chốt (CSDL chặn xóa); thực nhận đổi thì bỏ "Đã xem", không đổi thì giữ; "Đã trả" giữ kèm số đã trả và phần chênh — **PASS** | **PASS** |
+| AC-099-01 | TC-099-01 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | Integration: `transfer-qr.test.js` › AC-099-01: chủ quán nhập ngân hàng, số tài khoản / số thẻ, tên chủ và bật nhận chuyển khoản → /api/shop báo transfer.enabled; thiếu số hoặc tắt → không hiện; quản lý cửa hàng không đổi được (403 OWNER_ONLY); ngân hàng ngoài danh sách → 400 — **PASS** | **PASS** |
+| AC-099-02 | TC-099-02 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | Integration: `transfer-qr.test.js` › AC-099-02: điện thoại khách lấy mã VietQR của bàn — đúng số tiền tạm tính, nội dung "CF <mã bàn> <mã phiên>", mã chuẩn (CRC đúng, QRIBFTTA cho số tài khoản / QRIBFTTC cho số thẻ); người ngoài nhóm không lấy được; quán chưa bật 409 TRANSFER_OFF — **PASS** | **PASS** |
+| AC-099-03 | TC-099-03 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | Integration: `transfer-qr.test.js` › AC-099-03: khách gọi thanh toán chọn "Chuyển khoản" → quầy nhận sự kiện + danh sách bàn ghi payMethod TRANSFER; quán chưa bật → 409 TRANSFER_OFF; khách không tự ghi đã trả (settle 401); nhân viên "Đã nhận chuyển khoản" mới đóng bàn, lượt thu ghi chuyển khoản — **PASS** | **PASS** |
+| AC-099-04 | TC-099-04 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | Integration: `transfer-qr.test.js` › AC-099-04: màn quầy lấy mã VietQR đúng số phải thu (bàn: cùng nội dung với điện thoại khách; bán mang đi: "CF MANG DI"); phiếu tạm tính có mã; chưa đăng nhập / khách không lấy được (401) — **PASS** | **PASS** |
+| AC-099-05 | TC-099-05 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | E2E: `flow.spec.js` › chuyển khoản bằng mã QR: khách gọi thanh toán chọn "Chuyển khoản" → điện thoại hiện mã VietQR đúng số tiền + nội dung; quầy thấy "chuyển khoản" ở dải Gọi thanh toán, hộp Thu tiền chọn sẵn và hiện mã; "Đã nhận chuyển khoản" → điện thoại khách sang màn cảm ơn (F-099, AC-099-05) — **PASS** | **PASS** |
 

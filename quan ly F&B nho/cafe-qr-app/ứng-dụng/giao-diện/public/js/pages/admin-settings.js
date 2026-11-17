@@ -5,6 +5,7 @@ import { staffApi, staffUpload } from '../api.js';
 import { current } from '../auth.js';
 import { brandMark } from '../icons.js';
 import { mountAdminShell, toggle } from '../admin-shell.js';
+import { showBigQr } from '../transfer-qr.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, money, setBusy, showFieldErrors, toast } from '../ui.js';
 
 await mountAdminShell('settings');
@@ -62,9 +63,13 @@ async function loadMailStatus(box) {
   }
 }
 
+// F-099: danh sách ngân hàng VietQR (cùng danh sách trả lương) — người không xem được thì để trống
+let banks = [];
 async function load() {
   try {
-    render(await staffApi('/api/admin/settings'));
+    const [s, b] = await Promise.all([staffApi('/api/admin/settings'), staffApi('/api/admin/pay-profiles').catch(() => ({ banks: [] }))]);
+    banks = b.banks ?? [];
+    render(s);
     // F-061: đến từ link "Hiện lại trong menu" → cuộn tới thẻ Giao diện quản lý (thẻ vẽ sau khi tải nên trình duyệt không tự cuộn)
     if (location.hash === '#giao-dien') $('#giao-dien')?.scrollIntoView({ block: 'center' });
   } catch (err) {
@@ -281,6 +286,41 @@ function render(s) {
   paintLogo();
   const card = (title, ...children) =>
     el('div', { class: 'card', style: { maxWidth: '720px', marginBottom: '1rem' } }, el('h2', { style: { fontSize: '1rem' } }, title), ...children);
+  // F-099 (ADR-062 D-245): nhận chuyển khoản bằng VietQR — tiền vào thẳng tài khoản / thẻ của quán; đã trả do nhân viên xác nhận
+  const transferCheck = el('input', { type: 'checkbox', name: 'transferEnabled', id: 'transfer-enabled', checked: s.transferEnabled });
+  const bankBin = el(
+    'select',
+    { class: 'input', name: 'bankBin', id: 'bank-bin' },
+    el('option', { value: '' }, 'Chọn ngân hàng…'),
+    banks.map((b) => el('option', { value: b.bin, selected: b.bin === s.bankBin }, b.name)),
+  );
+  const bankKind = el(
+    'select',
+    { class: 'input', name: 'bankKind', id: 'bank-kind' },
+    el('option', { value: 'ACCOUNT', selected: s.bankKind !== 'CARD' }, 'Số tài khoản'),
+    el('option', { value: 'CARD', selected: s.bankKind === 'CARD' }, 'Số thẻ'),
+  );
+  const bankNumber = el('input', {
+    class: 'input',
+    name: 'bankNumber',
+    id: 'bank-number',
+    inputmode: 'numeric',
+    autocomplete: 'off',
+    maxlength: 19,
+    pattern: '[0-9A-Za-z]{4,19}',
+    title: '4–19 chữ / số, không khoảng trắng',
+    value: s.bankNumber ?? '',
+  });
+  const bankHolder = el('input', {
+    class: 'input',
+    name: 'bankHolder',
+    id: 'bank-holder',
+    maxlength: 100,
+    autocomplete: 'off',
+    placeholder: 'Như app ngân hàng hiện, vd: NGUYEN VAN A',
+    value: s.bankHolder ?? '',
+  });
+  const transferReady = s.transferEnabled && s.bankBin && s.bankNumber && s.bankHolder;
   clear(
     $('#content'),
     card(
@@ -535,6 +575,49 @@ function render(s) {
         'Thứ tự: khuyến mãi món → khuyến mãi đơn → hội viên → giảm tay → làm tròn xuống. % hạng hội viên chỉnh ở Hội viên → Hạng hội viên.',
       ),
     ),
+    card(
+      'Nhận chuyển khoản (VietQR)',
+      el(
+        'div',
+        { class: transferReady ? 'alert success' : 'alert warning', id: 'transfer-status' },
+        transferReady
+          ? 'Đang nhận: khách chọn "Chuyển khoản" khi gọi thanh toán sẽ thấy mã QR có sẵn số tiền; quầy thấy mã ở hộp Thu tiền.'
+          : s.transferEnabled
+            ? 'Đã bật nhưng còn thiếu ngân hàng / số / tên chủ tài khoản — khách chưa thấy mã.'
+            : 'Đang tắt — khách chỉ thấy "Gọi thanh toán" như trước.',
+      ),
+      el('label', { class: 'check', for: 'transfer-enabled' }, transferCheck, ' Cho khách chuyển khoản bằng mã QR (VietQR)'),
+      el(
+        'div',
+        { class: 'form-grid' },
+        el('div', { class: 'field' }, el('label', { for: 'bank-bin' }, 'Ngân hàng'), bankBin),
+        el('div', { class: 'field' }, el('label', { for: 'bank-kind' }, 'Loại'), bankKind),
+        el('div', { class: 'field' }, el('label', { for: 'bank-number' }, 'Số tài khoản / số thẻ'), bankNumber),
+        el('div', { class: 'field' }, el('label', { for: 'bank-holder' }, 'Tên chủ tài khoản'), bankHolder),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Tiền chuyển thẳng vào tài khoản / thẻ này. Nhân viên bấm "Đã nhận chuyển khoản" khi thấy tiền vào — khách không tự đánh dấu đã trả, ảnh chụp màn hình không có tác dụng. Số thẻ: lưu xong bấm "Thử mã 1.000đ" và chuyển thử — app ngân hàng báo không chuyển được tới thẻ thì dùng số tài khoản.',
+      ),
+      transferReady
+        ? el(
+            'button',
+            {
+              class: 'btn',
+              type: 'button',
+              onclick: async () => {
+                try {
+                  showBigQr(await staffApi('/api/payments/transfer-qr', { method: 'POST', body: { amount: 1000 } }), 'Mã thử 1.000đ — quét bằng app ngân hàng');
+                } catch (err) {
+                  toast(errorMessage(err), 'error');
+                }
+              },
+            },
+            'Thử mã 1.000đ',
+          )
+        : null,
+    ),
     el(
       'button',
       {
@@ -576,6 +659,12 @@ function render(s) {
                 guestWelcome: welcomeCheck.checked, // F-092
                 guestDaypartTheme: daypartCheck.checked, // F-094
                 guestSeasonDecor: seasonCheck.checked, // F-094
+                // F-099: nhận chuyển khoản bằng VietQR (chỉ chủ quán)
+                transferEnabled: transferCheck.checked,
+                bankBin: bankBin.value,
+                bankKind: bankKind.value,
+                bankNumber: bankNumber.value.trim(),
+                bankHolder: bankHolder.value.trim(),
                 idleCloseMinutes: Number(idleClose.value), // F-087
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,

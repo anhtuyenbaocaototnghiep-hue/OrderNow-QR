@@ -48,9 +48,10 @@ export function transferContent(text) {
 }
 
 /** Dòng chữ VietQR. amount > 0 → mã dùng một lần (12), không có → mã cố định (11). */
-export function vietQrPayload({ bin, account, amount = 0, content = '' }) {
+/** toCard (F-099, ADR-062): người nhận là SỐ THẺ — dịch vụ NAPAS QRIBFTTC; mặc định số tài khoản (QRIBFTTA). */
+export function vietQrPayload({ bin, account, amount = 0, content = '', toCard = false }) {
   if (!/^\d{6}$/.test(bin ?? '') || !/^[0-9A-Za-z]{4,19}$/.test(account ?? '')) throw new Error('VIETQR_ACCOUNT_INVALID');
-  const merchant = f('00', 'A000000727') + f('01', f('00', bin) + f('01', account)) + f('02', 'QRIBFTTA');
+  const merchant = f('00', 'A000000727') + f('01', f('00', bin) + f('01', account)) + f('02', toCard ? 'QRIBFTTC' : 'QRIBFTTA');
   const note = transferContent(content);
   const body =
     f('00', '01') +

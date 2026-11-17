@@ -154,7 +154,13 @@ publicRouter.get('/sessions/:id', optionalStaff, async (req, res) => {
 });
 
 publicRouter.post('/sessions/:id/request-payment', async (req, res) => {
-  res.json(await sessionService.requestPayment(paramGuid(req), req.clientToken));
+  // F-099 (ADR-062 D-246): khách chọn cách trả (mặc định tiền mặt) — chỉ là gợi ý cho quầy, không đổi trạng thái thanh toán
+  const { method } = parse(z.object({ method: z.enum(['CASH', 'TRANSFER']).default('CASH') }), req.body ?? {});
+  res.json(await sessionService.requestPayment(paramGuid(req), req.clientToken, method));
+});
+// F-099 (ADR-062 D-247): mã VietQR chuyển khoản của bàn (người trong nhóm) — 409 TRANSFER_OFF khi quán chưa bật
+publicRouter.get('/sessions/:id/transfer', async (req, res) => {
+  res.json(await sessionService.transferForCustomer(paramGuid(req), req.clientToken));
 });
 
 // ---- Gọi nhân viên (FEATURE-021): 60 giây/phiên ----

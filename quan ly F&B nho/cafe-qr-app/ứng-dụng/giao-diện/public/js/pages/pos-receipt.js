@@ -99,6 +99,21 @@ function render(data) {
             data.splitPayments.map((p, i) => kv(`  Phần ${i + 1} · ${dateTime(p.paidAt)}`, money(p.amountDue))),
           ]
         : el('div', { class: 'center' }, 'Chưa thanh toán — thanh toán bằng tiền mặt hoặc chuyển khoản'),
+    // F-099 (ADR-062 D-247): phiếu tạm tính kèm mã VietQR đúng số tiền + nội dung của bàn (quán đang nhận chuyển khoản)
+    data.transfer
+      ? [
+          el('hr'),
+          el('div', { class: 'center' }, 'QUÉT ĐỂ CHUYỂN KHOẢN'),
+          el(
+            'div',
+            { class: 'center' },
+            el('img', { class: 'spin-qr', src: data.transfer.qr, alt: `Mã VietQR chuyển ${money(data.transfer.amount)}`, width: 150, height: 150 }),
+          ),
+          el('div', { class: 'center note' }, `${data.transfer.bankName} · ${data.transfer.number}`),
+          el('div', { class: 'center note' }, data.transfer.holder),
+          el('div', { class: 'center note' }, `Nội dung: ${data.transfer.content}`),
+        ]
+      : null,
     // F-047 (ADR-008 D-38): quyền lợi hội viên lúc in — điểm hiện có, thẻ tem, voucher còn hạn
     data.memberCard
       ? [

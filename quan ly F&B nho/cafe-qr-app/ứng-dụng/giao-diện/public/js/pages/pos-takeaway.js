@@ -15,6 +15,7 @@ import { deviceName, newClientRef, onQueueChange, pendingSales, printBlankForm, 
 import { mountPosShell } from '../pos-shell.js';
 import { printUrl } from '../print.js';
 import { connectRealtime } from '../socket.js';
+import { showBigQr } from '../transfer-qr.js';
 import { $, breakdownRows, clear, el, errorMessage, money, moneyInput, moneyValue, num, setBusy, setMoney, statusBadge, time, toast } from '../ui.js';
 
 const shell = await mountPosShell('takeaway');
@@ -94,6 +95,41 @@ const received = moneyInput({ id: 'received', name: 'amountReceived' });
 $('#received-slot').append(received);
 // F-056 (ADR-019 D-71): tiền mặt / chuyển khoản
 let method = 'CASH';
+// F-099 (ADR-062 D-247): chọn "Chuyển khoản" → mã VietQR đúng số phải thu (nội dung "CF MANG DI <giờ>"); mất mạng / ghi tay thì không có mã
+const qrBox = el('div', { class: 'transfer-qr-box', id: 'takeaway-qr', hidden: true });
+$('#transfer-note').after(qrBox);
+let qrSeq = 0;
+let qrAmount = null;
+async function refreshTransferQr() {
+  const amount = listMode() || offline || paperMode ? null : due();
+  if (method !== 'TRANSFER' || !(amount > 0)) {
+    qrBox.hidden = true;
+    qrAmount = null;
+    return;
+  }
+  if (amount === qrAmount && !qrBox.hidden) return;
+  const my = ++qrSeq;
+  try {
+    const d = await staffApi('/api/payments/transfer-qr', { method: 'POST', body: { amount } });
+    if (my !== qrSeq) return;
+    qrAmount = amount;
+    clear(
+      qrBox,
+      el('img', { src: d.qr, alt: `Mã VietQR chuyển ${money(d.amount)}`, width: 132, height: 132 }),
+      el(
+        'div',
+        { class: 'stack small' },
+        el('strong', {}, `Khách quét mã — ${money(d.amount)}`),
+        el('span', {}, `${d.bankName} · ${d.number}`),
+        el('span', { class: 'muted' }, `Nội dung: ${d.content}`),
+        el('button', { class: 'btn btn-sm', type: 'button', onclick: () => showBigQr(d) }, 'Phóng to cho khách quét'),
+      ),
+    );
+    qrBox.hidden = false;
+  } catch {
+    if (my === qrSeq) qrBox.hidden = true; // quán chưa bật nhận chuyển khoản bằng QR → giữ dòng nhắc như cũ
+  }
+}
 function setMethod(next) {
   method = next;
   $('#method-cash').setAttribute('aria-pressed', String(next === 'CASH'));
@@ -102,6 +138,7 @@ function setMethod(next) {
   $('#transfer-note').hidden = next !== 'TRANSFER';
   $('#pay').textContent = payLabel();
   clear($('#pay-error'));
+  refreshTransferQr();
 }
 function payLabel() {
   if (paperMode) return 'Ghi đơn bán tay';
@@ -431,6 +468,7 @@ function renderTotals() {
   const d = due();
   const shown = d ?? cartTotal(state.cart);
   $('#total').textContent = money(shown);
+  refreshTransferQr(); // F-099: tổng đổi → mã mới
   clear(
     $('#breakdown'),
     !listMode() && state.quote && state.quote.totals.breakdownLines.length > 2 ? breakdownRows(state.quote.totals.breakdownLines, 'due-row') : null,

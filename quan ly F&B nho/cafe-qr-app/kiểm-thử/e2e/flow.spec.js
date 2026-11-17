@@ -4864,3 +4864,74 @@ test('vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR t
     await clearTables(request, ['NB1', 'NB2', 'NB3']);
   }
 });
+
+test('chuyển khoản bằng mã QR: khách gọi thanh toán chọn "Chuyển khoản" → điện thoại hiện mã VietQR đúng số tiền + nội dung; quầy thấy "chuyển khoản" ở dải Gọi thanh toán, hộp Thu tiền chọn sẵn và hiện mã; "Đã nhận chuyển khoản" → điện thoại khách sang màn cảm ơn (F-099, AC-099-05)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  // Giữ nguyên bố cục quầy của bài trước (dải Gọi thanh toán có ở cả hai bố cục); trả cài đặt về như cũ khi xong
+  const before = await apiAs(request, 'get', '/api/admin/settings');
+  await apiAs(request, 'put', '/api/admin/settings', {
+    guestWelcome: false,
+    transferEnabled: true,
+    bankBin: '970403',
+    bankNumber: '060123456789',
+    bankKind: 'ACCOUNT',
+    bankHolder: 'NGUYEN VAN A',
+  });
+  const tb = await apiAs(request, 'post', '/api/admin/tables', { code: 'QR1', name: 'Bàn QR1' });
+  const phone = await browser.newContext(phoneOpts);
+  const quay = await browser.newContext({ viewport: { width: 1920, height: 1080 }, locale: 'vi-VN' });
+  try {
+    const G = await phone.newPage();
+    watch(G, 'chuyen-khoan');
+    await G.goto(`/t/${tb.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .c-item')
+      .filter({ has: G.getByRole('button', { name: 'Nước suối', exact: true }) })
+      .locator('.add-btn')
+      .click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    const order = (await apiAs(request, 'get', '/api/orders')).find((o) => o.table?.name === 'Bàn QR1' && o.status === 'PENDING');
+    expect(order, 'đơn của Bàn QR1').toBeTruthy();
+    await apiAs(request, 'post', `/api/orders/${order.orderId}/accept`);
+
+    // Khách gọi thanh toán → chọn "Chuyển khoản (quét QR)" → mã VietQR có sẵn số tiền + nội dung của bàn
+    await G.locator('#pay').click();
+    await G.getByRole('dialog', { name: 'Gọi thanh toán' }).getByRole('button', { name: 'Chuyển khoản (quét QR)' }).click();
+    const qr = G.getByRole('dialog', { name: 'Chuyển khoản' });
+    await expect(qr.locator('.tq-img')).toBeVisible();
+    await expect(qr.locator('.tq-amount')).toContainText('đ');
+    await expect(qr).toContainText('Sacombank');
+    await expect(qr).toContainText('NGUYEN VAN A');
+    await expect(qr).toContainText('CF QR1');
+    await expect(qr.getByRole('link', { name: 'Lưu ảnh mã QR' })).toHaveAttribute('download', /VietQR-QR1/);
+    await qr.locator('.modal-foot').getByRole('button', { name: 'Đóng' }).click();
+    await expect(G.locator('#pay-status')).toContainText('chuyển khoản');
+    await expect(G.locator('#show-transfer')).toBeVisible();
+
+    // Quầy: dải Gọi thanh toán ghi "Chuyển khoản" → hộp Thu tiền chọn sẵn + hiện mã → "Đã nhận chuyển khoản"
+    const S = await counterLogin(quay, 'chuyen-khoan-quay');
+    const card = S.locator('#pay-strip .pay-card', { hasText: 'Bàn QR1' });
+    await expect(card).toContainText('Chuyển khoản');
+    await card.click();
+    const bill = S.locator('.drawer');
+    await expect(bill.getByRole('button', { name: 'Chuyển khoản', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(bill.locator('#settle-qr img')).toBeVisible();
+    await expect(bill.locator('#settle-qr')).toContainText('CF QR1');
+    const pay = bill.locator('.modal-foot .btn-success');
+    await expect(pay).toHaveText('Đã nhận chuyển khoản & In bill');
+    await expect(pay).toBeEnabled();
+    await pay.click();
+
+    // Điện thoại khách sang màn cảm ơn (đã trả do nhân viên ghi)
+    await expect(G.locator('.thanks')).toContainText('Đã thanh toán');
+  } finally {
+    await apiAs(request, 'put', '/api/admin/settings', { transferEnabled: before.transferEnabled, guestWelcome: before.guestWelcome });
+    await phone.close();
+    await quay.close();
+    await clearTables(request, ['QR1']);
+  }
+});

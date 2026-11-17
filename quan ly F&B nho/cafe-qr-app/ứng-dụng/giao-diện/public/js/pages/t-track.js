@@ -10,6 +10,7 @@ import { $, clear, el, elapsed, errorMessage, modal, money, setBusy, time, toast
 import { CUSTOMER_STATUS, clearSessionId, followMerged, followTable, getSessionId, goEntry, holdState, qrToken, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
 import { CALL_COOLDOWN_MS, callStaffSheet } from '../call-staff.js';
+import { transferPanel } from '../transfer-qr.js';
 
 const qr = qrToken();
 const sessionId = getSessionId(qr);
@@ -417,11 +418,26 @@ function render() {
 function paymentStatus() {
   if (session.status !== 'PAYMENT_REQUESTED') return null;
   const waited = Date.now() - new Date(session.paymentRequestedAt).getTime();
+  const transfer = session.payMethod === 'TRANSFER'; // F-099
+  const total = money(session.bill?.amountDue ?? session.amountDue);
   return el(
     'div',
     { class: 'pay-status', id: 'pay-status' },
     el('strong', {}, 'Đã gọi thanh toán'),
-    el('p', {}, `Nhân viên sẽ đến bàn trong giây lát · Tổng ${money(session.bill?.amountDue ?? session.amountDue)} (tiền mặt)`),
+    el(
+      'p',
+      {},
+      transfer
+        ? `Tổng ${total} (chuyển khoản) · quét mã để chuyển, nhân viên xác nhận khi tiền vào tài khoản quán`
+        : `Nhân viên sẽ đến bàn trong giây lát · Tổng ${total} (tiền mặt)`,
+    ),
+    transfer
+      ? el(
+          'button',
+          { class: 'btn btn-primary', type: 'button', id: 'show-transfer', style: { width: '100%', margin: '0.25rem 0 0.5rem' }, onclick: showTransfer },
+          'Xem mã QR chuyển khoản',
+        )
+      : null,
     el(
       'div',
       { class: 'row between' },
@@ -618,16 +634,55 @@ function updateCallButton() {
   btn.replaceChildren(icon('hand'), left > 0 ? `Đã gọi nhân viên (gọi lại sau ${Math.ceil(left / 1000)}s)` : 'Gọi nhân viên');
 }
 
+// F-099 (ADR-062): quán có nhận chuyển khoản bằng mã QR không (null = chưa hỏi)
+let shopTransfer = null;
+async function transferOn() {
+  if (shopTransfer === null) {
+    try {
+      shopTransfer = Boolean((await api('/api/shop')).transfer?.enabled);
+    } catch {
+      shopTransfer = false;
+    }
+  }
+  return shopTransfer;
+}
+
+/** F-099: khung mã VietQR của bàn (số tiền tạm tính + nội dung riêng) — đã trả do nhân viên xác nhận khi tiền vào. */
+async function showTransfer() {
+  let data;
+  try {
+    data = await api(`/api/sessions/${sessionId}/transfer`);
+  } catch (err) {
+    toast(errorMessage(err), 'error');
+    return;
+  }
+  modal({
+    title: 'Chuyển khoản',
+    body: el(
+      'div',
+      { class: 'stack' },
+      transferPanel(data, { saveName: `VietQR-${session.table.code}` }),
+      el(
+        'p',
+        { class: 'small muted center' },
+        'Mở app ngân hàng → Quét QR (hoặc chọn ảnh mã vừa lưu). Nhân viên xác nhận khi tiền vào tài khoản quán — không cần gửi ảnh chụp màn hình.',
+      ),
+    ),
+    actions: [{ label: 'Đóng', value: null }],
+  });
+}
+
 async function requestPayment() {
   const active = session.orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
   const recall = session.status === 'PAYMENT_REQUESTED';
   const due = session.bill?.amountDue ?? session.amountDue;
-  const ok = await modal({
+  const canTransfer = await transferOn();
+  const choice = await modal({
     title: recall ? 'Gọi lại nhân viên?' : 'Gọi thanh toán',
     body: el(
       'div',
       {},
-      el('p', {}, `Gọi nhân viên ra thu tiền ${money(due)} (tiền mặt)?`),
+      el('p', {}, canTransfer ? `Tổng ${money(due)} — bạn trả bằng cách nào?` : `Gọi nhân viên ra thu tiền ${money(due)} (tiền mặt)?`),
       el(
         'ul',
         { class: 'small muted' },
@@ -635,18 +690,26 @@ async function requestPayment() {
       ),
       session.member ? el('p', { class: 'small save' }, `Đã gồm ưu đãi hội viên ${session.member.maskedName}.`) : null,
     ),
-    actions: [
-      { label: 'Hủy', value: false },
-      { label: recall ? 'Gọi lại' : 'Xác nhận', class: 'btn-primary', value: true },
-    ],
+    actions: canTransfer
+      ? [
+          { label: 'Hủy', value: null },
+          { label: 'Tiền mặt', value: 'CASH' },
+          { label: 'Chuyển khoản (quét QR)', class: 'btn-primary', value: 'TRANSFER' },
+        ]
+      : [
+          { label: 'Hủy', value: null },
+          { label: recall ? 'Gọi lại' : 'Xác nhận', class: 'btn-primary', value: 'CASH' },
+        ],
   }).result;
-  if (ok !== true) return;
+  if (choice !== 'CASH' && choice !== 'TRANSFER') return;
   const btn = $('#pay');
   setBusy(btn, true);
   try {
-    await api(`/api/sessions/${sessionId}/request-payment`, { method: 'POST' });
-    toast('Đã báo quầy. Nhân viên sẽ đến bàn thu tiền.', 'success');
+    await api(`/api/sessions/${sessionId}/request-payment`, { method: 'POST', body: { method: choice } });
+    // Chuyển khoản: khung mã QR tự nói việc cần làm — không thêm toast (toast nằm trên cùng khi đang mở hộp, sẽ che tiêu đề hộp)
+    if (choice === 'CASH') toast('Đã báo quầy. Nhân viên sẽ đến bàn thu tiền.', 'success');
     await load();
+    if (choice === 'TRANSFER') await showTransfer();
   } catch (err) {
     if (err.code === 'SESSION_CLOSED') return load();
     toast(errorMessage(err), 'error');

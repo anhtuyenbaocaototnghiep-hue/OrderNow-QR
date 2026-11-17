@@ -779,6 +779,77 @@ table.table {
   transition: none;
 }
 
+/* F-099 (ADR-062): khung mã VietQR chuyển khoản — điện thoại khách, hộp Thu tiền, Bán mang đi. Mã luôn trên nền trắng (quét được cả
+   khi trang ở giao diện tối) */
+.transfer-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.transfer-panel .tq-img {
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  padding: 8px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--c-border);
+}
+.transfer-panel.big .tq-img {
+  width: 280px;
+}
+.transfer-panel .tq-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.transfer-panel .tq-rows {
+  width: 100%;
+}
+/* Nhãn trên, giá trị dưới, nút Chép bên phải — giá trị có gần hết bề ngang nên số tài khoản / số thẻ không bị ngắt giữa số */
+.transfer-panel .tq-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.transfer-panel .tq-row:last-child {
+  border-bottom: 0;
+}
+.transfer-panel .tq-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.transfer-panel .tq-label {
+  color: var(--c-muted);
+  font-size: 0.85rem;
+}
+.transfer-panel .tq-value {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere; /* chỉ khi một cụm dài hơn cả dòng */
+}
+.transfer-panel .tq-save {
+  width: 100%;
+}
+/* Hộp Thu tiền / Bán mang đi: mã nhỏ kèm nội dung + nút phóng to */
+.transfer-qr-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+.transfer-qr-box img {
+  width: 132px;
+  height: 132px;
+  padding: 6px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid var(--c-border);
+}
+
 .toasts {
   position: fixed;
   left: 50%;

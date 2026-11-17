@@ -9,6 +9,7 @@ import * as alertService from '../services/alertService.js';
 import * as brandService from '../services/brandService.js';
 import * as mailService from '../services/mailService.js';
 import { MODULES } from '../utils/modules.js';
+import { bankName } from '../domain/vietqr.js';
 import * as modifierService from '../services/modifierService.js';
 import * as refundService from '../services/refundService.js';
 import * as reviewService from '../services/reviewService.js';
@@ -156,6 +157,26 @@ operationsRouter.put('/settings', async (req, res) => {
       guestWelcome: z.boolean().optional(), // F-092: màn chào khi khách quét QR
       guestDaypartTheme: z.boolean().optional(), // F-094: màn khách tự đổi sáng / tối theo giờ
       guestSeasonDecor: z.boolean().optional(), // F-094: trang trí theo mùa
+      // F-099 (ADR-062 D-245): nhận chuyển khoản bằng VietQR — chỉ chủ quán (không có trong STORE_MGR_SETTINGS); null / '' = xóa
+      transferEnabled: z.boolean().optional(),
+      bankBin: z
+        .string()
+        .refine((v) => v === '' || Boolean(bankName(v)), 'Chọn ngân hàng trong danh sách')
+        .nullable()
+        .optional()
+        .transform((v) => (v === null ? '' : v)),
+      bankNumber: z
+        .string()
+        .trim()
+        .refine((v) => v === '' || /^[0-9A-Za-z]{4,19}$/.test(v), 'Số tài khoản / số thẻ: 4–19 chữ hoặc số, không khoảng trắng')
+        .nullable()
+        .optional()
+        .transform((v) => (v === null ? '' : v)),
+      bankKind: z.enum(['ACCOUNT', 'CARD'], { message: 'Chọn số tài khoản hoặc số thẻ' }).optional(),
+      bankHolder: zText(100)
+        .nullable()
+        .optional()
+        .transform((v) => (v === null ? '' : v)),
       // F-087: tự đóng bàn trống — Tắt / 15 / 30 / 60 phút
       idleCloseMinutes: z.coerce
         .number()

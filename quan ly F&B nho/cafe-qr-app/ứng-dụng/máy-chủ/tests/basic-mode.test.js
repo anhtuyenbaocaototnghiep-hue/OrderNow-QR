@@ -108,7 +108,9 @@ describe('Chính sách dữ liệu (F-062, BR-098)', () => {
     ok(await call(admin, 'put', '/api/admin/settings', { shopName: 'Quán Thử Chính Sách', shopAddress: '12 Đường Thử' }));
     const shop = ok(await api.get('/api/shop'));
     assert.deepEqual({ name: shop.name, address: shop.address }, { name: 'Quán Thử Chính Sách', address: '12 Đường Thử' });
-    assert.deepEqual(Object.keys(shop).sort(), ['address', 'guestTheme', 'logoUrl', 'name'], 'không lộ cài đặt nào khác'); // F-094 (ADR-056 D-233)
+    // F-094 (ADR-056 D-233) cờ giao diện; F-099 (ADR-062) chỉ cờ bật chuyển khoản — không lộ ngân hàng / số tài khoản
+    assert.deepEqual(Object.keys(shop).sort(), ['address', 'guestTheme', 'logoUrl', 'name', 'transfer'], 'không lộ cài đặt nào khác');
+    assert.deepEqual(Object.keys(shop.transfer), ['enabled'], 'chuyển khoản: chỉ cờ bật / tắt');
   });
 
   test('AC-062-02: câu đồng ý phía khách và 2 hộp đăng ký ở quầy có link /chinh-sach-du-lieu; đăng ký thiếu đồng ý vẫn 400 CONSENT_REQUIRED', async () => {

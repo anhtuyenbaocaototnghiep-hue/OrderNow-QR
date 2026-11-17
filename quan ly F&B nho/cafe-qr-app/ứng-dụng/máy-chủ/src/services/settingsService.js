@@ -73,6 +73,12 @@ function toSettings(map) {
     // F-094 (ADR-056 D-231…D-233): màn khách tự đổi sáng / tối theo giờ, trang trí khung giới thiệu theo mùa — mặc định bật
     guestDaypartTheme: map.get('guest.daypart_theme') !== 'false',
     guestSeasonDecor: map.get('guest.season_decor') !== 'false',
+    // F-099 (ADR-062 D-245): nhận chuyển khoản bằng VietQR vào tài khoản / thẻ của quán (chủ quán nhập) — mặc định tắt
+    transferEnabled: map.get('pay.transfer_enabled') === 'true',
+    bankBin: map.get('pay.bank_bin') || null,
+    bankNumber: map.get('pay.bank_number') || null,
+    bankKind: map.get('pay.bank_kind') === 'CARD' ? 'CARD' : 'ACCOUNT',
+    bankHolder: map.get('pay.bank_holder') || null,
     // F-087 (ADR-048 D-212): tự đóng bàn trống (khách quét QR rồi không gọi món) — 0 = tắt, 15 / 30 / 60 phút; mặc định 30
     idleCloseMinutes: IDLE_CLOSE_CHOICES.includes(num(map.get('tables.idle_close_minutes'), 30)) ? num(map.get('tables.idle_close_minutes'), 30) : 30,
     staffMaxAmount: num(map.get('discount.staff_max_amount'), 20000),
@@ -181,6 +187,11 @@ const KEYS = {
   guestWelcome: 'guest.welcome', // F-092
   guestDaypartTheme: 'guest.daypart_theme', // F-094
   guestSeasonDecor: 'guest.season_decor', // F-094
+  transferEnabled: 'pay.transfer_enabled', // F-099 (ADR-062): VietQR chuyển khoản
+  bankBin: 'pay.bank_bin',
+  bankNumber: 'pay.bank_number',
+  bankKind: 'pay.bank_kind',
+  bankHolder: 'pay.bank_holder',
   idleCloseMinutes: 'tables.idle_close_minutes',
   staffMaxAmount: 'discount.staff_max_amount',
   etaBaseSeconds: 'kitchen.base_seconds',
@@ -269,8 +280,13 @@ export const publicShop = async () => {
     address: s.shopAddress,
     logoUrl: logoUrlOf(s.shopLogo), // F-095
     guestTheme: { daypart: s.guestDaypartTheme, season: s.guestSeasonDecor },
+    // F-099: khách được chọn "Chuyển khoản (quét QR)" khi gọi thanh toán — chỉ cờ bật / tắt, số tài khoản trả ở mã QR của từng bàn
+    transfer: { enabled: transferReady(s) },
   };
 };
+
+/** F-099 (ADR-062): đủ thông tin nhận chuyển khoản (bật + ngân hàng + số + tên chủ) thì mới hiện mã QR. */
+export const transferReady = (s) => Boolean(s.transferEnabled && s.bankBin && s.bankNumber && s.bankHolder);
 
 export function invalidateSettings() {
   cache = null;

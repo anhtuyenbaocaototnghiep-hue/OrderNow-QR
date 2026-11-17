@@ -6,7 +6,7 @@ import { inTransaction, query, request, sql, txQuery } from '../db.js';
 import { mapPayment, PAYMENT_SELECT } from './ordersRepo.js';
 
 const SESSION_SELECT = `
-  SELECT s.SessionId, s.TableId, t.Code AS TableCode, t.Name AS TableName, s.Status, s.OpenedAt, s.PaymentRequestedAt,
+  SELECT s.SessionId, s.TableId, t.Code AS TableCode, t.Name AS TableName, s.Status, s.OpenedAt, s.PaymentRequestedAt, s.PayMethodHint,
          s.ClosedAt, ISNULL(a.AmountDue, 0) AS AmountDue, ISNULL(a.OrderCount, 0) AS OrderCount,
          ISNULL(a.PendingCount, 0) AS PendingCount, ISNULL(a.PreparingCount, 0) AS PreparingCount, ISNULL(q.ItemCount, 0) AS ItemCount,
          s.MemberId, mem.FullName AS MemberName, mem.TierCode AS MemberTier, mt.Name AS MemberTierName,
@@ -48,6 +48,7 @@ export const mapSession = (r) =>
     status: r.Status,
     openedAt: r.OpenedAt,
     paymentRequestedAt: r.PaymentRequestedAt,
+    payMethod: r.PayMethodHint ?? null, // F-099: cách trả khách chọn lúc gọi thanh toán (CASH | TRANSFER) — chỉ là gợi ý cho quầy
     closedAt: r.ClosedAt,
     amountDue: r.AmountDue,
     orderCount: r.OrderCount,
@@ -187,11 +188,12 @@ export async function setMember(sessionId, memberId) {
   return r.rowsAffected[0] > 0;
 }
 
-export async function requestPayment(sessionId) {
+export async function requestPayment(sessionId, method = 'CASH') {
   const r = await (
     await request()
   )
     .input('SessionId', sql.UniqueIdentifier, sessionId)
+    .input('Method', sql.VarChar(10), method) // F-099
     .output('AmountDue', sql.Decimal(12, 0))
     .output('RequestedAt', sql.DateTime2(0))
     .execute('dbo.sp_RequestPayment');

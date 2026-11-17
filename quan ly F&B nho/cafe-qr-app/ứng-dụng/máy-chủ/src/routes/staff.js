@@ -18,6 +18,7 @@ import * as settingsService from '../services/settingsService.js';
 import * as shiftService from '../services/shiftService.js';
 import * as staffCallService from '../services/staffCallService.js';
 import * as splitService from '../services/splitService.js';
+import * as transferService from '../services/transferService.js';
 import * as voidService from '../services/voidService.js';
 
 export const staffRouter = express.Router();
@@ -138,6 +139,13 @@ staffRouter.get('/sessions', async (req, res) => {
 staffRouter.post('/sessions/:id/settle/preview', async (req, res) => {
   const body = parse(z.object({ ...billingFields, ...mergeField }), req.body ?? {});
   res.json(await sessionService.settlePreview(paramGuid(req), body, req.user));
+});
+
+// F-099 (ADR-062 D-247): mã VietQR ở hộp Thu tiền / Bán mang đi — số tiền do màn quầy đưa (số phải thu đã tính), nội dung theo bàn.
+// Chỉ để khách quét; ghi đã trả vẫn là "Đã nhận chuyển khoản" (settle) như cũ.
+staffRouter.post('/payments/transfer-qr', cashier, async (req, res) => {
+  const body = parse(z.object({ amount: zMoney(), sessionId: zGuid().optional(), part: z.coerce.number().int().min(1).max(50).optional() }), req.body);
+  res.json(await transferService.transferForStaff(body));
 });
 
 staffRouter.post('/sessions/:id/settle', cashier, async (req, res) => {
