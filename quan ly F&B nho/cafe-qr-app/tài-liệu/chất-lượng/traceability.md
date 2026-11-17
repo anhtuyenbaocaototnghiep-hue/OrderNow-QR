@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 494 test, sửa lúc 2026-11-17 07:07 UTC
-- `npm run test:e2e` (JSON): 105 test, sửa lúc 2026-11-17 07:13 UTC
+- `npm test` (JUnit): 494 test, sửa lúc 2026-11-17 07:55 UTC
+- `npm run test:e2e` (JSON): 106 test, sửa lúc 2026-11-17 08:01 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 203 |
-| Acceptance Criteria | 556 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 556 |
+| User Story | 204 |
+| Acceptance Criteria | 560 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 560 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -96,11 +96,11 @@
 
 | AC | TC | Feature | US | Actor | UC | MOD | SCR | BR | Bằng chứng (Lớp: file › test — kết quả) | Kết luận |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| AC-001-01 | TC-001-01 | F-001 | US-001-1 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01, SCR-02 | — | Integration: `api.test.js` › quét QR: bàn trống → NEW; bàn có người → OCCUPIED; Gộp → cùng phiên; Cá nhân → phiên riêng (AC-001-01…03, 05) — **PASS**<br>E2E: `flow.spec.js` › quét QR: bàn trống vào thẳng menu; khách sau chọn Gộp chung / Cá nhân (FEATURE-001) — **PASS** | **PASS** |
-| AC-001-02 | TC-001-02 | F-001 | US-001-2 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01 | BR-008 | Integration: `api.test.js` › quét QR: bàn trống → NEW; bàn có người → OCCUPIED; Gộp → cùng phiên; Cá nhân → phiên riêng (AC-001-01…03, 05) — **PASS**<br>E2E: `flow.spec.js` › quét QR: bàn trống vào thẳng menu; khách sau chọn Gộp chung / Cá nhân (FEATURE-001) — **PASS**<br>E2E: `flow.spec.js` › gọi món trong 3 chạm, quầy nhận đơn realtime < 2s (NFR-003, AC-007-01) — **PASS** | **PASS** |
+| AC-001-01 | TC-001-01 | F-001 | US-001-1 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01, SCR-02 | — | Integration: `api.test.js` › quét QR: bàn trống → NEW; bàn có người → OCCUPIED; Gộp → cùng phiên; Cá nhân → phiên riêng (AC-001-01…03, 05) — **PASS**<br>E2E: `flow.spec.js` › quét QR: bàn trống vào thẳng menu; khách sau tự vào nhóm của bàn, không còn hỏi Gộp chung / Cá nhân (FEATURE-001, F-097) — **PASS** | **PASS** |
+| AC-001-02 | TC-001-02 | F-001 | US-001-2 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01 | BR-008 | Integration: `api.test.js` › quét QR: bàn trống → NEW; bàn có người → OCCUPIED; Gộp → cùng phiên; Cá nhân → phiên riêng (AC-001-01…03, 05) — **PASS**<br>E2E: `flow.spec.js` › quét QR: bàn trống vào thẳng menu; khách sau tự vào nhóm của bàn, không còn hỏi Gộp chung / Cá nhân (FEATURE-001, F-097) — **PASS**<br>E2E: `flow.spec.js` › gọi món trong 3 chạm, quầy nhận đơn realtime < 2s (NFR-003, AC-007-01) — **PASS** | **PASS** |
 | AC-001-03 | TC-001-03 | F-001 | US-001-2 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01 | BR-008 | Integration: `api.test.js` › quét QR: bàn trống → NEW; bàn có người → OCCUPIED; Gộp → cùng phiên; Cá nhân → phiên riêng (AC-001-01…03, 05) — **PASS**<br>E2E: `flow.spec.js` › gọi món trong 3 chạm, quầy nhận đơn realtime < 2s (NFR-003, AC-007-01) — **PASS** | **PASS** |
 | AC-001-04 | TC-001-04 | F-001 | US-001-2 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01 | BR-008 | Integration: `api.test.js` › sau khi đóng: khách gửi thêm → SESSION_CLOSED; Gộp vào phiên đã đóng → 409 (AC-001-04, BR-020) — **PASS**<br>E2E: `flow.spec.js` › phiên đã đóng: khách bấm "Gọi món mới" → không vào lại phiên cũ (BR-008, AC-001-04) — **PASS** | **PASS** |
-| AC-001-05 | TC-001-05 | F-001 | US-001-1 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01, SCR-02 | — | Integration: `api.test.js` › quét QR: bàn trống → NEW; bàn có người → OCCUPIED; Gộp → cùng phiên; Cá nhân → phiên riêng (AC-001-01…03, 05) — **PASS**<br>E2E: `flow.spec.js` › quét QR: bàn trống vào thẳng menu; khách sau chọn Gộp chung / Cá nhân (FEATURE-001) — **PASS** | **PASS** |
+| AC-001-05 | TC-001-05 | F-001 | US-001-1 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01, SCR-02 | — | Integration: `api.test.js` › quét QR: bàn trống → NEW; bàn có người → OCCUPIED; Gộp → cùng phiên; Cá nhân → phiên riêng (AC-001-01…03, 05) — **PASS**<br>E2E: `flow.spec.js` › quét QR: bàn trống vào thẳng menu; khách sau tự vào nhóm của bàn, không còn hỏi Gộp chung / Cá nhân (FEATURE-001, F-097) — **PASS** | **PASS** |
 | AC-001-06 | TC-001-06 | F-001 | US-001-1 | ACT-GUEST | UC-01 | MOD-TABLE | SCR-01, SCR-02 | — | Integration: `delete.test.js` › bàn: đang có khách → 409 TABLE_BUSY; đã dùng → ARCHIVED + QR cũ chết; chưa dùng → DELETED; mã bàn dùng lại được — **PASS** | **PASS** |
 | AC-001-07 | TC-001-07 | F-001 | US-001-3 | ACT-GUEST, ACT-STAFF | UC-01 | MOD-TABLE | SCR-43, SCR-44 | — | Integration: `acceptance.test.js` › AC-001-07: mở địa chỉ gốc / → 200, hướng dẫn quét mã QR trên bàn + nút vào quầy và quản lý; không tạo phiên — **PASS** | **PASS** |
 | AC-001-08 | TC-001-08 | F-001 | US-001-3 | ACT-GUEST, ACT-STAFF | UC-01 | MOD-TABLE | SCR-43, SCR-44 | — | Integration: `acceptance.test.js` › AC-001-08: đường dẫn trang không tồn tại → 404 trang "Không tìm thấy trang" có nút Về trang chủ; API không tồn tại → JSON (401 khi chưa đăng nhập, 404 NOT_FOUND khi đã đăng nhập) — **PASS** | **PASS** |
@@ -652,4 +652,8 @@
 | AC-095-03 | TC-095-03 | F-095 | US-095-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | — | E2E: `a11y.spec.js` › logo quán (F-095): ô Logo quán ở Cài đặt, màn chào và thực đơn có logo — nhãn, ảnh có chữ thay thế, tương phản, vùng chạm (AC-095-03) — **PASS** | **PASS** |
 | AC-096-01 | TC-096-01 | F-096 | US-096-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-47 | — | Integration: `owner-accounts.test.js` › AC-096-01: tạo / nâng tài khoản Chủ quán cần mật khẩu của người thao tác (thiếu 400, sai 403, sai 5 lần 429); chủ quán mới vào được trang Quản lý, không vào máy quầy; có cảnh báo cho chủ quán; quản lý cửa hàng không tạo được — **PASS** | **PASS** |
 | AC-096-02 | TC-096-02 | F-096 | US-096-1 | ACT-ADMIN | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-47 | — | E2E: `flow.spec.js` › thêm tài khoản chủ quán: Tài khoản → "+ Thêm tài khoản" → vai trò Chủ quán hiện cảnh báo toàn quyền + ô Mật khẩu của bạn; sai mật khẩu báo dưới ô, đúng → tạo xong có nhãn Chủ quán; chủ quán mới đăng nhập trang Quản lý thấy Tài khoản; trang Cảnh báo có tin tạo chủ quán (F-096, AC-096-02) — **PASS** | **PASS** |
+| AC-097-01 | TC-097-01 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | E2E: `flow.spec.js` › vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR tự vào nhóm (không hỏi Gộp chung / Tạo đơn cá nhân), thấy món cả nhóm, báo "Đã vào nhóm của Bàn"; bàn có 2 nhóm → hỏi "Bạn đi cùng nhóm nào?"; điện thoại có nhóm ở bàn khác chọn "Gọi món ở Bàn" → vào nhóm của bàn mới, nhóm cũ giữ nguyên; màn chào "Trả riêng từng người?" mở hộp Chia bill (F-097, AC-097-01…04) — **PASS** | **PASS** |
+| AC-097-02 | TC-097-02 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | E2E: `flow.spec.js` › vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR tự vào nhóm (không hỏi Gộp chung / Tạo đơn cá nhân), thấy món cả nhóm, báo "Đã vào nhóm của Bàn"; bàn có 2 nhóm → hỏi "Bạn đi cùng nhóm nào?"; điện thoại có nhóm ở bàn khác chọn "Gọi món ở Bàn" → vào nhóm của bàn mới, nhóm cũ giữ nguyên; màn chào "Trả riêng từng người?" mở hộp Chia bill (F-097, AC-097-01…04) — **PASS**<br>E2E: `a11y.spec.js` › khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn nhóm, màn cảm ơn + đánh giá — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px — **PASS** | **PASS** |
+| AC-097-03 | TC-097-03 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | E2E: `flow.spec.js` › vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR tự vào nhóm (không hỏi Gộp chung / Tạo đơn cá nhân), thấy món cả nhóm, báo "Đã vào nhóm của Bàn"; bàn có 2 nhóm → hỏi "Bạn đi cùng nhóm nào?"; điện thoại có nhóm ở bàn khác chọn "Gọi món ở Bàn" → vào nhóm của bàn mới, nhóm cũ giữ nguyên; màn chào "Trả riêng từng người?" mở hộp Chia bill (F-097, AC-097-01…04) — **PASS** | **PASS** |
+| AC-097-04 | TC-097-04 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | E2E: `flow.spec.js` › vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR tự vào nhóm (không hỏi Gộp chung / Tạo đơn cá nhân), thấy món cả nhóm, báo "Đã vào nhóm của Bàn"; bàn có 2 nhóm → hỏi "Bạn đi cùng nhóm nào?"; điện thoại có nhóm ở bàn khác chọn "Gọi món ở Bàn" → vào nhóm của bàn mới, nhóm cũ giữ nguyên; màn chào "Trả riêng từng người?" mở hộp Chia bill (F-097, AC-097-01…04) — **PASS** | **PASS** |
 

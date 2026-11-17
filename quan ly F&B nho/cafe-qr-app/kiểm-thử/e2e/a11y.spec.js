@@ -328,16 +328,26 @@ test('khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn 
   await check(C, 'khach-chia-bill');
   await C.keyboard.press('Escape');
 
-  // Khách thứ hai quét cùng bàn → màn chọn Gộp chung / Cá nhân
+  // F-097: bàn có 2 nhóm (nhóm thứ hai do quầy / API mở) → khách mới thấy "Bạn đi cùng nhóm nào?" (không còn Tạo đơn cá nhân)
+  const extra = await browser.newContext(phone);
+  const X = await extra.newPage();
+  await X.goto('/');
+  await X.evaluate(
+    (qr) => globalThis.fetch('/api/sessions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ qrToken: qr }) }),
+    table.qrToken,
+  );
+  await extra.close();
   const ctx2 = await browser.newContext(phone);
   const D = await ctx2.newPage();
   await D.goto(`/t/${table.qrToken}`);
-  await expect(D.getByRole('button', { name: /Gộp chung nhóm/ })).toBeVisible();
+  await expect(D.getByRole('button', { name: /Vào nhóm này/ })).toHaveCount(2);
   await check(D, 'khach-chon-nhom', { narrow: true });
 
-  // Màn cảm ơn + khung đánh giá (F-051): nhóm riêng ("Tạo đơn cá nhân"), thu tiền qua API — mở ca tạm nếu chưa có rồi đóng lại
+  // Màn cảm ơn + khung đánh giá (F-051): D vào nhóm thứ hai (chưa có món), thu tiền qua API — mở ca tạm nếu chưa có rồi đóng lại
   const auth = { Authorization: `Bearer ${adminToken}` };
-  await D.getByRole('button', { name: /Tạo đơn cá nhân/ }).click();
+  await D.getByRole('button', { name: /Vào nhóm này/ })
+    .filter({ hasText: '· 0 món' })
+    .click();
   await expect(D).toHaveURL(/\/menu$/);
   await D.locator('.c-item', { hasText: 'Nước suối' }).first().locator('.add-btn').click();
   await D.click('#open-cart');

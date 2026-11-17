@@ -2,6 +2,7 @@
 
 > **Nguồn:** `tài-liệu/nguồn/huong-dan-web-app-v1.2.md` §8 (bản 1.2, 14/10/2026). **Trạng thái tài liệu:** BẢN NHÁP — trạng thái từng mục ghi tại chỗ (CONFIRMED / PROPOSED / NEEDS_CONFIRMATION / UNKNOWN / N/A). Quyết định đã chốt: [ADR-000](../quyết-định/ADR-000-thanh-toan-tien-mat.md) (D-1/D-2/D-3).
 
+- **Cập nhật 17/11/2026 ([F-097](FEATURE-097.md), ADR-059):** bỏ hộp chọn "Gộp chung nhóm / Tạo đơn cá nhân" — quét QR bàn đang có nhóm là tự vào nhóm của bàn (bàn ≥ 2 nhóm thì hỏi đi cùng nhóm nào); trả riêng bằng "Chia bill theo người". AC-001-02 / 03 / 04 dưới đây đã viết theo luồng mới.
 - **Cập nhật 16/11/2026 ([F-092](FEATURE-092.md), ADR-054):** khi quán bật "Màn chào khi khách quét QR" (mặc định), vào được nhóm là thấy màn chào của quán trước (nút lớn "Xem thực đơn – Gọi món"); tắt → vào thẳng thực đơn như mô tả dưới đây.
 - **Status:** CONFIRMED. Phần đóng phiên đã chốt theo ADR-000 (D-2: phiên đóng khi nhân viên bấm "Đã thu tiền"). Cách hiểu "giỏ hàng chung" khi Gộp còn mở ở Q-012
 - **Source:** demo.docx US1 (cả 2 bản), User flow bước 1–3, Module 1.1
@@ -26,9 +27,9 @@
 - **Quyền:** Công khai, không cần đăng nhập. Chỉ thấy tổng tạm tính của phiên, không thấy ghi chú/tên.
 - **Acceptance Criteria**
   - AC-001-01: Bàn 05 không có phiên mở; quét QR → có `sessionId` mới, `Sessions` có 1 dòng `OPEN` cho bàn 05, vào thẳng menu không hỏi.
-  - AC-001-02: Bàn 05 có phiên A `OPEN`; khách B quét → thấy hộp thoại; chọn Gộp → B có cùng `sessionId` A; GET đơn của phiên trả về các đơn A đã đặt.
-  - AC-001-03: Như trên, chọn Cá nhân → phiên B mới, `TableId` = 05, B không thấy đơn của A; A không thấy đơn của B.
-  - AC-001-04: Phiên A vừa `CLOSED`; B bấm Gộp → nhận 409, client báo "Đơn hàng nhóm đã được thanh toán, hệ thống sẽ tạo phiên mới cho bạn" và tạo phiên mới tự động.
+  - AC-001-02: Bàn 05 có phiên A `OPEN`; khách B quét → **tự vào phiên A** (F-097 — không còn hộp thoại Gộp / Cá nhân; client gọi `POST /api/sessions/{id}/join`) → B có cùng `sessionId` A; GET đơn của phiên trả về các đơn A đã đặt.
+  - AC-001-03: Nhóm thứ hai ở cùng bàn (quầy / `POST /api/sessions` mở — từ F-097 điện thoại không còn nút "Tạo đơn cá nhân") → phiên mới, `TableId` = 05; hai nhóm không thấy đơn của nhau.
+  - AC-001-04: Phiên A vừa `CLOSED`; B vào nhóm (tự vào — F-097) → nhận 409, client báo "Đơn hàng nhóm đã được thanh toán, hệ thống sẽ tạo phiên mới cho bạn" và tạo phiên mới tự động.
   - AC-001-05: `qrToken` không tồn tại → 404; không tạo phiên.
   - AC-001-06: Bàn đã bị xóa mềm (ADR-004) hoặc đang tắt → quét QR cũ của bàn → 404 `TABLE_NOT_FOUND`, không vào được menu. _(bổ sung — TASK-057, 20/10/2026)_
   - AC-001-07: Mở địa chỉ gốc `/` (không qua QR) → HTTP 200, trang SCR-43 hướng dẫn "quét mã QR dán trên bàn" và có 2 nút "Màn hình quầy (nhân viên)" → `/pos`, "Quản lý" → `/admin`; không tạo phiên. _(bổ sung — TASK-057, 20/10/2026: màn hình SCR-43 chưa có Story)_

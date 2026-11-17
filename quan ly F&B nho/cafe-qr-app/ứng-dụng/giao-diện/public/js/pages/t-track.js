@@ -695,7 +695,9 @@ setInterval(() => {
 const act = new URLSearchParams(location.search).get('act');
 if (act) history.replaceState(null, '', location.pathname);
 await load();
-if (act === 'pay' && session && session.status === 'OPEN' && session.orders.some((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED')) requestPayment();
+const hasOrders = session?.orders.some((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
+if (act === 'pay' && session?.status === 'OPEN' && hasOrders) requestPayment();
+if (act === 'split' && session?.status === 'OPEN' && hasOrders) openSplit(); // F-097: "Trả riêng từng người?" ở màn chào
 const socket = connectRealtime({
   sessionId,
   onOnline: (reconnected) => {

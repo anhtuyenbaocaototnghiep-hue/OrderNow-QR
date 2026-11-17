@@ -630,3 +630,9 @@ flowchart LR
 
 - **SCR-20 Tài khoản:** nút đầu trang "+ Thêm tài khoản". Hộp Thêm / Sửa: ô Vai trò có "Chủ quán (toàn quyền)"; chọn → khung cảnh báo (toàn quyền như bạn, chỉ dùng trang Quản lý) + ô "Mật khẩu của bạn" (bắt buộc); sai mật khẩu → lỗi dưới ô, hộp còn mở.
 - **SCR-47 Cảnh báo:** tin "<A> tạo tài khoản Chủ quán cho <B>" / "<A> đổi <B> thành Chủ quán" (chỉ chủ quán thấy).
+
+## TASK-118 — Quét QR bàn có nhóm: tự vào nhóm của bàn — SCR-01, SCR-05 (F-097, ADR-059, 17/11/2026)
+
+- **SCR-01:** bàn có 1 nhóm → không còn màn "Bạn đi cùng nhóm hay đi lẻ?": vào thẳng màn chào / thực đơn, thông báo "Đã vào nhóm của Bàn … — món cả nhóm gọi chung một hóa đơn. Ai muốn trả riêng thì dùng Chia bill theo người". Bàn có ≥ 2 nhóm → "Bàn đang có N nhóm. Bạn đi cùng nhóm nào?" — mỗi nhóm một thẻ "Vào nhóm này" (tên nhóm · số món · giờ mở), không có thẻ "Tạo đơn cá nhân".
+- **SCR-01 đổi bàn (F-086):** thẻ "Gọi món riêng ở Bàn …" → "Gọi món ở Bàn …" (vào nhóm của bàn mới nếu có).
+- **SCR-01 màn chào:** nhóm đã có món → dưới "Đơn của bạn" có dòng chữ nhỏ "Trả riêng từng người? **Chia bill theo người**" (chạm 44 px) → SCR-05 mở sẵn hộp Chia bill.

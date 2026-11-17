@@ -1930,3 +1930,19 @@ body.customer .alert.info {
   flex: 1;
   min-width: 0;
 }
+
+/* F-097 (ADR-059): màn chào — "Trả riêng từng người? Chia bill theo người" (thay cho nút Tạo đơn cá nhân đã bỏ) */
+.h-split {
+  display: block;
+  min-height: 44px;
+  padding: 0.65rem 0.25rem;
+  color: var(--c-muted);
+  font-size: 0.92rem;
+  text-align: center;
+  text-decoration: none;
+}
+.h-split strong {
+  color: var(--c-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

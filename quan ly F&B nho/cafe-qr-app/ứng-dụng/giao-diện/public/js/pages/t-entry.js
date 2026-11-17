@@ -1,4 +1,5 @@
-// S-01 — Vào bàn: quét QR → phiên mới / vào lại phiên cũ / chọn Gộp chung nhóm hay Tạo đơn cá nhân (FEATURE-001, BR-008).
+// S-01 — Vào bàn: quét QR → phiên mới / vào lại phiên cũ (FEATURE-001, BR-008). F-097 (ADR-059): bàn đang có nhóm → tự vào nhóm của
+// bàn (không còn chọn "Gộp chung / Tạo đơn cá nhân"); hiếm khi bàn có ≥ 2 nhóm → hỏi đi cùng nhóm nào. Trả riêng = "Chia bill theo người".
 // F-092 (ADR-054): có nhóm rồi → màn chào của quán (tên, địa chỉ, lời chào, bàn, hội viên, Gọi thanh toán / Gọi nhân viên / Đánh giá,
 // nút lớn "Xem thực đơn – Gọi món"); quán tắt màn chào ở Cài đặt → vào thẳng thực đơn như trước.
 import { api } from '../api.js';
@@ -41,16 +42,30 @@ async function start() {
   try {
     const res = await api('/api/sessions/scan', { method: 'POST', body: { qrToken: qr } });
     if (res.state === 'NEW' || res.state === 'MEMBER') return enter(res.session.sessionId);
-    showFlash();
-    if (res.state === 'ELSEWHERE') return showElsewhere(res); // F-086
-    showChoice(res);
+    if (res.state === 'ELSEWHERE') {
+      showFlash();
+      return showElsewhere(res); // F-086
+    }
+    return joinTable(res); // F-097
   } catch (err) {
     if (err.status === 404 || err.code === 'VALIDATION_ERROR' || err.code === 'TABLE_NOT_FOUND') return showInvalid();
     showError(err);
   }
 }
 
-function showChoice({ table, openSessions }) {
+/**
+ * F-097 (ADR-059 D-238): bàn đang có nhóm → tự vào nhóm của bàn — món cả nhóm gọi chung một hóa đơn, ai muốn trả riêng thì dùng
+ * "Chia bill theo người". Bàn có ≥ 2 nhóm (hiếm — quầy mở thêm) → hỏi đi cùng nhóm nào. Nhóm vừa đóng giữa chừng → mở nhóm mới (BR-008).
+ */
+function joinTable(res) {
+  const groups = res.openSessions ?? [];
+  if (!groups.length) return createOwn(null, true);
+  if (groups.length === 1) return join(groups[0].sessionId, null, res.table);
+  showFlash();
+  return showGroups(res);
+}
+
+function showGroups({ table, openSessions }) {
   clear(
     app,
     el(
@@ -58,22 +73,16 @@ function showChoice({ table, openSessions }) {
       { class: 'c-hero' },
       el('div', { class: 'logo' }, icon('coffee')),
       el('h1', {}, table.name),
-      el('p', { class: 'muted' }, 'Bàn đang có người. Bạn đi cùng nhóm hay đi lẻ?'),
+      el('p', { class: 'muted' }, `Bàn đang có ${openSessions.length} nhóm. Bạn đi cùng nhóm nào?`),
     ),
     openSessions.map((s) =>
       el(
         'button',
-        { class: 'c-choice', type: 'button', onclick: (e) => join(s.sessionId, e.currentTarget) },
-        el('strong', {}, 'Gộp chung nhóm'),
+        { class: 'c-choice', type: 'button', onclick: (e) => join(s.sessionId, e.currentTarget, table) },
+        el('strong', {}, 'Vào nhóm này'),
         el('span', { class: 'muted small' }, `${s.label} · ${s.itemCount} món · mở lúc ${time(s.openedAt)}`),
-        el('span', { class: 'small' }, 'Xem chung các món đã gọi và thanh toán chung một hóa đơn'),
+        el('span', { class: 'small' }, 'Gọi chung một hóa đơn — ai muốn trả riêng thì dùng "Chia bill theo người"'),
       ),
-    ),
-    el(
-      'button',
-      { class: 'c-choice alt', type: 'button', onclick: (e) => createOwn(e.currentTarget) },
-      el('strong', {}, 'Tạo đơn cá nhân'),
-      el('span', { class: 'small muted' }, 'Gọi món và thanh toán riêng, không bị nhầm bill'),
     ),
   );
 }
@@ -110,8 +119,8 @@ function showElsewhere(res) {
       ),
       el(
         'button',
-        { class: 'c-choice alt', type: 'button', onclick: (ev) => orderSeparately(res, ev.currentTarget) },
-        el('strong', {}, `Gọi món riêng ở ${table.name}`),
+        { class: 'c-choice alt', type: 'button', onclick: (ev) => orderHere(res, ev.currentTarget) },
+        el('strong', {}, `Gọi món ở ${table.name}`),
         el('span', { class: 'small muted' }, `Nhóm ở ${e.table.name} vẫn giữ nguyên, hóa đơn riêng.`),
       ),
     );
@@ -174,15 +183,21 @@ async function requestMove(res, button) {
   }
 }
 
-function orderSeparately(res, button) {
-  if (res.openSessions?.length) return showChoice(res); // bàn này có nhóm khác → Gộp chung / Tạo đơn cá nhân như thường
+/** F-086 + F-097: gọi món ở bàn mới, nhóm ở bàn cũ giữ nguyên — bàn mới có nhóm thì vào nhóm đó (như quét bình thường), trống thì mở nhóm mới. */
+function orderHere(res, button) {
+  if (res.openSessions?.length) return joinTable(res);
   return createOwn(button);
 }
 
-async function join(sessionId, button) {
+async function join(sessionId, button, table) {
   setBusy(button, true);
   try {
     const res = await api(`/api/sessions/${sessionId}/join`, { method: 'POST', body: { qrToken: qr } });
+    // F-097: báo khách đã vào nhóm chung của bàn (lời nhắn có sẵn — vd vừa đổi bàn — được ưu tiên)
+    pendingFlash ??= {
+      message: `Đã vào nhóm của ${table?.name ?? 'bàn'} — món cả nhóm gọi chung một hóa đơn. Ai muốn trả riêng thì dùng "Chia bill theo người".`,
+      type: 'info',
+    };
     enter(res.session.sessionId);
   } catch (err) {
     setBusy(button, false);
@@ -338,6 +353,10 @@ function showHome(menu, first) {
             el('span', { class: 'grow' }, el('strong', {}, 'Đơn của bạn'), ` · ${active.length} đơn đã gửi`),
             icon('chevron-right'),
           )
+        : null,
+      // F-097 (ADR-059 D-239): trả riêng thay cho "Tạo đơn cá nhân" — mở thẳng hộp Chia bill theo người
+      active.length && session.status === 'OPEN'
+        ? el('a', { class: 'h-split', href: `/t/${qr}/track?act=split` }, 'Trả riêng từng người? ', el('strong', {}, 'Chia bill theo người'))
         : null,
     );
   };
