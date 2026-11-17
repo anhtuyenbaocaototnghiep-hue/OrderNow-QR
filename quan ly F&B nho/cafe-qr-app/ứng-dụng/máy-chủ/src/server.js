@@ -8,6 +8,7 @@ import { attachRealtime } from './realtime/io.js';
 import { initAvailability } from './services/menuService.js';
 import { startScheduler } from './jobs/scheduler.js';
 import { startAlertMailer } from './jobs/alertMailer.js';
+import { startBankFeed } from './services/bankFeedService.js';
 import * as qrCheckService from './services/qrCheckService.js';
 
 void config.jwtSecret; // kiểm tra sớm biến bắt buộc
@@ -47,6 +48,11 @@ server.listen(config.port, () => {
     })
     .catch(() => {});
   if (startScheduler()) console.log('Job nền: đã bật (JOBS_ENABLED=false để tắt)');
+  // F-100 (ADR-063 D-249): hỏi SePay mỗi 5 giây khi chủ quán bật "Tự xác nhận khi tiền vào" (cùng công tắc JOBS_ENABLED)
+  if (startBankFeed())
+    console.log(
+      `Tự xác nhận chuyển khoản: ${config.sepay.token ? 'có khóa SePay — hỏi tiền vào mỗi 5 giây khi bật ở Cài đặt' : 'chưa có SEPAY_API_TOKEN trong .env (chỉ thử được bằng Giả lập)'}`,
+    );
   // F-060: gửi email cảnh báo + tổng kết ngày (cùng công tắc JOBS_ENABLED)
   if (startAlertMailer())
     console.log(

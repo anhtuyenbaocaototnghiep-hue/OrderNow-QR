@@ -372,6 +372,7 @@ export function unlockAudio() {
   if (!Ctx) return false;
   audioCtx ||= new Ctx();
   audioCtx.resume();
+  window.speechSynthesis?.getVoices(); // F-100: trình duyệt nạp danh sách giọng đọc từ lúc này — lần báo tiền vào đầu tiên đã có giọng
   return true;
 }
 export const audioReady = () => Boolean(audioCtx && audioCtx.state === 'running');
@@ -410,6 +411,22 @@ export function playSound(kind = 'ting') {
     osc.start(t0 + at);
     osc.stop(t0 + at + 0.55);
   }
+  return true;
+}
+
+/**
+ * F-100 (ADR-063 D-252): đọc to một câu ngắn bằng giọng tiếng Việt của máy ("Bàn 02 đã chuyển khoản 59.000 đồng") — chỉ khi quầy đã
+ * bật âm thanh. Máy không có giọng tiếng Việt → không đọc (giọng tiếng Anh đọc tiếng Việt khó nghe), chuông vẫn kêu.
+ */
+export function speak(text) {
+  const synth = window.speechSynthesis;
+  if (!audioReady() || !synth || typeof window.SpeechSynthesisUtterance !== 'function') return false;
+  const voice = synth.getVoices().find((v) => /^vi([-_]|$)/i.test(v.lang));
+  if (!voice) return false;
+  const u = new window.SpeechSynthesisUtterance(text);
+  u.voice = voice;
+  u.lang = voice.lang;
+  synth.speak(u);
   return true;
 }
 

@@ -493,6 +493,49 @@ test('khách chuyển khoản (F-099): hộp Gọi thanh toán chọn cách tr�
   }
 });
 
+// F-100 (TASK-123, ADR-063): dải "Tiền vào chưa khớp" + hộp xử lý ở quầy, Cài đặt tự xác nhận + hộp Giả lập tiền vào — bật tạm, dọn ở finally
+test('tiền vào chưa khớp (F-100): dải ở quầy, hộp Ghép & thu / Đã xử lý, Cài đặt "Tự xác nhận khi tiền vào" + hộp Giả lập tiền vào — nhãn, tương phản, vùng chạm (AC-100-06)', async ({
+  request,
+}) => {
+  const admin = { Authorization: `Bearer ${adminToken}` };
+  const before = await (await request.get('/api/admin/settings', { headers: admin })).json();
+  await request.put('/api/admin/settings', {
+    headers: admin,
+    data: { transferEnabled: true, bankBin: '970403', bankNumber: '060123456789', bankKind: 'ACCOUNT', bankHolder: 'NGUYEN VAN A', autoConfirm: true },
+  });
+  // Mã không khớp bàn nào đang mở → nằm ở dải "Tiền vào chưa khớp"
+  const sim = await (await request.post('/api/admin/bank-feed/simulate', { headers: admin, data: { amount: 42000, content: 'CF A11Y 1A2B3C' } })).json();
+  const ctx = await browser.newContext(desk);
+  try {
+    const P = await ctx.newPage();
+    P.setDefaultTimeout(15_000); // hỏng thì báo nhanh — còn thời gian dọn ở finally
+    await login(P, 'staff1', 'Staff@123');
+    await P.getByRole('dialog')
+      .getByRole('button', { name: 'Bỏ qua' })
+      .click({ timeout: 3000 })
+      .catch(() => {}); // hướng dẫn lần đầu (khi chạy riêng bài này)
+    await expect(P.locator('#bank-strip .bank-card')).toHaveCount(1);
+    await check(P, 'quay-tien-vao-chua-khop');
+    await P.locator('#bank-strip .bank-card').click();
+    await expect(P.getByRole('dialog', { name: /^Tiền vào/ })).toBeVisible();
+    await check(P, 'quay-hop-tien-vao');
+    await P.keyboard.press('Escape');
+    const A = await ctx.newPage();
+    A.setDefaultTimeout(15_000);
+    await adminLogin(A);
+    await A.goto('/admin/settings');
+    await expect(A.locator('#bank-feed-status .alert')).toBeVisible();
+    await check(A, 'quan-ly-cai-dat-tu-xac-nhan');
+    await A.locator('#simulate-bank').click();
+    await expect(A.getByRole('dialog', { name: 'Giả lập tiền vào' })).toBeVisible();
+    await check(A, 'quan-ly-gia-lap-tien-vao');
+  } finally {
+    await ctx.close();
+    if (sim?.bankTxnId) await request.post(`/api/bank-transactions/${sim.bankTxnId}/resolve`, { headers: admin, data: { note: 'Dọn kiểm tra a11y' } });
+    await request.put('/api/admin/settings', { headers: admin, data: { autoConfirm: before.autoConfirm, transferEnabled: before.transferEnabled } });
+  }
+});
+
 // F-095 (TASK-116, ADR-057): logo quán — tải tạm qua API, quét Cài đặt (máy tính) + màn chào / thực đơn (điện thoại), bỏ logo ở finally
 test('logo quán (F-095): ô Logo quán ở Cài đặt, màn chào và thực đơn có logo — nhãn, ảnh có chữ thay thế, tương phản, vùng chạm (AC-095-03)', async ({
   request,

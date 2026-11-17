@@ -31,6 +31,7 @@ import {
   setBusy,
   setModalHost,
   setMoney,
+  speak,
   statusBadge,
   time,
   toast,
@@ -50,7 +51,7 @@ if (!canPay) $('#go-takeaway')?.remove();
 const NO_SHIFT_HINT = 'Chưa mở ca — bấm "Mở ca" ở dải phía trên để xử lý đơn';
 const shiftGate = () => (shell.shift ? {} : { disabled: true, title: NO_SHIFT_HINT, 'aria-describedby': 'no-shift' });
 
-const state = { orders: new Map(), sessions: [], tables: [], calls: [], lowReviews: [], fresh: new Set(), drawer: null };
+const state = { orders: new Map(), sessions: [], tables: [], calls: [], lowReviews: [], bank: [], fresh: new Set(), drawer: null };
 const COLUMNS = ['PENDING', 'PREPARING', 'COMPLETED'];
 // F-076 (ADR-034): quy trình 1 chạm — "Mới" + "Đang pha" gộp thành "Cần làm", mỗi đơn một nút "Xong" (= nhận + hoàn tất)
 const oneTap = Boolean(current.pos?.oneTap);
@@ -94,7 +95,7 @@ async function loadAll({ detectLate = false } = {}) {
   const knownPayReq = new Set(state.sessions.filter((s) => s.status === 'PAYMENT_REQUESTED').map((s) => s.sessionId));
   const knownCalls = new Set(state.calls.map((c) => c.callId));
   try {
-    await Promise.all([loadOrders(), loadSessions(), loadTables(), loadCalls(), loadLowReviews()]);
+    await Promise.all([loadOrders(), loadSessions(), loadTables(), loadCalls(), loadLowReviews(), loadBank()]);
   } catch (err) {
     toast(errorMessage(err), 'error');
     return;
@@ -124,6 +125,7 @@ async function loadAll({ detectLate = false } = {}) {
   renderSessions();
   renderCalls();
   renderReviews();
+  renderBank();
   refreshQueueEta();
   if (state.drawer) state.drawer.reload();
 }
@@ -1134,6 +1136,137 @@ async function handleReview(r, button) {
   }
   state.lowReviews = state.lowReviews.filter((x) => x.reviewId !== r.reviewId);
   renderReviews();
+}
+
+// ---------- F-100 (ADR-063 D-251, D-252): tiền chuyển khoản vào tài khoản quán ----------
+// Khớp bàn → máy tự thu (chuông + đọc to; bàn rời dải Gọi thanh toán nhờ session.settled). Có mã của quán nhưng chưa khớp → dải
+// "Tiền vào chưa khớp": thu ngân bấm thẻ → ghép vào bàn (đúng số phải thu) hoặc "Đã xử lý" kèm ghi chú. Người không thu tiền không thấy.
+async function loadBank() {
+  if (!canPay) return;
+  state.bank = await staffApi('/api/bank-transactions').catch(() => state.bank); // lỗi dải tiền vào không chặn tải bảng đơn
+}
+
+function renderBank() {
+  const strip = $('#bank-strip');
+  if (!strip) return;
+  strip.hidden = state.bank.length === 0;
+  clear(
+    strip,
+    el('span', { class: 'label' }, icon('wallet'), 'Tiền vào chưa khớp'),
+    state.bank.map((b) =>
+      el(
+        'button',
+        { class: 'pay-card bank-card', type: 'button', onclick: () => handleBank(b) },
+        el('strong', {}, money(b.amount)),
+        el('span', { class: 'small' }, b.note ?? 'Chưa khớp bàn'),
+        el('span', { class: 'wait', dataset: { since: b.receivedAt } }, elapsed(b.receivedAt)),
+      ),
+    ),
+  );
+}
+
+const BANK_REASONS = ['Đã thu ở hộp Thu tiền', 'Đã ghi bán mang đi', 'Đã trả lại khách', 'Không phải tiền của quán'];
+
+function handleBank(b) {
+  const groups = state.sessions.filter((s) => s.status === 'OPEN' || s.status === 'PAYMENT_REQUESTED');
+  const pick = el(
+    'select',
+    { class: 'input', id: 'bank-session', 'aria-label': 'Bàn nhận khoản tiền này' },
+    el('option', { value: '' }, 'Chọn bàn…'),
+    groups.map((s) =>
+      el(
+        'option',
+        { value: s.sessionId, selected: s.sessionId === b.sessionId },
+        `${s.table.name}${s.status === 'PAYMENT_REQUESTED' ? ` · gọi thanh toán ${money(s.amountDue)}` : ''}`,
+      ),
+    ),
+  );
+  const note = el('input', {
+    class: 'input',
+    id: 'bank-note',
+    maxlength: 200,
+    autocomplete: 'off',
+    placeholder: 'Đã xử lý thế nào?',
+    'aria-label': 'Ghi chú cách xử lý',
+  });
+  const msg = el('div', { 'aria-live': 'polite' });
+  const fail = (err) => clear(msg, el('div', { class: 'alert danger' }, errorMessage(err)));
+  const done = (text) => {
+    toast(text, 'success');
+    m.close();
+    state.bank = state.bank.filter((x) => x.bankTxnId !== b.bankTxnId);
+    renderBank();
+  };
+  const match = async (e) => {
+    const btn = e.currentTarget;
+    clear(msg);
+    if (!pick.value) return clear(msg, el('div', { class: 'field-error' }, 'Chọn bàn'));
+    setBusy(btn, true);
+    try {
+      await staffApi(`/api/bank-transactions/${b.bankTxnId}/match`, { method: 'POST', body: { sessionId: pick.value } });
+      done('Đã ghép và ghi thu chuyển khoản');
+    } catch (err) {
+      setBusy(btn, false);
+      fail(err);
+    }
+  };
+  const resolve = async (e) => {
+    const btn = e.currentTarget;
+    clear(msg);
+    if (note.value.trim().length < 3) {
+      note.focus();
+      return clear(msg, el('div', { class: 'field-error' }, 'Ghi cách đã xử lý (chọn một dòng bên trên hoặc tự gõ)'));
+    }
+    setBusy(btn, true);
+    try {
+      await staffApi(`/api/bank-transactions/${b.bankTxnId}/resolve`, { method: 'POST', body: { note: note.value.trim() } });
+      done('Đã đánh dấu đã xử lý');
+    } catch (err) {
+      setBusy(btn, false);
+      fail(err);
+    }
+  };
+  const m = modal({
+    title: `Tiền vào ${money(b.amount)}`,
+    body: el(
+      'div',
+      { class: 'stack' },
+      el('div', { class: 'small' }, `Lúc ${time(b.transactionAt)} · nội dung: ${b.content || '(trống)'}`),
+      b.note ? el('div', { class: 'alert warning' }, b.note) : null,
+      el('strong', {}, 'Ghép vào bàn'),
+      el('div', { class: 'small muted' }, 'Khoản tiền phải đúng số phải thu của bàn — máy ghi đã thu chuyển khoản, người ghi là bạn.'),
+      el(
+        'div',
+        { class: 'row' },
+        pick,
+        el('button', { class: 'btn btn-primary', type: 'button', style: { whiteSpace: 'nowrap' }, onclick: match }, 'Ghép & thu'),
+      ),
+      el('strong', {}, 'Hoặc đã xử lý cách khác'),
+      el(
+        'div',
+        { class: 'chips' },
+        BANK_REASONS.map((r) =>
+          el(
+            'button',
+            {
+              class: 'chip',
+              type: 'button',
+              onclick: () => {
+                note.value = r;
+                note.focus();
+              },
+            },
+            r,
+          ),
+        ),
+      ),
+      note,
+      el('button', { class: 'btn', type: 'button', onclick: resolve }, 'Đã xử lý'),
+      msg,
+    ),
+    actions: [{ label: 'Đóng', value: null }],
+    host: singleScreen ? counterHost() : undefined,
+  });
 }
 
 /** F-087: "Khách xin chuyển bàn" + bàn đích đang trống / có nhóm khác — nhân viên quyết chuyển (bill riêng, thu chung khi tính tiền) hay hỏi lại khách. */
@@ -2571,6 +2704,27 @@ socket?.on('session.payment_requested', (p) => {
 });
 socket?.on('session.payment_cancelled', onSessionEvent);
 socket?.on('session.settled', onSessionEvent);
+// F-100 (ADR-063 D-252): tiền chuyển khoản vào tài khoản quán — chuông + đọc to (khi đã bật âm thanh) cho người thu tiền
+socket?.on('bank.received', (p) => {
+  if (!canPay) return;
+  const said = `${Number(p.amount).toLocaleString('vi-VN')} đồng`;
+  const name = p.table?.name ?? 'Một bàn';
+  if (p.status === 'MATCHED') {
+    playSound('chime');
+    speak(`${name} đã chuyển khoản ${said}`);
+    toast(`${name} đã chuyển khoản ${money(p.amount)} — đã tự thu`, 'success', 8000);
+  } else if (p.takeaway) {
+    playSound('chime');
+    speak(`Đã nhận chuyển khoản mang đi ${said}`);
+    toast(`Đã nhận chuyển khoản mang đi ${money(p.amount)} — ghi đơn ở Bán mang đi như thường`, 'success', 8000);
+  } else {
+    playSound('bell');
+    speak(`Có tiền vào ${said} chưa khớp bàn`);
+    toast(`Tiền vào ${money(p.amount)} chưa khớp: ${p.note ?? 'xem dải Tiền vào chưa khớp'}`, 'warning', 8000);
+    loadBank().then(renderBank);
+  }
+});
+socket?.on('bank.updated', () => loadBank().then(renderBank));
 socket?.on('session.closed', onSessionEvent);
 socket?.on('session.member_changed', onSessionEvent);
 socket?.on('session.opened', onSessionEvent);

@@ -79,6 +79,10 @@ function toSettings(map) {
     bankNumber: map.get('pay.bank_number') || null,
     bankKind: map.get('pay.bank_kind') === 'CARD' ? 'CARD' : 'ACCOUNT',
     bankHolder: map.get('pay.bank_holder') || null,
+    // F-100 (ADR-063 D-249): tự xác nhận chuyển khoản qua SePay — mặc định tắt. Mốc bắt đầu + mã giao dịch SePay cuối do máy chủ ghi
+    autoConfirm: map.get('pay.auto_confirm') === 'true',
+    autoConfirmSince: map.get('pay.auto_confirm_since') || null,
+    sepaySinceId: map.get('pay.sepay_since_id') || null,
     // F-087 (ADR-048 D-212): tự đóng bàn trống (khách quét QR rồi không gọi món) — 0 = tắt, 15 / 30 / 60 phút; mặc định 30
     idleCloseMinutes: IDLE_CLOSE_CHOICES.includes(num(map.get('tables.idle_close_minutes'), 30)) ? num(map.get('tables.idle_close_minutes'), 30) : 30,
     staffMaxAmount: num(map.get('discount.staff_max_amount'), 20000),
@@ -192,6 +196,9 @@ const KEYS = {
   bankNumber: 'pay.bank_number',
   bankKind: 'pay.bank_kind',
   bankHolder: 'pay.bank_holder',
+  autoConfirm: 'pay.auto_confirm', // F-100 (ADR-063): tự xác nhận khi tiền vào (SePay)
+  autoConfirmSince: 'pay.auto_confirm_since', // máy chủ ghi — route không nhận
+  sepaySinceId: 'pay.sepay_since_id', // máy chủ ghi — route không nhận
   idleCloseMinutes: 'tables.idle_close_minutes',
   staffMaxAmount: 'discount.staff_max_amount',
   etaBaseSeconds: 'kitchen.base_seconds',
@@ -245,6 +252,8 @@ export async function updateSettings(patch) {
   const entries = Object.entries(patch)
     .filter(([k, v]) => KEYS[k] && v !== undefined)
     .map(([k, v]) => [KEYS[k], typeof v === 'boolean' ? String(v) : Array.isArray(v) ? v.join(',') : v]);
+  // F-100 (ADR-063 D-249): vừa bật tự xác nhận → chỉ xét tiền vào từ lúc này (không xử lý giao dịch cũ trong tài khoản)
+  if (patch.autoConfirm === true && !before.autoConfirm) entries.push([KEYS.autoConfirmSince, new Date().toISOString()], [KEYS.sepaySinceId, '']);
   await settingsRepo.setMany(entries);
   cache = null;
   const after = await getSettings();

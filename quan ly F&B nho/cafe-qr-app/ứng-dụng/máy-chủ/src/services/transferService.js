@@ -2,6 +2,7 @@
 // app ngân hàng). Tiền vào tài khoản / thẻ của quán (chủ quán nhập ở Cài đặt). Đã trả CHỈ do nhân viên ghi khi thấy tiền vào (D-3):
 // không API nào cho khách tự đánh dấu, ảnh chụp màn hình "đã chuyển" không có tác dụng. Mã tạo ngay trên máy chủ của quán.
 import QRCode from 'qrcode';
+import { config } from '../config.js';
 import { bankName, transferContent, vietQrPayload } from '../domain/vietqr.js';
 import { conflict, notFound } from '../errors.js';
 import * as sessionsRepo from '../repositories/sessionsRepo.js';
@@ -30,6 +31,8 @@ export async function transferQr({ amount, content }) {
     holder: s.bankHolder,
     payload,
     qr: await QRCode.toDataURL(payload, { width: 360, margin: 1, errorCorrectionLevel: 'M' }),
+    // F-100 (ADR-063): quán bật tự xác nhận + có khóa SePay → điện thoại khách ghi "Quán tự xác nhận khi tiền vào"
+    auto: Boolean(s.autoConfirm && config.sepay.token),
   };
 }
 

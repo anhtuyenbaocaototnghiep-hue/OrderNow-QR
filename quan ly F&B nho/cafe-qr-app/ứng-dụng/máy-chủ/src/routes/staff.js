@@ -10,6 +10,7 @@ import { requireStaff } from '../middleware/auth.js';
 import { paramGuid, paramId, parse, zGuid, zId, zManualDiscount, zMoney, zOrderItems, zText } from '../middleware/validate.js';
 import * as adminService from '../services/adminService.js';
 import * as attendanceService from '../services/attendanceService.js';
+import * as bankFeedService from '../services/bankFeedService.js';
 import * as orderService from '../services/orderService.js';
 import * as refundService from '../services/refundService.js';
 import * as reviewService from '../services/reviewService.js';
@@ -146,6 +147,21 @@ staffRouter.post('/sessions/:id/settle/preview', async (req, res) => {
 staffRouter.post('/payments/transfer-qr', cashier, async (req, res) => {
   const body = parse(z.object({ amount: zMoney(), sessionId: zGuid().optional(), part: z.coerce.number().int().min(1).max(50).optional() }), req.body);
   res.json(await transferService.transferForStaff(body));
+});
+
+// F-100 (ADR-063 D-251): tiền vào có mã của quán nhưng chưa khớp (thiếu / dư, bàn đã đóng, chia bill…) — thu ngân ghép vào bàn
+// (đúng số phải thu → thu chuyển khoản, người ghi là thu ngân) hoặc đánh dấu đã xử lý kèm ghi chú.
+staffRouter.get('/bank-transactions', cashier, async (req, res) => {
+  const q = parse(z.object({ status: z.enum(['UNMATCHED', 'MATCHED', 'HANDLED', 'ALL']).default('UNMATCHED') }), req.query);
+  res.json(await bankFeedService.list(q.status));
+});
+staffRouter.post('/bank-transactions/:id/match', cashier, async (req, res) => {
+  const body = parse(z.object({ sessionId: zGuid() }), req.body);
+  res.json(await bankFeedService.matchToSession(paramId(req), body.sessionId, req.user));
+});
+staffRouter.post('/bank-transactions/:id/resolve', cashier, async (req, res) => {
+  const body = parse(z.object({ note: zText(200) }), req.body);
+  res.json(await bankFeedService.resolve(paramId(req), body.note, req.user));
 });
 
 staffRouter.post('/sessions/:id/settle', cashier, async (req, res) => {

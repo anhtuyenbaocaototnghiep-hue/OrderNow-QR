@@ -1113,6 +1113,14 @@ body.pos .tc-main .btn {
   border-color: var(--c-info);
   cursor: default;
 }
+/* F-100 tiền vào chưa khớp: cùng kiểu dải Gọi thanh toán (tiền), thẻ ghi số tiền + lý do chưa khớp */
+.bank-card {
+  border-color: var(--c-warning);
+}
+.bank-card .small {
+  max-width: 22rem;
+  white-space: normal;
+}
 /* F-051 đánh giá thấp: cùng kiểu thẻ cảnh báo (ADR-018 D-67), tông đỏ nhạt để không lẫn với gọi nhân viên */
 .review-strip {
   background: var(--c-danger-50);

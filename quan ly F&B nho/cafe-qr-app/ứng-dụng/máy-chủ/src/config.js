@@ -58,6 +58,13 @@ export const config = {
     from: env.MAIL_FROM || env.SMTP_USER || '',
     hourlyMax: Number(env.MAIL_HOURLY_MAX || 20), // chống "dội bom" hộp thư; test đặt cao hơn
   },
+  // F-100 (ADR-063 D-249): SePay báo tiền vào tài khoản quán — khóa API chỉ đặt ở .env (không vào CSDL / giao diện / nhật ký).
+  // Không có khóa → không hỏi SePay (vẫn thử được bằng "Giả lập tiền vào"). SEPAY_BANK_ACCOUNT_ID: không bắt buộc (mặc định tự tìm).
+  sepay: {
+    token: env.SEPAY_API_TOKEN || '',
+    bankAccountId: env.SEPAY_BANK_ACCOUNT_ID || '',
+    baseUrl: (env.SEPAY_BASE_URL || 'https://userapi.sepay.vn').replace(/\/$/, ''),
+  },
   uploadsDir: env.UPLOADS_DIR || (env.NODE_ENV === 'test' ? path.join(os.tmpdir(), 'cafe-qr-test-uploads') : path.join(repoRoot, 'uploads')),
   repoRoot,
   // Trang Tra cứu API (F-052) ghép request / response / mã lỗi từ file này

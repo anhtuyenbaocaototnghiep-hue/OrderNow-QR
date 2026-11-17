@@ -665,7 +665,10 @@ async function showTransfer() {
       el(
         'p',
         { class: 'small muted center' },
-        'Mở app ngân hàng → Quét QR (hoặc chọn ảnh mã vừa lưu). Nhân viên xác nhận khi tiền vào tài khoản quán — không cần gửi ảnh chụp màn hình.',
+        // F-100 (ADR-063): quán bật tự xác nhận → bill tự đóng khi tiền vào đúng số tiền + nội dung
+        data.auto
+          ? 'Mở app ngân hàng → Quét QR (hoặc chọn ảnh mã vừa lưu). Giữ nguyên số tiền và nội dung — quán tự xác nhận khi tiền vào, màn này tự chuyển sang "Đã thanh toán".'
+          : 'Mở app ngân hàng → Quét QR (hoặc chọn ảnh mã vừa lưu). Nhân viên xác nhận khi tiền vào tài khoản quán — không cần gửi ảnh chụp màn hình.',
       ),
     ),
     actions: [{ label: 'Đóng', value: null }],

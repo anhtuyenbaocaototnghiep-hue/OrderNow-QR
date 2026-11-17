@@ -6,6 +6,7 @@ import { AppError, badRequest, forbidden, notFound } from '../errors.js';
 import { STORE_MGR_SETTINGS } from '../auth/permissions.js';
 import { paramId, parse, parseRange, zId, zMoney, zText } from '../middleware/validate.js';
 import * as alertService from '../services/alertService.js';
+import * as bankFeedService from '../services/bankFeedService.js';
 import * as brandService from '../services/brandService.js';
 import * as mailService from '../services/mailService.js';
 import { MODULES } from '../utils/modules.js';
@@ -173,6 +174,7 @@ operationsRouter.put('/settings', async (req, res) => {
         .optional()
         .transform((v) => (v === null ? '' : v)),
       bankKind: z.enum(['ACCOUNT', 'CARD'], { message: 'Chọn số tài khoản hoặc số thẻ' }).optional(),
+      autoConfirm: z.boolean().optional(), // F-100 (ADR-063 D-249): tự xác nhận khi tiền vào (SePay) — chỉ chủ quán
       bankHolder: zText(100)
         .nullable()
         .optional()
@@ -200,6 +202,14 @@ operationsRouter.put('/settings', async (req, res) => {
   // F-060 (ADR-020 D-78): đổi cài đặt cảnh báo → thư báo tới cả địa chỉ cũ lẫn mới (lỗi gửi không làm hỏng việc lưu)
   if (before) await alertService.onAlertSettingsChanged(before, after, req.user).catch((err) => console.error('alert settings:', err?.message ?? err));
   res.json(after);
+});
+
+// F-100 (ADR-063 D-249, D-252): tự xác nhận chuyển khoản — trạng thái hỏi SePay + giả lập tiền vào (thử trước khi có khóa); chỉ chủ quán
+const ownerOnlyFeed = (req, _res, next) => next(req.user?.role === 'ADMIN' ? undefined : forbidden('Chỉ chủ quán dùng được mục này', 'OWNER_ONLY'));
+operationsRouter.get('/bank-feed', ownerOnlyFeed, async (_req, res) => res.json(await bankFeedService.status()));
+operationsRouter.post('/bank-feed/simulate', ownerOnlyFeed, async (req, res) => {
+  const body = parse(z.object({ amount: zMoney().refine((v) => v > 0, 'Nhập số tiền'), content: zText(200).min(1, 'Nhập nội dung chuyển khoản') }), req.body);
+  res.json(await bankFeedService.simulate(body));
 });
 
 // ---- Cảnh báo bất thường (FEATURE-060, ADR-020) — Chủ quán; Quản lý cửa hàng xem + xử lý (trừ loại chỉ chủ quán, trừ về chính mình — F-077) ----

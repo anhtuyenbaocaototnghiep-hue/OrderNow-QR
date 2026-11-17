@@ -6,7 +6,7 @@ import { current } from '../auth.js';
 import { brandMark } from '../icons.js';
 import { mountAdminShell, toggle } from '../admin-shell.js';
 import { showBigQr } from '../transfer-qr.js';
-import { $, clear, confirmDialog, dateTime, el, errorMessage, money, setBusy, showFieldErrors, toast } from '../ui.js';
+import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, moneyInput, moneyValue, setBusy, showFieldErrors, time, toast } from '../ui.js';
 
 await mountAdminShell('settings');
 
@@ -61,6 +61,89 @@ async function loadMailStatus(box) {
     box.className = 'alert warning';
     clear(box, `Không đọc được trạng thái hộp thư gửi: ${errorMessage(err)}`);
   }
+}
+
+// F-100 (ADR-063 D-249): trạng thái tự xác nhận — có khóa SePay chưa, lần hỏi cuối, lỗi cuối, khoản chưa khớp (chỉ chủ quán xem)
+async function paintFeed(box, s) {
+  if (!s.autoConfirm) {
+    clear(box, el('span', { class: 'muted' }, 'Tự xác nhận đang tắt — nhân viên bấm "Đã nhận chuyển khoản" như trước.'));
+    return;
+  }
+  try {
+    const f = await staffApi('/api/admin/bank-feed');
+    const head = !f.configured
+      ? el(
+          'div',
+          { class: 'alert warning' },
+          'Đã bật nhưng chưa có khóa SePay trong .env (SEPAY_API_TOKEN) — tiền vào thật chưa được tự xác nhận. Thử bằng "Giả lập tiền vào".',
+        )
+      : f.lastError
+        ? el('div', { class: 'alert danger' }, `SePay: ${f.lastError}`)
+        : el(
+            'div',
+            { class: 'alert success' },
+            f.lastSyncAt ? `Đang theo dõi tiền vào — hỏi SePay lần cuối lúc ${time(f.lastSyncAt)}` : 'Đang theo dõi tiền vào — chờ lần hỏi SePay đầu tiên',
+          );
+    clear(box, head, f.unmatched ? el('div', {}, `${f.unmatched} khoản tiền vào chưa khớp — quầy xử lý ở dải "Tiền vào chưa khớp"`) : null);
+  } catch (err) {
+    clear(box, el('span', { class: 'muted' }, errorMessage(err)));
+  }
+}
+
+const simText = (r) =>
+  r.status === 'MATCHED'
+    ? `Đã tự thu cho ${r.table?.name ?? 'bàn'} — bàn đóng, quầy báo "đã chuyển khoản", điện thoại khách sang màn cảm ơn.`
+    : r.status === 'HANDLED'
+      ? 'Mã bán mang đi — quầy được báo đã nhận tiền, nhân viên ghi đơn như thường.'
+      : r.status === 'SKIPPED'
+        ? r.note
+        : `Chưa khớp: ${r.note} — quầy thấy ở dải "Tiền vào chưa khớp".`;
+
+/** F-100 (ADR-063 D-252): thử luồng tự xác nhận khi chưa có SePay — chạy y như tiền vào thật (ghi nguồn "giả lập"). */
+function simulateBank() {
+  const amount = moneyInput({ id: 'sim-amount' });
+  const content = el('input', { class: 'input', id: 'sim-content', maxlength: 200, autocomplete: 'off', value: 'CF ' });
+  const msg = el('div', { 'aria-live': 'polite' });
+  modal({
+    title: 'Giả lập tiền vào',
+    body: el(
+      'div',
+      { class: 'stack' },
+      el(
+        'p',
+        { class: 'small muted' },
+        'Để thử: trên điện thoại khách, gọi thanh toán chọn "Chuyển khoản" rồi chép số tiền và nội dung dưới mã QR vào đây. Đúng số tiền → bàn tự đóng như khi khách chuyển thật.',
+      ),
+      el('label', { for: 'sim-amount' }, 'Số tiền'),
+      amount,
+      el('label', { for: 'sim-content' }, 'Nội dung chuyển khoản'),
+      content,
+      msg,
+    ),
+    actions: [
+      { label: 'Đóng', value: null },
+      {
+        label: 'Giả lập tiền vào',
+        class: 'btn-primary',
+        onClick: async (_close, e) => {
+          const btn = e.currentTarget;
+          clear(msg);
+          setBusy(btn, true);
+          try {
+            const r = await staffApi('/api/admin/bank-feed/simulate', {
+              method: 'POST',
+              body: { amount: moneyValue(amount) ?? 0, content: content.value.trim() },
+            });
+            clear(msg, el('div', { class: r.status === 'MATCHED' ? 'alert success' : 'alert warning' }, simText(r)));
+          } catch (err) {
+            clear(msg, el('div', { class: 'alert danger' }, errorMessage(err)));
+          }
+          setBusy(btn, false);
+          return false; // giữ hộp thoại để thử tiếp
+        },
+      },
+    ],
+  });
 }
 
 // F-099: danh sách ngân hàng VietQR (cùng danh sách trả lương) — người không xem được thì để trống
@@ -321,6 +404,10 @@ function render(s) {
     value: s.bankHolder ?? '',
   });
   const transferReady = s.transferEnabled && s.bankBin && s.bankNumber && s.bankHolder;
+  // F-100 (ADR-063 D-249, D-252): tự xác nhận khi tiền vào (SePay) — chủ quán bật; trạng thái hỏi SePay + giả lập tiền vào
+  const autoCheck = el('input', { type: 'checkbox', name: 'autoConfirm', id: 'auto-confirm', checked: s.autoConfirm });
+  const feedBox = el('div', { class: 'small', id: 'bank-feed-status', 'aria-live': 'polite' });
+  paintFeed(feedBox, s);
   clear(
     $('#content'),
     card(
@@ -617,6 +704,19 @@ function render(s) {
             'Thử mã 1.000đ',
           )
         : null,
+      el(
+        'label',
+        { class: 'check', for: 'auto-confirm', style: { marginTop: '1rem' } },
+        autoCheck,
+        ' Tự xác nhận khi tiền vào (SePay): khách chuyển đúng số tiền, đúng nội dung → bill tự đóng, quầy kêu và đọc to',
+      ),
+      feedBox,
+      el(
+        'p',
+        { class: 'small muted' },
+        'Cần: đăng ký SePay, liên kết tài khoản nhận tiền, dán khóa API vào file .env (SEPAY_API_TOKEN) rồi khởi động lại app. Chỉ khoản có mã của quán (CF …) được xét — tiền vào khác (lương, người nhà chuyển…) máy bỏ qua, không hiện ở quầy.',
+      ),
+      s.autoConfirm ? el('button', { class: 'btn', type: 'button', id: 'simulate-bank', onclick: simulateBank }, 'Giả lập tiền vào') : null,
     ),
     el(
       'button',
@@ -665,6 +765,7 @@ function render(s) {
                 bankKind: bankKind.value,
                 bankNumber: bankNumber.value.trim(),
                 bankHolder: bankHolder.value.trim(),
+                autoConfirm: autoCheck.checked, // F-100 (chỉ chủ quán)
                 idleCloseMinutes: Number(idleClose.value), // F-087
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,

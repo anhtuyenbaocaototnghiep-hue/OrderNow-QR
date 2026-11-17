@@ -4935,3 +4935,78 @@ test('chuyển khoản bằng mã QR: khách gọi thanh toán chọn "Chuyển 
     await clearTables(request, ['QR1']);
   }
 });
+
+test('tự xác nhận chuyển khoản: chủ quán bật tự xác nhận, khách gọi thanh toán chuyển khoản → giả lập tiền vào đúng số tiền → quầy báo "đã chuyển khoản", bàn rời dải Gọi thanh toán, điện thoại khách sang màn cảm ơn; khách chuyển lần hai → dải "Tiền vào chưa khớp" ở quầy, thu ngân "Đã xử lý" (F-100, AC-100-06)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  const before = await apiAs(request, 'get', '/api/admin/settings');
+  await apiAs(request, 'put', '/api/admin/settings', {
+    guestWelcome: false,
+    transferEnabled: true,
+    bankBin: '970403',
+    bankNumber: '060123456789',
+    bankKind: 'ACCOUNT',
+    bankHolder: 'NGUYEN VAN A',
+    autoConfirm: true,
+  });
+  const tb = await apiAs(request, 'post', '/api/admin/tables', { code: 'SP1', name: 'Bàn SP1' });
+  const phone = await browser.newContext(phoneOpts);
+  const quay = await browser.newContext({ viewport: { width: 1920, height: 1080 }, locale: 'vi-VN' });
+  try {
+    const G = await phone.newPage();
+    watch(G, 'tu-xac-nhan');
+    await G.goto(`/t/${tb.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .c-item')
+      .filter({ has: G.getByRole('button', { name: 'Nước suối', exact: true }) })
+      .locator('.add-btn')
+      .click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    const order = (await apiAs(request, 'get', '/api/orders')).find((o) => o.table?.name === 'Bàn SP1' && o.status === 'PENDING');
+    expect(order, 'đơn của Bàn SP1').toBeTruthy();
+    await apiAs(request, 'post', `/api/orders/${order.orderId}/accept`);
+
+    // Khách gọi thanh toán → "Chuyển khoản (quét QR)" → đọc số tiền + nội dung dưới mã (như khách chép vào app ngân hàng)
+    await G.locator('#pay').click();
+    await G.getByRole('dialog', { name: 'Gọi thanh toán' }).getByRole('button', { name: 'Chuyển khoản (quét QR)' }).click();
+    const qr = G.getByRole('dialog', { name: 'Chuyển khoản' });
+    await expect(qr.locator('.tq-img')).toBeVisible();
+    const content = (await qr.locator('.tq-row', { hasText: 'Nội dung' }).locator('.tq-value').innerText()).trim();
+    const amount = Number((await qr.locator('.tq-row', { hasText: 'Số tiền' }).locator('.tq-value').innerText()).replace(/\D/g, ''));
+    expect(content).toMatch(/^CF SP1 [0-9A-F]{6}$/);
+    await qr.locator('.modal-foot').getByRole('button', { name: 'Đóng' }).click();
+
+    const S = await counterLogin(quay, 'tu-xac-nhan-quay');
+    await expect(S.locator('#pay-strip .pay-card', { hasText: 'Bàn SP1' })).toBeVisible();
+
+    // Tiền vào đúng số tiền + nội dung (ngân hàng thêm tiền tố) → máy tự thu: quầy báo, bàn rời dải, điện thoại khách cảm ơn
+    await apiAs(request, 'post', '/api/admin/bank-feed/simulate', { amount, content: `IBFT ${content}` });
+    await expect(S.locator('.toast', { hasText: 'Bàn SP1 đã chuyển khoản' })).toBeVisible();
+    await expect(S.locator('#pay-strip .pay-card', { hasText: 'Bàn SP1' })).toHaveCount(0);
+    await expect(G.locator('.thanks')).toContainText('Đã thanh toán');
+
+    // Khách chuyển lần hai → quầy thấy "Tiền vào chưa khớp" → thu ngân chọn "Đã trả lại khách" → "Đã xử lý"
+    await apiAs(request, 'post', '/api/admin/bank-feed/simulate', { amount, content });
+    const strip = S.locator('#bank-strip');
+    await expect(strip).toBeVisible();
+    await strip.locator('.bank-card', { hasText: 'đã thanh toán' }).click();
+    const dlg = S.getByRole('dialog', { name: /^Tiền vào/ });
+    await expect(dlg).toContainText(content);
+    await dlg.getByRole('button', { name: 'Đã trả lại khách' }).click();
+    await dlg.getByRole('button', { name: 'Đã xử lý', exact: true }).click();
+    await expect(S.locator('.toast', { hasText: 'Đã đánh dấu đã xử lý' })).toBeVisible();
+    await expect(strip).toBeHidden();
+  } finally {
+    await apiAs(request, 'put', '/api/admin/settings', {
+      autoConfirm: before.autoConfirm,
+      transferEnabled: before.transferEnabled,
+      guestWelcome: before.guestWelcome,
+    });
+    await phone.close();
+    await quay.close();
+    await clearTables(request, ['SP1']);
+  }
+});
