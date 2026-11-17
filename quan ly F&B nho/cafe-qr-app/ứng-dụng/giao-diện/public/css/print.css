@@ -42,6 +42,15 @@ body.receipt-page {
   font-family: var(--font);
   font-weight: 800;
 }
+/* F-095 (ADR-057): logo quán trên tên quán — nhỏ, giữa khổ giấy; máy in nhiệt in đen trắng */
+.receipt .receipt-logo {
+  display: block;
+  width: 14mm;
+  height: 14mm;
+  margin: 0 auto 1.5mm;
+  object-fit: contain;
+  filter: grayscale(1);
+}
 .receipt .center {
   text-align: center;
 }

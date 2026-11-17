@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 492 test, sửa lúc 2026-11-16 12:02 UTC
-- `npm run test:e2e` (JSON): 102 test, sửa lúc 2026-11-17 06:10 UTC
+- `npm test` (JUnit): 493 test, sửa lúc 2026-11-17 06:53 UTC
+- `npm run test:e2e` (JSON): 104 test, sửa lúc 2026-11-17 06:48 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 201 |
-| Acceptance Criteria | 551 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 551 |
+| User Story | 202 |
+| Acceptance Criteria | 554 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 554 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -473,7 +473,7 @@
 | AC-061-03 | TC-061-03 | F-061 | US-061-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33, SCR-10 | BR-096 | Integration: `basic-mode.test.js` › AC-061-03: nhóm đang ẩn chỉ ẩn menu — API vẫn 200; migration 0041 trên CSDL đã có đơn bật đủ 5 nhóm, tài khoản có sẵn = đã xem hướng dẫn — **PASS**<br>E2E: `flow.spec.js` › chế độ cơ bản: tắt hết nhóm nâng cao → menu quản lý không có Kho hàng, Khách hàng, Phân tích; trang ẩn mở thẳng vẫn chạy, có dải nhắc; tích "Kho hàng" ở Cài đặt → menu + mục quầy hiện ngay (F-061, AC-061-05) — **PASS** | **PASS** |
 | AC-061-04 | TC-061-04 | F-061 | US-061-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-03, UC-11 | MOD-AUTH, MOD-ORDER | SCR-10 | BR-097 | Integration: `basic-mode.test.js` › AC-061-04: tài khoản mới chưa xem hướng dẫn → tour-seen ghi giờ, gọi lại không đổi; chưa đăng nhập → 401 — **PASS** | **PASS** |
 | AC-061-05 | TC-061-05 | F-061 | US-061-1, US-061-2 | ACT-ADMIN, ACT-STAFF, ACT-LEAD | UC-17, UC-03, UC-11 | MOD-ADMIN, MOD-AUTH, MOD-ORDER | SCR-33, SCR-10 | BR-096, BR-097 | E2E: `flow.spec.js` › chế độ cơ bản: tắt hết nhóm nâng cao → menu quản lý không có Kho hàng, Khách hàng, Phân tích; trang ẩn mở thẳng vẫn chạy, có dải nhắc; tích "Kho hàng" ở Cài đặt → menu + mục quầy hiện ngay (F-061, AC-061-05) — **PASS**<br>E2E: `flow.spec.js` › hướng dẫn 5 bước: nhân viên mới đăng nhập quầy lần đầu → Bước 1/5 khoanh nút ca … Xong; tải lại không hiện; nút "Hướng dẫn" mở lại, Esc đóng (F-061, AC-061-05) — **PASS** | **PASS** |
-| AC-062-01 | TC-062-01 | F-062 | US-062-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | BR-098 | Integration: `basic-mode.test.js` › AC-062-01: /chinh-sach-du-lieu mở không cần đăng nhập; /api/shop chỉ trả tên + địa chỉ quán theo Cài đặt và cờ giao diện màn khách (F-094) — **PASS** | **PASS** |
+| AC-062-01 | TC-062-01 | F-062 | US-062-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | BR-098 | Integration: `basic-mode.test.js` › AC-062-01: /chinh-sach-du-lieu mở không cần đăng nhập; /api/shop chỉ trả tên, địa chỉ, logo quán theo Cài đặt và cờ giao diện màn khách (F-094, F-095) — **PASS** | **PASS** |
 | AC-062-02 | TC-062-02 | F-062 | US-062-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | BR-098 | Integration: `basic-mode.test.js` › AC-062-02: câu đồng ý phía khách và 2 hộp đăng ký ở quầy có link /chinh-sach-du-lieu; đăng ký thiếu đồng ý vẫn 400 CONSENT_REQUIRED — **PASS**<br>E2E: `flow.spec.js` › hội viên: khách nhập SĐT ở giỏ → đăng ký → quầy thu tiền thấy ưu đãi đơn đầu −10% (F-014) — **PASS** | **PASS** |
 | AC-062-03 | TC-062-03 | F-062 | US-062-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF | UC-10 | MOD-LOYALTY | SCR-48, SCR-03, SCR-14, SCR-16 | BR-098 | E2E: `flow.spec.js` › chính sách dữ liệu: khách đăng ký hội viên ở giỏ bấm "Xem chính sách dữ liệu" → tab mới có tên quán, "Quyền của bạn", cách yêu cầu xóa; điện thoại không cuộn ngang (F-062, AC-062-03) — **PASS** | **PASS** |
 | AC-063-01 | TC-063-01 | F-063 | US-063-1 | ACT-ADMIN, ACT-STAFF | UC-01, UC-17 | MOD-TABLE, MOD-ADMIN | SCR-22, SCR-10 | BR-099 | Integration: `basic-mode.test.js` › AC-063-01: chưa in → không lệch; quản lý báo đã in → lưu đúng địa chỉ đang chạy + giờ — **PASS** | **PASS** |
@@ -647,4 +647,7 @@
 | AC-094-02 | TC-094-02 | F-094 | US-094-1 | ACT-GUEST, ACT-MEMBER, ACT-ADMIN, ACT-STORE | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05, SCR-33 | — | E2E: `flow.spec.js` › giao diện khách theo giờ: 8 giờ sáng có ánh nắng ở khung giới thiệu, 8 giờ tối màn chào / thực đơn / theo dõi đơn chuyển nền tối, đang mở lúc 17:59 tự chuyển tối khi qua 18:00 (lời chào đổi theo), điện thoại bật chế độ tối thì tối cả ban ngày; tắt cài đặt → tối vẫn sáng (F-094, AC-094-02) — **PASS** | **PASS** |
 | AC-094-03 | TC-094-03 | F-094 | US-094-1 | ACT-GUEST, ACT-MEMBER, ACT-ADMIN, ACT-STORE | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05, SCR-33 | — | E2E: `flow.spec.js` › trang trí theo mùa: tháng 2 hoa mai, tháng 5 ly đá, tháng 8 lá vàng, tháng 11 ly nóng ở khung giới thiệu màn chào; nút, giá, thẻ món giữ màu quán; tắt cài đặt → khung giới thiệu như cũ (F-094, AC-094-03) — **PASS** | **PASS** |
 | AC-094-04 | TC-094-04 | F-094 | US-094-1 | ACT-GUEST, ACT-MEMBER, ACT-ADMIN, ACT-STORE | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05, SCR-33 | — | E2E: `a11y.spec.js` › khách giao diện tối (8 giờ tối): màn chào, thực đơn, bảng chọn món, giỏ, theo dõi đơn — nhãn, tương phản, vùng chạm, dấu focus, không cuộn ngang 320/390 px (F-094, AC-094-04) — **PASS** | **PASS** |
+| AC-095-01 | TC-095-01 | F-095 | US-095-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | — | Integration: `shop-logo.test.js` › AC-095-01: chủ quán tải logo png → logoUrl ở /shop, /menu, /auth/me, ảnh trả đúng; ảnh mới thay ảnh cũ (tệp cũ bị xóa); sai định dạng / quá 1 MB → 400; quản lý cửa hàng, nhân viên 403, chưa đăng nhập 401; bỏ logo → null, ảnh 404 — **PASS** | **PASS** |
+| AC-095-02 | TC-095-02 | F-095 | US-095-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | — | E2E: `flow.spec.js` › logo quán: chủ quán chọn ảnh ở Cài đặt → Thông tin quán → xem trước, lưu ngay; logo hiện ở màn chào và đầu thực đơn của khách, thanh bên Quản lý, thanh quầy, phiếu tạm tính, thẻ QR in; Bỏ logo → về biểu tượng ly cà phê (F-095, AC-095-02) — **PASS** | **PASS** |
+| AC-095-03 | TC-095-03 | F-095 | US-095-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | — | E2E: `a11y.spec.js` › logo quán (F-095): ô Logo quán ở Cài đặt, màn chào và thực đơn có logo — nhãn, ảnh có chữ thay thế, tương phản, vùng chạm (AC-095-03) — **PASS** | **PASS** |
 

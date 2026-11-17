@@ -103,6 +103,8 @@ function toSettings(map) {
     // F-053 thông tin quán (BR-085): chưa lưu lần nào → SHOP_NAME / SHOP_ADDRESS của .env; địa chỉ lưu rỗng = không in
     shopName: map.get('shop.name') || config.shop.name,
     shopAddress: map.has('shop.address') ? map.get('shop.address') : config.shop.address,
+    // F-095 (ADR-057 D-234): tệp logo trong uploads/ ('' = chưa có) — chỉ đổi qua PUT / DELETE /api/admin/settings/logo
+    shopLogo: map.get('shop.logo') || '',
     // F-059 Wi-Fi cho khách (BR-092): tên rỗng = không in QR Wi-Fi
     wifiSsid: map.get('wifi.ssid') ?? '',
     wifiPassword: map.get('wifi.password') ?? '',
@@ -250,16 +252,24 @@ export const storeStatus = async () => {
   return { acceptingOrders: s.acceptingOrders, closedMessage: s.closedMessage, shiftOpen };
 };
 
-/** Tên + địa chỉ quán (F-053) — một nguồn cho thanh quầy / quản lý, menu khách, hóa đơn. */
+/** F-095: địa chỉ công khai của logo — `v` = tên tệp, đổi mỗi lần thay ảnh (trình duyệt lưu đệm lâu vẫn thấy ảnh mới); chưa có → null. */
+export const logoUrlOf = (rel) => (rel ? `/api/shop/logo?v=${encodeURIComponent(rel.split('/').pop())}` : null);
+
+/** Tên + địa chỉ quán (F-053) + logo (F-095) — một nguồn cho thanh quầy / quản lý, menu khách, hóa đơn. */
 export const shopInfo = async () => {
   const s = await getSettings();
-  return { name: s.shopName, address: s.shopAddress };
+  return { name: s.shopName, address: s.shopAddress, logoUrl: logoUrlOf(s.shopLogo) };
 };
 
-/** `GET /api/shop` (công khai): tên, địa chỉ (F-062) + cờ giao diện màn khách theo giờ / theo mùa (F-094, ADR-056 D-233). */
+/** `GET /api/shop` (công khai): tên, địa chỉ (F-062), logo (F-095) + cờ giao diện màn khách theo giờ / theo mùa (F-094, ADR-056 D-233). */
 export const publicShop = async () => {
   const s = await getSettings();
-  return { name: s.shopName, address: s.shopAddress, guestTheme: { daypart: s.guestDaypartTheme, season: s.guestSeasonDecor } };
+  return {
+    name: s.shopName,
+    address: s.shopAddress,
+    logoUrl: logoUrlOf(s.shopLogo), // F-095
+    guestTheme: { daypart: s.guestDaypartTheme, season: s.guestSeasonDecor },
+  };
 };
 
 export function invalidateSettings() {

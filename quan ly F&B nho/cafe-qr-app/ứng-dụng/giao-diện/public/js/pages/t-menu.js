@@ -100,6 +100,8 @@ async function loadMenu() {
   // F-092: quán bật màn chào → tên quán dẫn về màn chào (Gọi thanh toán / Gọi nhân viên / hội viên)
   if (menu.ui?.welcome) clear($('#shop'), el('a', { class: 'c-shop-link', href: `/t/${qr}`, title: 'Về màn chào của quán' }, menu.shop.name));
   else $('#shop').textContent = menu.shop.name;
+  // F-095 (ADR-057): logo quán trước tên quán (tên ngay bên → ảnh trang trí); vẽ lại thực đơn không chèn thêm
+  if (menu.shop.logoUrl && !$('.c-header .c-logo')) $('#shop').parentElement.before(el('img', { class: 'c-logo', src: menu.shop.logoUrl, alt: '' }));
   document.title = `Thực đơn · ${menu.shop.name}`;
   state.menu = menu;
   state.itemsById = new Map([...menu.categories.flatMap((c) => c.items), ...menu.combos].map((i) => [i.id, i]));

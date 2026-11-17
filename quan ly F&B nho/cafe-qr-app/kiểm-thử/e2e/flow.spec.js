@@ -4631,3 +4631,89 @@ test('trang trí theo mùa: tháng 2 hoa mai, tháng 5 ly đá, tháng 8 lá và
     await clearTables(request, ['MU1']);
   }
 });
+
+// ---------- TASK-116 (F-095, ADR-057): logo quán ----------
+// Ảnh png 1×1 thật (trình duyệt vẽ được) — đủ để thấy ảnh ở các màn; không thêm tệp mẫu
+const LOGO_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+
+test('logo quán: chủ quán chọn ảnh ở Cài đặt → Thông tin quán → xem trước, lưu ngay; logo hiện ở màn chào và đầu thực đơn của khách, thanh bên Quản lý, thanh quầy, phiếu tạm tính, thẻ QR in; Bỏ logo → về biểu tượng ly cà phê (F-095, AC-095-02)', async ({
+  request,
+}) => {
+  await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: true });
+  const shift = await apiAs(request, 'get', '/api/shifts/current');
+  if (!shift.shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 }); // gửi đơn cần ca đang mở
+  const lg = await apiAs(request, 'post', '/api/admin/tables', { code: 'LG1' });
+  const desk = { viewport: { width: 1366, height: 860 }, locale: 'vi-VN' };
+  const [ownerCtx, staffCtx, phoneCtx] = await Promise.all([browser.newContext(desk), browser.newContext(desk), browser.newContext(phoneOpts)]);
+  const open = async (ctx, name) => {
+    const page = await ctx.newPage();
+    page.setDefaultTimeout(15_000); // thao tác hỏng thì báo nhanh — finally còn kịp dọn logo cho bài sau
+    watch(page, name);
+    return page;
+  };
+  try {
+    // Chủ quán: Cài đặt → Thông tin quán → chọn ảnh → lưu ngay, xem trước, có "Bỏ logo"
+    const O = await open(ownerCtx, 'logo-chu-quan');
+    await O.goto('/admin/login');
+    await O.fill('#username', 'admin');
+    await O.fill('#password', 'Admin@123');
+    await O.click('#submit');
+    await expect(O).toHaveURL(/\/admin\/today$/);
+    await O.goto('/admin/settings');
+    await expect(O.locator('.admin-side .brand .brand-mark .ic-coffee')).toBeVisible(); // chưa có logo
+    await expect(O.locator('#remove-logo')).toHaveCount(0);
+    await O.locator('#shop-logo').setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: LOGO_PNG });
+    await expect(O.locator('.toast', { hasText: 'Đã cập nhật logo' })).toBeVisible();
+    const { logoUrl } = await (await request.get('/api/shop')).json();
+    expect(logoUrl).toMatch(/^\/api\/shop\/logo\?v=logo-[0-9a-f]{16}\.png$/);
+    await expect(O.locator('.logo-preview img')).toHaveAttribute('src', logoUrl);
+    await expect(O.locator('#remove-logo')).toBeVisible();
+    await O.reload();
+    await expect(O.locator('.admin-side .brand .brand-mark img')).toHaveAttribute('src', logoUrl);
+    await O.goto('/admin/tables/print');
+    await expect(O.locator('.qr-card').first().locator('img.qr-logo')).toHaveAttribute('src', logoUrl);
+
+    // Điện thoại khách: màn chào + đầu thực đơn có logo (ảnh tải được); gửi một đơn để có phiếu tạm tính
+    const C = await open(phoneCtx, 'logo-khach');
+    await C.goto('/t/' + lg.qrToken);
+    await expect(C.locator('.c-home .h-logo')).toHaveAttribute('src', logoUrl);
+    await expect.poll(() => C.locator('.c-home .h-logo').evaluate((img) => img.naturalWidth)).toBeGreaterThan(0);
+    await C.getByRole('link', { name: 'Xem thực đơn – Gọi món' }).click();
+    await expect(C).toHaveURL(/\/menu$/);
+    await expect(C.locator('.c-header .c-logo')).toHaveAttribute('src', logoUrl);
+    await C.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).first().locator('.add-btn').click();
+    await C.click('#open-cart');
+    await C.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(C).toHaveURL(/\/track$/);
+
+    // Quầy (nhân viên): thanh trên có logo; phiếu tạm tính có logo trên tên quán
+    const S = await open(staffCtx, 'logo-quay');
+    await S.goto('/pos/login');
+    await S.fill('#username', 'staff1');
+    await S.fill('#password', 'Staff@123');
+    await S.click('#submit');
+    await expect(S).toHaveURL(/\/pos$/);
+    await expect(S.locator('.pos-top .brand .brand-mark img')).toHaveAttribute('src', logoUrl);
+    const sid = (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === 'LG1').sessions[0].sessionId;
+    await S.goto('/pos/sessions/' + sid + '/receipt?mode=provisional');
+    await expect(S.locator('#receipt .receipt-logo')).toHaveAttribute('src', logoUrl);
+
+    // Bỏ logo (hỏi lại) → về ly cà phê ở trang Quản lý và màn khách
+    await O.goto('/admin/settings');
+    await O.locator('#remove-logo').click();
+    await O.getByRole('dialog', { name: 'Bỏ logo quán?' }).getByRole('button', { name: 'Bỏ logo' }).click();
+    await expect(O.locator('.toast', { hasText: 'Đã bỏ logo' })).toBeVisible();
+    await expect(O.locator('.logo-preview img')).toHaveCount(0);
+    expect((await (await request.get('/api/shop')).json()).logoUrl).toBeNull();
+    await O.reload();
+    await expect(O.locator('.admin-side .brand .brand-mark .ic-coffee')).toBeVisible();
+    await C.goto('/t/' + lg.qrToken);
+    await expect(C.locator('.c-home')).toBeVisible();
+    await expect(C.locator('.c-home .h-logo')).toHaveCount(0);
+  } finally {
+    await Promise.all([ownerCtx.close(), staffCtx.close(), phoneCtx.close()]);
+    await request.delete('/api/admin/settings/logo', { headers: { Authorization: `Bearer ${adminToken}` } });
+    await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: false });
+    await clearTables(request, ['LG1']);
+  }
+});

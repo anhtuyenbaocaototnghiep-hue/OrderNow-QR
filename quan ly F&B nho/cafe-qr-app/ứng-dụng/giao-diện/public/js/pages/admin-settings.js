@@ -1,9 +1,11 @@
 // S-33 Cài đặt quán (ADR-005): nhận đơn QR (F-020), ngưỡng giảm giá tay của nhân viên (D-14), làm tròn (D-7), ưu đãi đơn đầu (D-5).
 // ADR-006: quyền trưởng ca (D-24) + ngưỡng duyệt chi quỹ (D-23). F-053: tên quán + địa chỉ in trên hóa đơn (BR-085).
 // F-059: Wi-Fi cho khách in thành QR cạnh QR bàn (BR-092). F-060: cảnh báo bất thường qua email (ADR-020, BR-093…BR-095).
-import { staffApi } from '../api.js';
+import { staffApi, staffUpload } from '../api.js';
+import { current } from '../auth.js';
+import { brandMark } from '../icons.js';
 import { mountAdminShell, toggle } from '../admin-shell.js';
-import { $, clear, dateTime, el, errorMessage, money, setBusy, showFieldErrors, toast } from '../ui.js';
+import { $, clear, confirmDialog, dateTime, el, errorMessage, money, setBusy, showFieldErrors, toast } from '../ui.js';
 
 await mountAdminShell('settings');
 
@@ -218,6 +220,65 @@ function render(s) {
       [60, 'Sau 60 phút'],
     ].map(([v, label]) => el('option', { value: v, selected: v === s.idleCloseMinutes }, label)),
   );
+  // F-095 (ADR-057): logo quán — chọn ảnh là lưu ngay (thân request là ảnh), "Bỏ logo" hỏi lại; chỉ chủ quán
+  const logoBox = el('div', { class: 'logo-field' });
+  const paintLogo = () => {
+    const logoUrl = current.shop?.logoUrl ?? null;
+    const input = el('input', { type: 'file', id: 'shop-logo', accept: 'image/png,image/jpeg,image/webp', hidden: true, 'aria-label': 'Ảnh logo quán' });
+    const msg = el('div', { class: 'field-error', role: 'alert', hidden: true });
+    const fail = (text) => {
+      msg.textContent = text;
+      msg.hidden = false;
+    };
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 1024 * 1024) return fail('Ảnh logo tối đa 1 MB — chọn ảnh nhỏ hơn');
+      try {
+        const r = await staffUpload('/api/admin/settings/logo', file);
+        current.shop = { ...current.shop, logoUrl: r.logoUrl };
+        paintLogo();
+        toast('Đã cập nhật logo — màn khách và màn quầy hiện logo mới khi mở lại', 'success');
+      } catch (err) {
+        fail(errorMessage(err));
+      }
+    });
+    const remove = async () => {
+      if (
+        !(await confirmDialog('Bỏ logo quán?', 'Các màn sẽ hiện biểu tượng ly cà phê như trước. Bạn có thể tải logo lại bất cứ lúc nào.', {
+          okLabel: 'Bỏ logo',
+          danger: true,
+        }))
+      )
+        return;
+      try {
+        await staffApi('/api/admin/settings/logo', { method: 'DELETE' });
+        current.shop = { ...current.shop, logoUrl: null };
+        paintLogo();
+        toast('Đã bỏ logo', 'success');
+      } catch (err) {
+        fail(errorMessage(err));
+      }
+    };
+    clear(
+      logoBox,
+      el('span', { class: 'logo-preview' }, brandMark(current.shop)),
+      el(
+        'div',
+        { class: 'logo-actions' },
+        el(
+          'div',
+          { class: 'row' },
+          el('button', { class: 'btn btn-sm', type: 'button', id: 'pick-logo', onclick: () => input.click() }, logoUrl ? 'Đổi ảnh…' : 'Chọn ảnh…'),
+          logoUrl ? el('button', { class: 'btn btn-sm', type: 'button', id: 'remove-logo', onclick: remove }, 'Bỏ logo') : null,
+        ),
+        el('p', { class: 'small muted' }, 'Ảnh jpg, png hoặc webp, tối đa 1 MB — nên dùng ảnh vuông.'),
+        input,
+        msg,
+      ),
+    );
+  };
+  paintLogo();
   const card = (title, ...children) =>
     el('div', { class: 'card', style: { maxWidth: '720px', marginBottom: '1rem' } }, el('h2', { style: { fontSize: '1rem' } }, title), ...children);
   clear(
@@ -230,10 +291,11 @@ function render(s) {
         el('div', { class: 'field' }, el('label', {}, 'Tên quán'), shopName),
         el('div', { class: 'field' }, el('label', {}, 'Địa chỉ (in trên hóa đơn)'), shopAddress),
       ),
+      el('div', { class: 'field' }, el('label', { for: 'shop-logo' }, 'Logo quán'), logoBox),
       el(
         'p',
         { class: 'small muted' },
-        'Hiện ở thanh quầy, thanh bên quản lý, đầu trang menu khách, hóa đơn, phiếu đặt hàng và thẻ QR in. Màn đang mở ở máy khác đổi theo khi tải lại.',
+        'Tên và logo hiện ở thanh quầy, thanh bên quản lý, màn chào và đầu trang menu khách, hóa đơn, phiếu đặt hàng và thẻ QR in. Màn đang mở ở máy khác đổi theo khi tải lại.',
       ),
     ),
     card(

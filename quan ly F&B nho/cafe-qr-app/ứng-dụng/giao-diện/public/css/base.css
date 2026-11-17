@@ -1527,3 +1527,17 @@ fieldset.open-pack p {
 .access-bar > span {
   flex: 1 1 14rem;
 }
+
+/* F-095 (ADR-057): dấu hiệu quán có logo — ảnh trong khung tròn nền trắng, không cắt ảnh */
+.brand-mark.has-logo {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(34, 26, 20, 0.12);
+  overflow: hidden;
+}
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  padding: 2px;
+  border-radius: 50%;
+  object-fit: contain;
+}

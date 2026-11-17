@@ -2,10 +2,11 @@
 // lịch sử ca (F-018), hoàn tiền (F-019), nhập kho & kiểm kê + giá vốn/hao hụt (F-023), sửa / hủy phiếu nhập & kiểm kê (F-048).
 import express from 'express';
 import { z } from 'zod';
-import { AppError, badRequest, notFound } from '../errors.js';
+import { AppError, badRequest, forbidden, notFound } from '../errors.js';
 import { STORE_MGR_SETTINGS } from '../auth/permissions.js';
 import { paramId, parse, parseRange, zId, zMoney, zText } from '../middleware/validate.js';
 import * as alertService from '../services/alertService.js';
+import * as brandService from '../services/brandService.js';
 import * as mailService from '../services/mailService.js';
 import { MODULES } from '../utils/modules.js';
 import * as modifierService from '../services/modifierService.js';
@@ -61,6 +62,15 @@ operationsRouter.put('/modifier-groups/:id', async (req, res) => res.json(await 
 operationsRouter.delete('/modifier-groups/:id', async (req, res) => res.json({ result: await modifierService.removeGroup(paramId(req)) }));
 
 // ---- Cài đặt ----
+// F-095 (ADR-057 D-234): logo quán — chỉ chủ quán (như tên / địa chỉ quán); thân request là ảnh jpg / png / webp ≤ 1 MB (như ảnh
+// hóa đơn F-033, không multipart). Quản lý cửa hàng đã bị requireAdminArea chặn; kiểm thêm ở đây cho chắc.
+const ownerOnly = (req, _res, next) => next(req.user?.role === 'ADMIN' ? undefined : forbidden('Chỉ chủ quán đổi được logo quán', 'OWNER_ONLY'));
+const rawLogo = [
+  express.raw({ type: ['image/*', 'application/octet-stream'], limit: brandService.MAX_LOGO_BYTES }),
+  (err, _req, _res, next) => next(err?.type === 'entity.too.large' ? badRequest('LOGO_TOO_LARGE', 'Ảnh logo tối đa 1 MB') : err),
+];
+operationsRouter.put('/settings/logo', ownerOnly, ...rawLogo, async (req, res) => res.json(await brandService.setLogo(req.body)));
+operationsRouter.delete('/settings/logo', ownerOnly, async (_req, res) => res.json(await brandService.removeLogo()));
 // F-077: Quản lý cửa hàng xem được (không thấy email nhận cảnh báo), chỉ đổi STORE_MGR_SETTINGS
 operationsRouter.get('/settings', async (req, res) => {
   const s = await settingsService.getSettings();

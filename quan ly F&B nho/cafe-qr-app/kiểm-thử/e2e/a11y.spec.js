@@ -440,6 +440,38 @@ test('khách giao diện tối (8 giờ tối): màn chào, thực đơn, bảng
   }
 });
 
+// F-095 (TASK-116, ADR-057): logo quán — tải tạm qua API, quét Cài đặt (máy tính) + màn chào / thực đơn (điện thoại), bỏ logo ở finally
+test('logo quán (F-095): ô Logo quán ở Cài đặt, màn chào và thực đơn có logo — nhãn, ảnh có chữ thay thế, tương phản, vùng chạm (AC-095-03)', async ({
+  request,
+}) => {
+  const admin = { Authorization: `Bearer ${adminToken}` };
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+  expect((await request.put('/api/admin/settings/logo', { headers: { ...admin, 'Content-Type': 'image/png' }, data: png })).ok()).toBeTruthy();
+  await request.put('/api/admin/settings', { headers: admin, data: { guestWelcome: true } });
+  const logoTable = await (await request.post('/api/admin/tables', { headers: admin, data: { code: 'AL1' } })).json();
+  const [dctx, pctx] = await Promise.all([browser.newContext(desk), browser.newContext(phone)]);
+  try {
+    const A = await dctx.newPage();
+    A.setDefaultTimeout(15_000);
+    await adminLogin(A);
+    await A.goto('/admin/settings');
+    await expect(A.locator('.logo-preview img')).toBeVisible();
+    await check(A, 'quan-ly-cai-dat-logo');
+    const C = await pctx.newPage();
+    C.setDefaultTimeout(15_000);
+    await C.goto(`/t/${logoTable.qrToken}`);
+    await expect(C.locator('.c-home .h-logo')).toBeVisible();
+    await check(C, 'khach-man-chao-logo', { narrow: true });
+    await C.getByRole('link', { name: 'Xem thực đơn – Gọi món' }).click();
+    await expect(C.locator('.c-header .c-logo')).toBeVisible();
+    await check(C, 'khach-menu-logo', { narrow: true });
+  } finally {
+    await Promise.all([dctx.close(), pctx.close()]);
+    await request.delete('/api/admin/settings/logo', { headers: admin });
+    await request.put('/api/admin/settings', { headers: admin, data: { guestWelcome: false } });
+  }
+});
+
 test('quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính', async () => {
   await ensureGuestOrder();
   const ctx = await browser.newContext(desk);

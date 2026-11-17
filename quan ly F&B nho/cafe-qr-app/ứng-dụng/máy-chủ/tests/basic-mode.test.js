@@ -101,14 +101,14 @@ describe('Chế độ cơ bản (F-061, BR-096)', () => {
 });
 
 describe('Chính sách dữ liệu (F-062, BR-098)', () => {
-  test('AC-062-01: /chinh-sach-du-lieu mở không cần đăng nhập; /api/shop chỉ trả tên + địa chỉ quán theo Cài đặt và cờ giao diện màn khách (F-094)', async () => {
+  test('AC-062-01: /chinh-sach-du-lieu mở không cần đăng nhập; /api/shop chỉ trả tên, địa chỉ, logo quán theo Cài đặt và cờ giao diện màn khách (F-094, F-095)', async () => {
     const page = await api.get('/chinh-sach-du-lieu');
     assert.equal(page.status, 200);
     for (const text of ['Quyền của bạn', 'Cách yêu cầu', 'Ẩn danh theo yêu cầu', 'Nghị định 13/2023/NĐ-CP']) assert.ok(page.text.includes(text), text);
     ok(await call(admin, 'put', '/api/admin/settings', { shopName: 'Quán Thử Chính Sách', shopAddress: '12 Đường Thử' }));
     const shop = ok(await api.get('/api/shop'));
     assert.deepEqual({ name: shop.name, address: shop.address }, { name: 'Quán Thử Chính Sách', address: '12 Đường Thử' });
-    assert.deepEqual(Object.keys(shop).sort(), ['address', 'guestTheme', 'name'], 'không lộ cài đặt nào khác'); // F-094 (ADR-056 D-233)
+    assert.deepEqual(Object.keys(shop).sort(), ['address', 'guestTheme', 'logoUrl', 'name'], 'không lộ cài đặt nào khác'); // F-094 (ADR-056 D-233)
   });
 
   test('AC-062-02: câu đồng ý phía khách và 2 hộp đăng ký ở quầy có link /chinh-sach-du-lieu; đăng ký thiếu đồng ý vẫn 400 CONSENT_REQUIRED', async () => {

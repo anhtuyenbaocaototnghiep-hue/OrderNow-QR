@@ -13,6 +13,7 @@ import * as orderService from '../services/orderService.js';
 import * as qrCheckService from '../services/qrCheckService.js';
 import * as usersRepo from '../repositories/usersRepo.js';
 import * as sessionService from '../services/sessionService.js';
+import * as brandService from '../services/brandService.js';
 import * as settingsService from '../services/settingsService.js';
 import * as staffCallService from '../services/staffCallService.js';
 import * as userService from '../services/userService.js';
@@ -63,6 +64,11 @@ publicRouter.post('/auth/tour-seen', requireStaff, async (req, res) => res.json(
 // F-062 (D-81): tên + địa chỉ quán cho trang Chính sách dữ liệu; F-094 (ADR-056 D-233): + cờ giao diện màn khách theo giờ / mùa
 // (công khai, chỉ các trường này)
 publicRouter.get('/shop', async (_req, res) => res.json(await settingsService.publicShop()));
+// F-095 (ADR-057 D-234): ảnh logo (công khai — màn chào, thực đơn). Có ?v=<tên tệp> → lưu đệm lâu (đổi ảnh là đổi địa chỉ); không có → hỏi lại
+publicRouter.get('/shop/logo', async (req, res) => {
+  const { file, contentType } = await brandService.logoFile();
+  res.sendFile(file, { headers: { 'Content-Type': contentType, 'Cache-Control': req.query.v ? 'public, max-age=31536000, immutable' : 'no-cache' } });
+});
 // F-063 (D-82): QR đang dán trên bàn có còn đúng địa chỉ máy chủ không — quản lý + màn quầy hiện cảnh báo
 publicRouter.get('/qr-check', requireStaff, async (_req, res) => res.json(await qrCheckService.check()));
 
@@ -71,8 +77,8 @@ publicRouter.get('/qr-check', requireStaff, async (_req, res) => res.json(await 
 publicRouter.get('/menu', optionalStaff, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   // F-092: màn chào hiện cả địa chỉ quán (địa chỉ in trên hóa đơn — thông tin công khai)
-  const { name, address } = await settingsService.shopInfo();
-  res.json({ shop: { name, address: address || null }, ...(await menuService.getPublicMenu({ staff: Boolean(req.user) })) });
+  const { name, address, logoUrl } = await settingsService.shopInfo();
+  res.json({ shop: { name, address: address || null, logoUrl }, ...(await menuService.getPublicMenu({ staff: Boolean(req.user) })) });
 });
 
 // ---- Hội viên (FEATURE-014): khách thấy tên che; quầy (Bearer) thấy tên đầy đủ. Giới hạn tra cứu D-6 ----

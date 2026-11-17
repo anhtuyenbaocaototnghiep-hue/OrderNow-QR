@@ -11,6 +11,12 @@ export const todayVn = () => new Date(Date.now() + 7 * 3600e3).toISOString().sli
 
 export async function startApp() {
   const ctx = await resetTestDatabase();
+  // Chốt an toàn: file test nạp module của src TRƯỚC harness (vd. import config ở đầu file) thì cấu hình đã đọc DB / thư mục ảnh của
+  // .env (dữ liệu thật) — app sẽ ghi vào đó. Dừng ngay thay vì chạy (sự cố 17/11/2026, TASK-116: shop-logo.test.js chạy vào CafeQrDev).
+  const { config } = await import('../../src/config.js');
+  if (!/test$/i.test(config.db.database ?? '') || config.uploadsDir !== process.env.UPLOADS_DIR) {
+    throw new Error(`Test đang trỏ dữ liệu thật (DB ${config.db.database}, ảnh ${config.uploadsDir}) — đừng import module của src trước helpers/harness.js`);
+  }
   const { createApp } = await import('../../src/app.js');
   const { attachRealtime } = await import('../../src/realtime/io.js');
   const { initAvailability } = await import('../../src/services/menuService.js');

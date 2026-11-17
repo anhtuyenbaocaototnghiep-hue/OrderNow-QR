@@ -94,7 +94,7 @@ export async function mountPosShell(active) {
   const header = el(
     'header',
     { class: 'pos-top' },
-    el('div', { class: 'brand' }, brandMark(), el('span', { class: 'brand-name' }, shop?.name || 'Quầy')),
+    el('div', { class: 'brand' }, brandMark(shop), el('span', { class: 'brand-name' }, shop?.name || 'Quầy')),
     el(
       'nav',
       { class: 'pos-nav', 'aria-label': 'Điều hướng quầy' },

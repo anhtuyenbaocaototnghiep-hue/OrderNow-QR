@@ -360,7 +360,8 @@ function showHome(menu, first) {
       { class: 'c-home' },
       el(
         'header',
-        { class: 'h-top' },
+        { class: menu.shop.logoUrl ? 'h-top has-logo' : 'h-top' },
+        menu.shop.logoUrl ? el('img', { class: 'h-logo', src: menu.shop.logoUrl, alt: '' }) : null, // F-095: tên quán ngay bên → ảnh trang trí
         el('h1', { class: 'h-shop' }, menu.shop.name),
         menu.shop.address ? el('p', { class: 'h-addr' }, el('span', { 'aria-hidden': 'true' }, icon('map-pin')), menu.shop.address) : null,
       ),

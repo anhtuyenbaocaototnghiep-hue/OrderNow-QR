@@ -3,7 +3,7 @@
 // F-075 (ADR-033): thẻ "Sắp hết hạn (2 ngày)" tính trực tiếp — quản lý thấy số tiền sẽ phải bỏ + tiền đã hủy vì hết hạn tháng này.
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
-import { adminLogout, requireStaffPage } from '../auth.js';
+import { adminLogout, current, requireStaffPage } from '../auth.js';
 import { canOpenAdminPage, firstAdminHref, hasAdminPages, hasCap, isOwner, ROLE_LABEL } from '../roles.js';
 import { $, clear, dateTime, el, errorMessage, money, num, toast } from '../ui.js';
 import { brandMark, icon } from '../icons.js';
@@ -16,7 +16,7 @@ else if (hasCap(user, 'dashboard.view')) {
   document.body.classList.add('today-lead');
   clear(
     $('#side'),
-    el('div', { class: 'brand' }, brandMark(), 'Hôm nay'),
+    el('div', { class: 'brand' }, brandMark(current.shop), 'Hôm nay'),
     el('a', { href: '/pos?from=admin' }, '← Màn hình quầy'), // ADR-045: không đăng nhập lại
     el('div', { class: 'spacer' }),
     el('div', { class: 'who' }, el('strong', {}, user.fullName), el('div', { class: 'small' }, ROLE_LABEL[user.role])),

@@ -15,6 +15,11 @@ const reason = params.get('reason');
 const say = (cls, text) => clear($('#msg'), el('div', { class: `alert ${cls}` }, text));
 
 clear($('#brand'), brandMark());
+// F-095: logo quán (nếu có) thay ly cà phê — /api/shop công khai, gọi không kèm cookie
+fetch('/api/shop', { credentials: 'omit' })
+  .then((r) => (r.ok ? r.json() : null))
+  .then((shop) => shop?.logoUrl && clear($('#brand'), brandMark(shop)))
+  .catch(() => {});
 if (reason === 'expired') say('info', 'Phiên đăng nhập trang Quản lý đã hết hạn, vui lòng đăng nhập lại.');
 if (reason === 'locked') say('danger', 'Tài khoản đã bị khóa.');
 if (reason === 'noaccess') say('warning', 'Tài khoản này chưa có quyền vào trang Quản lý.');

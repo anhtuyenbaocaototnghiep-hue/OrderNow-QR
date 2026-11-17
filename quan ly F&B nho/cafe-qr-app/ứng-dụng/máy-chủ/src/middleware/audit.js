@@ -147,6 +147,7 @@ export function sanitize(value, depth = 0) {
   if (depth > 8 || value === null || value === undefined) return value ?? null;
   if (Array.isArray(value)) return value.slice(0, 200).map((v) => sanitize(v, depth + 1));
   if (value instanceof Date) return value.toISOString();
+  if (Buffer.isBuffer(value)) return { bytes: value.length }; // ảnh hóa đơn (F-033), logo (F-095): không ghi nội dung ảnh
   if (typeof value !== 'object') return value;
   const out = {};
   for (const [k, v] of Object.entries(value)) {

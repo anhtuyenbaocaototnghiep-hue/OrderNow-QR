@@ -1898,3 +1898,35 @@ body.customer .alert.info {
   height: 13px;
   opacity: 0.35;
 }
+
+/* ---------- F-095 (ADR-057): logo quán ở màn chào và đầu thực đơn ---------- */
+.h-top.has-logo {
+  grid-template-columns: 56px minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: center;
+}
+.h-top.has-logo .h-logo {
+  grid-row: 1 / span 2;
+}
+.h-logo,
+.c-logo {
+  flex: none;
+  border-radius: 50%;
+  background: #fff;
+  object-fit: contain;
+}
+.h-logo {
+  width: 56px;
+  height: 56px;
+  padding: 3px;
+  box-shadow: 0 0 0 1px var(--c-border);
+}
+.c-logo {
+  width: 36px;
+  height: 36px;
+  padding: 2px;
+}
+.c-header > .c-logo + div {
+  flex: 1;
+  min-width: 0;
+}

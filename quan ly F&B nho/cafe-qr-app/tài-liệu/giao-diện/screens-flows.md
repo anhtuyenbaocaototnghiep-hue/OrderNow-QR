@@ -618,3 +618,10 @@ flowchart LR
 - **Theo mùa (chỉ khung giới thiệu màn chào):** Xuân hoa mai vàng trên nền đỏ trầm · Hạ ly đá + giọt nước trên nền xanh rêu · Thu lá vàng trên nền cam đất · Đông ly nóng + bông tuyết trên nền xanh đêm.
 - **SCR-02 thực đơn (sửa kèm F-092):** tên quán ở đầu trang (liên kết về màn chào) có vùng chạm ≥ 24 px.
 - **SCR-33 Cài đặt → Màn gọi món của khách:** hai ô "Tự đổi sáng / tối theo giờ", "Trang trí theo mùa" (mặc định bật) + giải thích.
+
+## TASK-116 — Logo quán — SCR-33, SCR-01, SCR-02, quầy, Quản lý, phiếu in (F-095, ADR-057, 16/11/2026)
+
+- **SCR-33 Cài đặt → Thông tin quán:** ô "Logo quán": khung xem trước (chưa có → ly cà phê), nút "Chọn ảnh…" (chọn là lưu ngay, thông báo "Đã cập nhật logo"), "Bỏ logo" (hỏi lại). Sai định dạng / quá 1 MB → báo ngay dưới ô.
+- **Khách:** màn chào có logo trên tên quán; thực đơn có logo tròn trước tên quán ở đầu trang.
+- **Quầy, Quản lý:** logo thay biểu tượng ly cà phê ở thanh quầy, thanh bên Quản lý, trang Hôm nay, trang đăng nhập Quản lý.
+- **Giấy in:** hóa đơn / phiếu tạm tính và thẻ QR in có logo trên tên quán.

@@ -44,6 +44,7 @@ function render(data) {
   clear(
     $('#receipt'),
     provisional ? el('div', { class: 'watermark', 'aria-hidden': 'true' }, 'TẠM TÍNH') : null,
+    data.shop.logoUrl ? el('img', { class: 'receipt-logo', src: data.shop.logoUrl, alt: '' }) : null, // F-095
     el('h1', {}, data.shop.name),
     data.shop.address ? el('div', { class: 'center' }, data.shop.address) : null,
     el('div', { class: 'title' }, provisional ? 'PHIẾU TẠM TÍNH' : 'HÓA ĐƠN THANH TOÁN'),
@@ -158,6 +159,22 @@ function renderSlip(o) {
   );
 }
 
+/** Chờ mọi ảnh trong khối đã tải (hoặc lỗi), tối đa 1,5 giây. */
+const imagesReady = (root) =>
+  Promise.race([
+    Promise.all(
+      [...root.querySelectorAll('img')].map((img) =>
+        img.complete
+          ? null
+          : new Promise((done) => {
+              img.addEventListener('load', done, { once: true });
+              img.addEventListener('error', done, { once: true });
+            }),
+      ),
+    ),
+    new Promise((done) => setTimeout(done, 1500)),
+  ]);
+
 async function main() {
   applyWidth();
   if (slip) $('#print').textContent = 'In phiếu';
@@ -185,6 +202,7 @@ async function main() {
     document.title = `${data.mode === 'provisional' ? 'Tạm tính' : 'Hóa đơn'} — ${data.kind === 'session' ? (data.tables ?? [data.table.name]).join(' + ') : data.order.orderCode}`;
     if (params.get('autoprint') === '1') {
       window.addEventListener('afterprint', () => notifyParent({ type: 'receipt-done' }), { once: true });
+      await imagesReady($('#receipt')); // F-095: in khi logo đã tải — in ngay thì giấy không có logo
       setTimeout(() => window.print(), 150);
     }
   } catch (err) {

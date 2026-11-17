@@ -74,6 +74,7 @@ try {
       return el(
         'div',
         { class: 'qr-card' },
+        current.shop?.logoUrl ? el('img', { class: 'qr-logo', src: current.shop.logoUrl, alt: '' }) : null, // F-095: tên quán ngay dưới
         el('div', { class: 'small muted' }, current.shop?.name ?? ''),
         el('div', { class: 'tname' }, t.name),
         wifiSrc ? [wifiBlock(settings, wifiSrc), el('div', { class: 'qr-step' }, '② Quét để gọi món')] : null,

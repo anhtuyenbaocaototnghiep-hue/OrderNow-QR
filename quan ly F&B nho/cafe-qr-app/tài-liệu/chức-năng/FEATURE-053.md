@@ -2,6 +2,7 @@
 
 > **Nguồn:** chủ dự án yêu cầu 23/10/2026: "bạn làm thêm cho tôi chỗ đổi tên quán nha". Trước đó tên quán / địa chỉ chỉ đặt được bằng `SHOP_NAME` / `SHOP_ADDRESS` trong `.env` (sửa tệp rồi khởi động lại app).
 
+- **Cập nhật 16/11/2026 ([F-095](FEATURE-095.md), ADR-057):** ngoài tên và địa chỉ, chủ quán tải được logo ở Cài đặt → Thông tin quán; logo hiện cạnh tên quán ở màn chào, thực đơn, thanh quầy, thanh bên Quản lý, hóa đơn, thẻ QR.
 - **Status:** CONFIRMED (yêu cầu trực tiếp của chủ dự án) · Triển khai: [TASK-067](../công-việc/TASK-067.md)
 - **Actor:** **ACT-ADMIN** — chủ quán / quản lý.
 - **Màn hình:** **Quản lý → Hệ thống → Cài đặt** (SCR-33): thẻ **Thông tin quán** đầu trang — ô **Tên quán**, ô **Địa chỉ (in trên hóa đơn)**; lưu cùng nút **Lưu cài đặt**.

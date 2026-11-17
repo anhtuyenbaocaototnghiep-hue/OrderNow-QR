@@ -14,6 +14,7 @@ import * as cashRepo from '../repositories/cashRepo.js';
 import * as usersRepo from '../repositories/usersRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { getSettings } from './settingsService.js';
+import { contentTypeOf, imageType } from '../utils/imageType.js';
 import { requireOpenShift } from './shiftService.js';
 import * as alertService from './alertService.js';
 import { assertActorPin } from './pinService.js';
@@ -21,11 +22,6 @@ import { resolveApproval } from './userService.js';
 import { isProbation, storeManagerCashMax } from '../auth/permissions.js';
 
 export const MAX_RECEIPT_BYTES = 2 * 1024 * 1024;
-const SIGNATURES = [
-  ['jpg', 'image/jpeg', (b) => b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff],
-  ['png', 'image/png', (b) => b.length > 8 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))],
-  ['webp', 'image/webp', (b) => b.length > 12 && b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP'],
-];
 const receiptsDir = () => path.join(config.uploadsDir, 'receipts');
 
 export const categories = (opts) => cashRepo.categories(opts);
@@ -150,7 +146,7 @@ export async function voidTxn(id, body, user) {
 export async function attachReceipt(id, buf, user) {
   if (!Buffer.isBuffer(buf) || buf.length === 0) throw badRequest('RECEIPT_INVALID', 'Chọn ảnh hóa đơn (jpg, png hoặc webp)');
   if (buf.length > MAX_RECEIPT_BYTES) throw badRequest('RECEIPT_TOO_LARGE', 'Ảnh hóa đơn tối đa 2 MB');
-  const sig = SIGNATURES.find(([, , ok]) => ok(buf));
+  const sig = imageType(buf);
   if (!sig) throw badRequest('RECEIPT_INVALID', 'Ảnh hóa đơn phải là jpg, png hoặc webp');
   const txn = await get(id);
   if (txn.createdBy.userId !== user.userId && !can(user, 'cash.approve')) throw forbidden('Chỉ người ghi khoản này hoặc trưởng ca được gắn ảnh');
@@ -158,7 +154,7 @@ export async function attachReceipt(id, buf, user) {
   if (txn.status === 'VOIDED' || txn.status === 'REJECTED') throw conflict('CASH_NOT_APPROVED', 'Khoản đã hủy / từ chối — không đổi ảnh hóa đơn');
   const old = await cashRepo.receiptPath(id);
   await fs.mkdir(receiptsDir(), { recursive: true });
-  const name = `${id}-${crypto.randomBytes(8).toString('hex')}.${sig[0]}`;
+  const name = `${id}-${crypto.randomBytes(8).toString('hex')}.${sig.ext}`;
   await fs.writeFile(path.join(receiptsDir(), name), buf, { flag: 'wx' });
   await cashRepo.setReceipt(id, `receipts/${name}`);
   if (old) await fs.rm(path.join(config.uploadsDir, old), { force: true }).catch(() => {});
@@ -172,7 +168,7 @@ export async function receiptFile(id) {
   const file = path.resolve(config.uploadsDir, rel);
   if (!file.startsWith(path.resolve(receiptsDir()) + path.sep)) throw notFound('Khoản này chưa có ảnh hóa đơn');
   const ext = path.extname(file).slice(1);
-  const type = SIGNATURES.find(([e]) => e === ext)?.[1];
+  const type = contentTypeOf(ext);
   if (!type) throw notFound('Khoản này chưa có ảnh hóa đơn');
   return { file, contentType: type };
 }

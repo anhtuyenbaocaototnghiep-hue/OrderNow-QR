@@ -46,9 +46,10 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
     assert.equal((await q1("SELECT COUNT(*) AS n FROM dbo.Settings WHERE SettingKey LIKE 'shop.%'"))[0].n, 0);
     const s = await shopEverywhere();
     assert.deepEqual(s.settings, { name: config.shop.name, address: config.shop.address });
-    assert.deepEqual(s.me, { name: config.shop.name, address: config.shop.address });
-    assert.deepEqual(s.menu, { name: config.shop.name, address: config.shop.address }); // F-092: thực đơn công khai có cả địa chỉ (màn chào)
-    assert.deepEqual(s.receipt, { name: config.shop.name, address: config.shop.address });
+    const env = { name: config.shop.name, address: config.shop.address, logoUrl: null }; // F-095: chưa có logo
+    assert.deepEqual(s.me, env);
+    assert.deepEqual(s.menu, env); // F-092: thực đơn công khai có cả địa chỉ (màn chào)
+    assert.deepEqual(s.receipt, env);
   });
 
   test('AC-053-01: quản lý lưu tên "Cà phê Mộc Test" + địa chỉ → cài đặt, /auth/me, /menu, hóa đơn phiên đều đổi; Nhật ký thao tác ghi tên cũ → mới', async () => {
@@ -64,9 +65,9 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
     const s = await shopEverywhere();
     const want = { name: 'Cà phê Mộc Test', address: '12 Lê Lợi, phường Bến Nghé' };
     assert.deepEqual(s.settings, want);
-    assert.deepEqual(s.me, want);
-    assert.deepEqual(s.menu, want); // F-092: màn chào khi quét QR hiện cả địa chỉ
-    assert.deepEqual(s.receipt, want);
+    assert.deepEqual(s.me, { ...want, logoUrl: null }); // F-095: thông tin quán có thêm logo (chưa tải)
+    assert.deepEqual(s.menu, { ...want, logoUrl: null }); // F-092: màn chào khi quét QR hiện cả địa chỉ
+    assert.deepEqual(s.receipt, { ...want, logoUrl: null });
     // Lần đổi thứ hai: nhật ký có tên cũ (BeforeJson) → tên mới (AfterJson)
     assert.equal((await call(admin, 'put', '/api/admin/settings', { shopName: 'Cà phê Mộc 2' })).status, 200);
     await flushAudit();
@@ -90,7 +91,11 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
       );
     }
     // Ngay sau các lần bị từ chối: tên / địa chỉ đang dùng không đổi (review G3)
-    assert.deepEqual((await call(staff, 'get', '/api/auth/me')).body.shop, { name: 'Cà phê Mộc 2', address: '12 Lê Lợi, phường Bến Nghé' });
+    assert.deepEqual((await call(staff, 'get', '/api/auth/me')).body.shop, {
+      name: 'Cà phê Mộc 2',
+      address: '12 Lê Lợi, phường Bến Nghé',
+      logoUrl: null,
+    });
     // Biên hợp lệ: đúng 100 / 200 ký tự
     assert.equal((await call(admin, 'put', '/api/admin/settings', { shopName: 'x'.repeat(100), shopAddress: 'y'.repeat(200) })).status, 200);
     assert.equal((await call(admin, 'put', '/api/admin/settings', { shopName: 'Cà phê Mộc 2', shopAddress: '12 Lê Lợi' })).status, 200);

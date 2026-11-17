@@ -886,3 +886,10 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 
 - `GET /api/shop` (công khai): thêm `guestTheme: { daypart: boolean, season: boolean }` — quán bật "Tự đổi sáng / tối theo giờ" / "Trang trí theo mùa". Trang khách đọc để tô màu (`js/guest-theme.js`).
 - `GET / PUT /api/admin/settings`: `guestDaypartTheme`, `guestSeasonDecor` (boolean, mặc định `true`). Quản lý cửa hàng đổi được (`STORE_MGR_SETTINGS`); sai kiểu → `400 VALIDATION_ERROR`.
+
+## Bổ sung F-095 — logo quán (ADR-057, TASK-116, 16/11/2026)
+
+- `PUT /api/admin/settings/logo` (chỉ chủ quán): thân request là ảnh (`Content-Type: image/jpeg | image/png | image/webp`, ≤ 1 MB — kiểm chữ ký tệp) → `200 { logoUrl }`; sai định dạng → `400 LOGO_INVALID`; quá cỡ → `400 LOGO_TOO_LARGE`; người khác → `403`.
+- `DELETE /api/admin/settings/logo` (chỉ chủ quán) → `200 { logoUrl: null }`.
+- `GET /api/shop/logo` (công khai): tệp ảnh logo (`Cache-Control: public, max-age=31536000, immutable`); chưa có → `404 NOT_FOUND`.
+- `logoUrl` (`string | null`, dạng `/api/shop/logo?v=<tên tệp>`) thêm vào `shop` của `GET /api/shop`, `GET /api/menu`, `GET /api/auth/me` và dữ liệu phiếu in (`GET /api/sessions/{id}/receipt`, `GET /api/orders/{id}/receipt`).

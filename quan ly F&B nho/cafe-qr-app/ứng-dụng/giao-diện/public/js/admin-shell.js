@@ -154,7 +154,7 @@ export async function mountAdminShell(active) {
   const navActive = NAV_ALIAS[active] ?? active;
   clear(
     side,
-    el('div', { class: 'brand' }, brandMark(), current.shop?.name || 'Quản lý'),
+    el('div', { class: 'brand' }, brandMark(current.shop), current.shop?.name || 'Quản lý'),
     allowed('today') ? navLink(HOME, navActive, icon('house')) : null,
     NAV.map((g) => navGroup(g, navActive, open)),
     // F-080: tab mới. F-084: chủ quán không dùng máy quầy → không có lối này

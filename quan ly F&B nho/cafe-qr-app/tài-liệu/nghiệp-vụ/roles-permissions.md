@@ -233,3 +233,7 @@ Cài đặt "Màn chào khi khách quét QR" (`guestWelcome`): chủ quán và q
 ## 4.13. Bổ sung F-094 — giao diện màn khách theo giờ và theo mùa (ADR-056, 16/11/2026)
 
 Hai cài đặt "Tự đổi sáng / tối theo giờ" (`guestDaypartTheme`) và "Trang trí theo mùa" (`guestSeasonDecor`): chủ quán và quản lý cửa hàng đổi được (như F-083, F-092); nhân viên không. `GET /api/shop` công khai (chỉ tên, địa chỉ, hai cờ giao diện). Test: `guest-theme.test.js` (AC-094-01).
+
+## 4.14. Bổ sung F-095 — logo quán (ADR-057, 16/11/2026)
+
+Tải / bỏ logo (`PUT` / `DELETE /api/admin/settings/logo`): **chỉ chủ quán** (như tên, địa chỉ quán). Ảnh logo `GET /api/shop/logo` công khai (khách thấy trên màn chào, thực đơn). Test: `shop-logo.test.js` (AC-095-01).

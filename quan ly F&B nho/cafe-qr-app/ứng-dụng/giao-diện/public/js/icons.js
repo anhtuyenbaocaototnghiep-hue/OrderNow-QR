@@ -388,10 +388,29 @@ export function icon(name, { label = null, filled = false } = {}) {
   return svg;
 }
 
-/** Dấu hiệu quán (tách cà phê trong vòng tròn caramel) — đứng trước tên quán ở thanh quầy / thanh bên quản lý. */
-export function brandMark() {
+/**
+ * Dấu hiệu quán — đứng trước tên quán ở thanh quầy / thanh bên quản lý / Hôm nay / đăng nhập Quản lý.
+ * F-095 (ADR-057): quán có logo → ảnh trong khung tròn nền trắng (tên quán ngay bên → ảnh trang trí, alt rỗng); chưa có hoặc ảnh lỗi
+ * → tách cà phê trong vòng tròn caramel như cũ.
+ */
+export function brandMark(shop = null) {
   const mark = document.createElement('span');
   mark.className = 'brand-mark';
-  mark.append(icon('coffee'));
+  if (shop?.logoUrl) {
+    const img = document.createElement('img');
+    img.src = shop.logoUrl;
+    img.alt = '';
+    img.decoding = 'async';
+    img.addEventListener(
+      'error',
+      () => {
+        mark.classList.remove('has-logo');
+        mark.replaceChildren(icon('coffee'));
+      },
+      { once: true },
+    );
+    mark.classList.add('has-logo');
+    mark.append(img);
+  } else mark.append(icon('coffee'));
   return mark;
 }
