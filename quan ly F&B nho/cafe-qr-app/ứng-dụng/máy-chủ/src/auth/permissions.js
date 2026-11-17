@@ -296,6 +296,8 @@ export const STORE_MGR_SETTINGS = [
   'oneTap',
   'menuSheetAll', // F-083
   'guestWelcome', // F-092 (ADR-054): màn chào khi khách quét QR — trải nghiệm khách như menuSheetAll
+  'guestDaypartTheme', // F-094 (ADR-056): màn khách sáng / tối theo giờ
+  'guestSeasonDecor', // F-094: trang trí theo mùa
   'singleScreen', // F-088 (ADR-049): vận hành quầy như oneTap
   'serveMode', // F-088
 ];

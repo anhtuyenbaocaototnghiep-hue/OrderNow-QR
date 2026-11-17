@@ -234,6 +234,7 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-091-2 | Should | ACT-ADMIN | Là chủ quán, tôi muốn lưu số điện thoại của từng nhân viên trong tài khoản và bấm gọi ngay từ danh sách, để liên lạc khi cần mà không phải tìm ở chỗ khác. | AC-091-01, AC-091-02, AC-091-04 | BR-024 | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20 | F-091 | DONE |
 | US-092-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách, khi quét QR trên bàn tôi muốn thấy ngay quán nào, bàn nào, món sẽ mang ra đâu, và các việc hay cần (gọi thanh toán, gọi nhân viên, nhập SĐT tích điểm, xem thực đơn) trên một màn hình, để không phải tìm nút ở nhiều trang. | AC-092-01, AC-092-02, AC-092-03, AC-092-04 | BR-024 | UC-01 | MOD-ORDER, MOD-NOTIFY | SCR-01, SCR-02, SCR-33 | F-092 | DONE |
 | US-093-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách, tôi muốn màn gọi món luôn là giao diện điện thoại gọn một cột — kể cả khi mở trên máy tính bảng hay máy tính — để chữ, nút bấm và thanh giỏ quen tay như một ứng dụng điện thoại. | AC-093-01, AC-093-02 | — | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05 | F-093 | DONE |
+| US-094-1 | Could | ACT-GUEST, ACT-MEMBER, ACT-ADMIN, ACT-STORE | Là khách, tôi muốn màn gọi món dịu mắt khi ngồi quán buổi tối và có không khí theo buổi, theo mùa, để dùng thoải mái và thấy quán chăm chút; là chủ quán, tôi muốn bật / tắt được việc này. | AC-094-01, AC-094-02, AC-094-03, AC-094-04 | — | UC-01 | MOD-ORDER | SCR-01, SCR-02, SCR-03, SCR-05, SCR-33 | F-094 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

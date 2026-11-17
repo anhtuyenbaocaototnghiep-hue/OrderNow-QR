@@ -70,6 +70,9 @@ function toSettings(map) {
     // F-092 (ADR-054 D-228): khách quét QR → màn chào của quán (tên, bàn, gọi thanh toán / nhân viên, xem thực đơn) — mặc định bật;
     // tắt: vào thẳng thực đơn như trước
     guestWelcome: map.get('guest.welcome') !== 'false',
+    // F-094 (ADR-056 D-231…D-233): màn khách tự đổi sáng / tối theo giờ, trang trí khung giới thiệu theo mùa — mặc định bật
+    guestDaypartTheme: map.get('guest.daypart_theme') !== 'false',
+    guestSeasonDecor: map.get('guest.season_decor') !== 'false',
     // F-087 (ADR-048 D-212): tự đóng bàn trống (khách quét QR rồi không gọi món) — 0 = tắt, 15 / 30 / 60 phút; mặc định 30
     idleCloseMinutes: IDLE_CLOSE_CHOICES.includes(num(map.get('tables.idle_close_minutes'), 30)) ? num(map.get('tables.idle_close_minutes'), 30) : 30,
     staffMaxAmount: num(map.get('discount.staff_max_amount'), 20000),
@@ -174,6 +177,8 @@ const KEYS = {
   serveMode: 'pos.serve_mode',
   menuSheetAll: 'menu.sheet_all',
   guestWelcome: 'guest.welcome', // F-092
+  guestDaypartTheme: 'guest.daypart_theme', // F-094
+  guestSeasonDecor: 'guest.season_decor', // F-094
   idleCloseMinutes: 'tables.idle_close_minutes',
   staffMaxAmount: 'discount.staff_max_amount',
   etaBaseSeconds: 'kitchen.base_seconds',
@@ -249,6 +254,12 @@ export const storeStatus = async () => {
 export const shopInfo = async () => {
   const s = await getSettings();
   return { name: s.shopName, address: s.shopAddress };
+};
+
+/** `GET /api/shop` (công khai): tên, địa chỉ (F-062) + cờ giao diện màn khách theo giờ / theo mùa (F-094, ADR-056 D-233). */
+export const publicShop = async () => {
+  const s = await getSettings();
+  return { name: s.shopName, address: s.shopAddress, guestTheme: { daypart: s.guestDaypartTheme, season: s.guestSeasonDecor } };
 };
 
 export function invalidateSettings() {

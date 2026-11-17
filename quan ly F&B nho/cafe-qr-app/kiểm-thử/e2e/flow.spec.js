@@ -1618,6 +1618,8 @@ test('tách hóa đơn theo món: "Tách hóa đơn" → tích món → "Anh A" 
     .click();
   // Phần sau tự về Tiền mặt — không ghi nhầm chuyển khoản theo lượt trước (review G3)
   await expect(drawer.getByRole('button', { name: 'Tiền mặt', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  // Chờ hộp vẽ lại cho "Phần còn lại" rồi mới bấm "Đủ tiền" — bấm sớm trúng nút của phần trước (10k) → còn thiếu, nút thu bị khóa (bài chập chờn)
+  await expect(drawer.locator('.due span').last()).toHaveText('25.000đ');
   await drawer.locator('.quick-cash .btn').first().click();
   await drawer.locator('.modal-foot .btn-success').click();
   await expect(P.locator('.drawer')).toHaveCount(0);
@@ -4467,5 +4469,165 @@ test('màn khách chỉ cho điện thoại: máy tính 1366 px — màn chào, 
     await phone.close();
     await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: false });
     await clearTables(request, ['K1', 'K2']);
+  }
+});
+
+// ---------- TASK-115 (F-094, ADR-056): giao diện màn khách theo giờ (sáng / tối) và theo mùa ----------
+// Đồng hồ giả của Playwright: setFixedTime (giờ cố định, hẹn giờ chạy thật) / install + fastForward (qua mốc 18:00 khi đang mở)
+const vnTime = (iso) => new Date(iso + '+07:00');
+/** Độ sáng tương đối (WCAG) của màu nền / màu chữ một phần tử: 0 = đen, 1 = trắng. */
+const lumOf = (page, sel, prop = 'backgroundColor') =>
+  page
+    .locator(sel)
+    .first()
+    .evaluate((e, p) => {
+      const color = globalThis.getComputedStyle(e)[p];
+      const [r, g, b] = color.match(/[\d.]+/g).map(Number);
+      const f = (v) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+      return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+    }, prop);
+
+test('giao diện khách theo giờ: 8 giờ sáng có ánh nắng ở khung giới thiệu, 8 giờ tối màn chào / thực đơn / theo dõi đơn chuyển nền tối, đang mở lúc 17:59 tự chuyển tối khi qua 18:00 (lời chào đổi theo), điện thoại bật chế độ tối thì tối cả ban ngày; tắt cài đặt → tối vẫn sáng (F-094, AC-094-02)', async ({
+  request,
+}) => {
+  await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: true, guestDaypartTheme: true, guestSeasonDecor: true });
+  const shift = await apiAs(request, 'get', '/api/shifts/current');
+  if (!shift.shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 }); // gửi đơn cần ca đang mở
+  const t = {};
+  for (const code of ['TG1', 'TG2', 'TG3', 'TG4']) t[code] = await apiAs(request, 'post', '/api/admin/tables', { code });
+  const contexts = [];
+  const phonePage = async (name, extra = {}) => {
+    const ctx = await browser.newContext({ ...phoneOpts, ...extra });
+    contexts.push(ctx);
+    const page = await ctx.newPage();
+    page.setDefaultTimeout(15_000); // thao tác hỏng thì báo nhanh — finally còn kịp trả cài đặt cho bài sau
+    watch(page, name);
+    return page;
+  };
+  try {
+    // 8:00 sáng: nền sáng, khung giới thiệu có mặt trời ở góc, lời chào buổi sáng
+    const M = await phonePage('sang');
+    await M.clock.setFixedTime(vnTime('2026-11-16T08:00:00'));
+    await M.goto('/t/' + t.TG1.qrToken);
+    await expect(M.locator('.c-home')).toBeVisible();
+    await expect(M.locator('html')).toHaveAttribute('data-daypart', 'morning');
+    await expect(M.locator('html')).not.toHaveAttribute('data-theme', 'dark');
+    expect(await lumOf(M, 'body')).toBeGreaterThan(0.8);
+    expect(await M.locator('.h-hero').evaluate((e) => globalThis.getComputedStyle(e, '::before').backgroundImage)).toContain('radial-gradient');
+    await expect(M.locator('.h-greet')).toHaveText(/^Chào buổi sáng/);
+
+    // 20:00: màn chào, thực đơn, theo dõi đơn nền tối, chữ sáng
+    const N = await phonePage('toi');
+    await N.clock.setFixedTime(vnTime('2026-11-16T20:00:00'));
+    await N.goto('/t/' + t.TG2.qrToken);
+    await expect(N.locator('.c-home')).toBeVisible();
+    await expect(N.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(N.locator('html')).toHaveAttribute('data-daypart', 'night');
+    expect(await lumOf(N, 'body')).toBeLessThan(0.05);
+    expect(await lumOf(N, '.h-tile')).toBeLessThan(0.05);
+    expect(await lumOf(N, '.h-shop', 'color')).toBeGreaterThan(0.6);
+    await expect(N.locator('.h-greet')).toHaveText(/^Chào buổi tối/);
+    await N.getByRole('link', { name: 'Xem thực đơn – Gọi món' }).click();
+    await expect(N).toHaveURL(/\/menu$/);
+    await expect(N.locator('html')).toHaveAttribute('data-theme', 'dark');
+    expect(await lumOf(N, '.c-item')).toBeLessThan(0.05);
+    expect(await lumOf(N, '.c-item-name', 'color')).toBeGreaterThan(0.6);
+    expect(await lumOf(N, '.c-header')).toBeLessThan(0.05);
+    await N.locator('.c-section.cat .c-item', { hasText: 'Nước suối' }).first().locator('.add-btn').click();
+    await N.click('#open-cart');
+    await N.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(N).toHaveURL(/\/track$/);
+    await expect(N.locator('#actions')).toBeVisible();
+    expect(await lumOf(N, 'body')).toBeLessThan(0.05);
+    expect(await lumOf(N, '.order-card')).toBeLessThan(0.05);
+
+    // Đang mở lúc 17:59:40 → đồng hồ chạy qua 18:00 → tự tối, không tải lại; lời chào thành buổi tối
+    const P = await phonePage('qua-18-gio');
+    await P.clock.install({ time: vnTime('2026-11-16T17:59:40') });
+    await P.goto('/t/' + t.TG3.qrToken);
+    await expect(P.locator('.c-home')).toBeVisible();
+    await expect(P.locator('html')).toHaveAttribute('data-daypart', 'day');
+    await expect(P.locator('html')).not.toHaveAttribute('data-theme', 'dark');
+    await expect(P.locator('.h-greet')).toHaveText(/^Chào buổi chiều/);
+    await P.clock.fastForward('01:00'); // trang kiểm 30 giây / lần
+    await expect(P.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(P.locator('.h-greet')).toHaveText(/^Chào buổi tối/);
+    await expect.poll(() => lumOf(P, 'body')).toBeLessThan(0.05);
+    await expect(P).toHaveURL(new RegExp('/t/' + t.TG3.qrToken + '$'));
+
+    // Điện thoại bật chế độ tối lúc 10:00 → tối dù là buổi sáng
+    const Q = await phonePage('che-do-toi', { colorScheme: 'dark' });
+    await Q.clock.setFixedTime(vnTime('2026-11-16T10:00:00'));
+    await Q.goto('/t/' + t.TG4.qrToken);
+    await expect(Q.locator('.c-home')).toBeVisible();
+    await expect(Q.locator('html')).toHaveAttribute('data-daypart', 'morning');
+    await expect(Q.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+    // Tắt "Tự đổi sáng / tối theo giờ" → 20:00 vẫn sáng (cả điện thoại bật chế độ tối), không còn data-daypart
+    await apiAs(request, 'put', '/api/admin/settings', { guestDaypartTheme: false });
+    const shopCall = N.waitForRequest((r) => new URL(r.url()).pathname === '/api/shop');
+    await N.goto('/t/' + t.TG2.qrToken);
+    // Đọc cài đặt giao diện không kèm cookie (máy này đã có cookie danh tính) — không tranh cookie với lệnh quét QR của khách mới
+    expect((await (await shopCall).allHeaders()).cookie, '/api/shop gọi không kèm cookie').toBeUndefined();
+    await expect(N.locator('.c-home')).toBeVisible();
+    await expect(N.locator('html')).not.toHaveAttribute('data-theme', 'dark');
+    await expect(N.locator('html')).not.toHaveAttribute('data-daypart');
+    await expect.poll(() => lumOf(N, 'body')).toBeGreaterThan(0.8);
+    await Q.reload();
+    await expect(Q.locator('.c-home')).toBeVisible();
+    await expect(Q.locator('html')).not.toHaveAttribute('data-theme', 'dark');
+  } finally {
+    await Promise.all(contexts.map((c) => c.close()));
+    await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: false, guestDaypartTheme: false, guestSeasonDecor: false });
+    await clearTables(request, ['TG1', 'TG2', 'TG3', 'TG4']);
+  }
+});
+
+test('trang trí theo mùa: tháng 2 hoa mai, tháng 5 ly đá, tháng 8 lá vàng, tháng 11 ly nóng ở khung giới thiệu màn chào; nút, giá, thẻ món giữ màu quán; tắt cài đặt → khung giới thiệu như cũ (F-094, AC-094-03)', async ({
+  request,
+}) => {
+  await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: true, guestDaypartTheme: true, guestSeasonDecor: true });
+  const s1 = await apiAs(request, 'post', '/api/admin/tables', { code: 'MU1' });
+  const ctx = await browser.newContext(phoneOpts);
+  try {
+    const S = await ctx.newPage();
+    S.setDefaultTimeout(15_000); // thao tác hỏng thì báo nhanh — finally còn kịp trả cài đặt cho bài sau
+    watch(S, 'theo-mua');
+    const heroes = new Set();
+    let cta = null;
+    for (const [iso, season, art] of [
+      ['2026-02-10T15:00:00', 'spring', 'mai'],
+      ['2026-05-10T15:00:00', 'summer', 'cup-soda'],
+      ['2026-08-10T15:00:00', 'autumn', 'leaf'],
+      ['2026-11-10T15:00:00', 'winter', 'coffee'],
+    ]) {
+      await S.clock.setFixedTime(vnTime(iso));
+      await S.goto('/t/' + s1.qrToken);
+      await expect(S.locator('.c-home')).toBeVisible();
+      await expect(S.locator('html')).toHaveAttribute('data-season', season);
+      await expect(S.locator('.h-hero-art')).toHaveAttribute('data-art', art);
+      await expect(S.locator('.h-hero-art .ic-' + art)).toBeVisible();
+      await expect(S.locator('.h-hero-decor .ic')).toHaveCount(3);
+      await expect(S.locator('.h-hero-decor')).toBeVisible();
+      heroes.add(await S.locator('.h-hero').evaluate((e) => globalThis.getComputedStyle(e).backgroundImage));
+      // Nút chính giữ màu quán ở mọi mùa (chỉ khung giới thiệu đổi)
+      const ctaBg = await S.locator('.h-cta').evaluate((e) => globalThis.getComputedStyle(e).backgroundImage);
+      if (cta !== null) expect(ctaBg, 'nút "Xem thực đơn – Gọi món" không đổi theo mùa').toBe(cta);
+      cta = ctaBg;
+    }
+    expect(heroes.size, 'mỗi mùa một màu khung giới thiệu').toBe(4);
+
+    // Tắt "Trang trí theo mùa" → không có data-season, khung giới thiệu là ly cà phê, không hình nhỏ
+    await apiAs(request, 'put', '/api/admin/settings', { guestSeasonDecor: false });
+    await S.clock.setFixedTime(vnTime('2026-02-10T15:00:00'));
+    await S.goto('/t/' + s1.qrToken);
+    await expect(S.locator('.c-home')).toBeVisible();
+    await expect(S.locator('html')).not.toHaveAttribute('data-season');
+    await expect(S.locator('.h-hero-art')).toHaveAttribute('data-art', 'coffee');
+    await expect(S.locator('.h-hero-decor')).toBeHidden();
+  } finally {
+    await ctx.close();
+    await apiAs(request, 'put', '/api/admin/settings', { guestWelcome: false, guestDaypartTheme: false, guestSeasonDecor: false });
+    await clearTables(request, ['MU1']);
   }
 });

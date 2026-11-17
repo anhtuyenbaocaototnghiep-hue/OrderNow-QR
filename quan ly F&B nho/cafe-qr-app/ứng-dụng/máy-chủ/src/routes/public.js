@@ -60,8 +60,9 @@ publicRouter.get('/auth/me', requireStaff, async (req, res) => {
 publicRouter.post('/auth/pos-session', requireStaff, async (req, res) => res.json(await userService.startPosSession(req.user)));
 // F-061 (ADR-021 D-80): xem xong / bỏ qua hướng dẫn 5 bước ở màn quầy — lưu theo tài khoản
 publicRouter.post('/auth/tour-seen', requireStaff, async (req, res) => res.json({ tourSeenAt: await usersRepo.markTourSeen(req.user.userId) }));
-// F-062 (D-81): tên + địa chỉ quán cho trang Chính sách dữ liệu (công khai, chỉ 2 trường này)
-publicRouter.get('/shop', async (_req, res) => res.json(await settingsService.shopInfo()));
+// F-062 (D-81): tên + địa chỉ quán cho trang Chính sách dữ liệu; F-094 (ADR-056 D-233): + cờ giao diện màn khách theo giờ / mùa
+// (công khai, chỉ các trường này)
+publicRouter.get('/shop', async (_req, res) => res.json(await settingsService.publicShop()));
 // F-063 (D-82): QR đang dán trên bàn có còn đúng địa chỉ máy chủ không — quản lý + màn quầy hiện cảnh báo
 publicRouter.get('/qr-check', requireStaff, async (_req, res) => res.json(await qrCheckService.check()));
 

@@ -610,3 +610,11 @@ flowchart LR
 - **Mọi trang khách** là một cột tối đa 480 px. Điện thoại: như cũ. Máy tính bảng / máy tính: cột ở giữa màn, hai bên nền xám ấm đậm (`#ddd7cf`), cột có viền tóc + bóng mảnh — nhìn như màn điện thoại đặt giữa màn hình.
 - Đầu trang espresso, thanh nhóm món, thanh giỏ nâu rang, thanh nút đáy ở Theo dõi đơn, bảng chọn món / giỏ (kéo từ đáy), hộp thoại, thông báo đều gọn trong cột. Thẻ món luôn một cột (bỏ 2 cột trên máy tính của D-195).
 - Màn quầy Bán mang đi / Gọi món tại bàn không đổi.
+
+## TASK-115 — Màn khách theo giờ và theo mùa — SCR-01, 02, 03, 05, 33 (F-094, ADR-056, 16/11/2026)
+
+- **Sáng (5:00–10:59):** như cũ; khung "Gọi món tại bàn" ở màn chào có mặt trời vàng ló ở góc phải trên, lời chào có mặt trời trên nền vàng.
+- **Tối (18:00–4:59) hoặc điện thoại bật chế độ tối:** màn chào, thực đơn, giỏ, theo dõi đơn nền nâu đen, thẻ món nâu sẫm, chữ kem, nút "+" / thanh giỏ / nút chính màu caramel sáng chữ nâu đậm; khung giới thiệu có chấm sao, lời chào có mặt trăng. Đang mở mà qua 18:00 → tự chuyển.
+- **Theo mùa (chỉ khung giới thiệu màn chào):** Xuân hoa mai vàng trên nền đỏ trầm · Hạ ly đá + giọt nước trên nền xanh rêu · Thu lá vàng trên nền cam đất · Đông ly nóng + bông tuyết trên nền xanh đêm.
+- **SCR-02 thực đơn (sửa kèm F-092):** tên quán ở đầu trang (liên kết về màn chào) có vùng chạm ≥ 24 px.
+- **SCR-33 Cài đặt → Màn gọi món của khách:** hai ô "Tự đổi sáng / tối theo giờ", "Trang trí theo mùa" (mặc định bật) + giải thích.

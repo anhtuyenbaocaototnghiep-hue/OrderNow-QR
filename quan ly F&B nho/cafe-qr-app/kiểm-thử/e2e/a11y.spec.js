@@ -394,6 +394,52 @@ test('khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn 
   await Promise.all([ctx.close(), ctx2.close()]);
 });
 
+// F-094 (TASK-115, ADR-056): giao diện tối của màn khách — đồng hồ giả 20:00 giờ Việt Nam, bật tạm cài đặt, bàn riêng AD1
+test('khách giao diện tối (8 giờ tối): màn chào, thực đơn, bảng chọn món, giỏ, theo dõi đơn — nhãn, tương phản, vùng chạm, dấu focus, không cuộn ngang 320/390 px (F-094, AC-094-04)', async ({
+  request,
+}) => {
+  const admin = { Authorization: `Bearer ${adminToken}` };
+  await request.put('/api/admin/settings', { headers: admin, data: { guestWelcome: true, guestDaypartTheme: true, guestSeasonDecor: true } });
+  const darkTable = await (await request.post('/api/admin/tables', { headers: admin, data: { code: 'AD1' } })).json();
+  const ctx = await browser.newContext(phone);
+  try {
+    const N = await ctx.newPage();
+    N.setDefaultTimeout(15_000); // thao tác hỏng thì báo nhanh — còn thời gian trả cài đặt ở finally (bài sau không bị màn chào chặn)
+    await N.clock.setFixedTime(new Date('2026-11-16T20:00:00+07:00'));
+    await N.goto(`/t/${darkTable.qrToken}`);
+    await expect(N.locator('.c-home .h-tile')).toHaveCount(3);
+    await expect(N.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await check(N, 'khach-toi-man-chao', { narrow: true });
+    await focusVisible(N, 'khach-toi-man-chao');
+    await N.getByRole('link', { name: 'Xem thực đơn – Gọi món' }).click();
+    await expect(N).toHaveURL(/\/menu$/);
+    await check(N, 'khach-toi-menu', { narrow: true });
+    await focusVisible(N, 'khach-toi-menu');
+    // "Bạc xỉu" có chọn size — món luôn còn bán (luồng flow xóa "Cà phê sữa" trước khi a11y chạy)
+    await N.locator('.c-item', { hasText: 'Bạc xỉu' }).first().locator('.c-name-btn').click();
+    await expect(N.locator('.sheet')).toBeVisible();
+    await check(N, 'khach-toi-bang-chon-mon');
+    await N.keyboard.press('Escape');
+    await expect(N.locator('.sheet')).toHaveCount(0);
+    await N.locator('.c-item', { hasText: 'Nước suối' }).first().locator('.add-btn').click();
+    await N.click('#open-cart');
+    await expect(N.locator('.sheet')).toBeVisible();
+    await check(N, 'khach-toi-gio-hang');
+    await N.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(N).toHaveURL(/\/track$/);
+    await expect(N.locator('#actions')).toBeVisible();
+    await check(N, 'khach-toi-theo-doi-don', { narrow: true });
+    await focusVisible(N, 'khach-toi-theo-doi-don');
+  } finally {
+    await ctx.close();
+    await request.put('/api/admin/settings', { headers: admin, data: { guestWelcome: false, guestDaypartTheme: false, guestSeasonDecor: false } });
+    // Dọn nhóm của bàn AD1 (đơn chưa thu) để ca đóng được ở afterAll
+    const tb = (await (await request.get('/api/tables', { headers: admin })).json()).find((x) => x.code === 'AD1');
+    for (const s of tb?.sessions ?? [])
+      await request.post(`/api/sessions/${s.sessionId}/cancel`, { headers: admin, data: { reason: 'Dọn bàn kiểm tra a11y giao diện tối' } });
+  }
+});
+
 test('quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính', async () => {
   await ensureGuestOrder();
   const ctx = await browser.newContext(desk);

@@ -204,6 +204,9 @@ function render(s) {
   const sheetAllCheck = el('input', { type: 'checkbox', name: 'menuSheetAll', id: 'sheet-all', checked: s.menuSheetAll });
   // F-092 (ADR-054): màn chào khi khách quét QR
   const welcomeCheck = el('input', { type: 'checkbox', name: 'guestWelcome', id: 'guest-welcome', checked: s.guestWelcome });
+  // F-094 (ADR-056): màn khách theo giờ (sáng / tối) và trang trí theo mùa
+  const daypartCheck = el('input', { type: 'checkbox', name: 'guestDaypartTheme', id: 'guest-daypart', checked: s.guestDaypartTheme });
+  const seasonCheck = el('input', { type: 'checkbox', name: 'guestSeasonDecor', id: 'guest-season', checked: s.guestSeasonDecor });
   // F-087 (ADR-048 D-212): tự đóng bàn khách quét QR nhưng không gọi món
   const idleClose = el(
     'select',
@@ -289,6 +292,34 @@ function render(s) {
         { class: 'small muted' },
         'Tắt: món không có tùy chọn bấm "+" là vào giỏ ngay (nhanh hơn 1 chạm), muốn ghi chú thì bấm tên món. Món có tùy chọn luôn mở bảng chọn. Điện thoại khách đổi theo khi tải lại menu.',
       ),
+      el(
+        'label',
+        { class: 'check' },
+        daypartCheck,
+        el(
+          'span',
+          {},
+          el('strong', {}, 'Tự đổi sáng / tối theo giờ'),
+          ' — buổi sáng (5–11 giờ) khung giới thiệu có nắng; từ 18 giờ đến 5 giờ sáng màn gọi món chuyển nền tối cho đỡ chói trong quán đèn mờ',
+        ),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Điện thoại khách đang bật chế độ tối thì màn gọi món tối cả ban ngày. Đang mở mà qua 18 giờ là tự chuyển, không cần tải lại. Tắt: luôn nền sáng như trước.',
+      ),
+      el(
+        'label',
+        { class: 'check' },
+        seasonCheck,
+        el(
+          'span',
+          {},
+          el('strong', {}, 'Trang trí theo mùa'),
+          ' — khung giới thiệu ở màn chào đổi màu và hình: Xuân (tháng 1–3) hoa mai, Hạ (4–6) ly đá mát, Thu (7–9) lá vàng, Đông (10–12) ly nóng',
+        ),
+      ),
+      el('p', { class: 'small muted' }, 'Nút, giá và thẻ món giữ màu của quán. Tắt: khung giới thiệu như cũ (ly cà phê).'),
     ),
     card(
       'Bàn trống',
@@ -481,6 +512,8 @@ function render(s) {
                 serveMode: serveMode.value, // F-088
                 menuSheetAll: sheetAllCheck.checked, // F-083
                 guestWelcome: welcomeCheck.checked, // F-092
+                guestDaypartTheme: daypartCheck.checked, // F-094
+                guestSeasonDecor: seasonCheck.checked, // F-094
                 idleCloseMinutes: Number(idleClose.value), // F-087
                 acceptingOrders: accepting,
                 closedMessage: closedMessage.value.trim() || s.closedMessage,

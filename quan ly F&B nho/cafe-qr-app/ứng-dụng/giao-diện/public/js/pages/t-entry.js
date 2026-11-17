@@ -251,6 +251,9 @@ function greeting(now = new Date()) {
   return { text: 'Chào buổi tối', day: false };
 }
 const activeOrders = (s) => s.orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
+// F-094 (ADR-056 D-232): hình ở khung giới thiệu theo mùa — mùa do js/guest-theme.js đặt ở <html data-season> (tắt → ly cà phê như cũ)
+const SEASON_ART = { spring: 'mai', summer: 'cup-soda', autumn: 'leaf', winter: 'coffee' };
+const SEASON_DECOR = { spring: 'mai', summer: 'droplet', autumn: 'leaf', winter: 'snowflake' }; // hình nhỏ không gắn với ngày / đêm
 
 function showHome(menu, first) {
   let session = first;
@@ -272,6 +275,19 @@ function showHome(menu, first) {
       el('strong', {}, session.member?.maskedName || 'Quý khách'),
     );
   };
+  const art = el('div', { class: 'h-hero-art', 'aria-hidden': 'true' });
+  const decor = el('div', { class: 'h-hero-decor', 'aria-hidden': 'true' });
+  const paintSeason = () => {
+    const season = document.documentElement.dataset.season;
+    art.dataset.art = SEASON_ART[season] ?? 'coffee';
+    clear(art, icon(art.dataset.art));
+    clear(decor, ...(season ? [1, 2, 3].map(() => icon(SEASON_DECOR[season])) : []));
+  };
+  // Qua mốc giờ khi đang mở (17:59 → 18:00) hoặc quán đổi cài đặt → lời chào và hình theo mùa vẽ lại (guest-theme.js báo)
+  window.addEventListener('guest-theme', () => {
+    paintGreet();
+    paintSeason();
+  });
   const memberSlot = el('div', { class: 'h-member' });
   const tiles = el('div', { class: 'h-tiles' });
   const ordersSlot = el('div');
@@ -359,7 +375,8 @@ function showHome(menu, first) {
           el('span', { class: 'h-hero-sub' }, serveAtTable ? 'Pha xong, nhân viên mang ra tận bàn' : 'Pha xong, quán mời bạn ra quầy nhận'),
           promo ? el('span', { class: 'h-promo' }, icon('sparkles'), promo.name) : null,
         ),
-        el('div', { class: 'h-hero-art', 'aria-hidden': 'true' }, icon('coffee')),
+        art,
+        decor,
       ),
       greet,
       el(
@@ -383,6 +400,7 @@ function showHome(menu, first) {
     ),
   );
   paintGreet();
+  paintSeason();
   paintTiles();
   memberBox.render();
 }

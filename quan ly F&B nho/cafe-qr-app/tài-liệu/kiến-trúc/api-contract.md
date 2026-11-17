@@ -881,3 +881,8 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `GET /api/menu` (công khai): `shop.address` (`string | null` — địa chỉ ở Cài đặt, in trên hóa đơn); `ui.welcome` (boolean — quán bật "Màn chào khi khách quét QR").
 - `GET / PUT /api/admin/settings`: `guestWelcome` (boolean, mặc định `true`). Quản lý cửa hàng đổi được (`STORE_MGR_SETTINGS`); sai kiểu → `400 VALIDATION_ERROR`.
 - Màn chào gọi lại API sẵn có: `POST /api/sessions/scan`, `GET /api/sessions/{id}`, `POST /api/sessions/{id}/call-staff`; "Gọi thanh toán" sang `/t/{qr}/track?act=pay` (trang tự mở hộp xác nhận rồi gọi `POST /api/sessions/{id}/request-payment`).
+
+## Bổ sung F-094 — giao diện màn khách theo giờ và theo mùa (ADR-056, TASK-115, 16/11/2026)
+
+- `GET /api/shop` (công khai): thêm `guestTheme: { daypart: boolean, season: boolean }` — quán bật "Tự đổi sáng / tối theo giờ" / "Trang trí theo mùa". Trang khách đọc để tô màu (`js/guest-theme.js`).
+- `GET / PUT /api/admin/settings`: `guestDaypartTheme`, `guestSeasonDecor` (boolean, mặc định `true`). Quản lý cửa hàng đổi được (`STORE_MGR_SETTINGS`); sai kiểu → `400 VALIDATION_ERROR`.

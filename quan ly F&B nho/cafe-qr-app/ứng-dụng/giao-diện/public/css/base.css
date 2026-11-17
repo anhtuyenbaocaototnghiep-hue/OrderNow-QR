@@ -110,6 +110,7 @@
   --c-primary: #7a4527; /* nâu rang: nút chính, nút "+", giá món, nhóm đang chọn, link — chữ trắng 7,7:1 */
   --c-primary-600: #5f341c;
   --c-primary-50: #f6eee6; /* nền nhạt có chữ nâu rang (nhãn "Bán chạy", dòng vừa sửa) */
+  --c-on-primary: #fff; /* chữ / biểu tượng trên nền màu chính; giao diện tối của màn khách đổi thành espresso (ADR-056 D-231) */
   --c-accent: #a07444; /* đồng — điểm nhấn nhỏ (vạch nhóm đang xem, chấm, biểu đồ), ≥ 3:1 trên nền; không làm chữ nhỏ */
   --c-accent-600: #8c5220; /* nền có chữ trắng (menu đang chọn ở quầy / quản lý) — 6.28:1 */
   --c-accent-100: #f3dcb8; /* nền có chữ mực (bôi chọn chữ, dấu hiệu quán) */
@@ -319,7 +320,7 @@ img {
 .btn-primary {
   background: var(--c-primary);
   border-color: var(--c-primary);
-  color: #fff;
+  color: var(--c-on-primary);
 }
 .btn-primary:hover {
   background: var(--c-primary-600);
@@ -516,7 +517,7 @@ textarea.input {
 .chip[aria-pressed='true'] {
   background: var(--c-primary);
   border-color: var(--c-primary);
-  color: #fff;
+  color: var(--c-on-primary);
 }
 
 .alert {

@@ -142,7 +142,7 @@ body.customer .c-tabs .chip:hover {
 body.customer .c-tabs .chip.active {
   background: var(--c-primary);
   border-color: var(--c-primary);
-  color: #fff;
+  color: var(--c-on-primary);
   font-weight: 600;
 }
 .c-menu {
@@ -234,7 +234,7 @@ body.customer .c-tabs .chip.active {
   border-radius: 50%;
   border: 0;
   background: var(--c-primary);
-  color: #fff;
+  color: var(--c-on-primary);
   line-height: 1;
   cursor: pointer;
   flex: none;
@@ -378,7 +378,7 @@ body.customer .c-tabs .chip.active {
   border-radius: 6px;
   padding: 0.1rem 0.5rem;
   background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  color: var(--c-on-primary);
   font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -839,7 +839,7 @@ body.customer .c-actions {
   height: 2.5rem;
   border-radius: 50%;
   background: var(--c-primary);
-  color: #fff;
+  color: var(--c-on-primary);
 }
 .member-ic .ic {
   width: 1.25rem;
@@ -856,7 +856,7 @@ body.customer .c-actions {
   padding: 0 0.6rem 0 0.9rem;
   border-radius: 999px;
   background: var(--c-primary);
-  color: #fff;
+  color: var(--c-on-primary);
   font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
@@ -1438,6 +1438,12 @@ body.customer .alert.info {
   margin: 0.15rem 0 0;
 }
 .h-hero {
+  /* Màu khung cố định (không theo token): giao diện tối đổi --c-primary sang caramel sáng, còn khung vẫn phải đậm để chữ trắng đọc rõ.
+     Mùa (F-094, ADR-056 D-232) đổi bộ màu này ở khối F-094 cuối tệp */
+  --hero-a: #24170f;
+  --hero-b: #7a4527;
+  --hero-c: #8c5220;
+  --hero-glow: rgb(243 220 184 / 0.28);
   position: relative;
   display: flex;
   align-items: center;
@@ -1447,8 +1453,8 @@ body.customer .alert.info {
   overflow: hidden;
   border-radius: var(--radius-lg);
   background:
-    radial-gradient(circle at 92% 18%, rgb(243 220 184 / 0.28) 0 22%, transparent 23%),
-    linear-gradient(135deg, var(--c-espresso) 0%, var(--c-primary) 72%, var(--c-accent-600) 100%);
+    radial-gradient(circle at 92% 18%, var(--hero-glow) 0 22%, transparent 23%),
+    linear-gradient(135deg, var(--hero-a) 0%, var(--hero-b) 72%, var(--hero-c) 100%);
   color: #fff;
 }
 .h-hero-text {
@@ -1623,8 +1629,8 @@ body.customer .alert.info {
   min-height: 76px;
   padding: 0.9rem 1.1rem;
   border-radius: var(--radius-lg);
-  background: linear-gradient(120deg, var(--c-primary) 0%, var(--c-accent-600) 100%);
-  color: #fff;
+  background: linear-gradient(120deg, var(--c-primary) 0%, var(--c-cta-end, var(--c-accent-600)) 100%);
+  color: var(--c-on-primary);
   font-size: 1.1rem;
   font-weight: 700;
   line-height: 1.25;
@@ -1678,11 +1684,217 @@ body.customer .alert.info {
     transform: none;
   }
 }
-/* Thực đơn: tên quán ở đầu trang dẫn về màn chào (khi quán bật màn chào) */
+/* Thực đơn: tên quán ở đầu trang dẫn về màn chào (khi quán bật màn chào). Đệm dọc 2 px: vùng chạm ≥ 24 px (WCAG 2.5.8 — dòng chữ
+   chỉ cao 21 px) mà không đổi chiều cao đầu trang, tên dài vẫn cắt bằng "…" */
 .c-shop-link {
+  padding-block: 2px;
   color: inherit;
   text-decoration: none;
 }
 .c-shop-link:hover {
   text-decoration: underline;
+}
+
+/* ---------- F-094 (ADR-056): màn khách theo giờ (sáng / tối) và trang trí theo mùa ----------
+   Thuộc tính trên <html> do js/guest-theme.js đặt trước khi trang vẽ — chỉ ba trang khách t/index, t/menu, t/track
+   (quầy dùng chung customer.css không có các thuộc tính này nên không đổi). Tỷ lệ tương phản ghi ở design-system.md. */
+
+/* Giao diện tối (D-231): 18:00–4:59 hoặc điện thoại bật chế độ tối — đổi token, giữ bố cục */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-bg: #16100c;
+  --c-surface: #221913;
+  --c-surface-2: #2d221a;
+  --c-border: #3b2e24;
+  --c-input-border: #5a4838;
+  --c-text: #f2e8dc; /* 14,3:1 trên thẻ */
+  --c-muted: #bcab98; /* 7,7:1 trên thẻ */
+  --c-primary: #e0a473; /* caramel sáng: giá, link, nền nút — 8,0:1 trên thẻ */
+  --c-primary-600: #ecb98f;
+  --c-primary-50: #3a2719;
+  --c-on-primary: #241710; /* chữ / biểu tượng trên nền caramel — 8,1:1 */
+  --c-cta-end: #c98a55; /* cuối dải màu nút "Xem thực đơn – Gọi món" — chữ espresso 6,0:1 */
+  --c-focus: #ffd38a;
+  --c-success: #86cc9e;
+  --c-success-50: #1c3224;
+  --c-warning: #d9a14a;
+  --c-warning-text: #f0c47e;
+  --c-warning-50: #3a2b13;
+  --c-danger: #ff9a8c;
+  --c-danger-50: #3e1b17;
+  --c-info: #93bde6;
+  --c-info-50: #172739;
+  --c-phone-surround: #0d0907; /* nền hai bên cột trên màn rộng (D-230) */
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px -6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 24px 60px -18px rgba(0, 0, 0, 0.7);
+}
+:root[data-theme='dark'] body.customer {
+  transition: background-color var(--dur-3) var(--ease-out); /* qua 18:00 khi đang mở: đổi nền êm */
+}
+:root[data-theme='dark'] .c-header {
+  box-shadow: inset 0 -1px 0 var(--c-border); /* đầu trang espresso tách khỏi nền tối */
+}
+:root[data-theme='dark'] .c-cartbar {
+  background: linear-gradient(rgb(22 16 12 / 0), var(--c-bg) 40%);
+}
+/* Viền màu nhạt cố định của ban ngày → viền tối cùng sắc */
+:root[data-theme='dark'] .alert.warning,
+:root[data-theme='dark'] .banner.closed {
+  border-color: #5c4520;
+  color: var(--c-warning-text);
+}
+:root[data-theme='dark'] .alert.danger {
+  border-color: #6b2f28;
+}
+:root[data-theme='dark'] .alert.info {
+  border-color: #2e4a66;
+}
+:root[data-theme='dark'] .alert.success,
+:root[data-theme='dark'] .order-card.completed,
+:root[data-theme='dark'] .member-box.on {
+  border-color: #2f5a3d;
+}
+:root[data-theme='dark'] .member-box.invite {
+  border-color: #5a4030;
+}
+:root[data-theme='dark'] .banner.offline {
+  background: #8f2a20; /* chữ trắng 8,3:1 */
+}
+:root[data-theme='dark'] .skeleton {
+  background-image: linear-gradient(90deg, #241b15 25%, #2e241c 50%, #241b15 75%);
+}
+:root[data-theme='dark'] :where(.table tbody tr:hover) > td {
+  background: var(--c-surface-2);
+}
+/* Thông báo: ban ngày nền mực chữ trắng — ban đêm nền nâu sẫm chữ kem (10,9:1); lỗi / cảnh báo giữ nền màu, chữ trắng */
+:root[data-theme='dark'] .toast {
+  background: #3a2d23;
+  color: var(--c-text);
+  box-shadow:
+    inset 0 0 0 1px #4d3d30,
+    var(--shadow-lg);
+}
+:root[data-theme='dark'] .toast.error {
+  background: #8f2a20;
+  color: #fff;
+}
+:root[data-theme='dark'] .toast.warning {
+  background: #7a5212;
+  color: #fff;
+}
+:root[data-theme='dark'] .h-greet-ic {
+  background: var(--c-surface-2);
+}
+:root[data-theme='dark'] .h-hero {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07); /* khung tách khỏi nền tối */
+}
+
+/* Khung giới thiệu ở màn chào: nắng buổi sáng, chấm sao buổi tối (D-231) — lớp trang trí nằm dưới chữ */
+.h-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.h-hero > :not(.h-hero-decor) {
+  position: relative;
+}
+:root[data-daypart='morning'] .h-greet-ic {
+  background: #f3c35b;
+  color: #4a2c06;
+}
+/* Sao chỉ ở dải lề trên / dưới và mép phải — không rơi cạnh chữ (trông như dấu chấm câu) */
+:root[data-daypart='night'] .h-hero::before {
+  background:
+    radial-gradient(circle at 5% 6%, rgb(255 255 255 / 0.7) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 24% 4%, rgb(255 255 255 / 0.5) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 47% 7%, rgb(255 255 255 / 0.65) 0 1.2px, transparent 1.8px),
+    radial-gradient(circle at 63% 4%, rgb(255 255 255 / 0.45) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 15% 95%, rgb(255 255 255 / 0.45) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 41% 96%, rgb(255 255 255 / 0.55) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 62% 94%, rgb(255 255 255 / 0.4) 0 1px, transparent 1.6px),
+    radial-gradient(circle at 98% 52%, rgb(255 255 255 / 0.6) 0 1.2px, transparent 1.8px);
+}
+
+/* Theo mùa (D-232) — chỉ khung giới thiệu: màu nền, hình lớn, hình nhỏ mờ. Chữ trắng ≥ 5,2:1 trên mọi điểm màu */
+:root[data-season='spring'] .h-hero {
+  --hero-a: #4a1010;
+  --hero-b: #8f2a1c;
+  --hero-c: #a8471c;
+  --hero-glow: rgb(246 201 69 / 0.22);
+  --hero-art: #f6c945; /* hoa mai vàng */
+}
+:root[data-season='summer'] .h-hero {
+  --hero-a: #0b302c;
+  --hero-b: #145c50;
+  --hero-c: #1f7a62;
+  --hero-glow: rgb(190 240 220 / 0.2);
+  --hero-art: #bff0dc;
+}
+:root[data-season='autumn'] .h-hero {
+  --hero-a: #3d1d0b;
+  --hero-b: #7a3a12;
+  --hero-c: #a3561c;
+  --hero-glow: rgb(250 200 120 / 0.24);
+  --hero-art: #f6c06a;
+}
+:root[data-season='winter'] .h-hero {
+  --hero-a: #111a2a;
+  --hero-b: #2b3d5a;
+  --hero-c: #3f5878;
+  --hero-glow: rgb(200 220 255 / 0.2);
+  --hero-art: #dbe7ff;
+}
+:root[data-season] .h-hero-art .ic {
+  color: var(--hero-art, var(--c-accent-100));
+}
+/* Buổi sáng: mặt trời vàng ló ở góc phải trên với các vòng nắng (nét phẳng như vầng tròn của khung) — không pha vàng lên nền
+   của mùa (vàng trên xanh đêm thành màu rêu đục); hình nhỏ thứ nhất nhường chỗ cho mặt trời */
+:root[data-daypart='morning'] .h-hero::before {
+  background: radial-gradient(
+    circle at calc(100% - 4px) 4px,
+    #ffd27a 0 26px,
+    rgb(255 214 130 / 0.32) 27px 50px,
+    rgb(255 214 130 / 0.12) 51px 76px,
+    transparent 77px
+  );
+}
+:root[data-daypart='morning'] .h-hero-decor .ic:nth-child(1) {
+  display: none;
+}
+/* Hình nhỏ mờ: neo theo mép phải (vùng hình lớn), không nằm dưới chữ ở mọi bề ngang */
+.h-hero-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--hero-art, var(--c-accent-100));
+}
+:root:not([data-season]) .h-hero-decor {
+  display: none;
+}
+.h-hero-decor .ic {
+  position: absolute;
+  margin: 0;
+  opacity: 0.5;
+  stroke-width: 1.6;
+}
+.h-hero-decor .ic:nth-child(1) {
+  top: 10px;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+}
+.h-hero-decor .ic:nth-child(2) {
+  bottom: 12px;
+  right: 16px;
+  width: 14px;
+  height: 14px;
+  opacity: 0.4;
+}
+.h-hero-decor .ic:nth-child(3) {
+  top: 18px;
+  right: 96px;
+  width: 13px;
+  height: 13px;
+  opacity: 0.35;
 }
