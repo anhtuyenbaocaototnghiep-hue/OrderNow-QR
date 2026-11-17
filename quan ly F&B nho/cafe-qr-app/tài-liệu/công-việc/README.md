@@ -135,6 +135,7 @@
 | [TASK-117](TASK-117.md) | Thêm tài khoản chủ quán (F-096): "+ Thêm tài khoản", cảnh báo toàn quyền + xác nhận mật khẩu, báo các chủ quán; ADR-058 | FEATURE-096 | TASK-116 | Agent | — | chủ dự án 16/11 | READY_FOR_REVIEW |
 | [TASK-118](TASK-118.md) | Quét QR bàn có nhóm → tự vào nhóm của bàn (F-097): bỏ "Gộp chung / Tạo đơn cá nhân", chọn nhóm khi bàn ≥ 2 nhóm, trả riêng bằng Chia bill; ADR-059 | FEATURE-097 | TASK-117 | Agent | — | chủ dự án 17/11 | READY_FOR_REVIEW |
 | [TASK-119](TASK-119.md) | Màu màn khách chỉ theo giờ của quán (bỏ "máy bật chế độ tối thì tối cả ngày"); ADR-060 | FEATURE-094 | TASK-118 | Agent | — | chủ dự án 17/11 | READY_FOR_REVIEW |
+| [TASK-120](TASK-120.md) | Lương: không tự duyệt cho mình, duyệt lại khi sửa giờ, giữ lịch sử lương; ADR-061 | FEATURE-098 | TASK-119 | Agent | — | chủ dự án 17/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

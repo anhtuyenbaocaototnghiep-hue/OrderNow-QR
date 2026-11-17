@@ -18,7 +18,7 @@
 1. Hồ sơ lương: theo giờ (> 0) hoặc theo tháng (> 0); phụ cấp tối mỗi giờ từ `NightStart` tới 06:00; hệ số lễ 1–5 (mặc định 3); chuyên cần khi cả tháng không trễ, không vắng; số tài khoản phải có ngân hàng trong danh sách.
 2. Dòng lương = lương (giờ được tính × lương giờ, hoặc lương tháng) + phụ cấp tối + phụ trội lễ (giờ lễ × lương giờ quy đổi × (hệ số − 1)) + chuyên cần + cộng / trừ − tạm ứng đã duyệt. Làm tròn đồng từng khoản.
 3. Việc chờ (EXTRA, OFF_SCHEDULE, AUTO_CLOSED, DISPUTED, EMPLOYEE_DISPUTE, OPEN, chưa có hồ sơ) → `409 PAYROLL_PENDING` khi chốt; tháng chưa hết → `409 MONTH_NOT_ENDED`.
-4. Đã chốt: sửa giờ công / quyết định / cộng trừ / báo sai của tháng → `409 PAYROLL_LOCKED`; mở lại cần lý do; chốt lại giữ đã trả / đã xem.
+4. Đã chốt: sửa giờ công / quyết định / cộng trừ / báo sai của tháng → `409 PAYROLL_LOCKED`; mở lại cần lý do; chốt lại giữ đã trả; "Đã xem" bỏ nếu thực nhận đổi ([ADR-061](../quyết-định/ADR-061-luong-khong-tu-duyet-cho-minh.md) D-244).
 5. Tạm ứng (`SALARY_ADVANCE`): thiếu người nhận → 400; luôn chờ duyệt; người nhận không tự duyệt (`403 SELF_APPROVAL`, trừ quản lý).
 6. VietQR trả lương: thiếu ngân hàng / số tài khoản → `409 NO_BANK_ACCOUNT`; thực nhận ≤ 0 → `409 NOTHING_TO_PAY`; đánh dấu đã trả một lần (`409 PAY_NOT_ALLOWED`).
 7. Thưởng chung một ca chia theo phút được tính lương trong ca; tổng chia đúng số tiền.
@@ -49,7 +49,7 @@
 - AC-073-02: Hồ sơ lương kiểm số liệu và ngân hàng; ngày lễ; nhân viên / trưởng ca 403 với bảng lương và hồ sơ.
 - AC-073-03: Bảng lương nháp đúng từng đồng theo lịch / sớm / trễ / làm thêm / ngoài lịch / vắng / lễ / đêm / cộng trừ; còn việc chờ → 409 PAYROLL_PENDING; tháng chưa hết → 409; quyết định chỉ quản lý.
 - AC-073-04: Nhân viên xem giờ công của mình (giờ được tính, lịch, quyết định, ai sửa vì sao, lương tạm tính), không thấy của người khác; báo sai → việc chờ của quản lý; gửi trùng 409; quản lý xử lý.
-- AC-073-05: Chốt → lưu dòng, khóa sửa giờ công / quyết định / cộng trừ / báo sai (409 PAYROLL_LOCKED); "Đã xem" phiếu lương; mở lại cần lý do; chốt lại giữ đã trả / đã xem.
+- AC-073-05: Chốt → lưu dòng, khóa sửa giờ công / quyết định / cộng trừ / báo sai (409 PAYROLL_LOCKED); "Đã xem" phiếu lương; mở lại cần lý do; chốt lại giữ đã trả; "Đã xem" bỏ nếu thực nhận đổi ([ADR-061](../quyết-định/ADR-061-luong-khong-tu-duyet-cho-minh.md) D-244).
 - AC-073-06: VietQR trả lương: thiếu tài khoản 409; mã đúng ngân hàng, số tài khoản, số tiền, nội dung, CRC; đánh dấu đã chuyển khoản.
 - AC-073-07: Tạm ứng: thiếu người nhận 400; luôn chờ duyệt; người nhận tự duyệt 403 SELF_APPROVAL; người khác duyệt → trừ vào lương tháng.
 - AC-073-08: Thưởng chung chia theo phút trong ca; báo cáo tuần (lịch vs giờ được tính, sửa tay theo ngày sửa, % lương / doanh thu theo ca); Lãi/lỗ có "Lương nhân viên", tạm ứng không là chi phí.

@@ -238,6 +238,7 @@ Cột: **US** · **Ưu tiên** (`Must` / `Should` / `Could`) · **Actor** · **U
 | US-095-1 | Should | ACT-ADMIN, ACT-GUEST, ACT-STAFF | Là chủ quán, tôi muốn tải logo của quán lên một lần để khách thấy logo khi quét QR, trên thực đơn, hóa đơn và thẻ QR, nhân viên thấy trên màn quầy — quán trông chuyên nghiệp và dễ nhận ra. | AC-095-01, AC-095-02, AC-095-03 | — | UC-17 | MOD-ADMIN | SCR-33, SCR-01, SCR-02 | F-095 | DONE |
 | US-096-1 | Should | ACT-ADMIN | Là chủ quán, tôi muốn tạo thêm tài khoản chủ quán (toàn quyền) cho người cùng làm chủ, có bước xác nhận bằng mật khẩu của tôi và báo cho các chủ quán khác, để chia việc quản lý mà vẫn an toàn. | AC-096-01, AC-096-02 | — | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-20, SCR-47 | F-096 | DONE |
 | US-097-1 | Should | ACT-GUEST, ACT-MEMBER | Là khách, khi quét QR ở bàn bạn bè đã gọi món, tôi muốn vào thẳng nhóm của bàn mà không phải chọn "gộp" hay "cá nhân", và nếu cần trả riêng thì chia bill theo người, để gọi món nhanh và không nhầm hóa đơn. | AC-097-01, AC-097-02, AC-097-03, AC-097-04 | BR-008 | UC-01 | MOD-ORDER | SCR-01, SCR-05 | F-097 | DONE |
+| US-098-1 | Should | ACT-ADMIN, ACT-STORE | Là chủ quán, tôi muốn người được giao quyền Lương không tự duyệt / tự tăng lương cho chính mình, giờ đã duyệt mà bị sửa thì phải duyệt lại, và mọi lần xóa / chốt lại đều còn dấu vết, để giao việc lương mà không sợ bị gian lận. | AC-098-01, AC-098-02, AC-098-03, AC-098-04, AC-098-05, AC-098-06 | BR-110, BR-127 | UC-12 | MOD-FINANCE | SCR-51 | F-098 | DONE |
 
 ## 4. Kiểm tra AC / BR (bước 05)
 

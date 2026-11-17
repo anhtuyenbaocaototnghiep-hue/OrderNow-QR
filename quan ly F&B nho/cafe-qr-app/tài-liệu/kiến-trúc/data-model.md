@@ -1364,3 +1364,10 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Migration | Thay đổi |
 | --- | --- |
 | `0059_so_dien_thoai_tai_khoan.sql` | `Users.Phone VARCHAR(15) NULL` — SĐT liên lạc (không bắt buộc, không duy nhất), dạng chuẩn `+84` + 9 chữ số như `Members.Phone`; `CK_Users_Phone` (NULL hoặc đúng dạng). Chỉ thêm cột. Không nằm trong cột chung của phiên đăng nhập (`usersRepo` `COLS`) — chỉ danh sách / tạo / sửa tài khoản đọc. |
+
+## Lương không tự duyệt cho mình, lịch sử lương (FEATURE-098, ADR-061 D-241…D-244, 17/11/2026)
+
+| Migration | Thay đổi |
+| --- | --- |
+| `0060_luong_khong_tu_duyet.sql` | `PayrollAdjustments.DeletedAt DATETIME2(0) NULL`, `DeletedBy INT NULL → Users` — xóa khoản cộng / trừ = ẩn; `TR_PayrollAdjustments_NoDelete` (50250 `HISTORY_NO_DELETE`). `PayrollLines.PaidAmount DECIMAL(12,0) NULL` — số tiền lúc đánh dấu đã trả (dòng đã trả trước đó điền bằng `NetPay`). Bảng `PayrollRunVersions` (`VersionId`, `Month`, `LockedAt`, `LockedBy`, `ReopenedAt`, `ReopenedBy`, `ReopenReason`, `SupersededAt`, `SupersededBy`, `TotalNet`, `LinesJson`) — bản chốt trước mỗi lần chốt lại; `TR_PayrollRunVersions_NoDelete`. `CK_Alerts_Kind` thêm `PAYROLL_CHANGE`. |
+| Ghi | `payrollRepo.lock` (một transaction): đã có dòng cũ → chèn `PayrollRunVersions` (thông tin `PayrollRuns` + dòng cũ) rồi thay dòng; `AckAt` giữ khi `NetPay` không đổi, bỏ khi đổi; `PaidAt` / `PaidBy` / `PaidMethod` / `PaidAmount` giữ. `markPaid` ghi `PaidAmount = NetPay`. `removeAdjustment` = `UPDATE … SET DeletedAt, DeletedBy`. |

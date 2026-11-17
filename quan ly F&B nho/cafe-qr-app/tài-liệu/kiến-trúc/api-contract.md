@@ -674,11 +674,11 @@ Chi tiết: [FEATURE-072](../chức-năng/FEATURE-072.md), [FEATURE-073](../ch�
 | `GET /api/admin/attendance-settings` | ADMIN | `{ attendanceMode, moneyPin }` |
 | `PUT /api/admin/attendance-settings` | ADMIN | `{ attendanceMode: KIOSK | LOGIN, moneyPin }` |
 | `POST /api/admin/users/{id}/pin-reset` | ADMIN | `{ hasPin: false }` |
-| `GET /api/admin/payroll` | ADMIN | `?month=` → `{ month, status, run, monthEnded, lines, pending: [{ code, label, attId, user }], totals, adjustments }` |
+| `GET /api/admin/payroll` | ADMIN | `?month=` → `{ month, status, run, monthEnded, lines, pending: [{ code, label, attId, user }], totals, adjustments, deletedAdjustments, versions }` — dòng đã chốt có `paidAmount`; việc chờ `ADVANCE_PENDING` có `cashTxnId`, `amount` (ADR-061) |
 | `POST /api/admin/payroll/{month}/lock` | ADMIN | Chốt; `409 PAYROLL_PENDING` / `MONTH_NOT_ENDED` / `PAYROLL_LOCKED` |
 | `POST /api/admin/payroll/{month}/reopen` | ADMIN | `{ reason }`; chưa chốt `409 PAYROLL_NOT_LOCKED` |
 | `POST /api/admin/payroll/{month}/adjustments` | ADMIN | `{ userId, amount (≠ 0), reason }` → `201 { adjId }` |
-| `DELETE /api/admin/payroll/adjustments/{id}` | ADMIN | Xóa khoản (tháng chưa chốt) |
+| `DELETE /api/admin/payroll/adjustments/{id}` | ADMIN | Ẩn khoản (tháng chưa chốt) — ghi người xóa, lúc xóa; không xóa cứng (ADR-061 D-244) |
 | `POST /api/admin/payroll/team-bonus` | ADMIN | `{ shiftId, amount, reason }` → `201 { month, shares }` |
 | `GET /api/admin/payroll/{month}/lines/{userId}/qr` | ADMIN | `{ amount, bankName, bankAccount, accountName, content, payload, qr }`; `409 NO_BANK_ACCOUNT` / `NOTHING_TO_PAY` |
 | `POST /api/admin/payroll/{month}/lines/{userId}/paid` | ADMIN | `{ method: CASH | TRANSFER }`; `409 PAY_NOT_ALLOWED` |
@@ -697,6 +697,9 @@ Chi tiết: [FEATURE-072](../chức-năng/FEATURE-072.md), [FEATURE-073](../ch�
 - `POST /api/shifts/{id}/close`: thêm `attendance: { clockOut: [attId], present: [attId], absent: [attId] }` → kết quả thêm `attendance: { closed, checked, disputed }`.
 - `POST /api/cash-transactions`: thêm `employeeId` (bắt buộc với "Lương tạm ứng"); khoản trả về thêm `employee`, `category.systemCode`.
 - `PUT` / `POST /api/attendance`: tháng đã chốt lương → `409 PAYROLL_LOCKED`.
+- ADR-061 D-241: người không phải chủ quán làm cho **chính mình** → `403 PAYROLL_SELF` ở `PUT /api/admin/pay-profiles/{id}`, `POST /api/admin/payroll/{month}/adjustments`, `DELETE /api/admin/payroll/adjustments/{id}`, `POST /api/admin/payroll/team-bonus` (ca có mình), `POST /api/admin/payroll/{month}/lines/{userId}/paid`, `POST /api/admin/attendance/{id}/decision`, `POST /api/admin/attendance-disputes/{id}/resolve`, `POST /api/admin/missed-punches/{id}/approve` / `reject`, `PUT` / `DELETE /api/admin/holidays/{date}` (ngày mình có chấm công).
+- ADR-061 D-242: cảnh báo `PAYROLL_CHANGE` (chỉ chủ quán thấy) khi người không phải chủ quán đổi lương / tài khoản ngân hàng của người khác hoặc mở lại bảng lương đã chốt.
+- ADR-061 D-243: `PUT /api/attendance/{id}` do người không phải chủ quán đổi giờ vào / ra của lần chấm công có quyết định `ACTUAL` / `SCHEDULE` → bỏ quyết định (`decision: null`, lại chờ duyệt); `NONE` giữ.
 - `GET /api/admin/reports/pnl`: thêm `laborCosts`, `payrollActive`; `operatingProfit` trừ `laborCosts`.
 
 ## Bổ sung F-072 — quên PIN, nhắc và báo quên chấm công (ADR-031, TASK-090, 06/11/2026)
