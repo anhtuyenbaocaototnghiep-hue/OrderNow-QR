@@ -241,3 +241,9 @@ Tải / bỏ logo (`PUT` / `DELETE /api/admin/settings/logo`): **chỉ chủ qu�
 ## 4.15. Bổ sung F-096 — thêm tài khoản chủ quán (ADR-058, 16/11/2026)
 
 Nhiều tài khoản **Chủ quán** (toàn quyền) được phép. Chỉ chủ quán tạo / sửa / xóa tài khoản (như cũ; người được cấp quyền khác chỉ xem danh sách). Tạo tài khoản Chủ quán hoặc nâng ai đó thành Chủ quán phải nhập đúng mật khẩu của chính mình (sai 5 lần → khóa tạm 15 phút); mọi chủ quán nhận cảnh báo. Luôn còn ít nhất một chủ quán đang hoạt động (LAST_ADMIN); không tự đổi vai trò / khóa / xóa mình; chủ quán không đăng nhập máy quầy (F-084). Test: `owner-accounts.test.js` (AC-096-01).
+
+## 4.16. Bổ sung F-100 — tự xác nhận chuyển khoản (ADR-063, 17/11/2026)
+
+- Bật / tắt "Tự xác nhận khi tiền vào", xem trạng thái hỏi SePay, "Giả lập tiền vào": **chỉ chủ quán** (`autoConfirm` không có trong `STORE_MGR_SETTINGS`; `/api/admin/bank-feed*` → `403 OWNER_ONLY` với người khác). Khóa SePay chỉ ở `.env`.
+- Dải "Tiền vào chưa khớp", "Ghép & thu", "Đã xử lý": người có vị trí **Thu ngân** (như thu tiền — `requirePosition('CASHIER')`); chuông / đọc to chỉ ở máy người thu tiền.
+- Máy tự ghi đã thu (người ghi "Tự động (ngân hàng)") chỉ khi đủ 4 điều kiện ADR-063 D-250. Khách vẫn **không** có API nào đổi trạng thái thanh toán. Test: `bank-feed.test.js` (AC-100-01, AC-100-04).

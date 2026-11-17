@@ -645,3 +645,9 @@ flowchart LR
 - **SCR-14 hộp Thu tiền:** khách chọn chuyển khoản → "Chuyển khoản" chọn sẵn; chọn "Chuyển khoản" → mã QR đúng số phải thu + nội dung, nút "Phóng to cho khách quét".
 - **SCR-13 Bán mang đi:** chọn "Chuyển khoản" → mã QR đúng số phải thu.
 - **SCR-12 phiếu tạm tính:** "QUÉT ĐỂ CHUYỂN KHOẢN" + mã + ngân hàng, số, tên chủ, nội dung.
+
+## TASK-123 — Tự xác nhận chuyển khoản (SePay) — SCR-05, SCR-10, SCR-33 (F-100, ADR-063, 17/11/2026)
+
+- **SCR-33 Cài đặt → "Nhận chuyển khoản (VietQR)"** (chỉ chủ quán): ô tích "Tự xác nhận khi tiền vào (SePay)"; dòng trạng thái (chưa có khóa SePay / đang theo dõi — lần hỏi cuối / lỗi SePay) + số khoản chưa khớp; nút "Giả lập tiền vào" (hộp: số tiền, nội dung → kết quả "Đã tự thu cho Bàn …" / "Chưa khớp: …").
+- **SCR-10 quầy:** tiền vào khớp bàn → chuông + đọc to "Bàn … đã chuyển khoản … đồng", thông báo "đã tự thu", bàn rời dải Gọi thanh toán. Dải **"Tiền vào chưa khớp"** (dưới dải Gọi thanh toán; chỉ người thu tiền thấy): mỗi khoản một thẻ (số tiền, lý do, thời gian) — bấm thẻ → hộp: nội dung chuyển khoản, lý do, "Ghép vào bàn" (chọn bàn → "Ghép & thu"), hoặc chọn nhanh "Đã thu ở hộp Thu tiền" / "Đã ghi bán mang đi" / "Đã trả lại khách" / "Không phải tiền của quán" (hoặc tự gõ) → "Đã xử lý".
+- **SCR-05 khung mã QR:** quán đang tự xác nhận → "Giữ nguyên số tiền và nội dung — quán tự xác nhận khi tiền vào, màn này tự chuyển sang Đã thanh toán".

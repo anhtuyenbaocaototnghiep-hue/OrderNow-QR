@@ -11,6 +11,7 @@ Tài liệu chạy app: trên máy phát triển và trên máy chạy thật c�
 | [backup-restore.md](backup-restore.md) | Thiết lập sao lưu, diễn tập và khôi phục, nhật ký diễn tập |
 | [monitoring.md](monitoring.md) | Máy tự kiểm 15 phút / lần, việc xem đầu ngày, việc hằng tháng |
 | [incident-runbook.md](incident-runbook.md) | Khi có sự cố: mức độ, người trực, bán bằng giấy, kịch bản S1…S11 |
+| [tu-xac-nhan-chuyen-khoan.md](tu-xac-nhan-chuyen-khoan.md) | Đăng ký SePay, tạo khóa API, bật tự xác nhận chuyển khoản, xử lý trục trặc (F-100) |
 | [agent-prompts.md](agent-prompts.md) | Giao việc cho agent |
 
 **Lệnh vận hành** (máy chạy thật — đọc `.env` như app):

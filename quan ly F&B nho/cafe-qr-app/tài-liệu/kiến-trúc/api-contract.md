@@ -910,3 +910,14 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `POST /api/payments/transfer-qr` (thu ngân) `{ amount, sessionId?, part? }` → như trên; không `sessionId` → nội dung "CF MANG DI <giờ>".
 - `GET /api/sessions/{id}/receipt?mode=provisional`: thêm `transfer: { qr, amount, content, bankName, kind, number, holder } | null`.
 - Ghi đã trả: không đổi — `POST /api/sessions/{id}/settle` `{ method: "TRANSFER" }` của thu ngân (ADR-019).
+
+## Bổ sung F-100 — tự xác nhận chuyển khoản qua SePay (ADR-063, TASK-123, 17/11/2026)
+
+- `PUT /api/admin/settings` (chỉ chủ quán — quản lý cửa hàng `403 OWNER_ONLY`): thêm `autoConfirm` (bool). Bật (từ tắt) → máy chủ ghi `autoConfirmSince` = lúc bật, xóa `sepaySinceId` (không xét tiền vào trước lúc bật). `GET /api/admin/settings` trả thêm `autoConfirm`, `autoConfirmSince`, `sepaySinceId` (hai trường sau máy chủ ghi, route không nhận).
+- `GET /api/admin/bank-feed` (chỉ chủ quán) → `{ configured, enabled, lastSyncAt, lastError, unmatched, skipped }` — `configured`: `.env` có `SEPAY_API_TOKEN`; `skipped`: số khoản không có mã của quán đã bỏ qua từ lúc chạy app.
+- `POST /api/admin/bank-feed/simulate` (chỉ chủ quán) `{ amount (> 0), content (1–200) }` → khoản tiền vào giả (nguồn `SIMULATED`) chạy y như tiền vào thật: trả dòng tiền vào (`status` `MATCHED` | `UNMATCHED` | `HANDLED`) hoặc `{ status: "SKIPPED", note }` khi nội dung không có mã của quán; chưa bật → `409 AUTO_CONFIRM_OFF`.
+- `GET /api/bank-transactions?status=UNMATCHED|MATCHED|HANDLED|ALL` (thu ngân; mặc định `UNMATCHED`) → khoản tiền vào 14 ngày gần nhất, mới trước: `{ bankTxnId, provider, amount, content, transactionAt, receivedAt, status, sessionId, table: { code, name } | null, paymentId, note, handledBy (tên), handledAt }`.
+- `POST /api/bank-transactions/{id}/match` (thu ngân) `{ sessionId }` → số phải thu của bàn phải bằng số tiền vào (lệch → `409 AMOUNT_MISMATCH` kèm `amountDue`, `amount`) → thu chuyển khoản (`settle`, người ghi là thu ngân) → dòng `MATCHED`. Khoản đã xử lý → `409 BANK_TXN_HANDLED`; không có → `404 BANK_TXN_NOT_FOUND`; lỗi thu tiền (chưa mở ca, còn đơn chưa tiếp nhận…) như `settle`.
+- `POST /api/bank-transactions/{id}/resolve` (thu ngân) `{ note }` → `HANDLED`; ghi chú dưới 3 ký tự → `400 NOTE_REQUIRED`; đã xử lý → `409 BANK_TXN_HANDLED`.
+- `GET /api/sessions/{id}/transfer`, `POST /api/payments/transfer-qr`: thêm `auto` (bool) — quán bật tự xác nhận và có khóa SePay.
+- Lượt thu do máy tự ghi: như `settle` `{ method: "TRANSFER" }`, người ghi là tài khoản hệ thống "Tự động (ngân hàng)".

@@ -1379,3 +1379,12 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | `0061_chuyen_khoan_vietqr.sql` | `Sessions.PayMethodHint VARCHAR(10) NULL` + `CK_Sessions_PayMethodHint` (`CASH` \| `TRANSFER`) — cách trả khách chọn lúc gọi thanh toán; chỉ là gợi ý cho quầy, không phải trạng thái thanh toán. |
 | `sp_RequestPayment` | Thêm `@Method VARCHAR(10) = NULL` → ghi `PayMethodHint` (khác `CASH` / `TRANSFER` → `CASH`). |
 | Cài đặt | `pay.transfer_enabled` (`'true'` = bật; mặc định tắt), `pay.bank_bin`, `pay.bank_number`, `pay.bank_kind` (`ACCOUNT` \| `CARD`), `pay.bank_holder`. |
+
+## Tự xác nhận chuyển khoản qua SePay (FEATURE-100, ADR-063 D-249…D-252, 17/11/2026)
+
+| Migration / đối tượng | Thay đổi |
+| --- | --- |
+| `0062_tien_vao_ngan_hang.sql` | Bảng `BankTransactions` — một dòng mỗi khoản tiền vào **có mã của quán** (khoản khác không lưu): `Provider` (`SEPAY` \| `SIMULATED`), `ProviderTxnId`, `AccountNumber`, `Amount` (> 0), `Content`, `ReferenceNumber`, `TransactionAt`, `ReceivedAt`, `Status` (`NEW` → `MATCHED` \| `UNMATCHED` \| `HANDLED`), `SessionId`, `PaymentId`, `Note`, `HandledBy`, `HandledAt`. `UQ_BankTransactions_Provider (Provider, ProviderTxnId)` → không xử lý hai lần; `IX_BankTransactions_Status`; `TR_BankTransactions_NoDelete` (50250 `HISTORY_NO_DELETE`). |
+| Tài khoản hệ thống | `Users` thêm `he-thong-ngan-hang` — "Tự động (ngân hàng)", `STAFF`, `IsActive = 0`, `DeletedAt` có giá trị (không đăng nhập, không hiện ở danh sách / chấm công / lương); là `Payments.ReceivedBy` của lượt thu máy tự ghi. |
+| Xử lý một lần | Nhân viên ghép / đánh dấu: `UPDATE … WHERE Status = 'UNMATCHED'` (giữ chỗ trước khi thu) — hai máy bấm cùng lúc thì máy sau bị chặn. |
+| Cài đặt | `pay.auto_confirm` (`'true'` = bật; mặc định tắt), `pay.auto_confirm_since` (ISO, lúc bật), `pay.sepay_since_id` (mã giao dịch SePay đã xét cuối). |
