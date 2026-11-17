@@ -3867,8 +3867,11 @@ test('mang ra bàn: khách Bàn S1 gọi món bằng điện thoại, quầy Ti�
 
     await expect(G.locator('.popup-done')).toContainText('nhân viên đang mang ra bàn');
     await G.getByRole('button', { name: 'Đã hiểu' }).click();
-    await expect(G.locator('.order-card .badge')).toHaveText('Đã xong — nhân viên đang mang ra bàn');
+    await expect(G.locator('.order-card .badge')).toHaveText('Đang mang ra bàn');
     await expect(G.locator('.order-card .progress.four span')).toHaveText(['Đã gửi', 'Đang chuẩn bị', 'Xong', 'Đã mang ra']);
+    // DEF-031: điện thoại nhỏ 320 px — đơn đã xong không làm trang tràn ngang (nhãn dài từng đẩy trang rộng 412 px)
+    await G.setViewportSize({ width: 320, height: 700 });
+    expect(await G.evaluate(() => globalThis.document.documentElement.scrollWidth - globalThis.document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
 
     await card.getByRole('button', { name: `Đã mang đơn #${order.orderCode} ra Bàn S1` }).click();
     await expect(card).toHaveCount(0);

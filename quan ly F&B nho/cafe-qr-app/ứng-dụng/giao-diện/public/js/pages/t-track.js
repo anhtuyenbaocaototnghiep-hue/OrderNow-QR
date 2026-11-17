@@ -158,7 +158,8 @@ const serveTable = () => session?.serveMode === 'TABLE';
 // Như máy quầy (BR-126.4): đơn xong quá 60 phút coi như đã mang ra — không treo "đang mang ra bàn" mãi (review G3)
 const SERVE_WINDOW_MS = 60 * 60_000;
 const served = (o) => Boolean(o.servedAt) || (o.completedAt && Date.now() - new Date(o.completedAt).getTime() >= SERVE_WINDOW_MS);
-const doneText = (o) => (serveTable() ? (served(o) ? 'Đã mang ra bàn' : 'Đã xong — nhân viên đang mang ra bàn') : CUSTOMER_STATUS.COMPLETED);
+// DEF-031: nhãn ngắn (nhãn cũ "Đã xong — nhân viên đang mang ra bàn" rộng hơn màn 360 px → trang tràn ngang); câu đủ ở hộp báo xong
+const doneText = (o) => (serveTable() ? (served(o) ? 'Đã mang ra bàn' : 'Đang mang ra bàn') : CUSTOMER_STATUS.COMPLETED);
 
 /** Pop-up khi có đơn vừa chuyển sang COMPLETED (AC-004-01). */
 function notifyCompleted() {

@@ -8,7 +8,7 @@
   - **Máy quầy** (SCR-10): `/pos` hai vùng — trái **Hàng pha** (gom ly, thẻ đơn cần làm **một nút** — In phiếu pha / Hủy đơn ở chi tiết đơn, nút Hết món, "Đã xong hôm nay" thu gọn); phải **Quầy** với thẻ Bàn · Bán mang đi · Gọi món tại bàn · Ca & két (ba thẻ sau là trang quầy nhúng `?embed=1`); dải "Cần xử lý ngay" thêm **Mang ra** và **Quầy lấy**. Dưới 1024 px vùng Quầy là ngăn trượt.
   - **Quản lý → Thực đơn** (SCR-21): ô "Trạm làm món" (Pha chế / Quầy lấy).
   - **Quản lý → Cài đặt** (SCR-33): "Màn quầy một màn hình", "Món tại bàn: nhân viên mang ra / khách nhận tại quầy".
-  - **Điện thoại khách — Theo dõi đơn** (SCR-05): "Đã xong — nhân viên đang mang ra bàn", "Đã mang ra bàn".
+  - **Điện thoại khách — Theo dõi đơn** (SCR-05): "Đang mang ra bàn" (17/11/2026 rút gọn từ "Đã xong — nhân viên đang mang ra bàn" — DEF-031; câu đầy đủ ở hộp báo món xong), "Đã mang ra bàn".
 - **Dữ liệu:** migration `0058_man_quay_mot_man_hinh.sql` — `MenuItems.Station`, `Orders.ServedAt`, `Orders.ServedBy`; cài đặt `pos.single_screen`, `pos.serve_mode`.
 
 ## User Story

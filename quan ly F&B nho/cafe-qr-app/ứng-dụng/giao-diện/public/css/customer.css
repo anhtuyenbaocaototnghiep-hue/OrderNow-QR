@@ -40,6 +40,11 @@ body.customer .btn:not(.btn-sm):not(.btn-lg) {
 body.customer .toasts {
   bottom: calc(88px + env(safe-area-inset-bottom));
 }
+/* DEF-031: đang mở bảng chọn / hộp thoại (kéo từ đáy) → toast lên đầu màn hình, không che ô nhập của bảng (vd. số điện thoại) */
+body.customer:has(.overlay) .toasts {
+  top: calc(12px + env(safe-area-inset-top));
+  bottom: auto;
+}
 
 /* Đầu trang nền espresso (D-195 — bỏ vạch caramel cũ của ADR-012, bỏ đầu trang sáng mảnh của bản đầu ADR-042): tên quán chữ trắng đậm,
    tên bàn ngay dưới. Nội dung thẳng cột thực đơn (--gutter). Cao cố định (rem) để thanh nhóm món dính ngay bên dưới */
@@ -536,6 +541,16 @@ body.customer .c-tabs .chip.active {
 }
 .order-card.completed {
   border-color: #bcd8c0;
+}
+/* DEF-031: dòng đầu thẻ đơn (mã đơn · giờ | nhãn trạng thái) được xuống dòng, nhãn được ngắt chữ — nhãn dài không còn đẩy trang
+   rộng hơn màn hình (điện thoại thật nới khung nhìn theo phần tràn → thanh nút đáy, thông báo, hộp thoại lệch ra ngoài) */
+.order-card > .row.between {
+  flex-wrap: wrap;
+  row-gap: 0.35rem;
+}
+.order-card > .row.between > .badge {
+  white-space: normal;
+  max-width: 100%;
 }
 .order-card.cancelled {
   opacity: 0.6;

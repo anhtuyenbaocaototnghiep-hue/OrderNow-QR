@@ -569,7 +569,7 @@ flowchart LR
 - **Tắt "Màn quầy một màn hình":** bố cục ADR-018 như cũ (trang Bán mang đi / Gọi món / Ca riêng, thanh trên, thẻ đơn, thẻ bàn đầy đủ nút). "Mang ra bàn" là cài đặt riêng — vẫn có dải Mang ra / Quầy lấy nếu để "Nhân viên mang ra bàn".
 - **Quản lý → Thực đơn (SCR-21), hộp sửa món:** ô **"Trạm làm món"** — "Pha chế (vào hàng pha)" / "Quầy lấy (bánh, nước chai — không cần pha)".
 - **Quản lý → Cài đặt (SCR-33, chủ quán), thẻ "Màn Đơn hàng ở quầy":** ô "Màn quầy một màn hình" + giải thích; ô chọn "Món tại bàn pha xong" — "Nhân viên mang ra bàn (mặc định)" / "Khách nhận tại quầy".
-- **Điện thoại khách — Theo dõi đơn (SCR-05), quán chọn mang ra bàn:** đơn Xong → nhãn "Đã xong — nhân viên đang mang ra bàn", hộp "Món của bạn đã xong" ghi "…nhân viên đang mang ra bàn"; thanh tiến độ 4 bước **Đã gửi · Đang chuẩn bị · Xong · Đã mang ra** (xuống dòng cân); nhân viên bấm "Đã mang" (hoặc quá 60 phút) → "Đã mang ra bàn", đủ 4 bước.
+- **Điện thoại khách — Theo dõi đơn (SCR-05), quán chọn mang ra bàn:** đơn Xong → nhãn "Đang mang ra bàn" (17/11/2026 rút gọn từ "Đã xong — nhân viên đang mang ra bàn" — DEF-031; câu đầy đủ ở hộp báo món xong), hộp "Món của bạn đã xong" ghi "…nhân viên đang mang ra bàn"; thanh tiến độ 4 bước **Đã gửi · Đang chuẩn bị · Xong · Đã mang ra** (xuống dòng cân); nhân viên bấm "Đã mang" (hoặc quá 60 phút) → "Đã mang ra bàn", đủ 4 bước.
 
 ## TASK-108 — Đổi tên trang "Lãi / lỗ" → "Thu chi" (14/11/2026)
 
