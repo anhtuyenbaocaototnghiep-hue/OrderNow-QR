@@ -60,3 +60,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-112-plan.md](TASK-112-plan.md) — trang riêng Quyền nâng cao + số điện thoại tài khoản (F-091, ADR-053).
 - [TASK-113-plan.md](TASK-113-plan.md) — màn chào khi quét QR (F-092, ADR-054).
 - [TASK-115-plan.md](TASK-115-plan.md) — giao diện màn khách theo giờ (sáng / tối) và trang trí theo mùa (F-094, ADR-056).
+- [TASK-116-plan.md](TASK-116-plan.md) — logo quán (F-095, ADR-057).

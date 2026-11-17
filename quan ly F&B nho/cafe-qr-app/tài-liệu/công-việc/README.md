@@ -131,6 +131,7 @@
 | [TASK-113](TASK-113.md) | Màn chào khi khách quét QR (F-092): tên + địa chỉ quán, lời chào, bàn, hội viên, Gọi thanh toán / Gọi nhân viên / Đánh giá, nút lớn Xem thực đơn – Gọi món; cài đặt bật / tắt; ADR-054 | FEATURE-092 | TASK-112 | Agent | — | chủ dự án 16/11 | READY_FOR_REVIEW |
 | [TASK-114](TASK-114.md) | Màn khách chỉ cho điện thoại (F-093): một cột tối đa 480 px, màn rộng thì cột ở giữa, hai bên nền khác màu; bỏ bố cục máy tính 2 cột; ADR-055 | FEATURE-093 | TASK-113 | Agent | — | chủ dự án 16/11 | READY_FOR_REVIEW |
 | [TASK-115](TASK-115.md) | Giao diện màn khách theo giờ và theo mùa (F-094): sáng có nắng, tối nền tối, tự đổi khi đang mở; khung giới thiệu theo 4 mùa; hai cài đặt; ADR-056 | FEATURE-094 | TASK-114 | Agent | — | chủ dự án 16/11 | READY_FOR_REVIEW |
+| [TASK-116](TASK-116.md) | Logo quán (F-095): tải ở Cài đặt → Thông tin quán; hiện ở màn chào, thực đơn, thanh quầy, thanh bên Quản lý, hóa đơn, thẻ QR; ADR-057 | FEATURE-095 | TASK-115 | Agent | — | chủ dự án 16/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 
