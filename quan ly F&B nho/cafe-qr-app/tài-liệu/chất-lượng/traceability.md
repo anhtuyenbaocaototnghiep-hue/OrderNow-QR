@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 510 test, sửa lúc 2026-11-18 07:08 UTC
-- `npm run test:e2e` (JSON): 111 test, sửa lúc 2026-11-18 07:02 UTC
+- `npm test` (JUnit): 510 test, sửa lúc 2026-11-18 07:25 UTC
+- `npm run test:e2e` (JSON): 112 test, sửa lúc 2026-11-18 07:35 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -34,7 +34,7 @@
 - **BR chưa gắn Story nào:** 0 — mọi BR đều có Story
 - **Màn hình (SCR trong sitemap) chưa gắn Story nào:** 0 — mọi màn hình đều có Story
 - **Test FAIL bất kỳ (kể cả test không gắn AC, file test không nạp được):** 0 — không có
-- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 58
+- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 59
   - kiểm-thử/e2e/a11y.spec.js › khách chuyển khoản (F-099): hộp Gọi thanh toán chọn cách trả, khung mã VietQR có số tiền + nội dung + nút Chép / Lưu ảnh, theo dõi đơn có nút Xem mã chuyển khoản — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px (AC-099-05)
   - kiểm-thử/e2e/a11y.spec.js › quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính
   - kiểm-thử/e2e/a11y.spec.js › quầy một màn hình (F-088): hai vùng Hàng pha + Quầy có thẻ (← / → chuyển thẻ), hộp Báo hết món trong vùng, ngăn Quầy ở màn 900 px — nhãn, tương phản, vùng chạm, dấu focus
@@ -43,6 +43,7 @@
   - kiểm-thử/e2e/flow.spec.js › bố cục quầy (ADR-018): lưới bàn hiện cả bàn trống; màn 1024 px lưới bàn là ngăn trượt — nút "Bàn" mở, Esc / nền mờ đóng, focus trả về nút (TASK-072)
   - kiểm-thử/e2e/flow.spec.js › chuyển giữa các mục quầy: rời trang không làm hiện "Mất kết nối" (app tự đóng kết nối, không phải mất mạng) (DEF-011, TASK-059)
   - kiểm-thử/e2e/flow.spec.js › gọi lại đơn lần trước + thời gian chờ: hội viên gắn SĐT → "Lần trước bạn gọi" → Gọi lại vào giỏ; giỏ + theo dõi hiện ETA (F-045, F-025)
+  - kiểm-thử/e2e/flow.spec.js › hộp Nhận hàng (DEF-033): mỗi dòng có tên + "đặt … · đã nhận …" cùng đơn vị gói, các ô có nhãn (Số nhận, Giá / gói, Hạn sử dụng với nguyên liệu theo lô), không ô nào tràn ra ngoài hộp — trang quản lý và máy quầy
   - kiểm-thử/e2e/flow.spec.js › máy quầy P đứng bằng quản lý cửa hàng — chủ quán chỉ dùng trang Quản lý (F-084); trang Quản lý của P vẫn là chủ quán
   - kiểm-thử/e2e/flow.spec.js › nhân viên đăng nhập; sai mật khẩu báo lỗi (S-09)
   - kiểm-thử/e2e/flow.spec.js › quản lý: nút Xóa cho món, bàn, nguyên liệu, tài khoản (ADR-004)

@@ -42,7 +42,17 @@ const rangeBar = el(
 );
 clear($('#content'), tabs, body);
 
-async function load() {
+// DEF-034: tải thẻ nối tiếp nhau — bấm thẻ khác khi thẻ trước còn đang tải thì thẻ trước không ghi đè thẻ mới
+// (trước: hai lần tải chạy song song, lần xong sau cùng thắng → thẻ "Giá vốn thực tế" được chọn mà vẫn hiện "Nhập kho")
+let wanted = 0;
+let queue = Promise.resolve();
+function load() {
+  const my = ++wanted;
+  queue = queue.then(() => (my === wanted ? loadNow() : undefined)); // chỉ lần bấm sau cùng được vẽ
+  return queue;
+}
+
+async function loadNow() {
   clear(body, el('p', { class: 'muted' }, 'Đang tải…'));
   try {
     [state.ingredients, state.units] = await Promise.all([staffApi('/api/admin/ingredients'), staffApi('/api/admin/units')]);

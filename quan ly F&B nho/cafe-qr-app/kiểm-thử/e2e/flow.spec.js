@@ -5044,3 +5044,62 @@ test('in bill có mã QR: hộp Thu tiền chọn "Chuyển khoản" → khung m
     await clearTables(request, ['QR2']);
   }
 });
+
+test('hộp Nhận hàng (DEF-033): mỗi dòng có tên + "đặt … · đã nhận …" cùng đơn vị gói, các ô có nhãn (Số nhận, Giá / gói, Hạn sử dụng với nguyên liệu theo lô), không ô nào tràn ra ngoài hộp — trang quản lý và máy quầy', async ({
+  request,
+}) => {
+  const ing = await apiAs(request, 'post', '/api/admin/ingredients', { name: 'Sữa thử nhận hàng', unit: 'ml', stockQty: 0, lowStockThreshold: 0 });
+  await apiAs(request, 'put', `/api/admin/ingredients/${ing.ingredientId}/advanced`, { kind: 'RAW', shelfLifeHours: null, wastePercent: 0, trackLots: true });
+  const sup = await apiAs(request, 'post', '/api/admin/suppliers', {
+    name: 'NCC thử nhận hàng',
+    items: [{ ingredientId: ing.ingredientId, packUnitCode: 'l', isPreferred: true, lastPrice: 30000 }],
+  });
+  const po = await apiAs(request, 'post', '/api/admin/purchase-orders', {
+    supplierId: sup.supplierId,
+    lines: [{ ingredientId: ing.ingredientId, orderedPacks: 6 }],
+  });
+  await apiAs(request, 'post', `/api/admin/purchase-orders/${po.poId}/send`);
+  // Mọi ô nhập nằm trong hộp (trước: ô ngày tràn ra ngoài, tên bị ép một chữ mỗi dòng)
+  const checkDialog = async (dlg) => {
+    await expect(dlg.locator('.recv-head')).toContainText('đặt 6 l · đã nhận 0 l');
+    await expect(dlg.getByLabel('Số nhận (l)')).toHaveValue('6');
+    await expect(dlg.getByLabel('Giá / l (đ)')).toBeVisible();
+    await expect(dlg.getByLabel('Hạn sử dụng')).toBeVisible();
+    const out = await dlg.evaluate((box) => {
+      const b = box.getBoundingClientRect();
+      return [...box.querySelectorAll('input')].map((i) => i.getBoundingClientRect()).filter((r) => r.left < b.left - 1 || r.right > b.right + 1).length;
+    });
+    expect(out, 'ô nhập tràn ra ngoài hộp').toBe(0);
+    const nameH = await dlg.locator('.recv-head strong').evaluate((n) => n.getBoundingClientRect().height);
+    expect(nameH, 'tên nguyên liệu một dòng').toBeLessThan(30);
+  };
+  const ql = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'vi-VN' });
+  const quay = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'vi-VN' });
+  try {
+    const A = await ql.newPage();
+    watch(A, 'nhan-hang-ql');
+    await A.goto('/admin/login');
+    await A.fill('#username', 'admin');
+    await A.fill('#password', 'Admin@123');
+    await A.click('#submit');
+    await expect(A).toHaveURL(/\/admin\/today$/);
+    await A.goto('/admin/purchasing');
+    await A.locator('.tabs button', { hasText: 'Đơn đặt hàng' }).click();
+    await A.locator('tr', { hasText: 'NCC thử nhận hàng' }).getByRole('button', { name: 'Xem' }).click();
+    await A.getByRole('dialog')
+      .getByRole('button', { name: /Nhận hàng/ })
+      .click();
+    await checkDialog(A.getByRole('dialog', { name: /^Nhận hàng — đơn/ }));
+
+    const S = await counterLogin(quay, 'nhan-hang-quay');
+    await S.goto('/pos/stock');
+    await S.locator('#tabs button', { hasText: 'Nhận hàng' }).click();
+    await S.locator('.card', { hasText: 'NCC thử nhận hàng' }).getByRole('button', { name: 'Nhận hàng' }).click();
+    const dlg = S.getByRole('dialog', { name: /^Nhận hàng — đơn/ });
+    await checkDialog(dlg);
+    await dlg.getByRole('button', { name: 'Hủy' }).click();
+  } finally {
+    await Promise.all([ql.close(), quay.close()]);
+    await apiAs(request, 'post', `/api/admin/purchase-orders/${po.poId}/cancel`);
+  }
+});

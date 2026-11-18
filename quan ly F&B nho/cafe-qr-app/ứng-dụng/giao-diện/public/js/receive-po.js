@@ -11,40 +11,39 @@ export function receivePoDialog(po, { url, onDone, ingredients }) {
   });
   const over = el('input', { type: 'checkbox' });
   const msg = el('div');
+  // DEF-033: mỗi dòng — tên + "đặt … · đã nhận …" (cùng đơn vị gói) ở trên; các ô có nhãn ở dưới, tự xuống hàng theo bề ngang hộp
+  // (trước: lưới 4 cột cố định chỉ có ở trang quản lý → dòng có ô hạn dùng ép tên còn một chữ mỗi dòng, ô ngày tràn ra ngoài hộp)
+  const field = (label, input) => el('label', { class: 'recv-field' }, el('span', { class: 'small muted' }, label), input);
   const form = el(
     'div',
     { class: 'stack' },
-    rows.map((r) =>
-      el(
+    rows.map((r) => {
+      const pack = r.l.packUnitCode;
+      const receivedPacks = Math.round((r.l.receivedBaseQty / r.l.packSize) * 1000) / 1000;
+      return el(
         'div',
-        { class: 'receipt-row' },
+        { class: 'recv-line' },
         el(
           'div',
-          {},
+          { class: 'recv-head' },
           el('strong', {}, r.l.name),
-          el('div', { class: 'small muted' }, `đặt ${num(r.l.orderedPacks)} ${r.l.packUnitCode} · đã nhận ${num(r.l.receivedBaseQty)} ${r.l.unit}`),
+          el('span', { class: 'small muted' }, `đặt ${num(r.l.orderedPacks)} ${pack} · đã nhận ${num(receivedPacks)} ${pack}`),
         ),
-        el('input', {
-          class: 'input',
-          type: 'number',
-          min: 0,
-          step: 'any',
-          value: r.packs,
-          'aria-label': `Thực nhận ${r.l.name}`,
-          oninput: (e) => (r.packs = e.target.value),
-        }),
-        el('input', {
-          class: 'input',
-          type: 'number',
-          min: 0,
-          step: 'any',
-          placeholder: 'Giá / gói',
-          value: r.price,
-          oninput: (e) => (r.price = e.target.value),
-        }),
-        r.lots ? el('input', { class: 'input', type: 'date', title: 'Hạn sử dụng', oninput: (e) => (r.expiry = e.target.value) }) : null,
-      ),
-    ),
+        el(
+          'div',
+          { class: 'recv-fields' },
+          field(
+            `Số nhận (${pack})`,
+            el('input', { class: 'input', type: 'number', min: 0, step: 'any', value: r.packs, oninput: (e) => (r.packs = e.target.value) }),
+          ),
+          field(
+            `Giá / ${pack} (đ)`,
+            el('input', { class: 'input', type: 'number', min: 0, step: 'any', value: r.price, oninput: (e) => (r.price = e.target.value) }),
+          ),
+          r.lots ? field('Hạn sử dụng', el('input', { class: 'input', type: 'date', oninput: (e) => (r.expiry = e.target.value) })) : null,
+        ),
+      );
+    }),
     el('label', { class: 'check' }, over, 'Xác nhận nhận vượt số đã đặt (nếu có)'),
     msg,
   );

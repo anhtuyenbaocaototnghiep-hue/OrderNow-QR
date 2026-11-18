@@ -862,6 +862,34 @@ table.table {
   border: 1px solid var(--c-border);
 }
 
+/* F-030 hộp Nhận hàng (trang quản lý + máy quầy — DEF-033): tên + đã đặt / đã nhận ở trên, các ô có nhãn ở dưới, tự xuống hàng */
+.recv-line {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.recv-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
+}
+.recv-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.recv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.recv-field .input {
+  width: 100%;
+  min-width: 0;
+}
+
 .toasts {
   position: fixed;
   left: 50%;
