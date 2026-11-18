@@ -38,7 +38,7 @@ import {
 } from '../ui.js';
 import { icon } from '../icons.js';
 import { canOpenPosPage, hasPosition } from '../roles.js';
-import { showBigQr } from '../transfer-qr.js';
+import { smallQrBox } from '../transfer-qr.js';
 
 const shell = await mountPosShell('orders');
 // F-078 (ADR-036): nút theo vị trí — Pha chế nhận / làm đơn, Thu ngân thu tiền, Phục vụ gọi món tại bàn (máy chủ vẫn chặn)
@@ -1568,22 +1568,24 @@ function openSettle(sessionId) {
       const d = await staffApi('/api/payments/transfer-qr', { method: 'POST', body: { amount, sessionId } });
       if (my !== qrSeq) return;
       qrAmount = amount;
-      clear(
-        qrBox,
-        el('img', { src: d.qr, alt: `Mã VietQR chuyển ${money(d.amount)}`, width: 132, height: 132 }),
-        el(
-          'div',
-          { class: 'stack small' },
-          el('strong', {}, `Khách quét mã — ${money(d.amount)}`),
-          el('span', {}, `${d.bankName} · ${d.number}`),
-          el('span', { class: 'muted' }, `Nội dung: ${d.content}`),
-          el('button', { class: 'btn btn-sm', type: 'button', onclick: () => showBigQr(d) }, 'Phóng to cho khách quét'),
-        ),
-      );
+      clear(qrBox, ...smallQrBox(d, { onPrint: printProvisional })); // TASK-125: in bill có mã QR ngay tại khung mã
       qrBox.hidden = false;
     } catch {
       if (my === qrSeq) qrBox.hidden = true; // quán chưa bật nhận chuyển khoản bằng QR → giữ dòng nhắc như cũ
     }
+  }
+  /**
+   * TASK-125: phiếu tạm tính (có mã QR khi quán nhận chuyển khoản) theo đúng lựa chọn đang có ở hộp — hội viên, voucher, đổi thưởng,
+   * giảm tay, bỏ quà, thu chung — để số tiền và mã QR trên giấy trùng màn hình. Không đưa tài khoản / mật khẩu duyệt vào đường dẫn.
+   */
+  function printProvisional() {
+    const q = new URLSearchParams({ mode: 'provisional' });
+    if (mergeIds.length) q.set('merge', mergeIds.join(','));
+    if (!splitData?.hasSplits) {
+      const { adminUsername: _user, adminPassword: _pass, ...chosen } = billing.body();
+      if (Object.keys(chosen).length) q.set('bill', JSON.stringify(chosen));
+    }
+    printUrl(`/pos/sessions/${sessionId}/receipt?${q}`);
   }
   const payBox = el(
     'div',
@@ -2152,9 +2154,7 @@ function openSettle(sessionId) {
     );
   }
 
-  provisionalBtn.addEventListener('click', () =>
-    printUrl(`/pos/sessions/${sessionId}/receipt?mode=provisional${mergeIds.length ? `&merge=${mergeIds.join(',')}` : ''}`),
-  );
+  provisionalBtn.addEventListener('click', printProvisional);
   closeBtn.addEventListener('click', async () => {
     await closeEmpty({ sessionId, table: session.table });
     m.close();

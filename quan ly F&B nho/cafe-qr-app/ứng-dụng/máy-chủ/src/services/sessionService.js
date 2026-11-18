@@ -492,8 +492,12 @@ async function receiptTransfer(session, sessionId, amount) {
   return { qr: t.qr, amount: t.amount, content: t.content, bankName: t.bankName, kind: t.kind, number: t.number, holder: t.holder };
 }
 
-/** Dữ liệu in hóa đơn phiên: final chỉ khi đã thu tiền (BR-014); provisional = phiếu tạm tính (ước tính hội viên). */
-export async function receipt(sessionId, mode, mergeIds = []) {
+/**
+ * Dữ liệu in hóa đơn phiên: final chỉ khi đã thu tiền (BR-014); provisional = phiếu tạm tính (ước tính hội viên).
+ * TASK-125: `bill` = lựa chọn đang có ở hộp Thu tiền (hội viên, voucher, đổi thưởng, giảm tay, bỏ quà) → phiếu tạm tính tính như
+ * settle-preview, nên số tiền và mã QR trên giấy trùng màn hình. Bàn chia bill / đã thu một phần → bỏ qua `bill`.
+ */
+export async function receipt(sessionId, mode, mergeIds = [], { bill = null, user = null } = {}) {
   const session = await sessionsRepo.findById(sessionId);
   if (!session) throw notFound('Không tìm thấy phiên');
   if (session.mergedInto) return receipt(session.mergedInto.sessionId, mode); // F-057: bàn đã thu chung → bill chung
@@ -507,8 +511,12 @@ export async function receipt(sessionId, mode, mergeIds = []) {
   const orders = all.filter((o) => o.status !== 'CANCELLED' && (payment || o.status !== 'VOIDED'));
   const ordersTotal = orders.reduce((s, o) => s + o.totalAmount, 0);
   const est = payments.length ? null : await estimate(session, all);
+  const chosen =
+    mode === 'provisional' && bill && !payments.length && !session.splitCount && !est?.partial
+      ? (await sessionTotals(sessionId, { ...bill, mergeSessionIds: mergeIds }, discountRole(user))).totals
+      : null;
   const splitPaid = payments.length > 0 && !payment; // chia bill: tổng các phần (bill từng phần in riêng)
-  const amountDue = payment?.amountDue ?? (splitPaid ? payments.reduce((s, p) => s + p.amountDue, 0) : (est?.amountDue ?? ordersTotal));
+  const amountDue = payment?.amountDue ?? (splitPaid ? payments.reduce((s, p) => s + p.amountDue, 0) : (chosen?.amountDue ?? est?.amountDue ?? ordersTotal));
   return {
     kind: 'session',
     mode,
@@ -519,7 +527,7 @@ export async function receipt(sessionId, mode, mergeIds = []) {
     orders: orders.map((o) => ({ orderCode: o.orderCode, createdAt: o.createdAt, table: o.table?.name ?? null })),
     lines: orders.flatMap((o) => receiptLines(o.items).map((l) => ({ ...l, table: o.table?.name ?? null }))),
     amountDue,
-    breakdown: payment ? paymentBreakdown(payment, ordersTotal) : splitPaid ? null : (est?.breakdown ?? null),
+    breakdown: payment ? paymentBreakdown(payment, ordersTotal) : splitPaid ? null : (chosen?.breakdownLines ?? est?.breakdown ?? null),
     // F-099 (ADR-062 D-247): phiếu tạm tính in kèm mã VietQR chuyển khoản đúng số tiền (khi quán đang nhận chuyển khoản)
     transfer: mode === 'provisional' && !payments.length && amountDue > 0 ? await receiptTransfer(session, sessionId, amountDue) : null,
     payment,

@@ -61,6 +61,29 @@ export function transferPanel(data, { saveName = 'VietQR', big = false } = {}) {
   );
 }
 
+/**
+ * Khung mã nhỏ ở hộp Thu tiền / Bán mang đi: mã + từng dòng số tiền, ngân hàng · số, nội dung (DEF-032 — trước dính liền
+ * "29.000đSacombank…") + "Phóng to cho khách quét"; có onPrint → thêm "In bill có mã QR" (TASK-125).
+ */
+export function smallQrBox(d, { onPrint = null } = {}) {
+  return [
+    el('img', { src: d.qr, alt: `Mã VietQR chuyển ${money(d.amount)}`, width: 132, height: 132 }),
+    el(
+      'div',
+      { class: 'tq-side small' },
+      el('strong', {}, `Khách quét mã — ${money(d.amount)}`),
+      el('div', {}, `${d.bankName} · ${d.number}`),
+      el('div', { class: 'muted' }, `Nội dung: ${d.content}`),
+      el(
+        'div',
+        { class: 'tq-actions' },
+        el('button', { class: 'btn btn-sm', type: 'button', onclick: () => showBigQr(d) }, 'Phóng to cho khách quét'),
+        onPrint ? el('button', { class: 'btn btn-sm', type: 'button', onclick: onPrint }, 'In bill có mã QR') : null,
+      ),
+    ),
+  ];
+}
+
 /** Phóng to mã cho khách quét (màn quầy quay về phía khách) — gọn: mã to + số tiền + người nhận + nội dung, vừa vùng Quầy 768 px. */
 export const showBigQr = (data, title = 'Khách quét mã để chuyển khoản') =>
   modal({

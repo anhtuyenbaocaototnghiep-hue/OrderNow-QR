@@ -15,7 +15,7 @@ import { deviceName, newClientRef, onQueueChange, pendingSales, printBlankForm, 
 import { mountPosShell } from '../pos-shell.js';
 import { printUrl } from '../print.js';
 import { connectRealtime } from '../socket.js';
-import { showBigQr } from '../transfer-qr.js';
+import { smallQrBox } from '../transfer-qr.js';
 import { $, breakdownRows, clear, el, errorMessage, money, moneyInput, moneyValue, num, setBusy, setMoney, statusBadge, time, toast } from '../ui.js';
 
 const shell = await mountPosShell('takeaway');
@@ -113,18 +113,7 @@ async function refreshTransferQr() {
     const d = await staffApi('/api/payments/transfer-qr', { method: 'POST', body: { amount } });
     if (my !== qrSeq) return;
     qrAmount = amount;
-    clear(
-      qrBox,
-      el('img', { src: d.qr, alt: `Mã VietQR chuyển ${money(d.amount)}`, width: 132, height: 132 }),
-      el(
-        'div',
-        { class: 'stack small' },
-        el('strong', {}, `Khách quét mã — ${money(d.amount)}`),
-        el('span', {}, `${d.bankName} · ${d.number}`),
-        el('span', { class: 'muted' }, `Nội dung: ${d.content}`),
-        el('button', { class: 'btn btn-sm', type: 'button', onclick: () => showBigQr(d) }, 'Phóng to cho khách quét'),
-      ),
-    );
+    clear(qrBox, ...smallQrBox(d)); // DEF-032: mỗi thứ một dòng
     qrBox.hidden = false;
   } catch {
     if (my === qrSeq) qrBox.hidden = true; // quán chưa bật nhận chuyển khoản bằng QR → giữ dòng nhắc như cũ

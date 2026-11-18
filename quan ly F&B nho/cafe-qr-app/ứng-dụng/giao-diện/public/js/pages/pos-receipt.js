@@ -207,7 +207,7 @@ async function main() {
     }
     const url =
       kind === 'sessions'
-        ? `/api/sessions/${id}/receipt?mode=${mode}${params.get('merge') ? `&merge=${encodeURIComponent(params.get('merge'))}` : ''}`
+        ? `/api/sessions/${id}/receipt?mode=${mode}${params.get('merge') ? `&merge=${encodeURIComponent(params.get('merge'))}` : ''}${params.get('bill') ? `&bill=${encodeURIComponent(params.get('bill'))}` : ''}`
         : kind === 'payments'
           ? `/api/payments/${id}/receipt`
           : `/api/orders/${id}/receipt`;

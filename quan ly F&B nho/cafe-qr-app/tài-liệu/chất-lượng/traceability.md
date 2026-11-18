@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 509 test, sửa lúc 2026-11-18 06:41 UTC
-- `npm run test:e2e` (JSON): 110 test, sửa lúc 2026-11-18 06:35 UTC
+- `npm test` (JUnit): 510 test, sửa lúc 2026-11-18 07:08 UTC
+- `npm run test:e2e` (JSON): 111 test, sửa lúc 2026-11-18 07:02 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 207 |
-| Acceptance Criteria | 577 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 577 |
+| Acceptance Criteria | 579 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 579 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -669,6 +669,8 @@
 | AC-099-03 | TC-099-03 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | Integration: `transfer-qr.test.js` › AC-099-03: khách gọi thanh toán chọn "Chuyển khoản" → quầy nhận sự kiện + danh sách bàn ghi payMethod TRANSFER; quán chưa bật → 409 TRANSFER_OFF; khách không tự ghi đã trả (settle 401); nhân viên "Đã nhận chuyển khoản" mới đóng bàn, lượt thu ghi chuyển khoản — **PASS** | **PASS** |
 | AC-099-04 | TC-099-04 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | Integration: `transfer-qr.test.js` › AC-099-04: màn quầy lấy mã VietQR đúng số phải thu (bàn: cùng nội dung với điện thoại khách; bán mang đi: "CF MANG DI"); phiếu tạm tính có mã; chưa đăng nhập / khách không lấy được (401) — **PASS** | **PASS** |
 | AC-099-05 | TC-099-05 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | E2E: `flow.spec.js` › chuyển khoản bằng mã QR: khách gọi thanh toán chọn "Chuyển khoản" → điện thoại hiện mã VietQR đúng số tiền + nội dung; quầy thấy "chuyển khoản" ở dải Gọi thanh toán, hộp Thu tiền chọn sẵn và hiện mã; "Đã nhận chuyển khoản" → điện thoại khách sang màn cảm ơn (F-099, AC-099-05) — **PASS** | **PASS** |
+| AC-099-06 | TC-099-06 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | Integration: `transfer-qr.test.js` › AC-099-06: phiếu tạm tính in từ hộp Thu tiền theo lựa chọn đang có ở hộp (giảm tay) → số phải thu + mã QR trên phiếu = xem trước thu tiền; không có lựa chọn → như cũ; bill sai → 400; tài khoản duyệt trong bill bị bỏ qua — **PASS** | **PASS** |
+| AC-099-07 | TC-099-07 | F-099 | US-099-1 | ACT-GUEST, ACT-MEMBER, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-14, SCR-13, SCR-12, SCR-33 | BR-018, BR-088, BR-128 | E2E: `flow.spec.js` › in bill có mã QR: hộp Thu tiền chọn "Chuyển khoản" → khung mã ghi số tiền, ngân hàng · số, nội dung mỗi thứ một dòng (không dính chữ); "In bill có mã QR" → in phiếu tạm tính có mã VietQR đúng số tiền của hộp (F-099, AC-099-07, DEF-032) — **PASS** | **PASS** |
 | AC-100-01 | TC-100-01 | F-100 | US-100-1 | ACT-GUEST, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-33 | BR-018, BR-128, BR-129 | Integration: `bank-feed.test.js` › AC-100-01: chủ quán bật "Tự xác nhận khi tiền vào" (quản lý cửa hàng không đổi được — 403 OWNER_ONLY); trạng thái báo đã có khóa SePay chưa, lần hỏi cuối, lỗi cuối, số khoản chưa khớp — chỉ chủ quán xem; giả lập chỉ chủ quán, chưa bật → 409 AUTO_CONFIRM_OFF; mã QR của khách báo "quán tự xác nhận" khi đã bật và có khóa — **PASS** | **PASS** |
 | AC-100-02 | TC-100-02 | F-100 | US-100-1 | ACT-GUEST, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-33 | BR-018, BR-128, BR-129 | Integration: `bank-feed.test.js` › AC-100-02: tiền vào có mã "CF <bàn> <mã phiên>" đúng số phải thu (ca đang mở) → tự thu chuyển khoản cho bàn, người ghi "Tự động (ngân hàng)", quầy nhận bank.received MATCHED, điện thoại khách nhận session.settled; cùng giao dịch gửi lại không xử lý lần hai — **PASS** | **PASS** |
 | AC-100-03 | TC-100-03 | F-100 | US-100-1 | ACT-GUEST, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-33 | BR-018, BR-128, BR-129 | Integration: `bank-feed.test.js` › AC-100-03: có mã nhưng không tự thu được (thiếu / dư, còn đơn chưa tiếp nhận, bàn đã thanh toán) → "chưa khớp" kèm lý do, bàn vẫn mở; mã bán mang đi → chỉ báo quầy; không có mã của quán → bỏ qua, không lưu, không báo — **PASS** | **PASS** |

@@ -139,4 +139,28 @@ describe('Chuyển khoản bằng VietQR (F-099)', () => {
     assert.ok(receipt.transfer?.qr?.startsWith('data:image/png;base64,'), JSON.stringify(receipt.transfer));
     assert.deepEqual([receipt.transfer.amount, receipt.transfer.content], [receipt.amountDue, `CF 05 ${codeOf(s)}`]);
   });
+  test('AC-099-06: phiếu tạm tính in từ hộp Thu tiền theo lựa chọn đang có ở hộp (giảm tay) → số phải thu + mã QR trên phiếu = xem trước thu tiền; không có lựa chọn → như cũ; bill sai → 400; tài khoản duyệt trong bill bị bỏ qua', async () => {
+    const { s, order } = await guestOrder('03', [{ menuItemId: ids['Nước suối'], quantity: 3 }]);
+    ok(await call(staff, 'post', `/api/orders/${order.orderId}/accept`, {}));
+    const plain = ok(await call(staff, 'get', `/api/sessions/${s}/receipt?mode=provisional`));
+    const bill = { manualDiscount: { kind: 'AMOUNT', value: 2000 }, manualReason: 'Khách quen' };
+    const preview = ok(await call(staff, 'post', `/api/sessions/${s}/settle/preview`, bill));
+    const printed = ok(await call(staff, 'get', `/api/sessions/${s}/receipt?mode=provisional&bill=${encodeURIComponent(JSON.stringify(bill))}`));
+    assert.equal(printed.amountDue, preview.totals.amountDue, 'phiếu = hộp Thu tiền');
+    assert.equal(printed.amountDue, plain.amountDue - 2000, 'có giảm tay');
+    assert.deepEqual([printed.transfer.amount, printed.transfer.content], [preview.totals.amountDue, `CF 03 ${codeOf(s)}`]);
+    assert.notEqual(printed.transfer.qr, plain.transfer.qr, 'mã QR theo số tiền mới');
+
+    const bad = await call(staff, 'get', `/api/sessions/${s}/receipt?mode=provisional&bill=khong-phai-json`);
+    assert.deepEqual([bad.status, bad.body.code], [400, 'VALIDATION_ERROR']);
+    const wrong = await call(
+      staff,
+      'get',
+      `/api/sessions/${s}/receipt?mode=provisional&bill=${encodeURIComponent(JSON.stringify({ manualDiscount: { kind: 'X', value: 1 } }))}`,
+    );
+    assert.equal(wrong.status, 400);
+    const sneaky = { ...bill, adminUsername: 'admin', adminPassword: 'Admin@123' };
+    const ignored = ok(await call(staff, 'get', `/api/sessions/${s}/receipt?mode=provisional&bill=${encodeURIComponent(JSON.stringify(sneaky))}`));
+    assert.equal(ignored.amountDue, printed.amountDue, 'tài khoản duyệt không có tác dụng ở phiếu in');
+  });
 });

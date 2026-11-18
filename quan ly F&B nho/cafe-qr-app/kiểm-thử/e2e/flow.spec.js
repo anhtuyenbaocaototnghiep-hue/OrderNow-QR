@@ -4995,3 +4995,52 @@ test('tự xác nhận chuyển khoản: chủ quán bật tự xác nhận, kh�
     await clearTables(request, ['SP1']);
   }
 });
+
+test('in bill có mã QR: hộp Thu tiền chọn "Chuyển khoản" → khung mã ghi số tiền, ngân hàng · số, nội dung mỗi thứ một dòng (không dính chữ); "In bill có mã QR" → in phiếu tạm tính có mã VietQR đúng số tiền của hộp (F-099, AC-099-07, DEF-032)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  const before = await apiAs(request, 'get', '/api/admin/settings');
+  await apiAs(request, 'put', '/api/admin/settings', {
+    transferEnabled: true,
+    bankBin: '970403',
+    bankNumber: '060123456789',
+    bankKind: 'ACCOUNT',
+    bankHolder: 'NGUYEN VAN A',
+  });
+  const tb = await apiAs(request, 'post', '/api/admin/tables', { code: 'QR2', name: 'Bàn QR2' });
+  const water = (await apiAs(request, 'get', '/api/admin/menu-items')).find((m) => m.name === 'Nước suối').menuItemId;
+  const sessionId = await guestOrderAccepted(request, tb.qrToken, [{ menuItemId: water, quantity: 2 }]);
+  const quay = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  try {
+    const S = await counterLogin(quay, 'in-bill-qr');
+    await S.goto(`/pos?settle=${sessionId}`);
+    const bill = S.locator('.drawer');
+    await bill.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
+    const box = bill.locator('#settle-qr');
+    await expect(box.locator('img')).toBeVisible();
+    const side = box.locator('.tq-side');
+    await expect(side.locator(':scope > strong')).toHaveText(/^Khách quét mã — [\d.]+đ$/);
+    await expect(side.locator(':scope > div').nth(0)).toHaveText('Sacombank · 060123456789');
+    await expect(side.locator(':scope > div').nth(1)).toHaveText(/^Nội dung: CF QR2 [0-9A-F]{6}$/);
+    // DEF-032: mỗi thứ một dòng — dòng sau nằm dưới dòng trước (trước đây "29.000đSacombank…" dính liền một dòng)
+    const tops = await side.locator(':scope > *').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+    expect(
+      tops.every((t, i) => i === 0 || t > tops[i - 1]),
+      `vị trí các dòng: ${tops.join(', ')}`,
+    ).toBeTruthy();
+
+    const shown = Number((await side.locator(':scope > strong').innerText()).replace(/\D/g, ''));
+    const printed = S.waitForResponse((r) => r.url().includes(`/api/sessions/${sessionId}/receipt?mode=provisional`));
+    await box.getByRole('button', { name: 'In bill có mã QR' }).click();
+    const data = await (await printed).json();
+    expect(data.transfer?.qr).toMatch(/^data:image\/png;base64,/);
+    expect([data.transfer.amount, data.amountDue]).toEqual([shown, shown]);
+    expect(data.transfer.content).toMatch(/^CF QR2 [0-9A-F]{6}$/);
+    await expect(S.locator('iframe[src*="mode=provisional"]')).toHaveCount(1);
+  } finally {
+    await apiAs(request, 'put', '/api/admin/settings', { transferEnabled: before.transferEnabled });
+    await quay.close();
+    await clearTables(request, ['QR2']);
+  }
+});

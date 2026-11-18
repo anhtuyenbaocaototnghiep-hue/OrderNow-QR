@@ -6,6 +6,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { requirePosition } from '../auth/permissions.js';
+import { badRequest } from '../errors.js';
 import { requireStaff } from '../middleware/auth.js';
 import { paramGuid, paramId, parse, zGuid, zId, zManualDiscount, zMoney, zOrderItems, zText } from '../middleware/validate.js';
 import * as adminService from '../services/adminService.js';
@@ -57,6 +58,17 @@ const billingFields = {
     .nullable(),
   skipBirthday: z.boolean().optional(), // F-067: không tự áp quà sinh nhật lượt này
   skipWinback: z.boolean().optional(), // F-069: không tự áp quà quay lại lượt này
+};
+
+// TASK-125: phiếu tạm tính in từ hộp Thu tiền mang theo lựa chọn đang có ở hộp — như billingFields, KHÔNG có tài khoản / mật khẩu duyệt
+const { adminUsername: _adminUsername, adminPassword: _adminPassword, ...billPreviewFields } = billingFields;
+const billOf = (text) => {
+  try {
+    return parse(z.object(billPreviewFields), JSON.parse(text));
+  } catch (err) {
+    if (err instanceof SyntaxError) throw badRequest('VALIDATION_ERROR', 'Tham số bill không đúng dạng');
+    throw err;
+  }
 };
 
 // F-056 (ADR-019 D-71): cách trả của một lượt thu; chuyển khoản không cần tiền khách đưa (lưu bằng số phải thu)
@@ -237,7 +249,7 @@ staffRouter.put('/sessions/:id/note', async (req, res) => {
 });
 
 staffRouter.get('/sessions/:id/receipt', async (req, res) => {
-  const { mode, merge } = parse(
+  const { mode, merge, bill } = parse(
     z.object({
       mode: z.enum(['final', 'provisional']).default('final'),
       // F-057: phiếu tạm tính thu chung — sessionId các bàn cách nhau bằng dấu phẩy
@@ -246,10 +258,11 @@ staffRouter.get('/sessions/:id/receipt', async (req, res) => {
         .transform((v) => v.split(',').filter(Boolean))
         .pipe(z.array(zGuid()).max(10))
         .optional(),
+      bill: z.string().max(2000).optional(), // TASK-125: lựa chọn ở hộp Thu tiền (JSON) — chỉ phiếu tạm tính dùng
     }),
     req.query,
   );
-  res.json(await sessionService.receipt(paramGuid(req), mode, merge ?? []));
+  res.json(await sessionService.receipt(paramGuid(req), mode, merge ?? [], { bill: bill ? billOf(bill) : null, user: req.user }));
 });
 
 // ---- Ca tiền mặt (FEATURE-018) ----

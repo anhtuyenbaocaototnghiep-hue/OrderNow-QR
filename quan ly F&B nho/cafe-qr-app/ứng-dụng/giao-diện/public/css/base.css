@@ -834,7 +834,19 @@ table.table {
 .transfer-panel .tq-save {
   width: 100%;
 }
-/* Hộp Thu tiền / Bán mang đi: mã nhỏ kèm nội dung + nút phóng to */
+/* Hộp Thu tiền / Bán mang đi: mã nhỏ kèm nội dung + nút phóng to / in bill — mỗi thứ một dòng (DEF-032) */
+.transfer-qr-box .tq-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.transfer-qr-box .tq-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
 .transfer-qr-box {
   display: flex;
   align-items: center;
