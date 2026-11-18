@@ -1,4 +1,4 @@
-// Hộp thoại nhận hàng theo đơn đặt hàng (FEATURE-030) — dùng chung trang quản lý (S-35) và quầy "Kho & sơ chế" (S-17).
+// Hộp thoại nhận hàng theo đơn đặt hàng (FEATURE-030) — dùng chung trang quản lý (S-35) và quầy "Kho" (S-17).
 import { staffApi } from './api.js';
 import { clear, el, errorMessage, modal, num, toast } from './ui.js';
 

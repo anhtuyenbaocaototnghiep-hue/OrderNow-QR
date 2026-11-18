@@ -6,7 +6,7 @@ export const ROLE_BADGE = { STAFF: '', MANAGER: 'ok', STORE_MGR: 'preparing', AD
 
 /** Tóm tắt việc từng vai làm (trang Tài khoản). Thứ tự từ thấp tới cao. */
 export const ROLE_SUMMARY = [
-  ['STAFF', 'Bán hàng, nhận / làm đơn, thu tiền, mở / đóng ca, ghi chi quỹ (khoản lớn chờ duyệt), sơ chế, hủy hàng, nhận hàng. Giảm giá tay trong ngưỡng nhỏ.'],
+  ['STAFF', 'Bán hàng, nhận / làm đơn, thu tiền, mở / đóng ca, ghi chi quỹ (khoản lớn chờ duyệt), hủy hàng, nhận hàng. Giảm giá tay trong ngưỡng nhỏ.'],
   [
     'MANAGER',
     'Như nhân viên + duyệt giảm giá / hoàn tiền trong ca / chi quỹ tới ngưỡng trưởng ca, sửa chấm công trong ngày (không của mình), kiểm kê, điều chỉnh kho, xem "Hôm nay" bản gọn.',
@@ -83,7 +83,7 @@ export const firstAdminHref = (user) => (isOwner(user) ? '/admin/today' : (ADMIN
 export const POSITION_LABEL = { CASHIER: 'Thu ngân', BARISTA: 'Pha chế', SERVER: 'Phục vụ' };
 export const POSITION_HINT = {
   CASHIER: 'thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi chi quỹ',
-  BARISTA: 'nhận + làm đơn (Tiếp nhận / Hoàn tất / Xong), sơ chế, hủy hàng, nhận hàng',
+  BARISTA: 'nhận + làm đơn (Tiếp nhận / Hoàn tất / Xong), hủy hàng, nhận hàng',
   SERVER: 'mở bàn, gọi món tại bàn, chuyển bàn',
 };
 export const LEVEL_LABEL = { PROBATION: 'Thử việc', OFFICIAL: 'Chính thức' };

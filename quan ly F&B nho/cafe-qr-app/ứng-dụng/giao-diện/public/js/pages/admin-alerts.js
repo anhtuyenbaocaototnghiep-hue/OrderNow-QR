@@ -169,7 +169,7 @@ function facts(a) {
     lines.push(
       `Trị giá ${money(d.totalValue)} (giá vốn) — trong 2 ngày tới`,
       ...(d.items ?? []).slice(0, 5).map((i) => `${i.name}: ${Number(i.qty).toLocaleString('vi-VN')} ${i.unit}, ${i.when} — ${money(i.value)}`),
-      d.pushItems?.length ? `Nên mời khách: ${d.pushItems.join(', ')}` : 'Bỏ phần đã hết hạn ở máy quầy → Kho & sơ chế → Hạn dùng',
+      d.pushItems?.length ? `Nên mời khách: ${d.pushItems.join(', ')}` : 'Bỏ phần đã hết hạn ở máy quầy → Kho → Hạn dùng',
     );
   else if (a.kind === 'OFFLINE_SALE')
     lines.push(

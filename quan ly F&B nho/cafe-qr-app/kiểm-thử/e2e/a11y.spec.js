@@ -612,7 +612,7 @@ test('quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộ
     ['/pos/table-order', 'quay-goi-mon-tai-ban'],
     ['/pos/takeaway', 'quay-ban-mang-di'],
     ['/pos/shift', 'quay-ca-hoan-tien'],
-    ['/pos/stock', 'quay-kho-so-che'],
+    ['/pos/stock', 'quay-kho'],
     ['/pos/me', 'quay-gio-cong-cua-toi'], // F-072 / F-073
   ]) {
     await P.goto(route);

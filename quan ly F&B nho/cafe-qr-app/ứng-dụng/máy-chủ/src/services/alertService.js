@@ -393,7 +393,7 @@ async function checkExpiryRisk({ date, totalValue, items, pushItems }) {
     ...top.map((i) => [`${i.name} (${i.when})`, `${Number(i.qty).toLocaleString('vi-VN')} ${i.unit} · ${vnd(i.value)}`, i.when.includes('đã')]),
     ['Nên mời khách', pushItems.map((p) => p.name).join(', ') || '—', false],
   ];
-  return { alert, email: await enqueueImmediate(s, alert, rows, 'Bỏ phần đã hết hạn ở máy quầy → Kho & sơ chế → Hạn dùng. ' + DISCLAIMER) };
+  return { alert, email: await enqueueImmediate(s, alert, rows, 'Bỏ phần đã hết hạn ở máy quầy → Kho → Hạn dùng. ' + DISCLAIMER) };
 }
 
 /** Hoàn tiền từ mức "lớn" trở lên → cảnh báo tức thì. refund: bản ghi vừa tạo; user: người thao tác. */

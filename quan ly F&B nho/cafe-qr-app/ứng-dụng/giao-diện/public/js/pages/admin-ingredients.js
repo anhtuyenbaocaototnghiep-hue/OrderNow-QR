@@ -3,7 +3,7 @@
 // ADR-006: bán thành phẩm + công thức (F-027), theo lô + hạn dùng (F-028), giá vốn bình quân (F-031), hao hụt định mức (F-032).
 import { staffApi } from '../api.js';
 import { confirmAndDelete, mountAdminShell } from '../admin-shell.js';
-import { advancedDialog, costLine, ingredientBadges, lotsDialog, recipeDialog } from '../inventory-advanced.js';
+import { advancedDialog, costLine, ingredientBadges, lotsDialog } from '../inventory-advanced.js';
 import { adjustDialog } from '../stock-adjust.js';
 import { $, clear, dateTime, el, errorMessage, modal, num, setBusy, showFieldErrors, thumb, toast } from '../ui.js';
 
@@ -11,12 +11,10 @@ await mountAdminShell('ingredients');
 
 clear($('#head-actions'), el('button', { class: 'btn btn-primary', type: 'button', onclick: () => editIngredient(null) }, '+ Thêm nguyên liệu'));
 
-let ingredients = [];
 async function load() {
   let list;
   try {
     list = await staffApi('/api/admin/ingredients');
-    ingredients = list;
   } catch (err) {
     return clear($('#content'), el('div', { class: 'alert danger' }, errorMessage(err)));
   }
@@ -226,7 +224,6 @@ function more(i) {
       ),
       item('Lịch sử kho', 'Nhập, bán, điều chỉnh, hủy hàng', () => history(i)),
       i.trackLots ? item('Lô & hạn dùng', 'Từng lô, hạn sử dụng, hủy lô hết hạn', () => lotsDialog(i, load)) : null,
-      i.kind === 'SEMI' ? item('Công thức', 'Bán thành phẩm làm từ nguyên liệu nào', () => recipeDialog(i, ingredients, load)) : null,
       item('Kho nâng cao', 'Theo lô + hạn sử dụng, hạn sau khi mở, giá vốn, hao hụt', () => advancedDialog(i, load)),
       item(
         'Xóa nguyên liệu',

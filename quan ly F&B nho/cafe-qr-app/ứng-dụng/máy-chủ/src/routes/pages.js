@@ -45,7 +45,7 @@ const PAGES = {
   '/admin/menu-schedules': 'admin/menu-schedules.html',
   '/admin/purchasing': 'admin/purchasing.html',
   '/admin/purchase-orders/:id/print': 'admin/po-print.html',
-  '/pos/stock': 'pos/stock.html', // S-17 Kho & sơ chế ở quầy
+  '/pos/stock': 'pos/stock.html', // S-17 Kho ở quầy
   '/pos/payments/:id/receipt': 'pos/receipt.html',
   // Giai đoạn 6 — tài chính & nhân sự (chỉ ADMIN)
   '/admin/cash': 'admin/cash.html',

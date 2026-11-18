@@ -62,7 +62,6 @@ if (oneTap) {
 }
 // F-088 (ADR-049): màn quầy một màn hình — vùng Hàng pha (trái) + vùng Quầy có thẻ (phải); món tại bàn nhân viên mang ra (TABLE)
 const singleScreen = Boolean(current.pos?.singleScreen);
-const serveTable = current.pos?.serveMode !== 'COUNTER';
 const canShift = canOpenPosPage(shell.user, 'shift');
 
 // ---------- Tải ảnh chụp ----------
@@ -457,7 +456,6 @@ function renderBoard() {
     if (!same) col.replaceChildren(...nodes);
   }
   renderCounterStrip(counterOnly);
-  renderServeStrip();
   if (singleScreen) {
     const queue = [...byStatus.PENDING.filter((o) => !isHeld(o)), ...byStatus.PREPARING]; // đơn cần pha (bỏ đơn giữ, đơn chỉ món Quầy)
     renderBatch(queue);
@@ -469,7 +467,7 @@ function renderBoard() {
   }, 3000);
 }
 
-// ---------- F-088 (ADR-049): dải "Quầy lấy", dải "Mang ra", gom ly, hết món, tự in phiếu ----------
+// ---------- F-088 (ADR-049): dải "Quầy lấy", gom ly, hết món, tự in phiếu (dải "Mang ra" đã bỏ — ADR-064 D-253) ----------
 /** D-216: đơn chỉ có món trạm Quầy — người đứng Quầy lấy rồi bấm Xong (máy chủ cho Thu ngân / Phục vụ / Pha chế). */
 /** Dải chỉ dựng lại khi nội dung đổi — sự kiện realtime tới giữa lúc chạm và nhả không làm mất cú bấm (review G3). */
 function unchanged(strip, key) {
@@ -513,68 +511,6 @@ function renderCounterStrip(list) {
       ),
     ),
   );
-}
-
-/** D-217: món tại bàn đã xong mà chưa mang ra (trong 60 phút gần nhất — đơn cũ hơn coi như đã mang). */
-const SERVE_WINDOW_MS = 60 * 60_000;
-const toServe = () =>
-  serveTable
-    ? [...state.orders.values()]
-        .filter(
-          (o) =>
-            o.type === 'DINE_IN' &&
-            o.status === 'COMPLETED' &&
-            !o.servedAt &&
-            o.completedAt &&
-            Date.now() - new Date(o.completedAt).getTime() < SERVE_WINDOW_MS,
-        )
-        .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))
-    : [];
-/** Thẻ "Mang ra": "2 ly · kèm 1× Bánh…"; đơn chỉ có bánh / nước chai ghi tên món, không "0 ly". */
-const serveWhat = (o) => {
-  const cups = o.items.filter((i) => !counterLine(i)).reduce((n, i) => n + i.quantity, 0);
-  const extra = o.items.filter(counterLine).map(lineText).join(', ');
-  return cups ? `${cups} ly${extra ? ` · kèm ${extra}` : ''}` : extra;
-};
-function renderServeStrip() {
-  const strip = $('#serve-strip');
-  if (!strip) return;
-  const list = toServe();
-  strip.hidden = list.length === 0;
-  const canCarry = canPay || canServe;
-  const key = [shell.shift ? 1 : 0, ...list.map((o) => `${o.orderId}:${whereLabel(o)}:${serveWhat(o)}`)].join('|');
-  if (unchanged(strip, key)) return;
-  clear(
-    strip,
-    el('span', { class: 'label' }, icon('utensils'), 'Mang ra'),
-    list.map((o) => {
-      const what = serveWhat(o);
-      return el(
-        'div',
-        { class: 'strip-card serve-card' },
-        el('strong', {}, whereLabel(o)),
-        el('span', {}, `${codePrefix(o)}${what}`),
-        canCarry
-          ? el(
-              'button',
-              {
-                class: 'btn btn-sm btn-primary',
-                type: 'button',
-                ...shiftGate(),
-                'aria-label': `Đã mang đơn #${o.orderCode} ra ${whereLabel(o)}`,
-                onclick: (e) => markServed(o, e.currentTarget),
-              },
-              'Đã mang',
-            )
-          : null,
-      );
-    }),
-  );
-}
-
-async function markServed(o, button) {
-  const r = await run(button, () => staffApi(`/api/orders/${o.orderId}/served`, { method: 'POST' }));
-  upsert(r?.order);
 }
 
 /** D-219: gom ly — món trạm Bar giống nhau có ở ≥ 2 đơn cần làm; chạm một dòng → tô sáng các thẻ đơn có món đó. */
@@ -2612,8 +2548,6 @@ await loadAll();
 autoPrintArmed = true; // F-088: đơn đã có lúc mở trang không tự in lại
 // F-088: tải sẵn thẻ Bán mang đi cho người thu tiền — mất mạng sau khi tải lại trang vẫn bán tạm được (F-074 cần trang đã mở — review G3)
 if (singleScreen && panels.has('takeaway')) setTimeout(() => loadFrame('takeaway'), 1500);
-// Dải "Mang ra": đơn xong quá 60 phút tự rời dải kể cả lúc vắng, không có sự kiện nào (review G3)
-if (serveTable) setInterval(renderServeStrip, 60_000);
 // Từ trang Gọi món tại bàn: /pos?settle=<sessionId> → mở ngay drawer thu tiền
 const startParams = new URLSearchParams(location.search);
 const settleParam = startParams.get('settle');
@@ -2693,10 +2627,6 @@ socket?.on('order.created', onOrderEvent);
 socket?.on('order.status_changed', onOrderEvent);
 socket?.on('order.cancelled', onOrderEvent);
 socket?.on('order.released', onOrderEvent); // F-066 khách báo "Bạn đã tới"
-// F-088 (D-217): máy khác bấm "Đã mang" → bỏ khỏi dải "Mang ra" (chỉ đơn đang có trên màn này)
-socket?.on('order.served', (p) => {
-  if (p.order && state.orders.has(p.order.orderId)) upsert(p.order);
-});
 socket?.on('session.payment_requested', (p) => {
   playSound('chime');
   toast(`${p.table?.name ?? 'Một bàn'} gọi thanh toán${p.payMethod === 'TRANSFER' ? ' · chuyển khoản' : ''} · ${money(p.amountDue)}`, 'warning', 6000);

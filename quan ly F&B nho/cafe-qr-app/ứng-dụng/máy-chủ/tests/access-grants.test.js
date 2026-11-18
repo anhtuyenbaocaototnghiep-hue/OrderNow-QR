@@ -125,7 +125,7 @@ describe('Quyền riêng từng tài khoản + xin quyền (F-079)', () => {
     assert.deepEqual([again.created, again.request.requestId], [false, first.request.requestId]);
     const list = ok(await call(admin, 'get', '/api/admin/access-requests'));
     const req = list.requests.find((x) => x.requestId === first.request.requestId);
-    assert.deepEqual([req.user.userId, req.capabilityLabel, req.reason], [users.pv3, 'Nhận / làm đơn, sơ chế, hủy hàng, nhận hàng', 'pha chế nghỉ, làm giúp']);
+    assert.deepEqual([req.user.userId, req.capabilityLabel, req.reason], [users.pv3, 'Nhận / làm đơn, hủy hàng, nhận hàng', 'pha chế nghỉ, làm giúp']);
     assert.ok(ok(await call(admin, 'get', '/api/dashboard/today')).todos.pendingAccess >= 1);
     assert.equal(ok(await call(tok.lead_g, 'get', '/api/dashboard/today')).todos.pendingAccess, undefined, 'trưởng ca không thấy');
 

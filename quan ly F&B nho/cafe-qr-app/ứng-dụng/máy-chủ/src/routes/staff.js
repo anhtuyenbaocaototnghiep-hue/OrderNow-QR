@@ -112,11 +112,6 @@ staffRouter.post('/orders/:id/complete', maker, async (req, res) => {
   res.json(await orderService.complete(paramId(req), req.user));
 });
 
-// F-088 (ADR-049 D-217): "Đã mang" món ra bàn — người đứng Quầy (Thu ngân / Phục vụ)
-staffRouter.post('/orders/:id/served', requirePosition('CASHIER', 'SERVER'), async (req, res) => {
-  res.json({ order: await orderService.markServed(paramId(req), req.user) });
-});
-
 // F-088 (ADR-049 D-218): báo hết / còn món ngay ở quầy — người pha
 staffRouter.patch('/menu-items/:id/availability', barista, async (req, res) => {
   const { isAvailable } = parse(z.object({ isAvailable: z.boolean() }), req.body);

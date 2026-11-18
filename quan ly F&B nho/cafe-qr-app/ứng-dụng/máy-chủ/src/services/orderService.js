@@ -230,23 +230,6 @@ export async function complete(orderId, user) {
   return { order, inventoryDeducted: deducted.map((d) => ({ ingredientId: d.ingredientId, name: d.name, qty: d.qty, unit: d.unit })) };
 }
 
-/**
- * F-088 (ADR-049 D-217): người đứng Quầy bấm "Đã mang" sau khi mang món của đơn tại bàn (đã hoàn tất) ra bàn.
- * Chỉ ghi giờ + người; phát `order.served` (quầy + điện thoại trong phiên) sau khi ghi.
- */
-export async function markServed(orderId, user) {
-  await assertShiftOpen(); // F-055: việc ở quầy cần ca đang mở
-  const r = await ordersRepo.markServed(orderId, user.userId);
-  if (!r) throw notFound('Không tìm thấy đơn hàng');
-  if (!r.changed) {
-    if (r.servedAt) throw conflict('ALREADY_SERVED', 'Đơn này đã được mang ra bàn');
-    throw conflict('INVALID_STATE', r.type !== 'DINE_IN' ? 'Đơn mang đi không cần mang ra bàn' : 'Đơn chưa pha xong hoặc đã hủy');
-  }
-  const order = await ordersRepo.getById(orderId);
-  publishOrderEvent('order.served', order, { orderId, sessionId: order.sessionId, servedAt: order.servedAt, order });
-  return order;
-}
-
 export async function cancel(orderId, user, reason) {
   await assertShiftOpen(); // F-055 (ADR-017 D-65): chưa mở ca thì không xử lý đơn
   await withDeadlockRetry(() => ordersRepo.cancel(orderId, user.userId, reason));

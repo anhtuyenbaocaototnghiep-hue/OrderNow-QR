@@ -271,7 +271,7 @@ function render(s) {
   const safety = el('input', { class: 'input', type: 'number', min: 0, max: 200, value: s.forecastSafetyPercent, 'aria-label': 'Tồn an toàn (%)' });
   // F-061 (ADR-021 D-79): nhóm menu nâng cao — tắt hết = chế độ cơ bản (chỉ ẩn menu, không tắt chức năng)
   const MODULE_GROUPS = [
-    ['inventory', 'Kho hàng', 'Nguyên liệu, Nhập kho & kiểm kê, Nhà cung cấp; mục "Kho & sơ chế" ở màn quầy'],
+    ['inventory', 'Kho hàng', 'Nguyên liệu, Nhập kho & kiểm kê, Nhà cung cấp; mục "Kho" ở màn quầy'],
     ['customers', 'Khách hàng & khuyến mãi', 'Hội viên, Tích điểm & voucher, Khuyến mãi, Gợi ý & ghim, Đánh giá món'],
     ['finance', 'Sổ quỹ & nhân sự', 'Sổ quỹ, Nhân sự & chấm công'],
     ['analytics', 'Thu chi', 'Thu chi (lãi / lỗ, chi phí cố định)'], // trang Phân tích đã bỏ (ADR-052)
@@ -453,7 +453,7 @@ function render(s) {
       el(
         'p',
         { class: 'small muted' },
-        'Mang ra bàn: quầy có dải "Mang ra" và nút "Đã mang", điện thoại khách báo "nhân viên đang mang ra bàn". Nhận tại quầy: khách được mời ra quầy lấy như trước.',
+        'Mang ra bàn: món xong thì điện thoại khách báo "nhân viên đang mang ra bàn". Nhận tại quầy: khách được mời ra quầy lấy như trước.',
       ),
     ),
     card(

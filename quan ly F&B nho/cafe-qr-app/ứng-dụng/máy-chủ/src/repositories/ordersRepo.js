@@ -6,7 +6,7 @@ const ORDER_SELECT = `
          o.PaymentStatus, o.PaymentMethod, o.TotalAmount, o.SubtotalAmount, o.PromoDiscount, o.OrderPromotionId, op.Name AS OrderPromotionName,
          o.MemberId, o.Note, o.CreatedBy, cu.FullName AS CreatedByName,
          o.CreatedAt, o.AcceptedAt, o.PaidAt, o.CompletedAt, o.CancelledAt, o.CancelReason, o.VoidedAt,
-         o.HoldMode, o.HoldUntil, o.ReleasedAt, o.SaleSource, omv.MovedFromTableId, omv.MovedFromName, omv.LastMovedAt, o.ServedAt
+         o.HoldMode, o.HoldUntil, o.ReleasedAt, o.SaleSource, omv.MovedFromTableId, omv.MovedFromName, omv.LastMovedAt
   FROM dbo.Orders o
   LEFT JOIN dbo.Tables t ON t.TableId = o.TableId
   LEFT JOIN dbo.Users cu ON cu.UserId = o.CreatedBy
@@ -49,9 +49,6 @@ const mapOrder = (r) => ({
   tableMove:
     r.MovedFromTableId && r.MovedFromTableId !== r.TableId ? { fromTable: r.MovedFromName, fromTableId: r.MovedFromTableId, movedAt: r.LastMovedAt } : null,
   releasedAt: r.ReleasedAt ?? null,
-  // F-088 (ADR-049 D-217): đơn tại bàn đã được nhân viên mang ra (chế độ "mang ra bàn"). Người mang (ServedBy) chỉ lưu trong CSDL —
-  // đơn cũng gửi tới điện thoại khách (sự kiện order.*), không lộ tên nhân viên (như BR-032).
-  servedAt: r.ServedAt ?? null,
   items: [],
 });
 
@@ -287,22 +284,6 @@ export async function accept(orderId) {
     { id: [sql.Int, orderId] },
   );
   return { changed: r.recordset[0].Changed === 1, status: r.recordset[0].Status };
-}
-
-/**
- * F-088 (ADR-049 D-217): đơn tại bàn đã hoàn tất → "Đã mang" ra bàn. Chỉ ghi giờ + người (không kho, không tiền) nên là một
- * UPDATE có điều kiện: hai máy bấm cùng lúc chỉ một máy đổi được. Trả trạng thái để service báo ALREADY_SERVED / INVALID_STATE.
- */
-export async function markServed(orderId, userId) {
-  const r = await query(
-    `UPDATE dbo.Orders SET ServedAt = SYSUTCDATETIME(), ServedBy = @u
-     WHERE OrderId = @id AND Type = 'DINE_IN' AND Status = 'COMPLETED' AND ServedAt IS NULL;
-     DECLARE @changed INT = @@ROWCOUNT;
-     SELECT @changed AS Changed, o.Status, o.Type, o.ServedAt FROM dbo.Orders o WHERE o.OrderId = @id;`,
-    { id: [sql.Int, orderId], u: [sql.Int, userId] },
-  );
-  const row = r.recordset[0];
-  return row ? { changed: row.Changed === 1, status: row.Status, type: row.Type, servedAt: row.ServedAt } : null;
 }
 
 /** sp_CompleteOrder → danh sách nguyên liệu đã trừ (kèm khả dụng sau trừ). */

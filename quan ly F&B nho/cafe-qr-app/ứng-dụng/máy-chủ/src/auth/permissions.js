@@ -47,7 +47,7 @@ const isStoreManager = (u) => u.role === 'STORE_MGR';
  */
 export const CAPABILITIES = [
   { key: 'pos.cashier', group: 'Máy quầy', label: 'Thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi thu chi', money: true, byRole: atPosition('CASHIER') },
-  { key: 'pos.barista', group: 'Máy quầy', label: 'Nhận / làm đơn, sơ chế, hủy hàng, nhận hàng', byRole: atPosition('BARISTA') },
+  { key: 'pos.barista', group: 'Máy quầy', label: 'Nhận / làm đơn, hủy hàng, nhận hàng', byRole: atPosition('BARISTA') },
   { key: 'pos.server', group: 'Máy quầy', label: 'Mở bàn, gọi món tại bàn, chuyển bàn', byRole: atPosition('SERVER') },
   { key: 'stock.count', group: 'Máy quầy', label: 'Kiểm kê, điều chỉnh kho ở quầy', byRole: isLeadRole },
   { key: 'attendance.edit', group: 'Máy quầy', label: 'Sửa / thêm chấm công của người khác', byRole: isLeadRole },

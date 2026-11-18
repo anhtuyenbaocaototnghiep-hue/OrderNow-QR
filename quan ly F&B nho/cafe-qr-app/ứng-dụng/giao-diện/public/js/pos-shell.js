@@ -74,8 +74,8 @@ export async function mountPosShell(active) {
     ['orders', '/pos', singleScreen ? 'Màn quầy' : 'Đơn hàng', 'ticket'],
     ['tables', tabHref('tables', '/pos/table-order'), 'Gọi món tại bàn', 'utensils'],
     ['takeaway', tabHref('takeaway', '/pos/takeaway'), 'Bán mang đi', 'shopping-bag'],
-    // F-061 (ADR-021 D-79): "Kho & sơ chế" theo nhóm Kho hàng (ẩn mục, trang vẫn mở được bằng đường dẫn)
-    ...(current.modules.includes('inventory') ? [['stock', '/pos/stock', 'Kho & sơ chế', 'package']] : []),
+    // F-061 (ADR-021 D-79): "Kho" theo nhóm Kho hàng (ẩn mục, trang vẫn mở được bằng đường dẫn); bỏ "& sơ chế" — ADR-064 D-254
+    ...(current.modules.includes('inventory') ? [['stock', '/pos/stock', 'Kho', 'package']] : []),
     ['shift', tabHref('shift', '/pos/shift'), 'Ca & hoàn tiền', 'wallet'],
     ['me', '/pos/me', 'Giờ công', 'timer'], // F-072 / F-073: giờ công, lương tạm tính, phiếu lương của chính mình
   ];

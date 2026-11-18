@@ -4,7 +4,7 @@ import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { auth, sleep, startApp } from './helpers/harness.js';
 
-let app, api, pool, admin, staff, ids, tok, staffSock, publicSock, categoryOf;
+let app, api, pool, admin, staff, ids, tok, publicSock, categoryOf;
 
 const call = (token, method, path, body) => {
   const req = api[method](path).set(auth(token));
@@ -56,7 +56,6 @@ before(async () => {
   categoryOf = Object.fromEntries(
     (await q1('SELECT MenuItemId, CategoryId FROM dbo.MenuItems WHERE DeletedAt IS NULL')).map((r) => [r.MenuItemId, r.CategoryId]),
   );
-  staffSock = await app.connect({ auth: { token: staff } });
   publicSock = await app.connect({});
 });
 
@@ -115,69 +114,17 @@ describe('Màn quầy một màn hình (F-088)', () => {
     assert.equal(stationOf(detail, counter.menuItemId), 'COUNTER');
   });
 
-  test('AC-088-03: "Đã mang" đơn tại bàn đã xong — Phục vụ ghi được (servedAt, sự kiện order.served tới quầy + phiên, phiên khách thấy servedAt); lần 2 → 409 ALREADY_SERVED; đơn chưa xong / đã hủy / mang đi → 409 INVALID_STATE; chỉ Pha chế → 403; không đăng nhập → 401; người chỉ từng bấm "Đã mang" xóa tài khoản → lưu trữ (không lỗi)', async () => {
+  test('AC-088-03: không còn bước "Đã mang" (ADR-064 D-253) — đơn tại bàn xong là xong: POST /api/orders/{id}/served → 404, đơn ở quầy và phiên khách không có servedAt, CSDL không ghi ServedAt / ServedBy', async () => {
     const { C, sessionId, orderId } = await guestOrder('03', [{ menuItemId: ids['Cà phê đen'], quantity: 1 }]);
-    const cSock = await app.connect({ auth: { sessionId }, extraHeaders: { cookie: C.cookie } });
-
-    // Chưa xong → chưa mang được
-    const early = await call(tok.pv88, 'post', `/api/orders/${orderId}/served`);
-    assert.equal(early.status, 409, JSON.stringify(early.body));
-    assert.equal(early.body.code, 'INVALID_STATE');
-
     await makeDone(staff, orderId);
-    const blocked = await call(tok.pc88, 'post', `/api/orders/${orderId}/served`);
-    assert.equal(blocked.status, 403, JSON.stringify(blocked.body));
-    assert.equal(blocked.body.code, 'POSITION_REQUIRED');
-    assert.equal((await api.post(`/api/orders/${orderId}/served`)).status, 401);
-
-    const staffEvt = app.waitFor(staffSock, 'order.served', (p) => p.orderId === orderId);
-    const guestEvt = app.waitFor(cSock, 'order.served', (p) => p.orderId === orderId);
-    const served = ok(await call(tok.pv88, 'post', `/api/orders/${orderId}/served`)).order;
-    assert.ok(served.servedAt, 'có giờ mang ra');
-    assert.equal(served.servedBy, undefined, 'không trả tên người mang cho khách / sự kiện');
-    const [se, ge] = await Promise.all([staffEvt, guestEvt]);
-    assert.equal(se.sessionId, sessionId);
-    assert.ok(ge.servedAt);
+    const gone = await call(tok.pv88, 'post', `/api/orders/${orderId}/served`);
+    assert.equal(gone.status, 404, JSON.stringify(gone.body));
+    const listed = ok(await call(staff, 'get', '/api/orders')).find((o) => o.orderId === orderId);
+    assert.deepEqual([listed.status, 'servedAt' in listed], ['COMPLETED', false]);
+    const mine = ok(await C.get(`/api/sessions/${sessionId}`)).orders.find((o) => o.orderId === orderId);
+    assert.deepEqual([mine.status, 'servedAt' in mine], ['COMPLETED', false]);
     const row = (await q1(`SELECT ServedAt, ServedBy FROM dbo.Orders WHERE OrderId = ${orderId}`))[0];
-    assert.ok(row.ServedAt && row.ServedBy, 'CSDL ghi giờ + người mang');
-
-    const view = ok(await C.get(`/api/sessions/${sessionId}`));
-    assert.ok(view.orders.find((o) => o.orderId === orderId).servedAt, 'khách thấy đã mang ra');
-
-    const again = await call(tok.tn88, 'post', `/api/orders/${orderId}/served`);
-    assert.equal(again.status, 409, JSON.stringify(again.body));
-    assert.equal(again.body.code, 'ALREADY_SERVED');
-
-    // Đơn mang đi (đã xong) — không có "mang ra bàn"
-    const ta = ok(
-      await call(staff, 'post', '/api/orders/takeaway', { items: [{ menuItemId: ids['Cà phê đen'], quantity: 1 }], amountReceived: 100000 }),
-      201,
-    ).order;
-    ok(await call(staff, 'post', `/api/orders/${ta.orderId}/complete`));
-    const taServed = await call(tok.pv88, 'post', `/api/orders/${ta.orderId}/served`);
-    assert.equal(taServed.status, 409, JSON.stringify(taServed.body));
-    assert.equal(taServed.body.code, 'INVALID_STATE');
-
-    // Đơn đã hủy (cùng nhóm khách) → không mang ra được
-    const extra = await C.post('/api/orders', { sessionId, items: [{ menuItemId: ids['Cà phê đen'], quantity: 1 }] });
-    assert.equal(extra.status, 201, JSON.stringify(extra.body));
-    ok(await call(staff, 'post', `/api/orders/${extra.body.orderId}/cancel`, { reason: 'Khách đổi ý' }));
-    const cancelled = await call(tok.pv88, 'post', `/api/orders/${extra.body.orderId}/served`);
-    assert.equal(cancelled.status, 409, JSON.stringify(cancelled.body));
-    assert.equal(cancelled.body.code, 'INVALID_STATE');
-
-    // Người chỉ từng bấm "Đã mang" (khóa ngoại Orders.ServedBy) → xóa tài khoản là lưu trữ, không lỗi 500 (review G3).
-    // Chấm công kiểu màn chung (mặc định quán): đăng nhập không tạo dòng chấm công → "Đã mang" là dấu vết duy nhất
-    ok(await call(admin, 'put', '/api/admin/attendance-settings', { attendanceMode: 'KIOSK', moneyPin: false }));
-    const mover = await createUser('mang88', 'STAFF', { positions: ['SERVER'] });
-    const moverTok = await app.login('mang88', 'Pass@123');
-    ok(await call(admin, 'put', '/api/admin/attendance-settings', { attendanceMode: 'LOGIN', moneyPin: false }));
-    assert.equal((await q1(`SELECT COUNT(*) AS n FROM dbo.Attendance WHERE UserId = ${mover.userId}`))[0].n, 0, 'không có dòng chấm công');
-    const third = await C.post('/api/orders', { sessionId, items: [{ menuItemId: ids['Cà phê đen'], quantity: 1 }] });
-    assert.equal(third.status, 201, JSON.stringify(third.body));
-    await makeDone(staff, third.body.orderId);
-    ok(await call(moverTok, 'post', `/api/orders/${third.body.orderId}/served`));
-    assert.equal(ok(await call(admin, 'delete', `/api/admin/users/${mover.userId}`)).result, 'ARCHIVED');
+    assert.deepEqual([row.ServedAt, row.ServedBy], [null, null]);
   });
 
   test('AC-088-04: báo hết món ngay ở quầy — Pha chế tắt Latte → menu khách không đặt được, phát menu.availability_changed, có nhật ký menu.availability; bật lại đặt được; chỉ Thu ngân → 403 POSITION_REQUIRED; món không có → 404', async () => {

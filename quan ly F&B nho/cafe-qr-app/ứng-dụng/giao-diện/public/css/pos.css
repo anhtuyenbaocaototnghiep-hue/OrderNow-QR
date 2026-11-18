@@ -1843,16 +1843,6 @@ body.single-screen .ticket ul li {
 .strip-card strong {
   font-size: 1.05rem;
 }
-.serve-strip {
-  background: var(--c-success-50);
-  border-color: #bcd8c2;
-}
-.serve-strip .label {
-  color: var(--c-success);
-}
-.serve-card {
-  border-color: var(--c-success);
-}
 .counter-strip {
   background: var(--c-primary-50);
   border-color: #e2cdb8;

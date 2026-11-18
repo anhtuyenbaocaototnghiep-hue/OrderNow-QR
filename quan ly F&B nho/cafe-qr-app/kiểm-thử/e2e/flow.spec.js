@@ -568,25 +568,16 @@ test('chia bill: 2 khách gộp bàn, mỗi người chọn món của mình; qu
   await expect(A.locator('.thanks')).toContainText('Đã thanh toán 2 phần, tổng 35.000đ');
 });
 
-test('kho nâng cao: quầy pha mẻ bán thành phẩm, ghi phiếu hủy, nhận hàng theo đơn đặt hàng; quản lý xem đề xuất nhập + giá vốn thực tế (F-027, F-032, F-030, F-029, F-031)', async ({
+test('kho nâng cao: Kho ở quầy mở thẻ Tồn kho, không còn Sơ chế (ADR-064); ghi phiếu hủy, nhận hàng theo đơn đặt hàng; quản lý xem đề xuất nhập + giá vốn thực tế (F-032, F-030, F-029, F-031)', async ({
   request,
 }) => {
   const ingr = async (name, unit) => (await apiAs(request, 'post', '/api/admin/ingredients', { name, unit, stockQty: 0, lowStockThreshold: 0 })).ingredientId;
   const bean = await ingr('Hạt rang E2E', 'g');
   const water = await ingr('Nước E2E', 'ml');
-  const semi = await ingr('Cốt pha E2E', 'ml');
   await apiAs(request, 'post', '/api/admin/stock-receipts', {
     lines: [
       { ingredientId: bean, qty: 1000, unitCost: 200 },
       { ingredientId: water, qty: 10000, unitCost: 1 },
-    ],
-  });
-  await apiAs(request, 'put', `/api/admin/ingredients/${semi}/advanced`, { kind: 'SEMI', shelfLifeHours: 24, wastePercent: 0 });
-  await apiAs(request, 'put', `/api/admin/ingredients/${semi}/recipe`, {
-    outputQty: 900,
-    lines: [
-      { ingredientId: bean, qty: 100 },
-      { ingredientId: water, qty: 1000 },
     ],
   });
   const sup = await apiAs(request, 'post', '/api/admin/suppliers', {
@@ -597,11 +588,10 @@ test('kho nâng cao: quầy pha mẻ bán thành phẩm, ghi phiếu hủy, nh�
   await apiAs(request, 'post', `/api/admin/purchase-orders/${po.poId}/send`);
 
   await P.goto('/pos/stock');
-  await P.locator('#prep-semi').selectOption(String(semi));
-  await P.fill('#prep-mult', '2');
-  await expect(P.locator('#content')).toContainText('Ra 1.800 ml');
-  await P.click('#prep-go');
-  await expect(P.locator('.toast', { hasText: 'Đã sơ chế 1.800 ml Cốt pha E2E' })).toBeVisible();
+  // ADR-064 D-254: không còn thẻ Sơ chế — Kho mở thẻ Tồn kho
+  await expect(P.locator('#tabs button').first()).toHaveText('Tồn kho');
+  await expect(P.locator('#tabs button').first()).toHaveAttribute('aria-selected', 'true');
+  await expect(P.locator('#tabs')).not.toContainText('Sơ chế');
 
   await P.locator('#tabs button', { hasText: 'Hủy hàng' }).click();
   await P.locator('#waste-ing').selectOption(String(water));
@@ -1713,7 +1703,7 @@ test('chế độ cơ bản: tắt hết nhóm nâng cao → menu quản lý kh�
     await expect(side.locator('summary', { hasText: 'Kho hàng' })).toHaveCount(1);
     await expect(side.locator('a[href="/admin/ingredients"]')).toHaveCount(1);
     await expect(side.locator('a[href="/admin/members"]')).toHaveCount(0);
-    // Màn quầy: "Kho & sơ chế" theo nhóm Kho hàng
+    // Màn quầy: "Kho" theo nhóm Kho hàng
     await P.goto('/pos');
     await expect(P.locator('.pos-nav a[href="/pos/stock"]')).toHaveCount(1);
     await apiAs(request, 'put', '/api/admin/settings', { uiModules: [] });
@@ -2790,7 +2780,7 @@ test('bán khi mất mạng: máy quầy mất kết nối → tự chuyển "b�
   await expect(P.locator('#pay')).toHaveText('Thu tiền & In bill');
 });
 
-test('hạn dùng nguyên liệu: quản lý đặt "hộp 100 ml, mở rồi dùng 24 giờ" ở Kho nâng cao; bán món → máy quầy hiện "Nên mời khách hôm nay"; Kho & sơ chế → Hạn dùng có hộp đang mở → "Bỏ phần còn"; trang Hôm nay có thẻ Sắp hết hạn (F-075, AC-075-05)', async ({
+test('hạn dùng nguyên liệu: quản lý đặt "hộp 100 ml, mở rồi dùng 24 giờ" ở Kho nâng cao; bán món → máy quầy hiện "Nên mời khách hôm nay"; Kho → Hạn dùng có hộp đang mở → "Bỏ phần còn"; trang Hôm nay có thẻ Sắp hết hạn (F-075, AC-075-05)', async ({
   request,
 }) => {
   const ingredients = await apiAs(request, 'get', '/api/admin/ingredients');
@@ -2930,7 +2920,7 @@ test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở
   }); // trả giá cũ
 });
 
-test('vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", cấp "Thử việc" ở Tài khoản; người đó đăng nhập → máy quầy chỉ có Đơn hàng, Kho & sơ chế, Giờ công + nhãn "Thử việc"; mở thẳng Bán mang đi → về Đơn hàng kèm lời nhắc (F-078, AC-078-06)', async () => {
+test('vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", cấp "Thử việc" ở Tài khoản; người đó đăng nhập → máy quầy chỉ có Đơn hàng, Kho, Giờ công + nhãn "Thử việc"; mở thẳng Bán mang đi → về Đơn hàng kèm lời nhắc (F-078, AC-078-06)', async () => {
   await P.goto('/admin/users');
   await P.getByRole('button', { name: '+ Thêm tài khoản' }).click();
   const form = P.getByRole('dialog');
@@ -2955,7 +2945,7 @@ test('vị trí + cấp: chủ quán tạo nhân viên chỉ tick "Pha chế", c
   await expect(B2).toHaveURL(/\/pos$/);
   await B2.getByRole('dialog').getByRole('button', { name: 'Bỏ qua' }).click();
   const nav = B2.locator('.pos-nav');
-  await expect(nav.getByRole('link')).toHaveText(['Đơn hàng', 'Kho & sơ chế', 'Giờ công']);
+  await expect(nav.getByRole('link')).toHaveText(['Đơn hàng', 'Kho', 'Giờ công']);
   await expect(B2.locator('.pos-user')).toContainText('Thử việc');
   await B2.goto('/pos/takeaway');
   await expect(B2).toHaveURL(/\/pos\?denied=position/);
@@ -3331,7 +3321,7 @@ test('"+" mở bảng chọn cho mọi món: chủ quán bật ở Cài đặt �
   }
 });
 
-test('ảnh nguyên liệu: chủ quán mở Kho nguyên liệu → Sửa "Cốt trà đào" → dán đường dẫn sai thì báo ngay dưới ô, dán "/img/nguyen-lieu/cot-tra-dao.jpg" → Lưu → dòng hiện ảnh (tải được), nguyên liệu chưa có ảnh vẫn là ô chữ cái; nhân viên mở Kho & sơ chế → Tồn kho thấy ảnh nhỏ (F-085, AC-085-03)', async ({
+test('ảnh nguyên liệu: chủ quán mở Kho nguyên liệu → Sửa "Cốt trà đào" → dán đường dẫn sai thì báo ngay dưới ô, dán "/img/nguyen-lieu/cot-tra-dao.jpg" → Lưu → dòng hiện ảnh (tải được), nguyên liệu chưa có ảnh vẫn là ô chữ cái; nhân viên mở Kho → Tồn kho thấy ảnh nhỏ (F-085, AC-085-03)', async ({
   request,
 }) => {
   const IMG = '/img/nguyen-lieu/cot-tra-dao.jpg';
@@ -3797,13 +3787,11 @@ test('gom ly + trạm làm món + in phiếu + hết món: hai bàn cùng gọi 
     await expect(detail).toHaveCount(0);
     await expect(S.locator(`iframe[src*="/pos/orders/${b.order.orderId}/receipt?mode=ticket"]`)).toHaveCount(1);
 
-    // Người đứng quầy lấy bánh → Xong ở dải; bánh của bàn → dải "Mang ra" ghi tên món (không "0 ly")
+    // Người đứng quầy lấy bánh → Xong ở dải; không còn dải "Mang ra" (ADR-064 D-253)
     await strip.getByRole('button', { name: `Xong đơn #${c.order.orderCode} (quầy lấy)` }).click();
     await expect(S.locator('.toast', { hasText: `Đã hoàn tất #${c.order.orderCode}` })).toBeVisible();
     await expect(S.locator('#counter-strip .counter-card', { hasText: 'Bàn N3' })).toHaveCount(0);
-    const serve = S.locator('#serve-strip .serve-card', { hasText: 'Bàn N3' });
-    await expect(serve).toContainText('1× Bánh croissant');
-    await expect(serve).not.toContainText('0 ly');
+    await expect(S.locator('#serve-strip')).toHaveCount(0);
 
     // Hết món: người pha báo hết món ngay ở Hàng pha → điện thoại khách đổi ngay; mở bán lại → đặt được
     // (món của bài này không có công thức → không tự hết vì thiếu nguyên liệu dù các bài trước đã bán nhiều)
@@ -3831,7 +3819,7 @@ test('gom ly + trạm làm món + in phiếu + hết món: hai bàn cùng gọi 
   }
 });
 
-test('mang ra bàn: khách Bàn S1 gọi món bằng điện thoại, quầy Tiếp nhận → Hoàn tất → dải "Mang ra" ghi Bàn S1, điện thoại khách báo "nhân viên đang mang ra bàn" (4 bước); bấm "Đã mang" → dải mất, điện thoại khách "Đã mang ra bàn" (F-088, AC-088-08)', async ({
+test('mang ra bàn: khách Bàn S1 gọi món bằng điện thoại, quầy Tiếp nhận → Hoàn tất → không có dải "Mang ra" / nút "Đã mang"; điện thoại khách báo "nhân viên đang mang ra bàn", thẻ đơn "Đã xong" (3 bước), không tràn ngang ở 320 px (F-088, AC-088-08, ADR-064)', async ({
   request,
 }) => {
   await ensureShift(request);
@@ -3861,22 +3849,19 @@ test('mang ra bàn: khách Bàn S1 gọi món bằng điện thoại, quầy Ti�
     await S.locator('#col-PREPARING .ticket', { hasText: `#${order.orderCode}` })
       .getByRole('button', { name: 'Hoàn tất' })
       .click();
-    const card = S.locator('#serve-strip .serve-card', { hasText: 'Bàn S1' });
-    await expect(card).not.toContainText(`#${order.orderCode}`); // gọn: bàn + số ly, không mã đơn
-    await expect(card).toContainText('1 ly');
+    // ADR-064 D-253: không còn dải "Mang ra" / nút "Đã mang" — món xong là xong
+    await expect(S.locator('#col-PREPARING .ticket', { hasText: `#${order.orderCode}` })).toHaveCount(0);
+    await expect(S.locator('#serve-strip')).toHaveCount(0);
+    await expect(S.getByRole('button', { name: /Đã mang/ })).toHaveCount(0);
 
     await expect(G.locator('.popup-done')).toContainText('nhân viên đang mang ra bàn');
     await G.getByRole('button', { name: 'Đã hiểu' }).click();
-    await expect(G.locator('.order-card .badge')).toHaveText('Đang mang ra bàn');
-    await expect(G.locator('.order-card .progress.four span')).toHaveText(['Đã gửi', 'Đang chuẩn bị', 'Xong', 'Đã mang ra']);
+    await expect(G.locator('.order-card .badge')).toHaveText('Đã xong');
+    await expect(G.locator('.order-card .progress span')).toHaveText(['Đã gửi', 'Đang chuẩn bị', 'Xong']);
+    await expect(G.locator('.order-card .progress span.on')).toHaveCount(3);
     // DEF-031: điện thoại nhỏ 320 px — đơn đã xong không làm trang tràn ngang (nhãn dài từng đẩy trang rộng 412 px)
     await G.setViewportSize({ width: 320, height: 700 });
     expect(await G.evaluate(() => globalThis.document.documentElement.scrollWidth - globalThis.document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
-
-    await card.getByRole('button', { name: `Đã mang đơn #${order.orderCode} ra Bàn S1` }).click();
-    await expect(card).toHaveCount(0);
-    await expect(G.locator('.order-card .badge')).toHaveText('Đã mang ra bàn');
-    await expect(G.locator('.order-card .progress.four span.on')).toHaveCount(4);
   } finally {
     await Promise.all([phone.close(), quay.close()]);
     await apiAs(request, 'put', '/api/admin/settings', SINGLE_OFF);
@@ -4160,7 +4145,7 @@ test('tạo tài khoản: chọn vai trò → hiện ngay "Vai trò này đượ
   await P.getByRole('button', { name: '+ Thêm tài khoản' }).click();
   const dlg = P.getByRole('dialog', { name: 'Thêm tài khoản' });
   const base = dlg.locator('.perm-base li');
-  await expect(base).toHaveText([CASHIER_CAP, 'Nhận / làm đơn, sơ chế, hủy hàng, nhận hàng', SERVER_CAP]);
+  await expect(base).toHaveText([CASHIER_CAP, 'Nhận / làm đơn, hủy hàng, nhận hàng', SERVER_CAP]);
   await expect(dlg.locator('.perm-head')).toHaveText('Vai trò này được làm 3 / 17 việc');
   await dlg.getByRole('checkbox', { name: 'Phục vụ' }).check();
   await expect(base).toHaveText([SERVER_CAP]);

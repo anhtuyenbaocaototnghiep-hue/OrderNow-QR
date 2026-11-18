@@ -1,5 +1,5 @@
-// S-17 Kho & sơ chế ở quầy (ADR-006, ma trận D-24 — STAFF được): sơ chế mẻ bán thành phẩm (F-027), phiếu hủy hàng (F-032),
-// lô sắp / đã hết hạn + hủy lô (F-028), nhận hàng theo đơn đặt hàng (F-030), xem tồn nhanh. Mọi số tồn do server tính.
+// S-17 Kho ở quầy (ADR-006, ma trận D-24 — STAFF được): xem tồn nhanh, phiếu hủy hàng (F-032), lô sắp / đã hết hạn + hủy lô
+// (F-028), nhận hàng theo đơn đặt hàng (F-030). Mọi số tồn do server tính. Thẻ "Sơ chế" (F-027) đã bỏ — ADR-064 D-254.
 // F-036: trưởng ca / quản lý thêm điều chỉnh kho tay (tab Tồn kho) và kiểm kê (tab Kiểm kê) — nhân viên không thấy, server cũng chặn.
 import { staffApi } from '../api.js';
 import { getToken } from '../auth.js';
@@ -15,17 +15,10 @@ import { hasCap } from '../roles.js';
 const shell = await mountPosShell('stock');
 const isLead = hasCap(shell.user, 'stock.count'); // F-079: kiểm kê + điều chỉnh kho — theo quyền (mặc định trưởng ca trở lên)
 const REASONS = { SPILL: 'Đổ / vỡ', EXPIRED: 'Hết hạn', QUALITY: 'Hỏng / không đạt', OTHER: 'Khác' };
-const state = { tab: 'prep' };
+const state = { tab: 'stock' };
 const tabs = $('#tabs');
 const body = $('#content');
-const TABS = [
-  ['prep', 'Sơ chế'],
-  ['waste', 'Hủy hàng'],
-  ['expiry', 'Hạn dùng'],
-  ['receive', 'Nhận hàng'],
-  ['stock', 'Tồn kho'],
-  ...(isLead ? [['stocktake', 'Kiểm kê']] : []),
-];
+const TABS = [['stock', 'Tồn kho'], ['waste', 'Hủy hàng'], ['expiry', 'Hạn dùng'], ['receive', 'Nhận hàng'], ...(isLead ? [['stocktake', 'Kiểm kê']] : [])];
 clear(
   tabs,
   TABS.map(([key, label]) =>
@@ -50,8 +43,7 @@ clear(
 async function load() {
   clear(body, el('p', { class: 'muted' }, 'Đang tải…'));
   try {
-    if (state.tab === 'prep') await renderPrep();
-    else if (state.tab === 'waste') await renderWaste();
+    if (state.tab === 'waste') await renderWaste();
     else if (state.tab === 'expiry') await renderExpiry();
     else if (state.tab === 'receive') await renderReceive();
     else if (state.tab === 'stocktake') {
@@ -64,154 +56,6 @@ async function load() {
 }
 
 const range = () => `from=${todayVn()}&to=${todayVn()}`;
-
-// ---------- Sơ chế (F-027) ----------
-async function renderPrep() {
-  const [recipes, batches] = await Promise.all([staffApi('/api/prep/recipes'), staffApi(`/api/prep/batches?${range()}`)]);
-  if (!recipes.length) {
-    clear(
-      body,
-      el('div', { class: 'empty card' }, 'Chưa có bán thành phẩm có công thức. Quản lý tạo ở Kho nguyên liệu → Kho nâng cao → Bán thành phẩm → Công thức.'),
-    );
-    return;
-  }
-  const sel = el(
-    'select',
-    { class: 'input', id: 'prep-semi', 'aria-label': 'Bán thành phẩm' },
-    recipes.map((r) => el('option', { value: r.ingredientId }, `${r.name} — còn ${num(r.available)} ${r.unit}${r.isLow ? ' (sắp hết)' : ''}`)),
-  );
-  const mult = el('input', {
-    class: 'input',
-    id: 'prep-mult',
-    type: 'number',
-    min: 0.1,
-    max: 100,
-    step: 0.5,
-    value: 1,
-    style: { maxWidth: '7rem' },
-    'aria-label': 'Số mẻ',
-  });
-  const note = el('input', { class: 'input', maxlength: 200, placeholder: 'Ghi chú (không bắt buộc)' });
-  const preview = el('div');
-  const go = el('button', { class: 'btn btn-success btn-lg', type: 'button', id: 'prep-go' }, 'Hoàn tất mẻ');
-  let timer = null;
-  async function refresh() {
-    try {
-      const p = await staffApi(`/api/prep/preview?semiId=${sel.value}&multiplier=${Number(mult.value) || 1}`);
-      const r = recipes.find((x) => x.ingredientId === Number(sel.value));
-      go.disabled = !p.canPrepare;
-      clear(
-        preview,
-        el(
-          'p',
-          {},
-          `Ra ${num(p.outputQty)} ${r.unit} · giá vốn ước tính ${money(p.estimatedCost)}`,
-          r.instructions ? el('div', { class: 'small muted' }, r.instructions) : null,
-        ),
-        el(
-          'table',
-          { class: 'table' },
-          el(
-            'thead',
-            {},
-            el(
-              'tr',
-              {},
-              ['Nguyên liệu', 'Cần', 'Khả dụng', ''].map((h, k) => el('th', { class: k && k < 3 ? 'num' : '' }, h)),
-            ),
-          ),
-          el(
-            'tbody',
-            {},
-            p.lines.map((l) =>
-              el(
-                'tr',
-                { class: l.enough ? '' : 'loss-flag' },
-                el('td', {}, l.name),
-                el('td', { class: 'num' }, `${num(l.need)} ${l.unit}`),
-                el('td', { class: 'num' }, `${num(l.available)} ${l.unit}`),
-                el('td', {}, l.enough ? icon('check', { label: 'Đủ' }) : el('strong', {}, 'Thiếu')),
-              ),
-            ),
-          ),
-        ),
-      );
-    } catch (err) {
-      clear(preview, el('div', { class: 'field-error' }, errorMessage(err)));
-    }
-  }
-  [sel, mult].forEach((x) =>
-    x.addEventListener('input', () => {
-      clearTimeout(timer);
-      timer = setTimeout(refresh, 200);
-    }),
-  );
-  go.addEventListener('click', async () => {
-    setBusy(go, true);
-    try {
-      const b = await staffApi('/api/prep/batches', {
-        method: 'POST',
-        body: { semiIngredientId: Number(sel.value), multiplier: Number(mult.value), note: note.value || null },
-      });
-      toast(`Đã sơ chế ${num(b.outputQty)} ${b.unit} ${b.name} (mẻ #${b.batchId})`, 'success', 5000);
-      load();
-    } catch (err) {
-      toast(errorMessage(err), 'error', 6000);
-      setBusy(go, false);
-    }
-  });
-  const low = recipes.filter((r) => r.isLow);
-  clear(
-    body,
-    low.length ? el('div', { class: 'alert warning' }, `Nên pha thêm: ${low.map((r) => `${r.name} (còn ${num(r.available)} ${r.unit})`).join(', ')}`) : null,
-    el(
-      'div',
-      { class: 'card stack' },
-      el('h2', { style: { margin: 0, fontSize: '1.05rem' } }, 'Pha một mẻ'),
-      el('div', { class: 'row wrap' }, sel, el('label', {}, '× mẻ'), mult),
-      note,
-      preview,
-      go,
-    ),
-    el('h2', { style: { fontSize: '1.05rem', marginTop: '1rem' } }, 'Mẻ hôm nay'),
-    batches.length === 0
-      ? el('p', { class: 'muted' }, 'Chưa có mẻ nào hôm nay.')
-      : el(
-          'div',
-          { class: 'table-wrap' },
-          el(
-            'table',
-            { class: 'table' },
-            el(
-              'thead',
-              {},
-              el(
-                'tr',
-                {},
-                ['Lúc', 'Bán thành phẩm', 'Ra', 'Giá vốn', 'Dùng trước', 'Người pha'].map((h) => el('th', {}, h)),
-              ),
-            ),
-            el(
-              'tbody',
-              {},
-              batches.map((b) =>
-                el(
-                  'tr',
-                  {},
-                  el('td', {}, dateTime(b.preparedAt)),
-                  el('td', {}, b.name, b.note ? el('div', { class: 'small muted' }, b.note) : null),
-                  el('td', { class: 'num' }, `${num(b.outputQty)} ${b.unit}`),
-                  el('td', { class: 'num' }, money(b.totalCost)),
-                  el('td', {}, b.expiresAt ? dateTime(b.expiresAt) : '—'),
-                  el('td', {}, b.preparedBy),
-                ),
-              ),
-            ),
-          ),
-        ),
-  );
-  refresh();
-}
 
 // ---------- Hủy hàng (F-032) ----------
 async function renderWaste() {
@@ -302,7 +146,7 @@ function openPackCard(packs) {
     el(
       'p',
       { class: 'small muted' },
-      'Tính từ lúc app thấy hộp mới được mở (khi bán / sơ chế). Đã quá hạn: phần còn không tính là còn hàng — đổ bỏ rồi bấm "Bỏ phần còn".',
+      'Tính từ lúc app thấy hộp mới được mở (khi bán). Đã quá hạn: phần còn không tính là còn hàng — đổ bỏ rồi bấm "Bỏ phần còn".',
     ),
     el(
       'ul',
@@ -508,7 +352,7 @@ async function renderStock() {
                 el(
                   'td',
                   {},
-                  // F-085: ảnh nhỏ giúp nhận ra nguyên liệu khi đếm / sơ chế
+                  // F-085: ảnh nhỏ giúp nhận ra nguyên liệu khi đếm
                   el(
                     'div',
                     { class: 'row ing-name' },
