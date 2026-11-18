@@ -663,3 +663,7 @@ flowchart LR
 
 - **SCR-14 hộp Thu tiền → "Chuyển khoản":** khung mã nhỏ ghi từng dòng "Khách quét mã — 30.000đ" / "Sacombank · số" / "Nội dung: CF …" (DEF-032), hai nút **"Phóng to cho khách quét"** · **"In bill có mã QR"**. In bill = phiếu tạm tính (SCR-12) có "QUÉT ĐỂ CHUYỂN KHOẢN" + mã đúng số tiền đang hiện ở hộp (kể cả giảm giá / voucher đang chọn); nút "In tạm tính" ở chân hộp in cùng phiếu đó.
 - **SCR-13 Bán mang đi:** khung mã cùng kiểu (từng dòng), không có nút in (đơn mang đi chưa có trước khi thu).
+
+## TASK-126 — Hộp Nhận hàng — SCR-17, SCR-35 (F-030, DEF-033, 18/11/2026)
+
+- **Hộp Nhận hàng** (máy quầy → Kho → Nhận hàng; trang quản lý → Đơn đặt hàng → Xem → Nhận hàng): mỗi nguyên liệu một khối — dòng trên tên + "đặt 12 hộp · đã nhận 0 hộp"; dòng dưới các ô có nhãn **Số nhận (hộp)** (điền sẵn phần còn thiếu) · **Giá / hộp (đ)** · **Hạn sử dụng** (chỉ nguyên liệu theo lô); ô tự xuống hàng khi hộp hẹp. Cuối hộp: "Xác nhận nhận vượt số đã đặt", **Nhập kho**.

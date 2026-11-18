@@ -141,6 +141,7 @@
 | [TASK-123](TASK-123.md) | Tự xác nhận chuyển khoản qua SePay: máy chủ hỏi tiền vào 5 giây / lần, khớp bàn + đúng số tiền thì tự đóng bill, lệch thì "Tiền vào chưa khớp" ở quầy; ADR-063 | FEATURE-100 | TASK-122 | Agent | — | chủ dự án 17/11 | READY_FOR_REVIEW |
 | [TASK-124](TASK-124.md) | Gọn màn quầy: bỏ dải "Mang ra" / nút "Đã mang" và bỏ "Sơ chế" (giao diện); ADR-064 | FEATURE-088, FEATURE-027 | TASK-123 | Agent | — | chủ dự án 18/11 | READY_FOR_REVIEW |
 | [TASK-125](TASK-125.md) | In bill có mã QR từ hộp Thu tiền (phiếu tạm tính theo lựa chọn ở hộp — mã trên giấy = trên màn); khung mã từng dòng (DEF-032) | FEATURE-099 | TASK-124 | Agent | — | chủ dự án 18/11 | READY_FOR_REVIEW |
+| [TASK-126](TASK-126.md) | Hộp Nhận hàng dễ dùng: ô có nhãn, đơn vị gói thống nhất, không tràn ở dòng có hạn sử dụng (DEF-033); 3 đơn đặt hàng ví dụ trên CafeQrDev | FEATURE-030 | TASK-125 | Agent | — | chủ dự án 18/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 
