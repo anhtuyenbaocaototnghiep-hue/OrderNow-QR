@@ -667,3 +667,8 @@ flowchart LR
 ## TASK-126 — Hộp Nhận hàng — SCR-17, SCR-35 (F-030, DEF-033, 18/11/2026)
 
 - **Hộp Nhận hàng** (máy quầy → Kho → Nhận hàng; trang quản lý → Đơn đặt hàng → Xem → Nhận hàng): mỗi nguyên liệu một khối — dòng trên tên + "đặt 12 hộp · đã nhận 0 hộp"; dòng dưới các ô có nhãn **Số nhận (hộp)** (điền sẵn phần còn thiếu) · **Giá / hộp (đ)** · **Hạn sử dụng** (chỉ nguyên liệu theo lô); ô tự xuống hàng khi hộp hẹp. Cuối hộp: "Xác nhận nhận vượt số đã đặt", **Nhập kho**.
+
+## TASK-127 — Đi riêng, hóa đơn riêng — SCR-01, SCR-03 (F-097, ADR-065, 18/11/2026)
+
+- **SCR-01 màn chào / SCR-03 thực đơn** (điện thoại vừa tự vào nhóm của bàn): khung nhỏ đầu trang "**Bạn đã vào nhóm của Bàn …** — Món cả nhóm gọi chung một hóa đơn." + nút **"Tôi đi riêng — hóa đơn riêng"** + ✕ (ẩn). Mất khi điện thoại gửi món đầu tiên trong nhóm. Bấm đi riêng → thông báo "Đã tạo nhóm riêng cho bạn — món bạn gọi tính vào hóa đơn riêng", trang mở lại theo nhóm mới, giỏ giữ nguyên.
+- **SCR-01 màn chọn nhóm** (bàn có ≥ 2 nhóm): dưới các nút "Vào nhóm này" có nút "Tôi đi riêng — hóa đơn riêng".

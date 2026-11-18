@@ -1388,3 +1388,10 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Tài khoản hệ thống | `Users` thêm `he-thong-ngan-hang` — "Tự động (ngân hàng)", `STAFF`, `IsActive = 0`, `DeletedAt` có giá trị (không đăng nhập, không hiện ở danh sách / chấm công / lương); là `Payments.ReceivedBy` của lượt thu máy tự ghi. |
 | Xử lý một lần | Nhân viên ghép / đánh dấu: `UPDATE … WHERE Status = 'UNMATCHED'` (giữ chỗ trước khi thu) — hai máy bấm cùng lúc thì máy sau bị chặn. |
 | Cài đặt | `pay.auto_confirm` (`'true'` = bật; mặc định tắt), `pay.auto_confirm_since` (ISO, lúc bật), `pay.sepay_since_id` (mã giao dịch SePay đã xét cuối). |
+
+## Đi riêng, hóa đơn riêng (ADR-065 D-255, TASK-127, 18/11/2026)
+
+| Migration / đối tượng | Thay đổi |
+| --- | --- |
+| `0063_di_rieng_hoa_don_rieng.sql` | `SessionClients.OrderedAt DATETIME2(0) NULL` — mốc điện thoại này gửi món đầu tiên trong nhóm (đơn không lưu điện thoại nào gọi). Chỉ thêm cột; dòng cũ NULL. |
+| `sessionsRepo.separate` | Một giao dịch: khóa dòng thành viên (`UPDLOCK, HOLDLOCK`) → chưa `OrderedAt` thì xóa khỏi nhóm cũ, tạo nhóm mới ở cùng bàn + thêm điện thoại; đã gửi món → không đổi gì. |

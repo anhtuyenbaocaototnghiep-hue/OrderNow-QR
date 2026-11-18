@@ -925,3 +925,8 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 
 - Bỏ `POST /api/orders/{id}/served` (→ `404`), sự kiện `order.served`, trường `servedAt` của đơn.
 - Sơ chế: API `/api/prep/recipes`, `/api/prep/preview`, `/api/prep/batches`, `PUT /api/admin/ingredients/{id}/recipe` **giữ** (không còn giao diện gọi) — dữ liệu cũ và báo cáo không đổi. `PUT /api/admin/ingredients/{id}/advanced` từ giao diện gửi lại `kind` hiện có (không còn chọn loại).
+
+## Bổ sung ADR-065 — đi riêng, hóa đơn riêng (TASK-127, 18/11/2026)
+
+- `POST /api/sessions/{id}/separate` (khách, cookie điện thoại) `{ qrToken }` → `{ table, session }` (nhóm mới ở cùng bàn, điện thoại này là thành viên). Điện thoại rời nhóm `{id}` (không còn xem được — `403`). Phát `session.opened` (room `staff`). Lỗi: `404` (nhóm không ở bàn này / mã bàn sai), `409 SESSION_CLOSED`, `403 NOT_IN_GROUP` (điện thoại không ở nhóm), `409 ALREADY_ORDERED` (điện thoại đã gửi món trong nhóm — trả riêng bằng Chia bill theo người).
+- `POST /api/orders` (khách): gửi thành công → ghi mốc điện thoại này đã gửi món trong nhóm (`SessionClients.OrderedAt`).

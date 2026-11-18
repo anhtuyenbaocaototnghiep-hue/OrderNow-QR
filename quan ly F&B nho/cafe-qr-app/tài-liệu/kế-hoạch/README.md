@@ -66,3 +66,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-122-plan.md](TASK-122-plan.md) — chuyển khoản bằng VietQR, nhân viên xác nhận (F-099, ADR-062).
 - [TASK-123-plan.md](TASK-123-plan.md) — tự xác nhận chuyển khoản qua SePay (F-100, ADR-063).
 - [TASK-124-plan.md](TASK-124-plan.md) — bỏ dải "Mang ra" và "Sơ chế" (ADR-064).
+- [TASK-127-plan.md](TASK-127-plan.md) — đi riêng, hóa đơn riêng (F-097, ADR-065).
