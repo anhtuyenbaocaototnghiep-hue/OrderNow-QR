@@ -76,9 +76,17 @@
   1. Khách gọi thanh toán, chọn "Chuyển khoản" → điện thoại hiện mã QR, số tiền, nội dung.
   2. Quầy thấy "chuyển khoản" ở dải Gọi thanh toán; mở Thu tiền thì "Chuyển khoản" đã chọn và mã QR hiện.
   3. Bấm "Đã nhận chuyển khoản & In bill" → điện thoại khách sang màn cảm ơn.
+- **AC-099-06:** (TASK-125, 18/11/2026) Phiếu tạm tính in từ hộp Thu tiền mang theo lựa chọn đang có ở hộp (`?bill=<JSON>`: hội viên, voucher, đổi thưởng, giảm tay, bỏ quà):
+  - số phải thu và mã QR trên phiếu = xem trước thu tiền (`POST /api/sessions/{id}/settle/preview`);
+  - không có `bill` → như cũ;
+  - `bill` sai → `400 VALIDATION_ERROR`;
+  - tài khoản / mật khẩu duyệt trong `bill` không có tác dụng.
+- **AC-099-07:** (TASK-125, E2E, DEF-032) Hộp Thu tiền chọn "Chuyển khoản":
+  - khung mã ghi số tiền, "ngân hàng · số", nội dung — mỗi thứ một dòng, không dính chữ;
+  - "In bill có mã QR" → in phiếu tạm tính có mã VietQR đúng số tiền của hộp.
 
 ## Bằng chứng
 
-- **Integration:** `ứng-dụng/máy-chủ/tests/transfer-qr.test.js` (AC-099-01…04).
-- **E2E:** `kiểm-thử/e2e/flow.spec.js` "chuyển khoản bằng mã QR…" (AC-099-05).
+- **Integration:** `ứng-dụng/máy-chủ/tests/transfer-qr.test.js` (AC-099-01…04, AC-099-06).
+- **E2E:** `kiểm-thử/e2e/flow.spec.js` "chuyển khoản bằng mã QR…" (AC-099-05), "in bill có mã QR…" (AC-099-07).
 - **a11y:** quét khung mã QR trên điện thoại.

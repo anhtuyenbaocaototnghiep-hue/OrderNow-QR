@@ -658,3 +658,8 @@ flowchart LR
 - **SCR-05 điện thoại khách:** thẻ đơn xong ghi "Đã xong", 3 bước; hộp báo món xong giữ câu "nhân viên đang mang ra bàn" (hoặc "vui lòng nhận tại quầy").
 - **SCR-17 Kho ở quầy:** mục thanh trên đổi tên **"Kho"**; thẻ: Tồn kho (mở đầu) · Hủy hàng · Hạn dùng · Nhận hàng · Kiểm kê (theo quyền) — không còn **Sơ chế**.
 - **SCR-23 Nguyên liệu:** "Kho nâng cao" không còn ô "Loại" (Nguyên liệu thô / Bán thành phẩm); "⋯" không còn "Công thức"; không còn nhãn "Bán thành phẩm".
+
+## TASK-125 — In bill có mã QR từ hộp Thu tiền — SCR-12, SCR-13, SCR-14 (F-099, DEF-032, 18/11/2026)
+
+- **SCR-14 hộp Thu tiền → "Chuyển khoản":** khung mã nhỏ ghi từng dòng "Khách quét mã — 30.000đ" / "Sacombank · số" / "Nội dung: CF …" (DEF-032), hai nút **"Phóng to cho khách quét"** · **"In bill có mã QR"**. In bill = phiếu tạm tính (SCR-12) có "QUÉT ĐỂ CHUYỂN KHOẢN" + mã đúng số tiền đang hiện ở hộp (kể cả giảm giá / voucher đang chọn); nút "In tạm tính" ở chân hộp in cùng phiếu đó.
+- **SCR-13 Bán mang đi:** khung mã cùng kiểu (từng dòng), không có nút in (đơn mang đi chưa có trước khi thu).

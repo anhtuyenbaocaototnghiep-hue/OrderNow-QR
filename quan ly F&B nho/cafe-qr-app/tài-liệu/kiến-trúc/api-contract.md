@@ -907,7 +907,7 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `POST /api/sessions/{id}/request-payment` (khách): thân `{ method?: "CASH" | "TRANSFER" }` (mặc định `CASH`) → thêm `payMethod`; `TRANSFER` khi quán chưa bật → `409 TRANSFER_OFF`. Sự kiện `session.payment_requested` thêm `payMethod`; phiên (`GET /api/sessions`, `GET /api/sessions/{id}`) thêm `payMethod` (`CASH` | `TRANSFER` | `null`).
 - `GET /api/sessions/{id}/transfer` (khách trong nhóm của bàn) → `{ amount, content, bankName, kind, number, holder, payload, qr }` (`qr` = ảnh PNG dạng data URL); quán chưa bật → `409 TRANSFER_OFF`; bàn đã đóng → `409 SESSION_CLOSED`; chưa có món → `409 NO_ORDERS`.
 - `POST /api/payments/transfer-qr` (thu ngân) `{ amount, sessionId?, part? }` → như trên; không `sessionId` → nội dung "CF MANG DI <giờ>".
-- `GET /api/sessions/{id}/receipt?mode=provisional`: thêm `transfer: { qr, amount, content, bankName, kind, number, holder } | null`.
+- `GET /api/sessions/{id}/receipt?mode=provisional`: thêm `transfer: { qr, amount, content, bankName, kind, number, holder } | null`. TASK-125 (18/11/2026): thêm `&bill=<JSON>` — lựa chọn đang có ở hộp Thu tiền (`memberId`, `manualDiscount`, `manualReason`, `voucherCode`, `reward`, `skipBirthday`, `skipWinback`; không có tài khoản duyệt) → `amountDue`, `breakdown`, `transfer` tính như `POST /api/sessions/{id}/settle/preview`; bàn chia bill bỏ qua `bill`; sai → `400 VALIDATION_ERROR`.
 - Ghi đã trả: không đổi — `POST /api/sessions/{id}/settle` `{ method: "TRANSFER" }` của thu ngân (ADR-019).
 
 ## Bổ sung F-100 — tự xác nhận chuyển khoản qua SePay (ADR-063, TASK-123, 17/11/2026)
