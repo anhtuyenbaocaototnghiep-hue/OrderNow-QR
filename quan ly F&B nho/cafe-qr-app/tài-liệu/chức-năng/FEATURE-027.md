@@ -2,13 +2,14 @@
 
 > **Nguồn:** skill `advanced-features` §4 F-027. Quyết định: [ADR-006](../quyết-định/ADR-006-mo-rong-giai-doan-4-8.md) D-19.
 
+- **Cập nhật 18/11/2026 — [ADR-064](../quyết-định/ADR-064-bo-mang-ra-va-so-che.md) D-254 ([TASK-124](../công-việc/TASK-124.md)):** bỏ giao diện sơ chế — thẻ "Sơ chế" ở Kho quầy, chọn loại "Bán thành phẩm" và "Công thức" ở trang Nguyên liệu. Máy chủ giữ API, cách trừ kho và giá vốn qua bán thành phẩm, lịch sử mẻ — dữ liệu cũ vẫn đúng. AC-027-01…07 kiểm bằng API (integration).
 - **Status:** CONFIRMED (ADR-006 D-19) · Triển khai: READY_FOR_REVIEW (17/10/2026)
 - **Actor:** ADMIN khai báo bán thành phẩm + công thức; STAFF pha mẻ ở quầy.
 - **Màn hình:**
   - **Quản lý → Kho nguyên liệu:**
     - **Kho nâng cao** → loại "Bán thành phẩm", "Dùng trong … giờ";
     - **Công thức**: một mẻ ra bao nhiêu + nguyên liệu đầu vào.
-  - **Quầy → Kho & sơ chế → tab Sơ chế:**
+  - ~~**Quầy → Kho & sơ chế → tab Sơ chế:**~~ — **đã bỏ** (ADR-064 D-254, 18/11/2026; API + dữ liệu giữ):
     - chọn bán thành phẩm, số mẻ (×2 = pha 2 mẻ);
     - xem trước nguyên liệu sẽ trừ (đủ / thiếu), giá vốn ước tính;
     - bấm **Hoàn tất mẻ**;

@@ -152,7 +152,7 @@ Mọi route trong `PAGES` (`routes/pages.js`) đều có trong bảng trên, và
 | SCR-15 | [quay-ca-hoan-tien.jpg](ảnh/quay-ca-hoan-tien.jpg) | Ca & hoàn tiền |
 | SCR-16 | [quay-goi-mon-tai-ban.jpg](ảnh/quay-goi-mon-tai-ban.jpg) | Gọi món tại bàn |
 | SCR-16 | [quay-goi-mon-tai-ban-chon-ban.jpg](ảnh/quay-goi-mon-tai-ban-chon-ban.jpg) | Gọi món tại bàn — đã chọn bàn, khung hội viên (F-047) |
-| SCR-17 | [quay-kho-so-che.jpg](ảnh/quay-kho-so-che.jpg) | Kho & sơ chế ở quầy |
+| SCR-17 | [quay-kho-so-che.jpg](ảnh/quay-kho-so-che.jpg) | Kho ở quầy (thẻ Sơ chế bỏ — ADR-064) |
 | SCR-20 | [quan-ly-users.jpg](ảnh/quan-ly-users.jpg) | Quản lý — `/admin/users` |
 | SCR-21 | [quan-ly-menu.jpg](ảnh/quan-ly-menu.jpg) | Quản lý — `/admin/menu` |
 | SCR-22 | [quan-ly-tables.jpg](ảnh/quan-ly-tables.jpg) | Quản lý — `/admin/tables` |

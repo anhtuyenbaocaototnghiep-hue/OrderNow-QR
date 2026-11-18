@@ -6,7 +6,7 @@
 - **Actor:**
   - **ACT-ADMIN:** sửa / hủy phiếu nhập; hủy phiếu kiểm kê đã chốt.
   - **ACT-LEAD + ACT-ADMIN:** sửa / xóa phiếu kiểm kê nháp.
-- **Màn hình:** S-31 **Quản lý → Nhập kho & kiểm kê** (SCR-31); S-17 **Quầy → Kho & sơ chế → Kiểm kê** (SCR-17, trưởng ca).
+- **Màn hình:** S-31 **Quản lý → Nhập kho & kiểm kê** (SCR-31); S-17 **Quầy → Kho → Kiểm kê** (SCR-17, trưởng ca).
   - **Tab Nhập kho:**
     - danh sách có cột **Trạng thái**: "Đã sửa" hoặc "Đã hủy" (dòng gạch ngang);
     - bấm phiếu → hộp chi tiết có nút **Sửa** và **Hủy phiếu**;

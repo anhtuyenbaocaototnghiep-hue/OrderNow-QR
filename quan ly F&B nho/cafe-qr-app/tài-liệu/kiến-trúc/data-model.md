@@ -1355,7 +1355,7 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | Thành phần | Nội dung |
 | --- | --- |
 | Migration `0058_man_quay_mot_man_hinh.sql` | `MenuItems.Station VARCHAR(10) NOT NULL DEFAULT 'BAR'` + `CK_MenuItems_Station` (`BAR` \| `COUNTER`) — món cũ thành `BAR`. `Orders.ServedAt DATETIME2(0) NULL`, `Orders.ServedBy INT NULL` (FK `Users`) + `CK_Orders_Served` (`ServedAt` có thì phải có `ServedBy` và `CompletedAt`; không so `ServedAt >= CompletedAt` vì đơn bán lúc mất mạng F-074 mang giờ máy quầy). Chỉ thêm cột, không đổi dữ liệu. |
-| Ghi "Đã mang" | `ordersRepo.markServed`: một câu `UPDATE … WHERE Type = 'DINE_IN' AND Status = 'COMPLETED' AND ServedAt IS NULL` + `@@ROWCOUNT` (hai người bấm cùng lúc → một người thắng, người kia `409 ALREADY_SERVED`). Không đụng kho, tiền. |
+| Ghi "Đã mang" — **bỏ** (ADR-064 D-253, 18/11/2026: cột `ServedAt` / `ServedBy` giữ, không ghi nữa) | (cũ) `ordersRepo.markServed`: một câu `UPDATE … WHERE Type = 'DINE_IN' AND Status = 'COMPLETED' AND ServedAt IS NULL` + `@@ROWCOUNT` (hai người bấm cùng lúc → một người thắng, người kia `409 ALREADY_SERVED`). Không đụng kho, tiền. |
 | `sp_DeleteUser` | `Orders.ServedBy = @UserId` tính là đã có thao tác → lưu trữ (`ARCHIVED`), không xóa hẳn (khóa ngoại — trước đây lỗi 547). |
 | Cài đặt | `Settings` key `pos.single_screen` (`'false'` = tắt; thiếu = bật), `pos.serve_mode` (`COUNTER` \| khác = `TABLE`). |
 

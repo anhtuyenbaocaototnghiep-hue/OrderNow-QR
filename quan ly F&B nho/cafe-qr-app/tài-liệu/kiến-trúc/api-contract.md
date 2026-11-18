@@ -850,8 +850,8 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 ## Bổ sung F-088 — màn quầy một màn hình (ADR-049, TASK-106, 13/11/2026)
 
 - `GET/POST/PUT /api/admin/menu-items`: thêm `station` ∈ {`BAR`, `COUNTER`} (mặc định `BAR`; `PUT` không gửi → giữ nguyên; giá trị khác → `400 VALIDATION_ERROR` "Trạm làm món là Pha chế hoặc Quầy lấy").
-- Đơn (`GET /api/orders`, `GET /api/orders/{id}`, phần `order` của `POST /api/orders`, sự kiện `order.*`, `GET /api/sessions/{id}`): `items[].station`, `items[].children[].station`, `servedAt` (giờ bấm "Đã mang", `null` nếu chưa). Không trả người mang.
-- `POST /api/orders/{id}/served` (không body) → `{ order }` (đơn có `servedAt`). Chỉ đơn **tại bàn** đã `COMPLETED`. Lỗi: `409 ALREADY_SERVED` (đã mang), `409 INVALID_STATE` (đơn mang đi / chưa xong / đã hủy), `404`, `409 NO_OPEN_SHIFT`, `403 POSITION_REQUIRED` (nhân viên không có vị trí Thu ngân / Phục vụ; trưởng ca trở lên luôn được).
+- Đơn (`GET /api/orders`, `GET /api/orders/{id}`, phần `order` của `POST /api/orders`, sự kiện `order.*`, `GET /api/sessions/{id}`): `items[].station`, `items[].children[].station`. (`servedAt` đã bỏ — ADR-064 D-253.)
+- ~~`POST /api/orders/{id}/served`~~ — **bỏ** (ADR-064 D-253, 18/11/2026): không còn bước "Đã mang", gọi → `404`.
 - `PATCH /api/menu-items/{id}/availability` `{ isAvailable: boolean }` → món (như `PATCH /api/admin/menu-items/{id}/availability`): nhân viên vị trí Pha chế, trưởng ca trở lên; `403 POSITION_REQUIRED`, `404`. Ghi nhật ký `menu.availability`, phát `menu.availability_changed`.
 - `POST /api/orders/{id}/accept`, `/complete`: đơn **chỉ có** món trạm Quầy → Thu ngân / Phục vụ cũng làm được; đơn có món trạm Bar → chỉ Pha chế (`403 POSITION_REQUIRED` như F-078).
 - `GET /api/auth/me` → `pos: { oneTap, singleScreen, serveMode }`. `GET/PUT /api/admin/settings`: `singleScreen` (boolean, mặc định `true`), `serveMode` (`TABLE` mặc định \| `COUNTER`; khác → `400`) — chủ quán và quản lý cửa hàng.
@@ -860,7 +860,6 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 
 | Method & path | Quyền | Request (chính) | Response (chính) | Lỗi |
 | --- | --- | --- | --- | --- |
-| `POST /api/orders/{id}/served` | STAFF vị trí Thu ngân / Phục vụ (trưởng ca trở lên luôn được) | — | `200 { order }` có `servedAt`; phát `order.served` | `409 ALREADY_SERVED`, `409 INVALID_STATE` (mang đi / chưa xong / đã hủy), `404`, `409 NO_OPEN_SHIFT`, `403 POSITION_REQUIRED` |
 | `PATCH /api/menu-items/{id}/availability` | STAFF vị trí Pha chế (trưởng ca trở lên luôn được) | `{ isAvailable: boolean }` | `200` món; phát `menu.availability_changed`; nhật ký `menu.availability` | `404`, `400 VALIDATION_ERROR`, `403 POSITION_REQUIRED` |
 | `POST /api/orders/{id}/complete` | Pha chế; Thu ngân / Phục vụ chỉ khi đơn **chỉ có** món trạm Quầy (F-088) | — | như cũ | đơn có món trạm Bar mà không phải Pha chế → `403 POSITION_REQUIRED` |
 
@@ -921,3 +920,8 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `POST /api/bank-transactions/{id}/resolve` (thu ngân) `{ note }` → `HANDLED`; ghi chú dưới 3 ký tự → `400 NOTE_REQUIRED`; đã xử lý → `409 BANK_TXN_HANDLED`.
 - `GET /api/sessions/{id}/transfer`, `POST /api/payments/transfer-qr`: thêm `auto` (bool) — quán bật tự xác nhận và có khóa SePay.
 - Lượt thu do máy tự ghi: như `settle` `{ method: "TRANSFER" }`, người ghi là tài khoản hệ thống "Tự động (ngân hàng)".
+
+## Bổ sung ADR-064 — bỏ "Đã mang" và giao diện sơ chế (TASK-124, 18/11/2026)
+
+- Bỏ `POST /api/orders/{id}/served` (→ `404`), sự kiện `order.served`, trường `servedAt` của đơn.
+- Sơ chế: API `/api/prep/recipes`, `/api/prep/preview`, `/api/prep/batches`, `PUT /api/admin/ingredients/{id}/recipe` **giữ** (không còn giao diện gọi) — dữ liệu cũ và báo cáo không đổi. `PUT /api/admin/ingredients/{id}/advanced` từ giao diện gửi lại `kind` hiện có (không còn chọn loại).

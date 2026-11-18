@@ -10,7 +10,7 @@
     - tab **Đơn đặt hàng**: nháp → **Gửi & in** → nhận từng phần → đủ; Hủy;
     - tab **Giá & giao hàng**: lịch sử giá, tỉ lệ đúng hạn / đủ hàng.
   - **Trang in** `/admin/purchase-orders/{id}/print`: in / lưu PDF, **Chép nội dung** gửi Zalo.
-  - **Quầy → Kho & sơ chế → Nhận hàng:** chọn PO đang chờ, điền sẵn số gói còn thiếu, sửa thực nhận, giá, hạn dùng → **Nhập kho**.
+  - **Quầy → Kho → Nhận hàng:** chọn PO đang chờ, điền sẵn số gói còn thiếu, sửa thực nhận, giá, hạn dùng → **Nhập kho**.
 - **Dữ liệu:** migration `0023_nha_cung_cap.sql`:
   - `Suppliers`;
   - `SupplierIngredients(PackUnitCode, PackSize, LastPrice, IsPreferred)`;

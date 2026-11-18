@@ -6,7 +6,7 @@
 - **Actor:** **ACT-ADMIN** (đặt dung tích hộp + hạn sau khi mở, xem số tiền sắp mất / đã hủy, nhận cảnh báo); **ACT-STAFF / ACT-LEAD** (xem hộp đang mở, bỏ phần còn, xem món nên mời).
 - **Màn hình:**
   - **Quản lý → Nguyên liệu (SCR-23) → Kho nâng cao** (hộp thoại): nhóm **Hạn sau khi mở hộp / gói** — **Một hộp / gói bao nhiêu {đơn vị}**, **Mở rồi dùng được (giờ)**; dòng nguyên liệu ghi "hộp 1000 ml, mở rồi dùng trong 72 giờ · hộp đang mở còn … ml".
-  - **Quầy → Kho & sơ chế (SCR-17) → Hạn dùng**: thẻ **Hộp / gói đang mở sắp hoặc đã quá hạn** (SCR-55) + **Bỏ phần còn**.
+  - **Quầy → Kho (SCR-17) → Hạn dùng**: thẻ **Hộp / gói đang mở sắp hoặc đã quá hạn** (SCR-55) + **Bỏ phần còn**.
   - **Máy quầy (mọi trang)**: dải **Nên mời khách hôm nay** (món + lý do) + **Ẩn**.
   - **Hôm nay** (SCR-42): thẻ **Sắp hết hạn (2 ngày tới)** — tổng tiền (quản lý), 5 dòng, món nên mời, "Tháng này đã hủy vì hết hạn" (theo nguyên liệu, nhà cung cấp).
   - **Cảnh báo** (SCR-47): loại **Nguyên liệu sắp hết hạn**.
@@ -43,7 +43,7 @@
 - AC-075-02: Hộp mở quá hạn → `expiredQty` của nguyên liệu = phần còn (không tính vào khả dụng); rủi ro: nhân viên thấy "hộp đang mở đã quá hạn" không có số tiền, quản lý thấy giá trị = phần còn × giá vốn; nhân viên bỏ phần còn → phiếu hủy `EXPIRED` đúng số, tồn giảm đúng, hết hộp mở, có nhật ký; bỏ lần nữa → 409 `NO_OPEN_PACK`.
 - AC-075-03: Hộp mở còn ~5 giờ + lô hết hạn ngày mai (500 × 100đ) → rủi ro có hai dòng, giá trị lô 50.000đ, tổng = Σ dòng; món nên mời gồm món dùng hai nguyên liệu đó, kèm lý do; không gợi ý theo nguyên liệu đã hết hạn; trang Hôm nay: quản lý có tổng tiền + tiền đã hủy tháng này, trưởng ca không có số tiền nhưng cùng món nên mời.
 - AC-075-04: Chạy job 06:00 hai lần → một cảnh báo `EXPIRY_RISK` ghi "trị giá …đ"; hủy lô → tiền hủy tháng này theo nguyên liệu (lô 500 / 50.000đ, hộp mở 75 ml / 3.750đ) và theo nhà cung cấp (nhà cung cấp của phiếu nhập; nguyên liệu không theo lô → không rõ); tổng = Σ theo nguyên liệu; tháng sai 400; nhân viên 403.
-- AC-075-05: Trên trình duyệt: quản lý nhập "hộp 100 ml, mở rồi dùng 24 giờ" ở Kho nâng cao → dòng nguyên liệu ghi lại; bán món → máy quầy có dải "Nên mời khách hôm nay" kèm lý do; Kho & sơ chế → Hạn dùng có hộp đang mở → "Bỏ phần còn" → "Đã ghi hủy"; trang Hôm nay có thẻ "Sắp hết hạn (2 ngày tới)" + "Tháng này đã hủy vì hết hạn".
+- AC-075-05: Trên trình duyệt: quản lý nhập "hộp 100 ml, mở rồi dùng 24 giờ" ở Kho nâng cao → dòng nguyên liệu ghi lại; bán món → máy quầy có dải "Nên mời khách hôm nay" kèm lý do; Kho → Hạn dùng có hộp đang mở → "Bỏ phần còn" → "Đã ghi hủy"; trang Hôm nay có thẻ "Sắp hết hạn (2 ngày tới)" + "Tháng này đã hủy vì hết hạn".
 
 ## Bằng chứng
 

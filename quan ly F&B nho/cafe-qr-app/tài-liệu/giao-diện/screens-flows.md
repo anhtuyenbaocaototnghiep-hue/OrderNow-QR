@@ -94,7 +94,7 @@ Route khai báo ở `ứng-dụng/máy-chủ/src/routes/pages.js`; mã S-xx ghi 
 
 | Mã | Đường dẫn – Màn hình | Người dùng | Nội dung & hành động chính | File |
 | --- | --- | --- | --- | --- |
-| S-17 | `/pos/stock` – **Kho & sơ chế** (mục trên thanh quầy) | Staff/Manager/Admin | Tab **Sơ chế** (chọn bán thành phẩm, số mẻ, xem trước nguyên liệu đủ/thiếu + giá vốn ước tính, **Hoàn tất mẻ**, mẻ hôm nay, cảnh báo "Nên pha thêm"); **Hủy hàng** (nguyên liệu, số lượng, lý do, ghi chú; phiếu hôm nay); **Hạn dùng** (lô đã / sắp hết hạn trong 3 ngày, **Hủy lô**); **Nhận hàng** (chọn PO đang chờ, điền sẵn số gói còn thiếu, sửa thực nhận / giá / hạn dùng → **Nhập kho**); **Tồn kho** (cột Hết hạn; nút **Điều chỉnh** cho trưởng ca/quản lý); **Kiểm kê** (chỉ trưởng ca/quản lý) | `pos/stock.html`, `js/pages/pos-stock.js` |
+| S-17 | `/pos/stock` – **Kho** (mục trên thanh quầy; trước 18/11/2026 "Kho & sơ chế" — thẻ Sơ chế bỏ, ADR-064) | Staff/Manager/Admin | Tab **Sơ chế** (chọn bán thành phẩm, số mẻ, xem trước nguyên liệu đủ/thiếu + giá vốn ước tính, **Hoàn tất mẻ**, mẻ hôm nay, cảnh báo "Nên pha thêm"); **Hủy hàng** (nguyên liệu, số lượng, lý do, ghi chú; phiếu hôm nay); **Hạn dùng** (lô đã / sắp hết hạn trong 3 ngày, **Hủy lô**); **Nhận hàng** (chọn PO đang chờ, điền sẵn số gói còn thiếu, sửa thực nhận / giá / hạn dùng → **Nhập kho**); **Tồn kho** (cột Hết hạn; nút **Điều chỉnh** cho trưởng ca/quản lý); **Kiểm kê** (chỉ trưởng ca/quản lý) | `pos/stock.html`, `js/pages/pos-stock.js` |
 | S-34 | `/admin/menu-schedules` – **Lịch thực đơn & thời gian pha** | Admin | Tab **Lịch thực đơn**: danh sách lịch (khoảng ngày, thứ, giờ, món/danh mục kèm nhãn Hiện/Ẩn, công tắc Bật), form chọn "— / Hiện / Ẩn" cho từng món/danh mục, **Xem trước menu lúc…**; lịch "Giờ bán — …" chỉ sửa ở S-21. Tab **Thời gian pha & hàng chờ**: cài đặt bếp, bảng chuẩn / thực tế / số mẫu / số đang dùng, **Tính lại thống kê** | `admin/menu-schedules.html`, `js/pages/admin-menu-schedules.js` |
 | S-35 | `/admin/purchasing` – **Nhà cung cấp & đặt hàng** (từ TASK-109 nằm trong mục "Nhập kho & kiểm kê", chung hàng thẻ với S-31) | Admin | Tab **Đề xuất nhập hàng** (khả dụng, đang về, nhu cầu, an toàn, đề xuất theo gói, ngày dự kiến hết; dòng đỏ = hết trước ngày giao; lọc nhà cung cấp, ép ngày giao; tick → **Tạo đơn đặt hàng từ dòng đã chọn**; bấm tên → biểu đồ SVG 4 tuần + 14 ngày; **Tính lại dự báo**); **Đơn đặt hàng** (nháp → **Gửi & in** → nhận → đủ; Hủy); **Nhà cung cấp**; **Giá & giao hàng**. Trang in `/admin/purchase-orders/{id}/print`: In / Lưu PDF, **Chép nội dung** gửi Zalo | `admin/purchasing.html`, `admin/po-print.html`, `js/pages/admin-purchasing.js`, `js/pages/admin-po-print.js` |
 | S-36 | `/admin/cash` – **Sổ quỹ** | Admin | Lọc ngày, loại, danh mục, trạng thái; tổng theo danh mục; **Xuất CSV**; tab **Danh mục thu chi** | `admin/cash.html`, `js/pages/admin-cash.js` |
@@ -122,7 +122,7 @@ Route khai báo ở `ứng-dụng/máy-chủ/src/routes/pages.js`; mã S-xx ghi 
 
 **Quầy**
 
-- **Thanh trên:** mục mới **Kho & sơ chế** (S-17); trưởng ca có nhãn "Trưởng ca" và mục **Hôm nay** (S-42); **Đăng xuất** kết thúc chấm công (F-035).
+- **Thanh trên:** mục mới **Kho** (S-17; trước là "Kho & sơ chế"); trưởng ca có nhãn "Trưởng ca" và mục **Hôm nay** (S-42); **Đăng xuất** kết thúc chấm công (F-035).
 - **S-10:** cột Mới có dòng "Hàng chờ: N món · khách mới chờ ~a–b phút" (F-025); thẻ bàn hiện "🧾 Chia N phần · đã thu X" (F-026).
 - **S-14 Thu tiền bàn:**
   - Bàn có chia bill: danh sách phần → **Thu phần này** (hội viên / giảm tay riêng phần đó), ô chuyển phần trên từng dòng, **+ Thêm phần**, **Thu chung**, **In lại** phần đã thu (F-026).
@@ -322,7 +322,7 @@ flowchart LR
 - **S-33 Cài đặt:** thẻ **"Giao diện quản lý"** (thứ hai, sau Thông tin quán; neo `#giao-dien`) — 5 ô tích nhóm nâng cao kèm danh sách trang của nhóm; lưu cùng **Lưu cài đặt**, thanh bên đổi ngay.
 - **Menu quản lý (mọi trang `/admin/*`):** chỉ hiện nhóm đang bật; nhóm không còn mục nào thì bỏ cả tiêu đề nhóm. Trang thuộc nhóm đang ẩn mở bằng đường dẫn: dải xanh "Mục này đang ẩn khỏi menu (chế độ cơ bản) — vẫn dùng bình thường" + link tới thẻ Giao diện quản lý.
 - **Dải đỏ QR (F-063):** trên mọi trang quản lý khi máy chủ không còn giữ IP trong `PUBLIC_BASE_URL` ("…máy chủ không còn ở IP đó (IP hiện tại: …)") hoặc khi QR đã in ở địa chỉ khác ("QR đang dán trên bàn trỏ tới A nhưng app đang chạy ở B…" + link **In lại QR**); ở **Bàn & mã QR / In mã QR** thêm cảnh báo khi địa chỉ là `localhost`. Không in ra giấy (`@media print`). **Màn quầy:** dải đỏ trong vùng "Cần xử lý ngay" khi lệch: "QR trên bàn đang trỏ địa chỉ cũ (A) — khách quét sẽ lỗi. Báo quản lý in lại QR."
-- **S-10 màn quầy:** nút **"Hướng dẫn"** cạnh tên người dùng; mục "Kho & sơ chế" chỉ hiện khi bật nhóm Kho hàng. **Lớp hướng dẫn 5 bước** (trang Đơn hàng): nền mờ, khung sáng quanh phần tử đang nói tới, hộp `role="dialog"` "Bước n / 5" + tiêu đề + giải thích + **Bỏ qua / Quay lại / Tiếp (Xong)**; Esc = bỏ qua; đóng xong focus về chỗ cũ.
+- **S-10 màn quầy:** nút **"Hướng dẫn"** cạnh tên người dùng; mục "Kho" chỉ hiện khi bật nhóm Kho hàng. **Lớp hướng dẫn 5 bước** (trang Đơn hàng): nền mờ, khung sáng quanh phần tử đang nói tới, hộp `role="dialog"` "Bước n / 5" + tiêu đề + giải thích + **Bỏ qua / Quay lại / Tiếp (Xong)**; Esc = bỏ qua; đóng xong focus về chỗ cũ.
 - **S-48 Chính sách dữ liệu (mới):** đầu trang tên quán, các mục Thông tin được lưu / Để làm gì / Ai xem được / Lưu bao lâu / Quyền của bạn / Cách yêu cầu / Căn cứ. Link **"Xem chính sách dữ liệu"** dưới câu đồng ý ở ô hội viên phía khách (S-03), **"Chính sách dữ liệu (mở cho khách xem)"** ở hộp đăng ký của Thu tiền bàn (S-14) và Gọi món tại bàn (S-16) — mở tab mới; trang chủ có link cuối trang.
 
 ```mermaid
@@ -456,7 +456,7 @@ flowchart LR
 ## F-075 — Hạn dùng nguyên liệu (TASK-092, ADR-033, 07/11/2026)
 
 - **SCR-23 Nguyên liệu → Kho nâng cao:** nhóm **Hạn sau khi mở hộp / gói (sữa, kem, siro…)** — ô **Một hộp / gói bao nhiêu {đơn vị}**, ô **Mở rồi dùng được (giờ)** (cạnh nhau), chú thích ví dụ sữa tươi 1000 ml / 72 giờ. Dòng nguyên liệu: "hộp 1000 ml, mở rồi dùng trong 72 giờ · hộp đang mở còn 350 ml".
-- **SCR-55 (trong SCR-17) Kho & sơ chế → Hạn dùng → Hộp / gói đang mở sắp hoặc đã quá hạn:** mỗi dòng tên, "còn khoảng … ml", "mở lúc …", nhãn **Đã quá hạn** (đỏ) / "còn N giờ"; nút **Bỏ phần còn** (đỏ khi quá hạn) → hộp xác nhận → toast "Đã ghi hủy …". Bên dưới bảng lô như cũ.
+- **SCR-55 (trong SCR-17) Kho → Hạn dùng → Hộp / gói đang mở sắp hoặc đã quá hạn:** mỗi dòng tên, "còn khoảng … ml", "mở lúc …", nhãn **Đã quá hạn** (đỏ) / "còn N giờ"; nút **Bỏ phần còn** (đỏ khi quá hạn) → hộp xác nhận → toast "Đã ghi hủy …". Bên dưới bảng lô như cũ.
 - **Máy quầy (mọi trang):** dải xanh **Nên mời khách hôm nay: Latte, Bạc xỉu** + dòng lý do ("Sữa tươi hộp đang mở còn 5 giờ · Sữa đặc hết hạn ngày mai") + **Ẩn**; ở trang Đơn hàng nằm trong vùng "Cần xử lý ngay".
 - **SCR-42 Hôm nay → Sắp hết hạn (2 ngày tới):** quản lý: số tiền (đỏ) "giá vốn phần sẽ phải bỏ nếu không dùng kịp", 5 dòng (tên: số lượng, thời hạn, tiền), "Nên mời khách: …", mục mở rộng **Tháng này đã hủy vì hết hạn: …đ** (3 nguyên liệu, 3 nhà cung cấp). Trưởng ca: không có số tiền.
 - **SCR-47 Cảnh báo:** loại **Nguyên liệu sắp hết hạn** (một cảnh báo mỗi ngày, 06:00).
@@ -477,7 +477,7 @@ flowchart LR
 ## F-078 — Vị trí và cấp nhân viên (TASK-095, ADR-036, 07/11/2026)
 
 - **SCR-20 Tài khoản:** hộp Thêm / Sửa có nhóm **Vị trí (để trống = mọi việc)** — ô Thu ngân, Pha chế, Phục vụ — và **Cấp** (Chính thức / Thử việc), chỉ hiện khi vai trò là Nhân viên quầy; cột Vai trò thêm dòng vị trí ("Mọi vị trí" / "Thu ngân, Pha chế") và nhãn vàng **Thử việc**; thẻ "Mỗi vai trò làm được gì?" thêm danh sách vị trí.
-- **Máy quầy:** menu chỉ trang của vị trí (Pha chế: Đơn hàng, Kho & sơ chế, Giờ công; Phục vụ: Đơn hàng, Gọi món tại bàn, Giờ công; Thu ngân: Đơn hàng, Bán mang đi, Ca & hoàn tiền, Giờ công); mở thẳng trang khác → `/pos?denied=position` + lời nhắc; mác vai **Nhân viên** cạnh tên (thêm **Thử việc** nếu đang thử việc — 08/11/2026); chưa mở ca mà không phải thu ngân → dải ghi "Nhờ thu ngân mở ca", nút Ca báo "việc của thu ngân".
+- **Máy quầy:** menu chỉ trang của vị trí (Pha chế: Đơn hàng, Kho, Giờ công; Phục vụ: Đơn hàng, Gọi món tại bàn, Giờ công; Thu ngân: Đơn hàng, Bán mang đi, Ca & hoàn tiền, Giờ công); mở thẳng trang khác → `/pos?denied=position` + lời nhắc; mác vai **Nhân viên** cạnh tên (thêm **Thử việc** nếu đang thử việc — 08/11/2026); chưa mở ca mà không phải thu ngân → dải ghi "Nhờ thu ngân mở ca", nút Ca báo "việc của thu ngân".
 - **SCR-10 Đơn hàng:** không phải Pha chế → phiếu chỉ xem (đơn mới vẫn Hủy); không phải Thu ngân → thẻ bàn "Xem bill", nút thu tiền trong hộp bill khóa; không phải Phục vụ → thẻ bàn không có "Gọi món".
 - **SCR-46 Tra cứu API:** dòng chi tiết thêm "nhân viên cần vị trí …".
 
@@ -537,7 +537,7 @@ flowchart LR
 ## F-085 — Ảnh nguyên liệu ở kho (TASK-103, ADR-046, 09/11/2026)
 
 - **SCR-23 Kho nguyên liệu:** ô tên có ảnh 64 px bên trái (chưa có ảnh → ô chữ cái như trang Món); hộp **Thêm / Sửa nguyên liệu** có ô **"Ảnh (URL, không bắt buộc)"** (sau ô Đơn vị) — dán sai báo ngay dưới ô "Ảnh phải là URL http(s) hoặc đường dẫn bắt đầu bằng /"; xóa trống rồi Lưu = bỏ ảnh.
-- **SCR-17 Kho & sơ chế → Tồn kho** (máy quầy): ảnh nhỏ 40 px cạnh tên nguyên liệu. Các tab khác chưa đổi.
+- **SCR-17 Kho → Tồn kho** (máy quầy): ảnh nhỏ 40 px cạnh tên nguyên liệu. Các tab khác chưa đổi.
 
 ## F-086 — Khách đổi bàn khi quét QR (TASK-104, ADR-047, 10/11/2026)
 
@@ -560,16 +560,16 @@ flowchart LR
 
 - **Máy quầy `/pos` (SCR-10), "Màn quầy một màn hình" bật (mặc định) — bản gọn D-220:**
   - **Thanh trên một hàng:** logo (tên quán ẩn dưới 1500 px) · Màn quầy · Kho · Giờ công (+ Quản lý / Hôm nay theo quyền) · "Ca #3 · 07:02" · "QR: nhận đơn" · chấm kết nối (chữ "Mất kết nối" khi mất) · nút loa (chữ "Bật âm thanh" tới khi bật, sau đó chỉ biểu tượng) · nút máy in "Tự in phiếu pha trên máy này" (xanh khi bật) · tên người đứng máy (mác Trưởng ca / Quản lý cửa hàng / Thử việc nếu có) · "?" (Hướng dẫn) · Đăng xuất. Gọi món tại bàn / Bán mang đi / Ca là thẻ của vùng Quầy nên không có trên thanh.
-  - **Dải "Cần xử lý ngay"** (trên cả hai vùng): gọi thanh toán, gọi nhân viên, **Mang ra** ("Bàn 5 · 2 ly · kèm 1× Bánh… [Đã mang]"), **Quầy lấy** ("Bàn 3 · 1× Bánh croissant [Xong]"), đánh giá thấp…; dải nhắc chung (chưa mở ca, đặt PIN, chấm công) mở hộp thoại cả màn hình. Từ 1024 px: hai vùng cạnh nhau.
+  - **Dải "Cần xử lý ngay"** (trên cả hai vùng): gọi thanh toán, gọi nhân viên, **Quầy lấy** ("Bàn 3 · 1× Bánh croissant [Xong]"), đánh giá thấp…; dải nhắc chung (chưa mở ca, đặt PIN, chấm công) mở hộp thoại cả màn hình. Từ 1024 px: hai vùng cạnh nhau.
   - **Vùng trái "Hàng pha":** tiêu đề + nút **"Hết món"** (người pha; người không pha thấy lời nhắc "Không có vị trí Pha chế — người pha đăng nhập để làm đơn"); dòng **"Gom ly"** (nút tròn "3× Cà phê sữa · 2 đơn", tùy chọn khác nhau dòng dưới; chạm → viền cam các thẻ đơn có món đó); cột Mới / Đang pha (hoặc "Cần làm" khi 1 chạm) — mỗi thẻ đơn: bàn, đồng hồ chờ, món chữ lớn, "Quầy lấy kèm: …", tổng tiền và **một nút lớn** (Xong / Tiếp nhận / Hoàn tất). Chạm thẻ → chi tiết đơn (trong vùng Hàng pha) có Hủy đơn · In phiếu pha · Mở bàn / Thu tiền · Tiếp nhận & Hoàn tất. **"Đã xong hôm nay · n"** thu gọn một dòng, nút "Xem" / "Ẩn".
   - **Vùng phải "Quầy":** hàng thẻ **Bàn · Bán mang đi · Gọi món tại bàn · Ca & két** (mẫu thẻ ARIA, ← / →); thẻ Bàn = dòng tóm tắt (có khách / chờ / trống) + lưới bàn; ba thẻ sau là trang quầy nhúng (không thanh trên), tải lần đầu khi mở (Bán mang đi tải sẵn cho người thu tiền), giữ nguyên khi đổi thẻ.
   - **Thẻ bàn gọn:** tên bàn (›) · trạng thái · tiền · "mở 07:15" · hội viên / ghi chú nếu có · **một nút** (Thu tiền — thu ngân; Gọi món — phục vụ; Xem bill; bàn chưa gọi món: Gọi món / Đóng bàn). Chạm tên bàn hoặc chỗ trống của thẻ → bill (vùng Quầy) có Gọi thêm món (đóng bill, mở thẻ Gọi món đúng bàn), Ghi chú bàn, Chuyển bàn, Hủy bàn, Tách hóa đơn, Thu chung với bàn khác. Bàn trống: "+ Gọi món".
   - **Hộp thoại trong vùng:** ngăn thu tiền, chi tiết đơn, Báo hết món… chỉ phủ vùng của nó (ngăn thu tiền luôn ở vùng Quầy); vùng kia vẫn bấm được; Esc đóng hộp đang có focus.
   - **Dưới 1024 px:** Hàng pha chiếm cả bề ngang; nút **"Quầy · N có khách"** ở hàng công cụ mở vùng Quầy thành ngăn trượt bên phải (rộng tới 760 px), nút "Đóng" ở hàng thẻ, Esc đóng; việc mở hộp thoại vào vùng Quầy (bấm thẻ gọi thanh toán…) tự mở ngăn.
-- **Tắt "Màn quầy một màn hình":** bố cục ADR-018 như cũ (trang Bán mang đi / Gọi món / Ca riêng, thanh trên, thẻ đơn, thẻ bàn đầy đủ nút). "Mang ra bàn" là cài đặt riêng — vẫn có dải Mang ra / Quầy lấy nếu để "Nhân viên mang ra bàn".
+- **Tắt "Màn quầy một màn hình":** bố cục ADR-018 như cũ (trang Bán mang đi / Gọi món / Ca riêng, thanh trên, thẻ đơn, thẻ bàn đầy đủ nút). "Mang ra bàn" là cài đặt riêng — chỉ đổi lời báo cho khách (dải Mang ra đã bỏ — ADR-064); dải Quầy lấy vẫn có.
 - **Quản lý → Thực đơn (SCR-21), hộp sửa món:** ô **"Trạm làm món"** — "Pha chế (vào hàng pha)" / "Quầy lấy (bánh, nước chai — không cần pha)".
 - **Quản lý → Cài đặt (SCR-33, chủ quán), thẻ "Màn Đơn hàng ở quầy":** ô "Màn quầy một màn hình" + giải thích; ô chọn "Món tại bàn pha xong" — "Nhân viên mang ra bàn (mặc định)" / "Khách nhận tại quầy".
-- **Điện thoại khách — Theo dõi đơn (SCR-05), quán chọn mang ra bàn:** đơn Xong → nhãn "Đang mang ra bàn" (17/11/2026 rút gọn từ "Đã xong — nhân viên đang mang ra bàn" — DEF-031; câu đầy đủ ở hộp báo món xong), hộp "Món của bạn đã xong" ghi "…nhân viên đang mang ra bàn"; thanh tiến độ 4 bước **Đã gửi · Đang chuẩn bị · Xong · Đã mang ra** (xuống dòng cân); nhân viên bấm "Đã mang" (hoặc quá 60 phút) → "Đã mang ra bàn", đủ 4 bước.
+- **Điện thoại khách — Theo dõi đơn (SCR-05), quán chọn mang ra bàn:** đơn Xong → nhãn "Đã xong", thanh tiến độ 3 bước **Đã gửi · Đang chuẩn bị · Xong**; hộp "Món của bạn đã xong" ghi "…nhân viên đang mang ra bàn" (ADR-064 D-253 — bỏ "Đang / Đã mang ra bàn" và bước 4).
 
 ## TASK-108 — Đổi tên trang "Lãi / lỗ" → "Thu chi" (14/11/2026)
 
@@ -651,3 +651,10 @@ flowchart LR
 - **SCR-33 Cài đặt → "Nhận chuyển khoản (VietQR)"** (chỉ chủ quán): ô tích "Tự xác nhận khi tiền vào (SePay)"; dòng trạng thái (chưa có khóa SePay / đang theo dõi — lần hỏi cuối / lỗi SePay) + số khoản chưa khớp; nút "Giả lập tiền vào" (hộp: số tiền, nội dung → kết quả "Đã tự thu cho Bàn …" / "Chưa khớp: …").
 - **SCR-10 quầy:** tiền vào khớp bàn → chuông + đọc to "Bàn … đã chuyển khoản … đồng", thông báo "đã tự thu", bàn rời dải Gọi thanh toán. Dải **"Tiền vào chưa khớp"** (dưới dải Gọi thanh toán; chỉ người thu tiền thấy): mỗi khoản một thẻ (số tiền, lý do, thời gian) — bấm thẻ → hộp: nội dung chuyển khoản, lý do, "Ghép vào bàn" (chọn bàn → "Ghép & thu"), hoặc chọn nhanh "Đã thu ở hộp Thu tiền" / "Đã ghi bán mang đi" / "Đã trả lại khách" / "Không phải tiền của quán" (hoặc tự gõ) → "Đã xử lý".
 - **SCR-05 khung mã QR:** quán đang tự xác nhận → "Giữ nguyên số tiền và nội dung — quán tự xác nhận khi tiền vào, màn này tự chuyển sang Đã thanh toán".
+
+## TASK-124 — Bỏ dải "Mang ra" và "Sơ chế" — SCR-05, SCR-10, SCR-17, SCR-23 (ADR-064, 18/11/2026)
+
+- **SCR-10 máy quầy:** dải "Cần xử lý ngay" không còn **Mang ra** / nút "Đã mang"; đơn tại bàn Hoàn tất / Xong là xong.
+- **SCR-05 điện thoại khách:** thẻ đơn xong ghi "Đã xong", 3 bước; hộp báo món xong giữ câu "nhân viên đang mang ra bàn" (hoặc "vui lòng nhận tại quầy").
+- **SCR-17 Kho ở quầy:** mục thanh trên đổi tên **"Kho"**; thẻ: Tồn kho (mở đầu) · Hủy hàng · Hạn dùng · Nhận hàng · Kiểm kê (theo quyền) — không còn **Sơ chế**.
+- **SCR-23 Nguyên liệu:** "Kho nâng cao" không còn ô "Loại" (Nguyên liệu thô / Bán thành phẩm); "⋯" không còn "Công thức"; không còn nhãn "Bán thành phẩm".

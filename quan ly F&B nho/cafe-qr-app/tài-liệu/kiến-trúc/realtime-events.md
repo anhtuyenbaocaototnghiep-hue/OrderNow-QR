@@ -145,8 +145,8 @@ Bỏ lỡ sự kiện (mất mạng): `GET /api/sessions/{id}` của người tr
 
 | Sự kiện | Room | Payload | Phát khi |
 | --- | --- | --- | --- |
-| `order.served` | `staff`, `session:{id}` | `{ orderId, sessionId, servedAt, order }` | nhân viên bấm "Đã mang" (`POST /api/orders/{id}/served`) — máy quầy bỏ thẻ khỏi dải "Mang ra", điện thoại khách đổi sang "Đã mang ra bàn" |
-| `order.*` | như cũ | `order.items[].station`, `order.servedAt` | máy quầy chia Hàng pha / dải "Quầy lấy", gom ly, dải "Mang ra" |
+| ~~`order.served`~~ (bỏ — ADR-064 D-253) | `staff`, `session:{id}` | `{ orderId, sessionId, servedAt, order }` | nhân viên bấm "Đã mang" (`POST /api/orders/{id}/served`) — máy quầy bỏ thẻ khỏi dải "Mang ra", điện thoại khách đổi sang "Đã mang ra bàn" |
+| `order.*` | như cũ | `order.items[].station` (`servedAt` bỏ — ADR-064) | máy quầy chia Hàng pha / dải "Quầy lấy", gom ly |
 | `menu.availability_changed` | như cũ | như cũ | thêm lối phát: người pha "Báo hết" / "Mở bán lại" ở quầy (`PATCH /api/menu-items/{id}/availability`) |
 
 ## Bổ sung F-100 — tự xác nhận chuyển khoản (ADR-063, 17/11/2026)

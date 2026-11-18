@@ -149,7 +149,7 @@ Ca còn khoản `PENDING` → không đóng ca được (`409 CASH_PENDING`); ca
 | Hiện tại | Hành động | Người thực hiện | Sau | Điều kiện / Hệ quả |
 | --- | --- | --- | --- | --- |
 | `DRAFT` | Sửa | ADMIN | `DRAFT` | Trạng thái khác → `409 PO_NOT_DRAFT` |
-| `SENT` / `PARTIAL` | Nhận hàng | STAFF+ (quầy → Kho & sơ chế → Nhận hàng) hoặc ADMIN | `PARTIAL` / `RECEIVED` | `sp_ReceiveStock @PoId`: cộng tồn, giá vốn bình quân, lô, lịch sử giá trong một transaction; vượt số đặt → `409 OVER_RECEIPT` trừ khi `confirmOver`; trạng thái khác → `409 PO_NOT_RECEIVABLE` |
+| `SENT` / `PARTIAL` | Nhận hàng | STAFF+ (quầy → Kho → Nhận hàng) hoặc ADMIN | `PARTIAL` / `RECEIVED` | `sp_ReceiveStock @PoId`: cộng tồn, giá vốn bình quân, lô, lịch sử giá trong một transaction; vượt số đặt → `409 OVER_RECEIPT` trừ khi `confirmOver`; trạng thái khác → `409 PO_NOT_RECEIVABLE` |
 | `PARTIAL` / `RECEIVED` | Hủy | ADMIN | — | `409 PO_HAS_RECEIPTS` |
 | `CANCELLED` | Hủy | ADMIN | — | `409 PO_CANCELLED` |
 

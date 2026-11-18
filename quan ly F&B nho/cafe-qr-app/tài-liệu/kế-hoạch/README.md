@@ -65,3 +65,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-120-plan.md](TASK-120-plan.md) — lương không tự duyệt cho mình, duyệt lại khi sửa giờ, giữ lịch sử (F-098, ADR-061).
 - [TASK-122-plan.md](TASK-122-plan.md) — chuyển khoản bằng VietQR, nhân viên xác nhận (F-099, ADR-062).
 - [TASK-123-plan.md](TASK-123-plan.md) — tự xác nhận chuyển khoản qua SePay (F-100, ADR-063).
+- [TASK-124-plan.md](TASK-124-plan.md) — bỏ dải "Mang ra" và "Sơ chế" (ADR-064).

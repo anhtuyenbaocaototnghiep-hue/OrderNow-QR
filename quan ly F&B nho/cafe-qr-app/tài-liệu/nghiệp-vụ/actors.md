@@ -99,7 +99,7 @@ Cột "Quyền / phạm vi" là quyền sơ bộ; quyền chính thức kiểm �
 | AF-STAFF-22 | Mở bàn, gọi món giúp khách tại bàn, ghi chú bàn | `Sessions` (`OpenedBy`, `Note`), `Orders` (`CreatedBy`) | `pos.use`; đơn vào thẳng `PREPARING` (mặc định Q-021 — PROPOSED) | Should | [F-024](../chức-năng/FEATURE-024.md) |
 | AF-STAFF-23 | Xem hàng chờ và thời gian khách mới phải chờ | Hàng chờ đơn | `pos.use` | Should | [F-025](../chức-năng/FEATURE-025.md) |
 | AF-STAFF-24 | Chuyển dòng giữa các phần, thu từng phần, "Thu chung" | `SessionSplits`, `Payments.SplitId` | `pos.use`; chuyển được mọi dòng chưa thu | Should | [F-026](../chức-năng/FEATURE-026.md) |
-| AF-STAFF-25 | Pha mẻ sơ chế bán thành phẩm | `PrepBatches`, `InventoryTransactions(PREP_OUT/PREP_IN)` | `prep.post` | Should | [F-027](../chức-năng/FEATURE-027.md) |
+| AF-STAFF-25 | Pha mẻ sơ chế bán thành phẩm (giao diện bỏ — ADR-064 D-254; API giữ) | `PrepBatches`, `InventoryTransactions(PREP_OUT/PREP_IN)` | `prep.post` | Should | [F-027](../chức-năng/FEATURE-027.md) |
 | AF-STAFF-26 | Xem lô sắp / đã hết hạn, hủy lô hết hạn | `IngredientLots`, `WasteLogs` | STAFF+ (`GET /api/lots/expiring`, `POST /api/lots/{id}/write-off`) | Should | [F-028](../chức-năng/FEATURE-028.md) |
 | AF-STAFF-27 | Nhận hàng theo đơn đặt hàng (PO) | `PurchaseOrders`, `StockReceipts`, `IngredientLots` | `po.receive`; PO `SENT` / `PARTIAL` | Should | [F-030](../chức-năng/FEATURE-030.md) |
 | AF-STAFF-28 | Ghi phiếu hủy hàng | `WasteLogs`, `InventoryTransactions(ADJUST "WASTE:…")` | `waste.create`; không hủy vào phần đang giữ | Should | [F-032](../chức-năng/FEATURE-032.md) |

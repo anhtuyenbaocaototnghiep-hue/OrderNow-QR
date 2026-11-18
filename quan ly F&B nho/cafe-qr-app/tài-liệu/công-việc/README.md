@@ -139,6 +139,7 @@
 | [TASK-121](TASK-121.md) | Sửa lỗi hiển thị màn khách: trang tràn ngang khi đơn đã xong (nhãn dài), toast che ô nhập khi mở bảng — DEF-031 | FEATURE-088, FEATURE-093 | TASK-120 | Agent | — | chủ dự án 17/11 | READY_FOR_REVIEW |
 | [TASK-122](TASK-122.md) | Chuyển khoản bằng VietQR: mã có sẵn số tiền + nội dung (khách, quầy, mang đi, phiếu tạm tính), nhân viên xác nhận; ADR-062 | FEATURE-099 | TASK-121 | Agent | — | chủ dự án 17/11 | READY_FOR_REVIEW |
 | [TASK-123](TASK-123.md) | Tự xác nhận chuyển khoản qua SePay: máy chủ hỏi tiền vào 5 giây / lần, khớp bàn + đúng số tiền thì tự đóng bill, lệch thì "Tiền vào chưa khớp" ở quầy; ADR-063 | FEATURE-100 | TASK-122 | Agent | — | chủ dự án 17/11 | READY_FOR_REVIEW |
+| [TASK-124](TASK-124.md) | Gọn màn quầy: bỏ dải "Mang ra" / nút "Đã mang" và bỏ "Sơ chế" (giao diện); ADR-064 | FEATURE-088, FEATURE-027 | TASK-123 | Agent | — | chủ dự án 18/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

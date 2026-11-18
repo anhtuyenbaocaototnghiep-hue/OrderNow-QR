@@ -7,7 +7,7 @@
 - **Màn hình:**
   - **Cài đặt** (SCR-33): thẻ **"Giao diện quản lý"** — 5 ô tích nhóm nâng cao (Kho hàng; Khách hàng & khuyến mãi; Sổ quỹ & nhân sự; Phân tích & lãi lỗ; Công cụ nâng cao), ghi rõ mỗi nhóm gồm trang nào.
   - **Menu quản lý** (mọi trang `/admin/*`): chỉ hiện nhóm đã bật; trang của nhóm đang ẩn mở thẳng bằng đường dẫn vẫn chạy, có dải nhắc.
-  - **Màn quầy** (SCR-10 và các trang quầy): mục "Kho & sơ chế" theo nhóm Kho hàng; nút **"Hướng dẫn"** trên thanh trên; lớp hướng dẫn 5 bước ở trang Đơn hàng.
+  - **Màn quầy** (SCR-10 và các trang quầy): mục "Kho" theo nhóm Kho hàng; nút **"Hướng dẫn"** trên thanh trên; lớp hướng dẫn 5 bước ở trang Đơn hàng.
 - **Dữ liệu:** khóa cài đặt `ui.modules` (danh sách, mặc định rỗng = cơ bản); cột `Users.TourSeenAt` (migration 0041).
 
 ## User Story
@@ -19,7 +19,7 @@
 
 | Nhóm (`ui.modules`) | Mục ẩn khi tắt |
 | --- | --- |
-| `inventory` — Kho hàng | Nguyên liệu, Nhập kho & kiểm kê, Nhà cung cấp; màn quầy: Kho & sơ chế |
+| `inventory` — Kho hàng | Nguyên liệu, Nhập kho & kiểm kê, Nhà cung cấp; màn quầy: Kho |
 | `customers` — Khách hàng & khuyến mãi | Hội viên, Tích điểm & voucher, Khuyến mãi, Gợi ý & ghim, Đánh giá món |
 | `finance` — Sổ quỹ & nhân sự | Sổ quỹ, Nhân sự & chấm công |
 | `analytics` — Phân tích & lãi lỗ | Phân tích, Lãi / lỗ |
@@ -41,7 +41,7 @@
 
 ## Acceptance Criteria
 
-- AC-061-01: Quán mới (chưa lưu `ui.modules`): `GET /api/auth/me` trả `modules: []`; menu quản lý không có Kho hàng, Khách hàng, Sổ quỹ, Nhân sự, Phân tích, Lãi / lỗ, Lịch thực đơn, Nhật ký, Tra cứu API; màn quầy không có "Kho & sơ chế".
+- AC-061-01: Quán mới (chưa lưu `ui.modules`): `GET /api/auth/me` trả `modules: []`; menu quản lý không có Kho hàng, Khách hàng, Sổ quỹ, Nhân sự, Phân tích, Lãi / lỗ, Lịch thực đơn, Nhật ký, Tra cứu API; màn quầy không có "Kho".
 - AC-061-02: Quản lý lưu `uiModules` → đọc lại đúng, `auth/me` trả đúng; nhóm lạ / trùng → `400`, cài đặt không đổi; nhân viên / trưởng ca → `403`.
 - AC-061-03: Mở thẳng trang của nhóm đang ẩn → trang vẫn chạy, có dải "Mục này đang ẩn khỏi menu" + link Cài đặt; API của nhóm đó vẫn trả `200`. Migration 0041 trên CSDL đã có đơn bật đủ 5 nhóm, tài khoản có sẵn = đã xem hướng dẫn.
 - AC-061-04: Tài khoản mới: `auth/me` có `tourSeenAt = null`; `POST /api/auth/tour-seen` → có giờ, gọi lại không đổi giờ; chưa đăng nhập → `401`.

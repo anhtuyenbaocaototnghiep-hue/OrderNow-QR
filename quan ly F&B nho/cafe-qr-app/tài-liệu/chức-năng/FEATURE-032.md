@@ -5,7 +5,7 @@
 - **Status:** CONFIRMED (ADR-006) · Triển khai: READY_FOR_REVIEW (17/10/2026)
 - **Actor:** STAFF ghi phiếu hủy; ADMIN đặt định mức + xem báo cáo.
 - **Màn hình:**
-  - **Quầy → Kho & sơ chế → Hủy hàng:**
+  - **Quầy → Kho → Hủy hàng:**
     - nguyên liệu, số lượng, lý do (đổ/vỡ, hết hạn, hỏng, khác), ghi chú;
     - danh sách phiếu hủy hôm nay.
   - **Quản lý → Kho nguyên liệu → Kho nâng cao:** "Hao hụt định mức (%)".

@@ -174,7 +174,7 @@ Ngoài vai trò / vị trí, chủ quán đặt riêng cho từng người (tr�
 | Quyền | Mặc định có |
 | --- | --- |
 | Thu tiền, bán mang đi, mở / đóng ca, hoàn tiền, ghi thu chi (tiền) | Thu ngân / nhân viên chưa đặt vị trí / trưởng ca trở lên |
-| Nhận / làm đơn, sơ chế, hủy hàng, nhận hàng | Pha chế / chưa đặt vị trí / trưởng ca trở lên |
+| Nhận / làm đơn, hủy hàng, nhận hàng (sơ chế bỏ khỏi giao diện — ADR-064) | Pha chế / chưa đặt vị trí / trưởng ca trở lên |
 | Mở bàn, gọi món tại bàn, chuyển bàn | Phục vụ / chưa đặt vị trí / trưởng ca trở lên |
 | Kiểm kê, điều chỉnh kho ở quầy · Sửa / thêm chấm công người khác · Trang Hôm nay | Trưởng ca trở lên |
 | Báo cáo bán hàng & ca (tiền) · Thực đơn & giá · Kho hàng · Khách hàng & khuyến mãi · Bàn & QR · Nhân sự · Sổ quỹ (tiền) · Cảnh báo | Quản lý cửa hàng |
@@ -203,7 +203,7 @@ Thêm vào bảng vị trí của F-078 (chỉ áp cho vai Nhân viên; để tr
 
 | Việc ở quầy | Thu ngân | Pha chế | Phục vụ |
 | --- | --- | --- | --- |
-| "Đã mang" — món tại bàn đã mang ra (`POST /api/orders/{id}/served`) | Có | — | Có |
+| ~~"Đã mang" — món tại bàn đã mang ra~~ — bỏ (ADR-064 D-253) | — | — | — |
 | "Báo hết" / "Mở bán lại" món ngay ở quầy (`PATCH /api/menu-items/{id}/availability`) | — | Có | — |
 | Nhận + Xong đơn **chỉ có** món trạm Quầy lấy (dải "Quầy lấy") | Có | Có | Có |
 | Nhận / Xong đơn có món trạm Bar | — | Có | — (như F-078) |
@@ -247,3 +247,8 @@ Nhiều tài khoản **Chủ quán** (toàn quyền) được phép. Chỉ chủ
 - Bật / tắt "Tự xác nhận khi tiền vào", xem trạng thái hỏi SePay, "Giả lập tiền vào": **chỉ chủ quán** (`autoConfirm` không có trong `STORE_MGR_SETTINGS`; `/api/admin/bank-feed*` → `403 OWNER_ONLY` với người khác). Khóa SePay chỉ ở `.env`.
 - Dải "Tiền vào chưa khớp", "Ghép & thu", "Đã xử lý": người có vị trí **Thu ngân** (như thu tiền — `requirePosition('CASHIER')`); chuông / đọc to chỉ ở máy người thu tiền.
 - Máy tự ghi đã thu (người ghi "Tự động (ngân hàng)") chỉ khi đủ 4 điều kiện ADR-063 D-250. Khách vẫn **không** có API nào đổi trạng thái thanh toán. Test: `bank-feed.test.js` (AC-100-01, AC-100-04).
+
+## 4.17. Bổ sung — bỏ "Đã mang" và "Sơ chế" (ADR-064, 18/11/2026)
+
+- "Đã mang" (`POST /api/orders/{id}/served`) không còn — không ai cần quyền này.
+- Sơ chế: không còn giao diện ở quầy / trang Nguyên liệu. API `/api/prep/*` và công thức giữ quyền như cũ (`prep.post`, vị trí Pha chế; công thức — chủ quán) cho dữ liệu cũ. Nhãn quyền Pha chế: "Nhận / làm đơn, hủy hàng, nhận hàng".

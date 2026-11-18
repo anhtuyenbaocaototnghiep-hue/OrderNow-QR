@@ -8,7 +8,7 @@
   - **Quản lý → Tài khoản:** chọn vai trò "Trưởng ca".
   - **Quầy:** thanh trên hiện nhãn "Trưởng ca".
   - **Quầy → Ca & hoàn tiền:** duyệt chi quỹ, chấm công hôm nay.
-  - **Quầy → Kho & sơ chế:** nút "Điều chỉnh" ở tab Tồn kho, tab "Kiểm kê".
+  - **Quầy → Kho:** nút "Điều chỉnh" ở tab Tồn kho, tab "Kiểm kê".
   - **Quản lý → Cài đặt:** thẻ "Trưởng ca & sổ quỹ".
 - **Dữ liệu:** migration `0025_truong_ca.sql`:
   - `CK_Users_Role` thêm `'MANAGER'`.
