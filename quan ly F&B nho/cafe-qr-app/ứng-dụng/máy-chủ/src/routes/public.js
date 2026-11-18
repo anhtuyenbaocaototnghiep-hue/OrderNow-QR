@@ -138,6 +138,12 @@ publicRouter.post('/sessions/:id/join', async (req, res) => {
   res.json(await sessionService.join(paramGuid(req), qrToken, req.clientToken));
 });
 
+// ADR-065 D-255: khách đã tự vào nhóm của bàn bấm "Tôi đi riêng — hóa đơn riêng" → nhóm riêng ở cùng bàn
+publicRouter.post('/sessions/:id/separate', async (req, res) => {
+  const { qrToken } = parse(qrBody, req.body);
+  res.json(await sessionService.separate(paramGuid(req), qrToken, req.clientToken));
+});
+
 // F-086 (ADR-047): khách quét QR bàn khác khi đang có nhóm — tự chuyển (nhóm chưa có món) hoặc nhờ quầy chuyển
 publicRouter.post('/sessions/:id/move-here', async (req, res) => {
   const { qrToken } = parse(qrBody, req.body);

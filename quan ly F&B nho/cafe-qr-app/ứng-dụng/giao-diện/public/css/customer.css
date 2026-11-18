@@ -1953,3 +1953,36 @@ body.customer .alert.info {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* ADR-065 D-255 (TASK-127): vừa tự vào nhóm của bàn → dòng "Bạn đã vào nhóm…" + "Tôi đi riêng — hóa đơn riêng" (màn chào, đầu thực đơn) */
+.join-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0.6rem 0.75rem 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+.join-notice .jn-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.join-notice .jn-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+.c-home .join-notice {
+  margin: 0 0 0.75rem;
+}
+.c-alone {
+  margin-top: 0.75rem;
+}

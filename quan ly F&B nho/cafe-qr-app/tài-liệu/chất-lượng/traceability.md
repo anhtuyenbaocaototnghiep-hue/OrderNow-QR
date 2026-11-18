@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 510 test, sửa lúc 2026-11-18 07:25 UTC
-- `npm run test:e2e` (JSON): 112 test, sửa lúc 2026-11-18 07:35 UTC
+- `npm test` (JUnit): 512 test, sửa lúc 2026-11-18 12:08 UTC
+- `npm run test:e2e` (JSON): 113 test, sửa lúc 2026-11-18 12:18 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 207 |
-| Acceptance Criteria | 579 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 579 |
+| Acceptance Criteria | 582 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 582 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -659,6 +659,9 @@
 | AC-097-02 | TC-097-02 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | E2E: `flow.spec.js` › vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR tự vào nhóm (không hỏi Gộp chung / Tạo đơn cá nhân), thấy món cả nhóm, báo "Đã vào nhóm của Bàn"; bàn có 2 nhóm → hỏi "Bạn đi cùng nhóm nào?"; điện thoại có nhóm ở bàn khác chọn "Gọi món ở Bàn" → vào nhóm của bàn mới, nhóm cũ giữ nguyên; màn chào "Trả riêng từng người?" mở hộp Chia bill (F-097, AC-097-01…04) — **PASS**<br>E2E: `a11y.spec.js` › khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn nhóm, màn cảm ơn + đánh giá — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px — **PASS** | **PASS** |
 | AC-097-03 | TC-097-03 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | E2E: `flow.spec.js` › vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR tự vào nhóm (không hỏi Gộp chung / Tạo đơn cá nhân), thấy món cả nhóm, báo "Đã vào nhóm của Bàn"; bàn có 2 nhóm → hỏi "Bạn đi cùng nhóm nào?"; điện thoại có nhóm ở bàn khác chọn "Gọi món ở Bàn" → vào nhóm của bàn mới, nhóm cũ giữ nguyên; màn chào "Trả riêng từng người?" mở hộp Chia bill (F-097, AC-097-01…04) — **PASS** | **PASS** |
 | AC-097-04 | TC-097-04 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | E2E: `flow.spec.js` › vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR tự vào nhóm (không hỏi Gộp chung / Tạo đơn cá nhân), thấy món cả nhóm, báo "Đã vào nhóm của Bàn"; bàn có 2 nhóm → hỏi "Bạn đi cùng nhóm nào?"; điện thoại có nhóm ở bàn khác chọn "Gọi món ở Bàn" → vào nhóm của bàn mới, nhóm cũ giữ nguyên; màn chào "Trả riêng từng người?" mở hộp Chia bill (F-097, AC-097-01…04) — **PASS** | **PASS** |
+| AC-097-05 | TC-097-05 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | Integration: `group-separate.test.js` › AC-097-05: khách tự vào nhóm của bàn bấm "Tôi đi riêng" → rời nhóm (không còn xem món / hóa đơn của nhóm đó), có nhóm riêng ở cùng bàn; quét lại vào nhóm riêng; quầy thấy bàn có 2 nhóm (session.opened); món gọi sau đó vào hóa đơn riêng — **PASS** | **PASS** |
+| AC-097-06 | TC-097-06 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | Integration: `group-separate.test.js` › AC-097-06: đã gửi món trong nhóm → không đi riêng được (409 ALREADY_ORDERED, vẫn ở nhóm); điện thoại không ở nhóm → 403 NOT_IN_GROUP; mã bàn khác → 404; nhóm đã đóng → 409 SESSION_CLOSED — **PASS** | **PASS** |
+| AC-097-07 | TC-097-07 | F-097 | US-097-1 | ACT-GUEST, ACT-MEMBER | UC-01 | MOD-ORDER | SCR-01, SCR-05 | BR-008 | E2E: `flow.spec.js` › đi riêng: bàn có nhóm → điện thoại khác quét QR tự vào nhóm, thấy "Bạn đã vào nhóm của Bàn NR1" kèm nút "Tôi đi riêng — hóa đơn riêng"; bấm → nhóm riêng (bàn có 2 nhóm), món đang chọn trong giỏ giữ nguyên, gửi món chỉ thấy món của mình; điện thoại đã gửi món trong nhóm thì dòng này không còn (ADR-065, AC-097-07) — **PASS** | **PASS** |
 | AC-098-01 | TC-098-01 | F-098 | US-098-1 | ACT-ADMIN, ACT-STORE | UC-12 | MOD-FINANCE | SCR-51 | BR-110, BR-127 | Integration: `payroll-guard.test.js` › AC-098-01: người được giao quyền Lương không làm cho chính mình (403 PAYROLL_SELF) — hồ sơ lương, cộng / trừ, quyết định giờ công, duyệt báo quên, xử lý báo sai, đã trả, thưởng chung ca có mình, ngày lễ ngày mình làm; làm cho người khác được; chủ quán làm cho mình được — **PASS** | **PASS** |
 | AC-098-02 | TC-098-02 | F-098 | US-098-1 | ACT-ADMIN, ACT-STORE | UC-12 | MOD-FINANCE | SCR-51 | BR-110, BR-127 | Integration: `payroll-guard.test.js` › AC-098-02: người không phải chủ quán đổi lương / số tài khoản của người khác hoặc mở lại bảng lương đã chốt → cảnh báo PAYROLL_CHANGE (chỉ chủ quán thấy, ghi cũ → mới, lý do); chủ quán tự làm thì không báo — **PASS** | **PASS** |
 | AC-098-03 | TC-098-03 | F-098 | US-098-1 | ACT-ADMIN, ACT-STORE | UC-12 | MOD-FINANCE | SCR-51 | BR-110, BR-127 | Integration: `payroll-guard.test.js` › AC-098-03: chủ quán đã duyệt "Tính giờ thật" → người khác sửa giờ ra → bỏ quyết định, lại chờ duyệt làm thêm; "Không tính" giữ nguyên; chủ quán tự sửa thì giữ quyết định — **PASS** | **PASS** |

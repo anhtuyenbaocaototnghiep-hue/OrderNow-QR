@@ -80,7 +80,7 @@ test('quét QR: bàn trống vào thẳng menu; khách sau tự vào nhóm của
   // F-097: bàn đang có nhóm → B tự vào nhóm của bàn, không hỏi Gộp chung / Cá nhân
   await B.goto(`/t/${tables['02']}`);
   await expect(B).toHaveURL(/\/menu$/);
-  await expect(B.locator('.toast', { hasText: 'Đã vào nhóm của Bàn 02' })).toBeVisible();
+  await expect(B.locator('.join-notice')).toContainText('Bạn đã vào nhóm của Bàn 02'); // ADR-065: dòng cố định kèm "Tôi đi riêng"
 
   // Nhóm thứ hai ở cùng bàn (quầy / API mở — điện thoại không còn nút "Tạo đơn cá nhân") → C có hóa đơn riêng
   await C.goto('/');
@@ -4797,7 +4797,7 @@ test('vào nhóm của bàn: bàn có nhóm → điện thoại khác quét QR t
     const P2 = await phonePage('nhom-p2');
     await P2.goto('/t/' + t.NB1.qrToken);
     await expect(P2).toHaveURL(/\/menu$/);
-    await expect(P2.locator('.toast', { hasText: 'Đã vào nhóm của Bàn NB1' })).toBeVisible();
+    await expect(P2.locator('.join-notice')).toContainText('Bạn đã vào nhóm của Bàn NB1'); // ADR-065: dòng cố định thay thông báo nổi
     await expect(P2.getByText('Tạo đơn cá nhân')).toHaveCount(0);
     await P2.goto('/t/' + t.NB1.qrToken + '/track');
     await expect(P2.locator('.order-card', { hasText: 'Nước suối' })).toHaveCount(1);
@@ -5101,5 +5101,75 @@ test('hộp Nhận hàng (DEF-033): mỗi dòng có tên + "đặt … · đã n
   } finally {
     await Promise.all([ql.close(), quay.close()]);
     await apiAs(request, 'post', `/api/admin/purchase-orders/${po.poId}/cancel`);
+  }
+});
+
+test('đi riêng: bàn có nhóm → điện thoại khác quét QR tự vào nhóm, thấy "Bạn đã vào nhóm của Bàn NR1" kèm nút "Tôi đi riêng — hóa đơn riêng"; bấm → nhóm riêng (bàn có 2 nhóm), món đang chọn trong giỏ giữ nguyên, gửi món chỉ thấy món của mình; điện thoại đã gửi món trong nhóm thì dòng này không còn (ADR-065, AC-097-07)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  const tb = await apiAs(request, 'post', '/api/admin/tables', { code: 'NR1' });
+  const contexts = [];
+  const phonePage = async (name) => {
+    const ctx = await browser.newContext(phoneOpts);
+    contexts.push(ctx);
+    const page = await ctx.newPage();
+    page.setDefaultTimeout(15_000); // hỏng thì báo nhanh — finally còn kịp dọn
+    watch(page, name);
+    return page;
+  };
+  const addWater = (page) =>
+    page
+      .locator('.c-section.cat .c-item')
+      .filter({ has: page.getByRole('button', { name: 'Nước suối', exact: true }) })
+      .locator('.add-btn')
+      .click();
+  const send = async (page) => {
+    await page.click('#open-cart');
+    await page.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(page).toHaveURL(/\/track$/);
+  };
+  const groups = async () => (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === 'NR1').sessions;
+  try {
+    // Nhóm bạn bè mở bàn + gọi món
+    const P1 = await phonePage('rieng-p1');
+    await P1.goto('/t/' + tb.qrToken);
+    await expect(P1).toHaveURL(/\/menu$/);
+    await addWater(P1);
+    await send(P1);
+
+    // Bạn trong nhóm: tự vào nhóm, thấy dòng "đi riêng" — gửi món trong nhóm rồi thì dòng này không còn
+    const P3 = await phonePage('rieng-p3');
+    await P3.goto('/t/' + tb.qrToken);
+    await expect(P3).toHaveURL(/\/menu$/);
+    await expect(P3.locator('.join-notice')).toContainText('Bạn đã vào nhóm của Bàn NR1');
+    await addWater(P3);
+    await send(P3);
+    await P3.goto('/t/' + tb.qrToken + '/menu');
+    await expect(P3.locator('.c-item').first()).toBeVisible();
+    await expect(P3.locator('.join-notice')).toHaveCount(0);
+
+    // Khách lạ ngồi ghép bàn: tự vào nhóm → chọn món rồi bấm "Tôi đi riêng — hóa đơn riêng"
+    const P2 = await phonePage('rieng-p2');
+    await P2.goto('/t/' + tb.qrToken);
+    await expect(P2).toHaveURL(/\/menu$/);
+    const notice = P2.locator('.join-notice');
+    await expect(notice).toContainText('Bạn đã vào nhóm của Bàn NR1');
+    await addWater(P2);
+    await notice.getByRole('button', { name: 'Tôi đi riêng — hóa đơn riêng' }).click();
+    await expect(P2.locator('.toast', { hasText: 'Đã tạo nhóm riêng cho bạn' })).toBeVisible();
+    await expect(P2.locator('.join-notice')).toHaveCount(0);
+    expect(await groups()).toHaveLength(2);
+    await send(P2); // giỏ (1 Nước suối) đi theo sang nhóm riêng
+    await expect(P2.locator('.order-card')).toHaveCount(1); // chỉ món của mình — không thấy 2 đơn của nhóm kia
+
+    // Bàn đã có 2 nhóm → điện thoại mới thấy màn chọn nhóm, cuối màn có "Tôi đi riêng — hóa đơn riêng"
+    const P4 = await phonePage('rieng-p4');
+    await P4.goto('/t/' + tb.qrToken);
+    await expect(P4.getByRole('button', { name: /Vào nhóm này/ })).toHaveCount(2);
+    await expect(P4.getByRole('button', { name: 'Tôi đi riêng — hóa đơn riêng' })).toBeVisible();
+  } finally {
+    await Promise.all(contexts.map((c) => c.close()));
+    await clearTables(request, ['NR1']);
   }
 });

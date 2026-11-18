@@ -163,6 +163,41 @@ export async function addClient(sessionId, clientToken) {
   );
 }
 
+/** ADR-065: điện thoại này đã gửi món trong nhóm (mốc lần đầu) — sau đó không "đi riêng" được nữa. */
+export async function markClientOrdered(sessionId, clientToken) {
+  if (!clientToken) return;
+  await query('UPDATE dbo.SessionClients SET OrderedAt = SYSUTCDATETIME() WHERE SessionId = @s AND ClientToken = @c AND OrderedAt IS NULL', {
+    s: [sql.UniqueIdentifier, sessionId],
+    c: [sql.Char(32), clientToken],
+  });
+}
+
+/**
+ * ADR-065 D-255: "Tôi đi riêng — hóa đơn riêng" — trong một giao dịch: rời nhóm (chỉ khi điện thoại này chưa gửi món trong nhóm),
+ * mở nhóm mới ở cùng bàn cho điện thoại này. Khóa dòng thành viên để gửi món cùng lúc không lọt. Trả { sessionId } | { notMember } | { ordered }.
+ */
+export async function separate(sessionId, tableId, clientToken) {
+  return inTransaction(async (tx) => {
+    const me = await txQuery(tx, 'SELECT OrderedAt FROM dbo.SessionClients WITH (UPDLOCK, HOLDLOCK) WHERE SessionId = @s AND ClientToken = @c', {
+      s: [sql.UniqueIdentifier, sessionId],
+      c: [sql.Char(32), clientToken],
+    });
+    if (!me.recordset.length) return { notMember: true };
+    if (me.recordset[0].OrderedAt) return { ordered: true };
+    await txQuery(tx, 'DELETE dbo.SessionClients WHERE SessionId = @s AND ClientToken = @c', {
+      s: [sql.UniqueIdentifier, sessionId],
+      c: [sql.Char(32), clientToken],
+    });
+    const r = await txQuery(tx, 'INSERT dbo.Sessions (TableId) OUTPUT inserted.SessionId VALUES (@t)', { t: [sql.Int, tableId] });
+    const created = r.recordset[0].SessionId;
+    await txQuery(tx, 'INSERT dbo.SessionClients (SessionId, ClientToken) VALUES (@s, @c)', {
+      s: [sql.UniqueIdentifier, created],
+      c: [sql.Char(32), clientToken],
+    });
+    return { sessionId: created };
+  });
+}
+
 export async function isMember(sessionId, clientToken) {
   if (!clientToken) return false;
   const r = await query('SELECT 1 AS ok FROM dbo.SessionClients WHERE SessionId = @s AND ClientToken = @c', {

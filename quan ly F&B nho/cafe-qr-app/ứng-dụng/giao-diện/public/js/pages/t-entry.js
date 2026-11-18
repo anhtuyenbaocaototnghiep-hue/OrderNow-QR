@@ -1,5 +1,6 @@
 // S-01 — Vào bàn: quét QR → phiên mới / vào lại phiên cũ (FEATURE-001, BR-008). F-097 (ADR-059): bàn đang có nhóm → tự vào nhóm của
 // bàn (không còn chọn "Gộp chung / Tạo đơn cá nhân"); hiếm khi bàn có ≥ 2 nhóm → hỏi đi cùng nhóm nào. Trả riêng = "Chia bill theo người".
+// ADR-065 D-255: vừa tự vào nhóm → dòng "Bạn đã vào nhóm…" + nút "Tôi đi riêng — hóa đơn riêng" (khách lạ ngồi ghép bàn) tới khi gửi món.
 // F-092 (ADR-054): có nhóm rồi → màn chào của quán (tên, địa chỉ, lời chào, bàn, hội viên, Gọi thanh toán / Gọi nhân viên / Đánh giá,
 // nút lớn "Xem thực đơn – Gọi món"); quán tắt màn chào ở Cài đặt → vào thẳng thực đơn như trước.
 import { api } from '../api.js';
@@ -8,6 +9,7 @@ import { mountMemberBox } from '../member-box.js';
 import { callStaffSheet } from '../call-staff.js';
 import { clearSessionId, qrToken, setFlash, setSessionId, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
+import { joinedNotice, markJoined, SEPARATED_MESSAGE } from '../join-notice.js';
 
 const qr = qrToken();
 const app = $('#app');
@@ -84,6 +86,8 @@ function showGroups({ table, openSessions }) {
         el('span', { class: 'small' }, 'Gọi chung một hóa đơn — ai muốn trả riêng thì dùng "Chia bill theo người"'),
       ),
     ),
+    // ADR-065 D-255: khách lạ ngồi ghép bàn → nhóm riêng, hóa đơn riêng
+    el('button', { class: 'btn btn-block c-alone', type: 'button', onclick: (e) => createOwn(e.currentTarget) }, 'Tôi đi riêng — hóa đơn riêng'),
   );
 }
 
@@ -193,11 +197,8 @@ async function join(sessionId, button, table) {
   setBusy(button, true);
   try {
     const res = await api(`/api/sessions/${sessionId}/join`, { method: 'POST', body: { qrToken: qr } });
-    // F-097: báo khách đã vào nhóm chung của bàn (lời nhắn có sẵn — vd vừa đổi bàn — được ưu tiên)
-    pendingFlash ??= {
-      message: `Đã vào nhóm của ${table?.name ?? 'bàn'} — món cả nhóm gọi chung một hóa đơn. Ai muốn trả riêng thì dùng "Chia bill theo người".`,
-      type: 'info',
-    };
+    // F-097 + ADR-065: báo khách đã vào nhóm chung của bàn bằng dòng cố định có nút "Tôi đi riêng" (màn chào / đầu thực đơn)
+    markJoined(qr, res.session.sessionId, table?.name ?? res.table?.name ?? 'bàn');
     enter(res.session.sessionId);
   } catch (err) {
     setBusy(button, false);
@@ -384,6 +385,13 @@ function showHome(menu, first) {
         el('h1', { class: 'h-shop' }, menu.shop.name),
         menu.shop.address ? el('p', { class: 'h-addr' }, el('span', { 'aria-hidden': 'true' }, icon('map-pin')), menu.shop.address) : null,
       ),
+      // ADR-065 D-255: vừa tự vào nhóm của bàn → "Tôi đi riêng — hóa đơn riêng"
+      joinedNotice(qr, sessionId, {
+        onSeparate: (id) => {
+          toast(SEPARATED_MESSAGE, 'success', 6000);
+          enter(id);
+        },
+      }),
       el(
         'section',
         { class: 'h-hero', 'aria-label': 'Gọi món tại bàn' },

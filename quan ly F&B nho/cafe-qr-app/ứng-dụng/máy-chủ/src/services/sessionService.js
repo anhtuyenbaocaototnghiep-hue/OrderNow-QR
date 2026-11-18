@@ -172,6 +172,23 @@ export async function join(sessionId, qrToken, clientToken) {
 }
 
 /**
+ * ADR-065 D-255: khách đã tự vào nhóm của bàn bấm "Tôi đi riêng — hóa đơn riêng" → rời nhóm (không còn xem món / hóa đơn của nhóm đó),
+ * mở nhóm riêng ở cùng bàn. Chỉ khi điện thoại này chưa gửi món trong nhóm (đã gửi → trả riêng bằng "Chia bill theo người").
+ */
+export async function separate(sessionId, qrToken, clientToken) {
+  const table = await activeTable(qrToken);
+  const session = await sessionsRepo.findById(sessionId);
+  if (!session || session.table.tableId !== table.tableId) throw notFound('Không tìm thấy nhóm trên bàn này');
+  if (session.status === 'CLOSED') throw conflict('SESSION_CLOSED', 'Nhóm này đã thanh toán — quét lại mã QR để gọi món');
+  const r = await withDeadlockRetry(() => sessionsRepo.separate(sessionId, table.tableId, clientToken));
+  if (r.notMember) throw forbidden('Bạn không ở trong nhóm này', 'NOT_IN_GROUP');
+  if (r.ordered) throw conflict('ALREADY_ORDERED', 'Bạn đã gọi món trong nhóm này — muốn trả riêng thì dùng "Chia bill theo người"');
+  const created = await sessionsRepo.findById(r.sessionId);
+  announceOpened(created);
+  return { table: publicTable(table), session: customerView(created) };
+}
+
+/**
  * Ước tính số phải trả (hội viên đang gắn, chưa giảm tay) — cùng bộ tính với lúc thu tiền.
  * Phiên đã thu một phần (chia bill F-026): chỉ tính các dòng chưa thu, không áp hội viên của phiên.
  */

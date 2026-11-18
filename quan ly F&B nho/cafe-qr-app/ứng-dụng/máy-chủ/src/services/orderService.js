@@ -122,7 +122,9 @@ export async function submitDineIn({ sessionId, items, note, hold = null }, clie
   if (!(await sessionsRepo.isMember(sessionId, clientToken))) {
     throw forbidden('Phiên này không thuộc thiết bị của bạn. Vui lòng quét lại mã QR tại bàn.');
   }
-  return idempotent(idempotencyKey ? `${clientToken}:${idempotencyKey}` : null, () => submitToSession({ sessionId, items, note, hold }));
+  const result = await idempotent(idempotencyKey ? `${clientToken}:${idempotencyKey}` : null, () => submitToSession({ sessionId, items, note, hold }));
+  await sessionsRepo.markClientOrdered(sessionId, clientToken); // ADR-065: đã gửi món → không "đi riêng" khỏi nhóm này nữa
+  return result;
 }
 
 /**
