@@ -670,5 +670,40 @@ flowchart LR
 
 ## TASK-127 — Đi riêng, hóa đơn riêng — SCR-01, SCR-03 (F-097, ADR-065, 18/11/2026)
 
+> Giao diện dòng nhỏ dưới đây đã được thay bằng thẻ "Bạn đi chung hay đi riêng?" — xem mục TASK-128 ngay sau.
+
 - **SCR-01 màn chào / SCR-03 thực đơn** (điện thoại vừa tự vào nhóm của bàn): khung nhỏ đầu trang "**Bạn đã vào nhóm của Bàn …** — Món cả nhóm gọi chung một hóa đơn." + nút **"Tôi đi riêng — hóa đơn riêng"** + ✕ (ẩn). Mất khi điện thoại gửi món đầu tiên trong nhóm. Bấm đi riêng → thông báo "Đã tạo nhóm riêng cho bạn — món bạn gọi tính vào hóa đơn riêng", trang mở lại theo nhóm mới, giỏ giữ nguyên.
 - **SCR-01 màn chọn nhóm** (bàn có ≥ 2 nhóm): dưới các nút "Vào nhóm này" có nút "Tôi đi riêng — hóa đơn riêng".
+
+## TASK-128 — Thẻ "Bạn đi chung hay đi riêng?" — SCR-01, SCR-03 (F-097, ADR-065 D-256, 19/11/2026)
+
+Thay dòng nhỏ của TASK-127 (chủ dự án: "khó thấy quá… làm lại sao cho nó đơn giản khách dễ thấy và thao tác").
+
+- **SCR-01 màn chào / SCR-03 thực đơn** (điện thoại vừa **tự** vào nhóm của bàn có 1 nhóm) — thẻ đầu trang (trên lời chào / ngay dưới hàng danh mục):
+
+  ```text
+  ┌──────────────────────────────────────┐
+  │ Bàn 05 đang có khách                 │
+  │ Bạn đi chung hay đi riêng?           │
+  │ ┌───────────────┐ ┌───────────────┐  │
+  │ │      👥       │ │      👤       │  │
+  │ │   Đi chung    │ │   Đi riêng    │  │
+  │ │ chung một     │ │ hóa đơn riêng │  │
+  │ │ hóa đơn       │ │               │  │
+  │ └───────────────┘ └───────────────┘  │
+  └──────────────────────────────────────┘
+  ```
+
+  - **Thẻ:** viền 2 px màu chính, nền nhạt màu chính.
+  - **Hai nút ngang nhau,** cao ≥ 88 px:
+    - "Đi chung" nút đặc màu chính;
+    - "Đi riêng" nút viền.
+  - **Màu:** theo bộ màu màn khách, giao diện tối tự đổi (caramel trên nền espresso).
+  - **Đi chung** → thẻ mất, thông báo "Bạn đi chung với nhóm ở Bàn … — gọi món chung một hóa đơn.".
+  - **Đi riêng** → thông báo "Bạn đã có hóa đơn riêng — món bạn gọi tính riêng.", trang mở lại theo nhóm mới, giỏ giữ nguyên.
+  - **Không chọn mà gọi món luôn** = đi chung; thẻ mất khi điện thoại gửi món đầu tiên trong nhóm.
+  - Không còn nút ✕.
+- **SCR-01 màn chọn nhóm** (bàn có ≥ 2 nhóm):
+  - nút cuối màn đổi thành "👤 Đi riêng — hóa đơn riêng";
+  - khách tự chọn "Vào nhóm này" thì vào thực đơn **không** hiện thẻ (đã chọn rồi).
+- **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/khach-di-chung-di-rieng.jpg` (thực đơn, sáng), `khach-toi-di-chung-di-rieng.jpg` (màn chào, tối).

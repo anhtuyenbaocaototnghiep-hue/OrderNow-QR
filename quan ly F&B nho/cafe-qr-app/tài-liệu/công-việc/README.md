@@ -143,6 +143,7 @@
 | [TASK-125](TASK-125.md) | In bill có mã QR từ hộp Thu tiền (phiếu tạm tính theo lựa chọn ở hộp — mã trên giấy = trên màn); khung mã từng dòng (DEF-032) | FEATURE-099 | TASK-124 | Agent | — | chủ dự án 18/11 | READY_FOR_REVIEW |
 | [TASK-126](TASK-126.md) | Hộp Nhận hàng dễ dùng: ô có nhãn, đơn vị gói thống nhất, không tràn ở dòng có hạn sử dụng (DEF-033); 3 đơn đặt hàng ví dụ trên CafeQrDev | FEATURE-030 | TASK-125 | Agent | — | chủ dự án 18/11 | READY_FOR_REVIEW |
 | [TASK-127](TASK-127.md) | Đi riêng, hóa đơn riêng: nút "Tôi đi riêng — hóa đơn riêng" sau khi tự vào nhóm của bàn; ADR-065 | FEATURE-097 | TASK-126 | Agent | — | chủ dự án 18/11 | READY_FOR_REVIEW |
+| [TASK-128](TASK-128.md) | Thẻ "Bạn đi chung hay đi riêng?" dễ thấy: hai nút lớn Đi chung / Đi riêng ở màn chào và đầu thực đơn, gọi món luôn = đi chung; ADR-065 D-256 | FEATURE-097 | TASK-127 | Agent | — | chủ dự án 19/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 
