@@ -9,6 +9,8 @@ Quản lý F&amp;B đặt bàn bằng QR
 
 **Cập nhật 10/11/2026 (chưa gắn phiên bản, chờ duyệt):** thêm F-074…F-087 — bán tiếp khi mất mạng, hạn dùng nguyên liệu, quy trình 1 chạm ở màn Đơn hàng, vai Quản lý cửa hàng + vị trí / cấp nhân viên + quyền riêng từng tài khoản, trang Quản lý riêng (chủ quán chỉ dùng trang Quản lý), bảng chọn món + giỏ hàng gọn, giao diện mới dễ nhìn, ảnh món và ảnh nguyên liệu, khách đổi bàn khi quét QR (nhãn đổi bàn, in phiếu pha bàn mới, tự trả bàn trống); sửa lỗi DEF-021…DEF-029 (trừ DEF-025 còn chờ duyệt). Danh sách ở `quan ly F&B nho/cafe-qr-app/tài-liệu/chức-năng/README.md`.
 
+**Cập nhật 19/11/2026 (chưa gắn phiên bản, chờ duyệt):** thêm F-088…F-100 — màn quầy một màn hình (hai vùng Hàng pha / Quầy), phân quyền đơn giản bằng công tắc + trang Quyền nâng cao, số điện thoại tài khoản, kho nguyên liệu gọn (hạn sử dụng), màn chào khi khách quét QR, màn khách chỉ cho điện thoại, giao diện sáng / tối theo giờ quán + trang trí theo mùa, logo quán, thêm tài khoản chủ quán, khách quét QR tự vào nhóm của bàn với thẻ "Bạn đi chung hay đi riêng?", lương không tự duyệt cho mình, chuyển khoản VietQR có sẵn số tiền + in bill có mã QR, tự xác nhận chuyển khoản qua SePay; bỏ "Đổi người", trang Phân tích, dải "Mang ra" và giao diện "Sơ chế"; trang "Lãi / lỗ" đổi tên "Thu chi"; sửa lỗi DEF-030…DEF-034. Danh sách ở `quan ly F&B nho/cafe-qr-app/tài-liệu/chức-năng/README.md`.
+
 ## Nội dung
 
 - [Mã nguồn web-app `cafe-qr-app`](quan%20ly%20F%26B%20nho/cafe-qr-app/): HTML/CSS/JS thuần, Node.js + Express, SQL Server, Socket.io. Cách cài và chạy xem README trong thư mục này.
