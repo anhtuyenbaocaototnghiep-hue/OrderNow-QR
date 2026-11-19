@@ -1954,34 +1954,82 @@ body.customer .alert.info {
   text-underline-offset: 2px;
 }
 
-/* ADR-065 D-255 (TASK-127): vừa tự vào nhóm của bàn → dòng "Bạn đã vào nhóm…" + "Tôi đi riêng — hóa đơn riêng" (màn chào, đầu thực đơn) */
-.join-notice {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.6rem;
-  margin: 0.6rem 0.75rem 0;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-sm);
-  background: var(--c-surface);
+/* ADR-065 D-255 + TASK-128: vừa tự vào nhóm của bàn → thẻ nổi bật "Bàn … đang có khách — Bạn đi chung hay đi riêng?", hai nút lớn
+   ngang nhau (màn chào, đầu thực đơn). Màu theo bộ màu của màn khách nên đúng cả giao diện tối. */
+.together-card {
+  margin: 0.75rem 0.75rem 0;
+  padding: 0.9rem;
+  border: 2px solid var(--c-primary);
+  border-radius: 14px;
+  background: var(--c-primary-50);
   color: var(--c-text);
 }
-.join-notice .jn-text {
-  flex: 1 1 12rem;
-  min-width: 0;
+.together-card .tc-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.together-card .tc-ask {
+  margin: 0.15rem 0 0.75rem;
+  font-size: 1rem;
+}
+.together-card .tc-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.together-card .tc-btn {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-}
-.join-notice .jn-actions {
-  display: flex;
   align-items: center;
-  gap: 0.25rem;
-  margin-left: auto;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 88px;
+  padding: 0.6rem 0.4rem;
+  border: 2px solid var(--c-primary);
+  border-radius: 12px;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
 }
-.c-home .join-notice {
-  margin: 0 0 0.75rem;
+.together-card .tc-together {
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+}
+.together-card .tc-alone {
+  background: var(--c-surface);
+  color: var(--c-primary);
+}
+.together-card .tc-btn strong {
+  font-size: 1.15rem;
+}
+.together-card .tc-sub {
+  font-size: 0.85rem;
+}
+.together-card .tc-ic svg {
+  width: 26px;
+  height: 26px;
+}
+.together-card .tc-btn:disabled {
+  cursor: progress;
+}
+/* Đang gửi "Đi riêng" (setBusy thêm .loading): biểu tượng đổi thành vòng xoay cùng cỡ — khách biết máy đang làm, không bấm lại */
+.together-card .tc-btn.loading .tc-ic svg {
+  display: none;
+}
+.together-card .tc-btn.loading .tc-ic::before {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 2px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.c-home .together-card {
+  margin: 0 0 0.9rem;
 }
 .c-alone {
   margin-top: 0.75rem;

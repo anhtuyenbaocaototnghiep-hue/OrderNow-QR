@@ -27,7 +27,7 @@ import { groupsOf, pickItem } from '../options.js';
 import { connectRealtime } from '../socket.js';
 import { $, announce, clear, el, errorMessage, modal, money, reducedMotion, setBusy, thumb, toast } from '../ui.js';
 import { carryCart, followTable, getSessionId, goEntry, isLeaving, qrToken, setFlash, takeCarriedCart, takeFlash } from '../customer.js';
-import { clearJoined, joinedNotice, SEPARATED_MESSAGE } from '../join-notice.js';
+import { clearJoined, SEPARATED_MESSAGE, togetherCard } from '../join-notice.js';
 import { icon } from '../icons.js';
 
 const qr = qrToken();
@@ -52,8 +52,8 @@ const NOTE_CHIPS = ['Ít đường', 'Không đường', 'Ít đá', 'Nhiều đ
 
 const flash = takeFlash();
 if (flash) toast(flash.message, flash.type, 6000);
-// ADR-065 D-255: vừa tự vào nhóm của bàn → dòng "Bạn đã vào nhóm…" + "Tôi đi riêng — hóa đơn riêng" trên thực đơn (tới khi gửi món)
-const joinNotice = joinedNotice(qr, sessionId, {
+// ADR-065 D-255 + TASK-128: vừa tự vào nhóm của bàn → thẻ "Bạn đi chung hay đi riêng?" đầu thực đơn (tới khi chọn / gửi món)
+const joinNotice = togetherCard(qr, sessionId, {
   onSeparate: () => {
     setFlash(SEPARATED_MESSAGE, 'success');
     location.reload(); // trang đọc lại nhóm mới; giỏ đã chuyển sang nhóm mới

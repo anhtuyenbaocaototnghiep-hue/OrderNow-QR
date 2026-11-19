@@ -328,6 +328,16 @@ test('khách (điện thoại): menu, giỏ, theo dõi đơn, chia bill, chọn 
   await check(C, 'khach-chia-bill');
   await C.keyboard.press('Escape');
 
+  // TASK-128 (ADR-065): điện thoại khác quét QR bàn đang có một nhóm → tự vào nhóm, đầu thực đơn có thẻ "Bạn đi chung hay đi riêng?"
+  const jctx = await browser.newContext(phone);
+  const J = await jctx.newPage();
+  await J.goto(`/t/${table.qrToken}`);
+  await expect(J).toHaveURL(/\/menu$/);
+  await expect(J.locator('.together-card')).toContainText('Bạn đi chung hay đi riêng?');
+  await check(J, 'khach-di-chung-di-rieng', { narrow: true });
+  await focusVisible(J, 'khach-di-chung-di-rieng');
+  await jctx.close();
+
   // F-097: bàn có 2 nhóm (nhóm thứ hai do quầy / API mở) → khách mới thấy "Bạn đi cùng nhóm nào?" (không còn Tạo đơn cá nhân)
   const extra = await browser.newContext(phone);
   const X = await extra.newPage();
@@ -440,6 +450,19 @@ test('khách giao diện tối (8 giờ tối): màn chào, thực đơn, bảng
     await expect(N.locator('#actions')).toBeVisible();
     await check(N, 'khach-toi-theo-doi-don', { narrow: true });
     await focusVisible(N, 'khach-toi-theo-doi-don');
+    // TASK-128: điện thoại thứ hai quét QR bàn AD1 (đã có nhóm) → màn chào tối có thẻ "Bạn đi chung hay đi riêng?"
+    const M = await browser.newContext(phone);
+    try {
+      const J = await M.newPage();
+      J.setDefaultTimeout(15_000);
+      await J.clock.setFixedTime(new Date('2026-11-16T20:00:00+07:00'));
+      await J.goto(`/t/${darkTable.qrToken}`);
+      await expect(J.locator('html')).toHaveAttribute('data-theme', 'dark');
+      await expect(J.locator('.c-home .together-card')).toContainText('Bạn đi chung hay đi riêng?');
+      await check(J, 'khach-toi-di-chung-di-rieng', { narrow: true });
+    } finally {
+      await M.close();
+    }
   } finally {
     await ctx.close();
     await request.put('/api/admin/settings', { headers: admin, data: { guestWelcome: false, guestDaypartTheme: false, guestSeasonDecor: false } });

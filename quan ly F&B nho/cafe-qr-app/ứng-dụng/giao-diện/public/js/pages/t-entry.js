@@ -1,6 +1,6 @@
 // S-01 — Vào bàn: quét QR → phiên mới / vào lại phiên cũ (FEATURE-001, BR-008). F-097 (ADR-059): bàn đang có nhóm → tự vào nhóm của
 // bàn (không còn chọn "Gộp chung / Tạo đơn cá nhân"); hiếm khi bàn có ≥ 2 nhóm → hỏi đi cùng nhóm nào. Trả riêng = "Chia bill theo người".
-// ADR-065 D-255: vừa tự vào nhóm → dòng "Bạn đã vào nhóm…" + nút "Tôi đi riêng — hóa đơn riêng" (khách lạ ngồi ghép bàn) tới khi gửi món.
+// ADR-065 D-255 + TASK-128: vừa tự vào nhóm → thẻ nổi bật "Bàn … đang có khách — Bạn đi chung hay đi riêng?" (hai nút lớn) tới khi chọn / gửi món.
 // F-092 (ADR-054): có nhóm rồi → màn chào của quán (tên, địa chỉ, lời chào, bàn, hội viên, Gọi thanh toán / Gọi nhân viên / Đánh giá,
 // nút lớn "Xem thực đơn – Gọi món"); quán tắt màn chào ở Cài đặt → vào thẳng thực đơn như trước.
 import { api } from '../api.js';
@@ -9,7 +9,7 @@ import { mountMemberBox } from '../member-box.js';
 import { callStaffSheet } from '../call-staff.js';
 import { clearSessionId, qrToken, setFlash, setSessionId, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
-import { joinedNotice, markJoined, SEPARATED_MESSAGE } from '../join-notice.js';
+import { markJoined, SEPARATED_MESSAGE, togetherCard } from '../join-notice.js';
 
 const qr = qrToken();
 const app = $('#app');
@@ -62,7 +62,7 @@ async function start() {
 function joinTable(res) {
   const groups = res.openSessions ?? [];
   if (!groups.length) return createOwn(null, true);
-  if (groups.length === 1) return join(groups[0].sessionId, null, res.table);
+  if (groups.length === 1) return join(groups[0].sessionId, null, res.table, { ask: true });
   showFlash();
   return showGroups(res);
 }
@@ -86,8 +86,8 @@ function showGroups({ table, openSessions }) {
         el('span', { class: 'small' }, 'Gọi chung một hóa đơn — ai muốn trả riêng thì dùng "Chia bill theo người"'),
       ),
     ),
-    // ADR-065 D-255: khách lạ ngồi ghép bàn → nhóm riêng, hóa đơn riêng
-    el('button', { class: 'btn btn-block c-alone', type: 'button', onclick: (e) => createOwn(e.currentTarget) }, 'Tôi đi riêng — hóa đơn riêng'),
+    // ADR-065 D-255 + TASK-128: khách lạ ngồi ghép bàn → nhóm riêng, hóa đơn riêng (cùng chữ với thẻ "đi chung hay đi riêng")
+    el('button', { class: 'btn btn-block c-alone', type: 'button', onclick: (e) => createOwn(e.currentTarget) }, icon('user'), 'Đi riêng — hóa đơn riêng'),
   );
 }
 
@@ -193,12 +193,13 @@ function orderHere(res, button) {
   return createOwn(button);
 }
 
-async function join(sessionId, button, table) {
+async function join(sessionId, button, table, { ask = false } = {}) {
   setBusy(button, true);
   try {
     const res = await api(`/api/sessions/${sessionId}/join`, { method: 'POST', body: { qrToken: qr } });
-    // F-097 + ADR-065: báo khách đã vào nhóm chung của bàn bằng dòng cố định có nút "Tôi đi riêng" (màn chào / đầu thực đơn)
-    markJoined(qr, res.session.sessionId, table?.name ?? res.table?.name ?? 'bàn');
+    // F-097 + ADR-065 + TASK-128: tự vào nhóm (không tự chọn) → hỏi "đi chung hay đi riêng" bằng thẻ nổi bật ở màn chào / đầu thực đơn;
+    // khách đã tự chọn nhóm ở màn chọn nhóm thì không hỏi lại
+    if (ask) markJoined(qr, res.session.sessionId, table?.name ?? res.table?.name ?? 'Bàn');
     enter(res.session.sessionId);
   } catch (err) {
     setBusy(button, false);
@@ -385,8 +386,8 @@ function showHome(menu, first) {
         el('h1', { class: 'h-shop' }, menu.shop.name),
         menu.shop.address ? el('p', { class: 'h-addr' }, el('span', { 'aria-hidden': 'true' }, icon('map-pin')), menu.shop.address) : null,
       ),
-      // ADR-065 D-255: vừa tự vào nhóm của bàn → "Tôi đi riêng — hóa đơn riêng"
-      joinedNotice(qr, sessionId, {
+      // ADR-065 D-255 + TASK-128: vừa tự vào nhóm của bàn → "Bạn đi chung hay đi riêng?"
+      togetherCard(qr, sessionId, {
         onSeparate: (id) => {
           toast(SEPARATED_MESSAGE, 'success', 6000);
           enter(id);
