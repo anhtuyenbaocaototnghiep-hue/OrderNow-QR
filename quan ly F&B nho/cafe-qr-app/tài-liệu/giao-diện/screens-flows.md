@@ -707,3 +707,41 @@ Thay dòng nhỏ của TASK-127 (chủ dự án: "khó thấy quá… làm lại
   - nút cuối màn đổi thành "👤 Đi riêng — hóa đơn riêng";
   - khách tự chọn "Vào nhóm này" thì vào thực đơn **không** hiện thẻ (đã chọn rồi).
 - **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/khach-di-chung-di-rieng.jpg` (thực đơn, sáng), `khach-toi-di-chung-di-rieng.jpg` (màn chào, tối).
+
+## TASK-129 — Hộp Thu tiền gọn — SCR-14 (F-088, ADR-066 D-257, D-258, 22/11/2026)
+
+Chủ dự án gửi ảnh hộp "Thu tiền bàn": "bạn thiết kế cái này nhìn cho nó đơn giản dễ sử dụng và thao tác dc không".
+
+- **SCR-14 Thu tiền bàn** (vùng Quầy của màn một màn hình và ngăn bên phải của máy quầy cũ):
+
+  ```text
+  Thu tiền bàn                                    ✕
+  Bàn 01                              [Đang phục vụ]
+  Mở lúc 14:32 · 1 đơn                 [Việc khác ▾]
+  ┌──────────────────────────────────────────────┐
+  │ #28XGJEU3 · 14:33           Xóa đơn [Đã xong] │
+  │ 1 × Cà phê sữa                   25.000đ  [✎] │
+  └──────────────────────────────────────────────┘
+  ▸ Hội viên · giảm giá · voucher
+  Tạm tính 29.000đ · Khuyến mãi −4.000đ
+  Tổng phải thu                          25.000đ
+  [ Tiền mặt ][ Chuyển khoản ]
+  Tiền khách đưa [                          0 ]
+  [   Đủ tiền (25k)   ][  50k  ][ 100k ]
+  [ 200k ][ 500k ]
+  Tiền thừa trả khách                          —
+  ────────────────────────────────────────────────
+  [In tạm tính]              [Đã thu tiền & In bill]
+  ```
+
+  - **"Việc khác ▾"** mở khung hai cột: Gọi thêm món, Ghi chú bàn, Chuyển bàn, Tách hóa đơn, Thu chung với bàn khác, Hủy bàn (đỏ, cuối). Điều kiện hiện từng nút như trước.
+    - Bấm một việc → khung gập lại.
+    - Mở bill bằng **chạm tên bàn** (hoặc chỗ trống của thẻ bàn) → khung mở sẵn. Mở bằng nút **"Thu tiền"** → khung gập.
+  - **Thẻ đơn:**
+    - "Xóa đơn" là chữ nhỏ màu đỏ trên đầu thẻ (bỏ hàng nút đỏ riêng); vẫn hỏi lại kèm lý do.
+    - Đơn chưa tiếp nhận vẫn có Tiếp nhận / Hủy.
+    - Dòng món: tên trái, tiền phải, ✎ cuối dòng.
+  - **Bỏ dòng "Không ghi nợ / trả thiếu…"** (hộp Tách hóa đơn đã hướng dẫn thu từng phần).
+  - **Nút tiền nhanh:** lưới nút cao 48 px, "Đủ tiền (…k)" rộng gấp đôi. "Tiền thừa trả khách" có nền xanh nhạt; "Còn thiếu" nền đỏ nhạt.
+  - **Màn 1366 × 768, bàn có đơn đã tiếp nhận:** nút "Đủ tiền" và nút thu nằm trọn trong màn hình, không phải cuộn.
+- **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/quay-mot-man-hinh-thu-tien.jpg` (vùng Quầy), `quay-drawer-thu-tien-viec-khac.jpg` ("Việc khác" mở).
