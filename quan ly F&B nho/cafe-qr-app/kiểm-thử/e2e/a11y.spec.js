@@ -623,6 +623,10 @@ test('quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộ
   await P.locator('#tables .table-row', { hasText: 'Bàn A11Y' }).getByRole('button', { name: 'Thu tiền' }).click();
   await expect(P.locator('.drawer')).toBeVisible();
   await check(P, 'quay-drawer-thu-tien');
+  // TASK-129 (ADR-066): "Việc khác" mở ra việc phụ của bàn — quét cả khung này
+  await P.locator('.drawer').getByRole('button', { name: 'Việc khác' }).click();
+  await expect(P.locator('#settle-tasks')).toBeVisible();
+  await check(P, 'quay-drawer-thu-tien-viec-khac');
   await P.locator('.drawer').getByRole('button', { name: 'Sửa Nước suối' }).click();
   await expect(P.locator('.modal')).toBeVisible();
   // NFR-A11Y-09: mở hộp thoại → focus vào ô đầu trong hộp thoại; Esc đóng hộp thoại
@@ -828,6 +832,13 @@ test('quầy một màn hình (F-088): hai vùng Hàng pha + Quầy có thẻ (�
     await check(P, 'quay-mot-man-hinh-het-mon');
     await P.keyboard.press('Escape');
     await expect(P.getByRole('dialog')).toHaveCount(0);
+    // TASK-129 (ADR-066): hộp Thu tiền trong vùng Quầy — gọn, "Việc khác" gập
+    await P.locator('.tbl-card', { hasText: 'Bàn A11Y' }).first().getByRole('button', { name: 'Thu tiền' }).click();
+    const bill = P.locator('.zone-counter .overlay.in-zone .drawer');
+    await expect(bill.getByRole('button', { name: 'Việc khác' })).toHaveAttribute('aria-expanded', 'false');
+    await check(P, 'quay-mot-man-hinh-thu-tien');
+    await bill.getByRole('button', { name: 'Đóng' }).first().click();
+    await expect(bill).toHaveCount(0);
     await P.setViewportSize({ width: 900, height: 700 });
     await P.click('#tables-toggle');
     await expect(P.locator('#tables-panel')).toBeVisible();

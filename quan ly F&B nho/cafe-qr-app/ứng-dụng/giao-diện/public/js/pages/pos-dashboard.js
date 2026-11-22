@@ -892,6 +892,7 @@ function groupCard(s, groupNo) {
 function groupCardCompact(s, groupNo) {
   const st = groupState(s);
   const open = () => openSettle(s.sessionId);
+  const openTasks = () => openSettle(s.sessionId, { tasks: true }); // ADR-066 D-258: chạm tên bàn / chỗ trống → bill mở sẵn "Việc khác"
   const orderLink = () => el('a', { class: 'btn', href: tableOrderUrl(s), 'aria-label': `Gọi món ${s.table.name}` }, icon('plus'), 'Gọi món');
   const primary =
     s.orderCount > 0
@@ -905,13 +906,13 @@ function groupCardCompact(s, groupNo) {
         : el('button', { class: 'btn', type: 'button', 'aria-label': 'Đóng bàn trống', onclick: () => closeEmpty(s) }, 'Đóng bàn');
   return el(
     'div',
-    { class: `tbl-card table-row compact-card ${st}`, onclick: (e) => !e.target.closest('button, a') && open() },
+    { class: `tbl-card table-row compact-card ${st}`, onclick: (e) => !e.target.closest('button, a') && openTasks() },
     el(
       'div',
       { class: 'tc-head' },
       el(
         'button',
-        { class: 'tc-name', type: 'button', 'aria-label': `Mở bill ${s.table.name}${groupNo ? ` nhóm ${groupNo}` : ''}`, onclick: open },
+        { class: 'tc-name', type: 'button', 'aria-label': `Mở bill ${s.table.name}${groupNo ? ` nhóm ${groupNo}` : ''}`, onclick: openTasks },
         el('span', { class: 'name' }, s.table.name, groupNo ? el('span', { class: 'grp' }, `Nhóm ${groupNo}`) : null),
         icon('chevron-right'),
       ),
@@ -1515,8 +1516,11 @@ function voidHistory(voids) {
 }
 
 // ---------- S-14 Thu tiền bàn ----------
-function openSettle(sessionId) {
+// TASK-129 (ADR-066 D-257): hộp gọn — một việc chính là thu tiền; việc phụ của bàn (gọi thêm món, ghi chú, chuyển bàn, tách / gộp bill,
+// hủy bàn) nằm sau nút "Việc khác". `tasks` = true khi mở bằng chạm tên bàn (D-258) → "Việc khác" mở sẵn.
+function openSettle(sessionId, { tasks = false } = {}) {
   state.drawer?.close();
+  let tasksOpen = tasks;
   const body = el('div', {}, el('p', { class: 'muted' }, 'Đang tải…'));
   const amount = moneyInput({ id: 'amount-received', 'aria-label': 'Tiền khách đưa' });
   const changeBox = el('div', { class: 'change' });
@@ -1594,7 +1598,7 @@ function openSettle(sessionId) {
     cashFields,
     transferNote,
     qrBox,
-    el('p', { class: 'muted small' }, 'Không ghi nợ / trả thiếu. Trả một phần tiền mặt, một phần chuyển khoản: bấm "Tách hóa đơn" rồi thu từng phần.'),
+    // TASK-129: bỏ dòng hướng dẫn "Không ghi nợ… bấm Tách hóa đơn" — nút thu tự khóa khi thiếu tiền; hộp Tách hóa đơn đã ghi cách thu từng phần
   );
   function setMethod(next) {
     method = next;
@@ -1672,6 +1676,22 @@ function openSettle(sessionId) {
     refreshQr(); // F-099: số phải thu đổi (hội viên, giảm tay, phần) → mã mới
   }
 
+  /** TASK-129: một dòng món — tên (+ tùy chọn, ghi chú) bên trái, tiền bên phải, nút sửa cuối dòng. */
+  const itemRow = (i, edit = null) =>
+    el(
+      'li',
+      {},
+      el(
+        'span',
+        { class: 'mo-name' },
+        `${i.quantity} × ${i.name}`,
+        i.options?.length ? ` [${i.options.map((x) => x.name).join(', ')}]` : '',
+        i.note ? ` (${i.note})` : '',
+      ),
+      el('span', { class: 'mo-price' }, money(i.lineTotal)),
+      edit,
+    );
+
   /** F-046: nút bút chì trên dòng món chưa thu → sửa số lượng / xóa món. */
   const editButton = (o, i) =>
     el(
@@ -1726,6 +1746,48 @@ function openSettle(sessionId) {
     const mergedMembers = merged.filter((x) => x.member && x.member.memberId !== session.member?.memberId);
     closeBtn.hidden = active.length > 0;
     provisionalBtn.disabled = active.length === 0;
+    // TASK-129 (ADR-066 D-257): việc phụ của bàn gom sau nút "Việc khác" — bấm một việc thì gập lại (xong việc quay về thu tiền)
+    const runTask = (fn) => () => {
+      tasksOpen = false;
+      tasksPanel.hidden = true;
+      tasksToggle.setAttribute('aria-expanded', 'false');
+      fn();
+    };
+    const taskBtn = (iconName, label, fn, { gate = false, danger = false } = {}) =>
+      el(
+        'button',
+        { class: `btn task-btn${danger ? ' btn-danger' : ''}`, type: 'button', ...(gate ? shiftGate() : {}), onclick: runTask(fn) },
+        icon(iconName),
+        label,
+      );
+    const tasksPanel = el(
+      'div',
+      { class: 'settle-tasks', id: 'settle-tasks', role: 'group', 'aria-label': `Việc khác của ${session.table.name}`, hidden: !tasksOpen },
+      el('a', { class: 'btn task-btn', href: tableOrderUrl(session) }, icon('plus'), 'Gọi thêm món'),
+      taskBtn('notebook-pen', session.note ? 'Sửa ghi chú' : 'Ghi chú bàn', () => editNote(session)),
+      taskBtn('arrow-left-right', 'Chuyển bàn', () => moveTable(session), { gate: true }),
+      // F-058 tách hóa đơn theo món · F-057 thu chung nhiều bàn
+      active.length && !merged.length ? taskBtn('receipt', 'Tách hóa đơn', () => separateItems(), { gate: true }) : null,
+      active.length && !splitMode ? taskBtn('layout-grid', 'Thu chung với bàn khác', () => pickMerge()) : null,
+      // F-046 D-35: bàn đã thu một phần (chia bill) thì xóa từng món chưa thu thay vì hủy bàn
+      active.length && !session.paidAmount ? taskBtn('x', 'Hủy bàn', () => cancelTable(session), { gate: true, danger: true }) : null,
+    );
+    const tasksToggle = el(
+      'button',
+      {
+        class: 'btn btn-sm tasks-toggle',
+        type: 'button',
+        'aria-expanded': String(tasksOpen),
+        'aria-controls': 'settle-tasks',
+        onclick: () => {
+          tasksOpen = !tasksOpen;
+          tasksPanel.hidden = !tasksOpen;
+          tasksToggle.setAttribute('aria-expanded', String(tasksOpen));
+        },
+      },
+      'Việc khác',
+      icon('chevron-down'),
+    );
     clear(
       body,
       el(
@@ -1744,26 +1806,9 @@ function openSettle(sessionId) {
             )
           : el('span', { class: 'badge preparing' }, 'Đang phục vụ'),
       ),
-      el('p', { class: 'muted small' }, `Mở lúc ${time(session.openedAt)} · ${active.length} đơn`),
+      el('div', { class: 'settle-sub' }, el('span', { class: 'muted small' }, `Mở lúc ${time(session.openedAt)} · ${active.length} đơn`), tasksToggle),
+      tasksPanel,
       session.note ? el('div', { class: 'table-note', style: { marginBottom: '0.4rem' } }, icon('notebook-pen', { label: 'Ghi chú' }), session.note) : null,
-      el(
-        'div',
-        { class: 'row wrap', style: { gap: '0.3rem', marginBottom: '0.5rem' } },
-        el('a', { class: 'btn btn-sm', href: tableOrderUrl(session) }, 'Gọi thêm món'),
-        el('button', { class: 'btn btn-sm', type: 'button', onclick: () => editNote(session) }, session.note ? 'Sửa ghi chú' : 'Ghi chú bàn'),
-        el('button', { class: 'btn btn-sm', type: 'button', ...shiftGate(), onclick: () => moveTable(session) }, 'Chuyển bàn'),
-        // F-046 D-35: bàn đã thu một phần (chia bill) thì xóa từng món chưa thu thay vì hủy bàn
-        active.length && !session.paidAmount
-          ? el('button', { class: 'btn btn-sm btn-danger', type: 'button', ...shiftGate(), onclick: () => cancelTable(session) }, 'Hủy bàn')
-          : null,
-        // F-058 tách hóa đơn theo món · F-057 thu chung nhiều bàn
-        active.length && !merged.length
-          ? el('button', { class: 'btn btn-sm', type: 'button', ...shiftGate(), onclick: () => separateItems() }, icon('receipt'), 'Tách hóa đơn')
-          : null,
-        active.length && !splitMode
-          ? el('button', { class: 'btn btn-sm', type: 'button', onclick: () => pickMerge() }, icon('layout-grid'), 'Thu chung với bàn khác')
-          : null,
-      ),
       merged.length
         ? el(
             'div',
@@ -1800,21 +1845,24 @@ function openSettle(sessionId) {
         el(
           'div',
           { class: `mini-order ${o.status === 'PENDING' ? 'pending' : ''}` },
-          el('div', { class: 'row between' }, el('strong', {}, `#${o.orderCode} · ${time(o.createdAt)}`), statusBadge(o.status)),
+          el(
+            'div',
+            { class: 'mo-head' },
+            el('strong', {}, `#${o.orderCode} · ${time(o.createdAt)}`),
+            el(
+              'span',
+              { class: 'mo-head-end' },
+              // TASK-129: "Xóa đơn" là chữ nhỏ trên đầu thẻ (bỏ hàng nút đỏ riêng) — vẫn hỏi lại + lý do trước khi xóa
+              o.status !== 'PENDING' && editable(o)
+                ? el('button', { class: 'link-btn mo-void', type: 'button', ...shiftGate(), onclick: () => voidWholeOrder(o).then(reload) }, 'Xóa đơn')
+                : null,
+              statusBadge(o.status),
+            ),
+          ),
           el(
             'ul',
-            { class: 'small' },
-            o.items.map((i) =>
-              el(
-                'li',
-                {},
-                `${i.quantity} × ${i.name}`,
-                i.options?.length ? ` [${i.options.map((x) => x.name).join(', ')}]` : '',
-                i.note ? ` (${i.note})` : '',
-                ` — ${money(i.lineTotal)}`,
-                editable(o) && !i.paidAt ? editButton(o, i) : null,
-              ),
-            ),
+            { class: 'mo-items' },
+            o.items.map((i) => itemRow(i, editable(o) && !i.paidAt ? editButton(o, i) : null)),
           ),
           o.status === 'PENDING'
             ? el(
@@ -1849,13 +1897,7 @@ function openSettle(sessionId) {
                   'Hủy',
                 ),
               )
-            : editable(o)
-              ? el(
-                  'div',
-                  { class: 'row', style: { marginTop: '0.35rem' } },
-                  el('button', { class: 'btn btn-sm btn-danger', type: 'button', ...shiftGate(), onclick: () => voidWholeOrder(o).then(reload) }, 'Xóa đơn'),
-                )
-              : null,
+            : null,
         ),
       ),
       merged.map((x) => [
@@ -1866,11 +1908,11 @@ function openSettle(sessionId) {
             el(
               'div',
               { class: `mini-order ${o.status === 'PENDING' ? 'pending' : ''}` },
-              el('div', { class: 'row between' }, el('strong', {}, `#${o.orderCode} · ${time(o.createdAt)}`), statusBadge(o.status)),
+              el('div', { class: 'mo-head' }, el('strong', {}, `#${o.orderCode} · ${time(o.createdAt)}`), statusBadge(o.status)),
               el(
                 'ul',
-                { class: 'small' },
-                o.items.map((i) => el('li', {}, `${i.quantity} × ${i.name}`, i.note ? ` (${i.note})` : '', ` — ${money(i.lineTotal)}`)),
+                { class: 'mo-items' },
+                o.items.map((i) => itemRow(i)),
               ),
             ),
           ),

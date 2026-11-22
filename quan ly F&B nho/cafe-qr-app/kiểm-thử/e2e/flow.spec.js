@@ -853,6 +853,7 @@ test('sửa / xóa món + hủy bàn: nhân viên giảm món đã tiếp nhận
   await expect(drawer.locator('.void-history')).toContainText('duyệt: Trưởng ca E2E');
 
   // Hủy bàn: hủy đơn chưa thu, đóng phiên, bàn biến khỏi danh sách đang phục vụ
+  await drawer.getByRole('button', { name: 'Việc khác' }).click(); // TASK-129: việc phụ của bàn nằm sau "Việc khác"
   await drawer.getByRole('button', { name: 'Hủy bàn' }).click();
   await dlg.getByRole('button', { name: 'Khách bỏ về' }).click();
   await dlg.locator('input[aria-label="Tên đăng nhập người duyệt"]').fill('lead-e2e');
@@ -1562,6 +1563,7 @@ test('thu chung nhiều bàn: ngăn Thu tiền Bàn GH1 → "Thu chung với bà
   await P.goto('/pos');
   await P.locator('#tables .table-row', { hasText: 'Bàn GH1' }).getByRole('button', { name: 'Thu tiền' }).click();
   const drawer = P.locator('.drawer');
+  await drawer.getByRole('button', { name: 'Việc khác' }).click(); // TASK-129
   await drawer.getByRole('button', { name: 'Thu chung với bàn khác' }).click();
   const pick = P.locator('.modal', { hasText: 'Thu chung với Bàn GH1' });
   await pick.getByLabel(/^Bàn GH2/).check();
@@ -1588,6 +1590,7 @@ test('tách hóa đơn theo món: "Tách hóa đơn" → tích món → "Anh A" 
   await P.goto('/pos');
   await P.locator('#tables .table-row', { hasText: 'Bàn TH1' }).getByRole('button', { name: 'Thu tiền' }).click();
   const drawer = P.locator('.drawer');
+  await drawer.getByRole('button', { name: 'Việc khác' }).click(); // TASK-129
   await drawer.getByRole('button', { name: 'Tách hóa đơn' }).click();
   const dlg = P.locator('.modal', { hasText: 'Tách hóa đơn — Bàn TH1' });
   await dlg.getByLabel(/Nước suối/).check();
@@ -4039,6 +4042,66 @@ test('màn quầy gọn: thanh trên một hàng ở 1366 px chỉ Màn quầy /
     await quay.close();
     await apiAs(request, 'put', '/api/admin/settings', SINGLE_OFF);
     await clearTables(request, ['G1']);
+  }
+});
+
+// ---------- TASK-129 (ADR-066): hộp Thu tiền gọn — một việc chính, việc phụ sau "Việc khác" ----------
+test('hộp Thu tiền gọn: mở bằng "Thu tiền" → "Việc khác" gập, không còn dòng "Không ghi nợ", nút tiền nhanh + nút thu thấy ngay ở 1366 × 768 không phải cuộn; "Việc khác" mở ra Gọi thêm món / Ghi chú bàn / Chuyển bàn / Tách hóa đơn / Thu chung với bàn khác / Hủy bàn, bấm một việc thì gập lại; "Xóa đơn" là chữ nhỏ trên đầu thẻ đơn; chạm tên bàn → bill mở sẵn "Việc khác" (TASK-129, ADR-066, AC-088-11)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  await apiAs(request, 'put', '/api/admin/settings', SINGLE_ON);
+  const t = await apiAs(request, 'post', '/api/admin/tables', { code: 'HT1', name: 'Bàn HT1' });
+  const quay = await browser.newContext({ viewport: { width: 1366, height: 768 }, locale: 'vi-VN' });
+  try {
+    await guestOrderAccepted(request, t.qrToken, [{ menuItemId: ids['Cà phê đen'], quantity: 1 }]);
+    const S = await counterLogin(quay, 'hop-thu-tien-gon');
+    const card = S.locator('.tbl-card', { hasText: 'Bàn HT1' });
+    await card.getByRole('button', { name: 'Thu tiền' }).click();
+    const bill = S.locator('.zone-counter .overlay.in-zone .drawer');
+    await expect(bill.locator('.due span').last()).toHaveText('25.000đ');
+
+    // Mở bằng "Thu tiền": chỉ việc thu tiền — việc phụ gập sau "Việc khác"
+    const more = bill.getByRole('button', { name: 'Việc khác' });
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    for (const name of ['Ghi chú bàn', 'Chuyển bàn', 'Tách hóa đơn', 'Thu chung với bàn khác', 'Hủy bàn'])
+      await expect(bill.getByRole('button', { name })).toHaveCount(0);
+    await expect(bill.getByRole('link', { name: 'Gọi thêm món' })).toHaveCount(0);
+    await expect(bill).not.toContainText('Không ghi nợ');
+    // Thẻ đơn: "Xóa đơn" là chữ nhỏ trên đầu thẻ (không còn hàng nút đỏ riêng); dòng món tên trái · tiền phải
+    await expect(bill.locator('.mini-order .mo-head').getByRole('button', { name: 'Xóa đơn' })).toBeVisible();
+    await expect(bill.locator('.mo-items li').first().locator('.mo-price')).toHaveText('25.000đ');
+    // Nút tiền nhanh + nút thu thấy ngay (không phải cuộn)
+    await expect(bill.locator('.quick-cash .btn').first()).toBeInViewport({ ratio: 1 });
+    await expect(bill.locator('.modal-foot .btn-success')).toBeInViewport({ ratio: 1 });
+    await bill.locator('.quick-cash .btn').first().click();
+    await expect(bill.locator('.change')).toContainText('Tiền thừa trả khách');
+    await expect(bill.locator('.modal-foot .btn-success')).toBeEnabled();
+
+    // "Việc khác": đủ việc phụ; bấm một việc → gập lại
+    await more.click();
+    await expect(more).toHaveAttribute('aria-expanded', 'true');
+    const tasks = bill.locator('#settle-tasks');
+    await expect(tasks.getByRole('link', { name: 'Gọi thêm món' })).toBeVisible();
+    for (const name of ['Ghi chú bàn', 'Chuyển bàn', 'Tách hóa đơn', 'Thu chung với bàn khác', 'Hủy bàn'])
+      await expect(tasks.getByRole('button', { name })).toBeVisible();
+    await tasks.getByRole('button', { name: 'Ghi chú bàn' }).click();
+    const noteDlg = S.locator('.modal', { hasText: 'Ghi chú Bàn HT1' });
+    await expect(noteDlg.locator('textarea')).toBeVisible();
+    await expect(more).toHaveAttribute('aria-expanded', 'false');
+    await S.keyboard.press('Escape');
+    await expect(noteDlg).toHaveCount(0);
+    await bill.getByRole('button', { name: 'Đóng' }).first().click();
+    await expect(bill).toHaveCount(0);
+
+    // Chạm tên bàn (= mở bill để làm việc phụ) → "Việc khác" mở sẵn
+    await card.getByRole('button', { name: 'Mở bill Bàn HT1' }).click();
+    await expect(bill.getByRole('button', { name: 'Việc khác' })).toHaveAttribute('aria-expanded', 'true');
+    await expect(bill.locator('#settle-tasks').getByRole('button', { name: 'Chuyển bàn' })).toBeVisible();
+  } finally {
+    await quay.close();
+    await apiAs(request, 'put', '/api/admin/settings', SINGLE_OFF);
+    await clearTables(request, ['HT1']);
   }
 });
 

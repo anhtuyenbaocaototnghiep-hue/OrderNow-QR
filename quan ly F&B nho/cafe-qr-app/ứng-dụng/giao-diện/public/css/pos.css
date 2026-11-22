@@ -899,21 +899,34 @@ body.pos .tc-main .btn {
   margin-top: 0.5rem;
   font-variant-numeric: tabular-nums;
 }
+/* TASK-129: nút tiền nhanh là lưới nút lớn (Đủ tiền · 50k · 100k …) — bấm một chạm thay vì gõ số */
 .quick-cash {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 0.45rem;
   margin: 0.5rem 0;
+}
+.quick-cash .btn {
+  min-height: 48px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+/* "Đủ tiền (…k)" — nút dùng nhiều nhất, chữ dài: rộng gấp đôi để không xuống dòng ở vùng Quầy hẹp */
+.quick-cash .btn:first-child {
+  grid-column: span 2;
 }
 .change {
   display: flex;
   justify-content: space-between;
   font-size: 1.2rem;
   font-weight: 700;
-  padding: 0.5rem 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--c-success-50);
 }
 .change.short {
   color: var(--c-danger);
+  background: var(--c-danger-50);
 }
 .money-input {
   font-size: 1.4rem;
@@ -934,6 +947,80 @@ body.pos .tc-main .btn {
 .mini-order ul {
   margin: 0.3rem 0 0;
   padding-left: 1.1rem;
+}
+/* TASK-129 (ADR-066 D-257): hộp Thu tiền gọn — "Việc khác" gom việc phụ của bàn; thẻ đơn: "Xóa đơn" chữ nhỏ trên đầu thẻ, dòng món
+   tên trái · tiền phải */
+.settle-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.15rem 0 0.55rem;
+}
+.tasks-toggle .ic {
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.tasks-toggle[aria-expanded='true'] {
+  background: var(--c-surface-2);
+}
+.tasks-toggle[aria-expanded='true'] .ic {
+  transform: rotate(180deg);
+}
+.settle-tasks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0 0 0.65rem;
+  padding: 0.5rem;
+  border-radius: 12px;
+  background: var(--c-surface-2);
+}
+.settle-tasks .task-btn {
+  justify-content: flex-start;
+  gap: 0.45rem;
+  min-height: 44px;
+  text-align: left;
+}
+.mo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.mo-head-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.mo-void {
+  min-height: 32px;
+  padding: 0 0.25rem;
+  color: var(--c-danger);
+  font-size: 0.875rem;
+}
+.mo-void:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.mini-order .mo-items {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.mo-items li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 32px;
+}
+.mo-items .mo-name {
+  flex: 1;
+  min-width: 0;
+}
+.mo-items .mo-price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* Bán mang đi (S-13) */
