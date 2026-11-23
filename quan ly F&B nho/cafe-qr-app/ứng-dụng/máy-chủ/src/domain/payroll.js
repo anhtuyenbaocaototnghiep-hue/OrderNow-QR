@@ -25,6 +25,16 @@ export function rosterWindow({ workDate, startTime, endTime }) {
   return { start, end };
 }
 
+/**
+ * ADR-067 D-259: chỉ chấm VÀO được trong ca đã sắp — từ CLOCK_IN_EARLY_MINUTES phút trước giờ bắt đầu tới (không gồm) giờ kết thúc.
+ * roster: { workDate, startTime, endTime } (ca qua đêm: kết thúc ≤ bắt đầu); now: mốc thời gian (ms).
+ */
+export const CLOCK_IN_EARLY_MINUTES = 60;
+export function clockInOpen(roster, now) {
+  const w = rosterWindow(roster);
+  return now >= w.start - CLOCK_IN_EARLY_MINUTES * MIN && now < w.end;
+}
+
 const overlap = (a1, a2, b1, b2) => Math.max(0, Math.min(a2, b2) - Math.max(a1, b1));
 
 /** Lịch của cùng người giao nhiều nhất với lần chấm công (null = làm ngoài lịch). */

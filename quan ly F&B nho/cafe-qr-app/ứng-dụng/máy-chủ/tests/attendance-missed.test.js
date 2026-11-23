@@ -59,6 +59,9 @@ after(() => app?.close());
 
 describe('Quên PIN (ADR-031 D-135)', () => {
   test('AC-072-08: bị khóa PIN → đặt PIN mới bằng mật khẩu ngay ở màn chung (không phải đăng xuất máy quầy) → hết khóa, chấm công được ngay; quản lý xóa PIN cũng xóa lần sai cũ; sai mật khẩu tính như đăng nhập sai', async () => {
+    // ADR-067: chấm vào cần ca đã sắp (kiểm trước PIN) — sắp ca quanh giờ hiện tại cho hai người thử PIN; xóa ở cuối bài để không lẫn vào bài nhắc
+    await rosterAt('thuha', Date.now() - 60 * MIN, Date.now() + 300 * MIN);
+    await rosterAt('baohb', Date.now() - 60 * MIN, Date.now() + 300 * MIN);
     ok(await call(thuha, 'post', '/api/auth/pin', { password: 'Pass@123', pin: '2580' }));
     for (let i = 0; i < 5; i += 1) fail(await punch('thuha', '9999'), 403, 'PIN_INVALID');
     fail(await punch('thuha', '2580'), 429, 'PIN_LOCKED'); // đúng PIN cũng bị chặn khi đang khóa
@@ -90,6 +93,7 @@ describe('Quên PIN (ADR-031 D-135)', () => {
     assert.equal(await pinFailures('baohb'), 1);
     ok(await call(baohb, 'post', '/api/auth/pin', { password: 'Pass@123', pin: '1397' }));
     assert.equal(await pinFailures('baohb'), 0);
+    await q1(`DELETE FROM dbo.Rosters WHERE UserId IN (${users.thuha}, ${users.baohb})`); // ca tạm cho bài này (ADR-067)
   });
 });
 

@@ -10,7 +10,7 @@ import { badRequest, conflict, forbidden, notFound } from '../errors.js';
 import * as attendanceRepo from '../repositories/attendanceRepo.js';
 import * as payrollRepo from '../repositories/payrollRepo.js';
 import * as usersRepo from '../repositories/usersRepo.js';
-import { rosterWindow } from '../domain/payroll.js';
+import { clockInOpen, rosterWindow } from '../domain/payroll.js';
 import { addDays, todayVn, vnDayStartUtc } from '../utils/time.js';
 import { verifyPin } from './pinService.js';
 import { getSettings } from './settingsService.js';
@@ -176,24 +176,36 @@ export const productivity = (fromUtc, toUtc) => attendanceRepo.productivity(from
 
 // ---- F-072 (ADR-030 D-124…D-129): màn chấm công chung, đóng ca, quyết định trả lương, báo sai ----
 
-/** Màn chấm công: người đang hoạt động (trừ quản lý), đã đặt PIN chưa, đang làm từ lúc nào, lịch hôm nay. */
-export async function board() {
+/**
+ * ADR-067 D-259 (chủ quán 23/11/2026: "người ko có sắp ca làm thì sẽ không thấy chỗ chấm và mã pin… admin hoặc quản lý nhập ca thì mới
+ * xuất hiện"): chỉ chấm VÀO được trong ca đã sắp ở Lịch làm — từ 60 phút trước giờ bắt đầu tới giờ kết thúc (`clockInOpen`, ca qua đêm
+ * tính luôn). Chấm RA không cần lịch (người đang làm luôn ra ca được).
+ * Các ca (lịch hôm qua: ca qua đêm · hôm nay · ngày mai: ca bắt đầu sau 0 giờ) đang cho chấm vào lúc `now` → [{ userId, roster }].
+ */
+async function clockInWindows(now = Date.now()) {
   const today = todayVn();
-  const [users, open, rosters] = await Promise.all([
+  const list = await attendanceRepo.rosters(addDays(today, -1), addDays(today, 1));
+  return list.filter((r) => clockInOpen(r, now)).map((r) => ({ userId: r.user.userId, roster: r }));
+}
+
+/** Màn chấm công: người đang hoạt động (trừ quản lý) CÓ CA LÚC NÀY hoặc đang trong ca (để ra ca) — đã đặt PIN chưa, đang làm từ lúc nào, ca. */
+export async function board() {
+  const now = Date.now();
+  const [users, open, windows] = await Promise.all([
     usersRepo.list(),
-    attendanceRepo.list({ fromUtc: new Date(Date.now() - 36 * 3600e3), toUtc: new Date(Date.now() + 60e3) }),
-    attendanceRepo.rosters(today, today),
+    attendanceRepo.list({ fromUtc: new Date(now - 36 * 3600e3), toUtc: new Date(now + 60e3) }),
+    clockInWindows(now),
   ]);
   const since = new Map(open.filter((a) => !a.clockOut).map((a) => [a.user.userId, a.clockIn]));
   return users
-    .filter((u) => u.isActive && u.role !== 'ADMIN')
+    .filter((u) => u.isActive && u.role !== 'ADMIN' && (since.has(u.userId) || windows.some((w) => w.userId === u.userId)))
     .map((u) => ({
       userId: u.userId,
       fullName: u.fullName,
       role: u.role,
       hasPin: u.hasPin,
       workingSince: since.get(u.userId) ?? null,
-      roster: rosters.filter((r) => r.user.userId === u.userId).map((r) => `${r.startTime}–${r.endTime}`),
+      roster: windows.filter((w) => w.userId === u.userId).map((w) => `${w.roster.startTime}–${w.roster.endTime}`),
     }));
 }
 
@@ -202,6 +214,10 @@ export async function punch({ userId, pin, action }, actor) {
   if (!(await kioskMode())) throw conflict('KIOSK_OFF', 'Quán đang chấm công theo đăng nhập — quản lý đổi cách chấm công ở trang Nhân sự');
   const target = await usersRepo.findById(userId);
   if (!target || !target.isActive || target.role === 'ADMIN') throw notFound('Không tìm thấy nhân viên');
+  // ADR-067 D-259: chấm vào chỉ trong ca đã sắp — kiểm TRƯỚC PIN (người không có ca không thử PIN được, không bị khóa PIN)
+  if (action === 'IN' && !(await clockInWindows()).some((w) => w.userId === userId)) {
+    throw conflict('NOT_SCHEDULED', `${target.fullName} chưa có ca làm lúc này — nhờ quản lý sắp ca (Nhân sự & chấm công → Lịch làm tuần) rồi chấm công`);
+  }
   await verifyPin(target, pin, actor);
   if (action === 'IN') {
     const att = await attendanceRepo.punchIn(userId);

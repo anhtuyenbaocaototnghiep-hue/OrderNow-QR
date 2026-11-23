@@ -21,6 +21,17 @@ const settings = (patch) => call(admin, 'put', '/api/admin/attendance-settings',
 const punch = (token, who, pin, action) => call(token, 'post', '/api/attendance/punch', { userId: users[who], pin, action });
 const pinHdr = (who) => ({ 'X-Actor-Pin': PIN[who] });
 const openOf = async (who) => (await q1(`SELECT * FROM dbo.Attendance WHERE UserId = ${users[who]} AND ClockOut IS NULL`))[0];
+/** Giờ quán (VN) của một mốc: ngày 'YYYY-MM-DD' + 'HH:MM'. */
+const vnOf = (ms) => {
+  const t = new Date(ms + 7 * 3600e3).toISOString();
+  return { date: t.slice(0, 10), hhmm: t.slice(11, 16) };
+};
+/** ADR-067: chấm vào cần ca đã sắp — quản lý sắp ca cho `who` từ `fromMin` tới `toMin` phút so với bây giờ (giờ quán). */
+const rosterFor = async (who, fromMin, toMin) => {
+  const now = Date.now();
+  const [s, e] = [vnOf(now + fromMin * 60e3), vnOf(now + toMin * 60e3)];
+  return ok(await call(admin, 'post', '/api/admin/rosters', { userId: users[who], workDate: s.date, startTime: s.hhmm, endTime: e.hhmm }), 201);
+};
 
 before(async () => {
   app = await startApp();
@@ -113,6 +124,8 @@ describe('Chấm công nhiều người (F-072)', () => {
   });
 
   test('AC-072-03: màn chấm công — danh sách người (không có quản lý); vào / ra bằng PIN riêng; vào hai lần 409; đăng xuất không chấm ra; sai PIN 5 lần → 429 PIN_LOCKED + cảnh báo (người đứng quầy khác vẫn chấm được); chế độ đăng nhập → 409 KIOSK_OFF', async () => {
+    // ADR-067: chỉ người có ca lúc này mới có tên / chấm vào được — sắp ca cho những người chấm trong bài
+    for (const who of ['thuha', 'baohb', 'lead1']) await rosterFor(who, -60, 300);
     const board = ok(await call(staff, 'get', '/api/attendance/board'));
     assert.equal(board.mode, 'KIOSK');
     const names = board.people.map((p) => p.userId);
@@ -217,5 +230,59 @@ describe('Chấm công nhiều người (F-072)', () => {
       `SELECT DATEDIFF(MINUTE, ClockIn, ClockOut) AS M, NeedsReview FROM dbo.Attendance WHERE UserId = ${users.lead1} ORDER BY AttId DESC`,
     );
     assert.deepEqual([auto.M, auto.NeedsReview], [480, true]);
+  });
+});
+
+describe('Chỉ chấm vào trong ca đã sắp (ADR-067 D-259)', () => {
+  test('AC-072-13: người không có ca lúc này không có tên ở màn chấm công, chấm vào → 409 NOT_SCHEDULED (kiểm trước PIN — không thử / không tính lần sai PIN, không tạo chấm công); ca bắt đầu trong 60 phút tới → có tên kèm giờ ca, chấm vào được; ca còn hơn 60 phút mới bắt đầu → chưa có tên; đang trong ca mà quản lý xóa lịch → vẫn có tên và ra ca được; khung chấm vào: 60 phút trước giờ bắt đầu tới giờ kết thúc, ca qua đêm', async () => {
+    // Hàm thuần: khung được chấm vào
+    const { clockInOpen } = domain;
+    const at = (s) => new Date(`${s}:00+07:00`).getTime();
+    const day = { workDate: '2026-11-23', startTime: '08:00', endTime: '14:00' };
+    assert.deepEqual(
+      ['2026-11-23T06:59', '2026-11-23T07:00', '2026-11-23T13:59', '2026-11-23T14:00'].map((t) => clockInOpen(day, at(t))),
+      [false, true, true, false],
+    );
+    const night = { workDate: '2026-11-22', startTime: '22:00', endTime: '02:00' };
+    assert.deepEqual(
+      ['2026-11-22T20:59', '2026-11-22T21:00', '2026-11-23T01:59', '2026-11-23T02:00'].map((t) => clockInOpen(night, at(t))),
+      [false, true, true, false],
+    );
+
+    for (const [u, name] of [
+      ['cangay', 'Không Có Ca'],
+      ['casom', 'Ca Sắp Tới'],
+      ['casau', 'Ca Chiều Tối'],
+    ])
+      ok(await call(admin, 'post', '/api/admin/users', { username: u, password: 'Pass@123', fullName: name, role: 'STAFF' }), 201);
+    users = Object.fromEntries((await q1('SELECT UserId, Username FROM dbo.Users')).map((u) => [u.Username, u.UserId]));
+    for (const u of ['cangay', 'casom', 'casau']) ok(await call(await login(u), 'post', '/api/auth/pin', { password: 'Pass@123', pin: '7193' }));
+    const soon = await rosterFor('casom', 45, 240); // bắt đầu sau 45 phút: đã được chấm vào (sớm tối đa 60 phút)
+    await rosterFor('casau', 120, 300); // còn 2 giờ mới bắt đầu: chưa
+
+    const people = async () => ok(await call(staff, 'get', '/api/attendance/board')).people;
+    const shown = (await people()).map((p) => p.userId);
+    assert.deepEqual([shown.includes(users.cangay), shown.includes(users.casau), shown.includes(users.casom)], [false, false, true]);
+    assert.deepEqual((await people()).find((p) => p.userId === users.casom).roster, [`${soon.startTime}–${soon.endTime}`]);
+
+    const pinFails = () => count('AuthFailures', "Kind = 'PIN' AND Username = 'cangay'");
+    const before = await pinFails();
+    for (const pin of ['7193', '9999']) {
+      const r = await punch(staff, 'cangay', pin, 'IN');
+      assert.deepEqual([r.status, r.body.code], [409, 'NOT_SCHEDULED']);
+    }
+    assert.equal(await pinFails(), before, 'không có ca → không thử PIN, không tính lần sai');
+    assert.deepEqual([(await punch(staff, 'casau', '7193', 'IN')).body.code], ['NOT_SCHEDULED']);
+    assert.equal(await count('Attendance', `UserId IN (${users.cangay}, ${users.casau})`), 0);
+
+    ok(await punch(staff, 'casom', '7193', 'IN'));
+    // Quản lý xóa ca sau khi người đó đã chấm vào → vẫn có tên (đang làm) và ra ca được; ra ca xong thì hết tên
+    ok(await call(admin, 'delete', `/api/admin/rosters/${soon.rosterId}`));
+    assert.ok(
+      (await people()).some((p) => p.userId === users.casom),
+      'đang làm: vẫn có tên để ra ca',
+    );
+    ok(await punch(staff, 'casom', '7193', 'OUT'));
+    assert.ok(!(await people()).some((p) => p.userId === users.casom));
   });
 });

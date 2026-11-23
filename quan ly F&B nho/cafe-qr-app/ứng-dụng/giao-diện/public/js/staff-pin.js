@@ -47,11 +47,16 @@ export async function kioskDialog() {
         ...(people.length
           ? people.map((p) =>
               personTile(p, {
-                status: !p.hasPin ? 'Chưa đặt PIN — chạm để đặt' : p.workingSince ? `Đang làm từ ${time(p.workingSince)}` : 'Chưa vào ca',
+                status: !p.hasPin
+                  ? 'Chưa đặt PIN — chạm để đặt'
+                  : p.workingSince
+                    ? `Đang làm từ ${time(p.workingSince)}`
+                    : `${p.roster?.length ? `Ca ${p.roster.join(', ')} · ` : ''}Chưa vào ca`,
                 onPick: (who) => (who.hasPin ? punch(who, load) : kioskPinDialog(who).then(load)),
               }),
             )
-          : [el('p', { class: 'muted' }, 'Chưa có nhân viên nào.')]),
+          : // ADR-067 D-259: chỉ người có ca lúc này (hoặc đang trong ca) mới có tên
+            [el('p', { class: 'kiosk-empty' }, 'Chưa có ai có ca lúc này. Quản lý sắp ca ở trang Quản lý → Nhân sự & chấm công → Lịch làm tuần.')]),
       );
     } catch (err) {
       clear(list, el('div', { class: 'alert danger' }, errorMessage(err)));
@@ -64,6 +69,8 @@ export async function kioskDialog() {
       'div',
       { class: 'stack' },
       el('p', { class: 'small muted' }, 'Chạm vào tên mình, nhập PIN riêng. Chưa có PIN hoặc quên PIN: chạm tên mình, nhập mật khẩu đăng nhập để đặt PIN mới.'),
+      // ADR-067 D-259: người chưa được sắp ca không có tên ở đây
+      el('p', { class: 'small kiosk-note' }, 'Chỉ người có ca lúc này mới có tên. Không thấy tên mình → nhờ quản lý sắp ca.'),
       list,
     ),
     actions: [{ label: 'Xong', value: null }],

@@ -1444,6 +1444,21 @@ body:has(.tour-layer) .toasts {
   grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
   gap: 0.6rem;
 }
+/* ADR-067 D-259: màn Chấm công chỉ có người có ca lúc này — dòng nhắc + ô trống khi chưa ai được sắp ca */
+.kiosk-note {
+  margin: 0;
+  color: var(--c-info);
+  font-weight: 600;
+}
+.person-grid > .kiosk-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--c-info-50);
+  color: var(--c-info);
+  font-weight: 600;
+}
 .person-tile {
   display: flex;
   flex-direction: column;

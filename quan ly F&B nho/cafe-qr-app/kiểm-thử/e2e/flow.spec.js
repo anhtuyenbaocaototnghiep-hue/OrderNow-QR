@@ -2530,7 +2530,16 @@ test('chấm công nhiều người + lương: nhân viên tự đặt PIN; màn
 }) => {
   await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'KIOSK', moneyPin: true });
   await apiAs(request, 'post', '/api/admin/users', { username: 'e2e-ha', password: 'Pass@123', fullName: 'Hà E2E', role: 'STAFF' });
-  await apiAs(request, 'post', '/api/admin/users', { username: 'e2e-bao', password: 'Pass@123', fullName: 'Bảo E2E', role: 'STAFF' });
+  const baoUser = await apiAs(request, 'post', '/api/admin/users', { username: 'e2e-bao', password: 'Pass@123', fullName: 'Bảo E2E', role: 'STAFF' });
+  // ADR-067: chỉ người có ca lúc này mới có tên ở màn Chấm công — quản lý sắp ca cho Bảo quanh giờ hiện tại; Hà (đứng máy) không có ca
+  const vnAt = (ms) => new Date(ms + 7 * 3600e3).toISOString();
+  const [rs, re] = [vnAt(Date.now() - 3600e3), vnAt(Date.now() + 5 * 3600e3)];
+  await apiAs(request, 'post', '/api/admin/rosters', {
+    userId: baoUser.userId,
+    workDate: rs.slice(0, 10),
+    startTime: rs.slice(11, 16),
+    endTime: re.slice(11, 16),
+  });
   const bao = await (await request.post('/api/auth/login', { data: { username: 'e2e-bao', password: 'Pass@123' } })).json();
   const pinRes = await request.post('/api/auth/pin', { headers: { Authorization: `Bearer ${bao.accessToken}` }, data: { password: 'Pass@123', pin: '1397' } });
   expect(pinRes.ok()).toBeTruthy();
@@ -2558,6 +2567,10 @@ test('chấm công nhiều người + lương: nhân viên tự đặt PIN; màn
     // Màn chấm công chung: Bảo chạm tên mình, nhập PIN (bàn phím số đổi chỗ — gõ bằng bàn phím máy)
     await Q.locator('#kiosk-btn').click();
     const kiosk = Q.locator('.modal', { hasText: 'Chạm vào tên mình' });
+    // ADR-067 (AC-072-14): người không có ca (Hà — đang đứng máy) không có tên; Bảo có ca → có tên kèm giờ ca
+    await expect(kiosk.locator('.kiosk-note')).toHaveText('Chỉ người có ca lúc này mới có tên. Không thấy tên mình → nhờ quản lý sắp ca.');
+    await expect(kiosk.locator('.person-tile', { hasText: 'Bảo E2E' })).toContainText(`Ca ${rs.slice(11, 16)}–${re.slice(11, 16)} · Chưa vào ca`);
+    await expect(kiosk.locator('.person-tile', { hasText: 'Hà E2E' })).toHaveCount(0);
     await kiosk.locator('.person-tile', { hasText: 'Bảo E2E' }).click();
     const pad = Q.locator('.modal', { hasText: 'Vào ca — Bảo E2E' });
     await expect(pad.locator('.pin-key')).toHaveCount(12);

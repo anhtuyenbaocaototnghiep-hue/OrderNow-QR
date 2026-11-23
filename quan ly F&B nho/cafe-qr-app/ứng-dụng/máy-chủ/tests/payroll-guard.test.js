@@ -117,6 +117,10 @@ describe('Lương không tự làm cho mình, duyệt lại khi sửa giờ, gi�
 
     // 6) Thưởng chung cho ca có mình: quản lý chấm vào ở màn chung trong ca đang mở
     ok(await call(qlch, 'post', '/api/auth/pin', { password: 'Pass@123', pin: '6043' }));
+    // ADR-067: chấm vào ở màn chung cần ca đã sắp — sắp ca cho quản lý quanh giờ hiện tại (giờ quán)
+    const vnAt = (ms) => new Date(ms + 7 * 3600e3).toISOString();
+    const [rs, re] = [vnAt(Date.now() - 3600e3), vnAt(Date.now() + 5 * 3600e3)];
+    await roster('qlch', rs.slice(0, 10), rs.slice(11, 16), re.slice(11, 16));
     ok(await call(staff, 'post', '/api/attendance/punch', { userId: users.qlch, pin: '6043', action: 'IN' }));
     const shift = ok(await call(staff, 'get', '/api/shifts/current')).shift;
     self(await call(qlch, 'post', '/api/admin/payroll/team-bonus', { shiftId: shift.shiftId, amount: 100_000, reason: 'tip ca tối' }));
