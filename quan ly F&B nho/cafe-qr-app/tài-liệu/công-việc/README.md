@@ -146,6 +146,7 @@
 | [TASK-128](TASK-128.md) | Thẻ "Bạn đi chung hay đi riêng?" dễ thấy: hai nút lớn Đi chung / Đi riêng ở màn chào và đầu thực đơn, gọi món luôn = đi chung; ADR-065 D-256 | FEATURE-097 | TASK-127 | Agent | — | chủ dự án 19/11 | READY_FOR_REVIEW |
 | [TASK-129](TASK-129.md) | Hộp Thu tiền gọn: chỉ bày việc thu tiền, việc phụ của bàn sau "Việc khác" (chạm tên bàn → mở sẵn), "Xóa đơn" chữ nhỏ, nút tiền nhanh dạng lưới; ADR-066 | FEATURE-088 | TASK-128 | Agent | — | chủ dự án 22/11 | READY_FOR_REVIEW |
 | [TASK-130](TASK-130.md) | Hộp "Thu chung với bàn khác" dễ thấy: mỗi bàn một thẻ lớn (chạm cả thẻ, ô tích lớn, tiền bên phải, thẻ đã chọn sáng lên), dòng tổng tạm tính, chưa chọn thì nút Thu chung khóa | FEATURE-057 | TASK-129 | Agent | — | chủ dự án 22/11 | READY_FOR_REVIEW |
+| [TASK-131](TASK-131.md) | Chỉ người đã được sắp ca mới chấm vào được: màn Chấm công chỉ có người có ca lúc này (60 phút trước giờ bắt đầu → giờ kết thúc) hoặc đang trong ca; `409 NOT_SCHEDULED` kiểm trước PIN; ADR-067 | FEATURE-072 | TASK-130 | Agent | — | chủ dự án 23/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

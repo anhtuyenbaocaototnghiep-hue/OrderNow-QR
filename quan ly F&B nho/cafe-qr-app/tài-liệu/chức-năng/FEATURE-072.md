@@ -3,6 +3,7 @@
 > **Nguồn:** chủ dự án 05/11/2026 (duyệt phương án chấm công, bỏ máy khuôn mặt). Quyết định: [ADR-030](../quyết-định/ADR-030-cham-cong-tinh-luong.md) D-124…D-130.
 > **Bổ sung 06/11/2026:** quên PIN, nhắc chấm công, báo quên chấm công — [ADR-031](../quyết-định/ADR-031-nhac-va-bao-quen-cham-cong.md) D-135…D-139 (chủ dự án: "ok tiến hành đi").
 > **Bổ sung 14/11/2026:** bỏ "Đổi người" — [ADR-050](../quyết-định/ADR-050-bo-doi-nguoi.md) D-221 (chủ dự án: "bỏ chức năng đổi người ở màn hình quầy"); người khác đứng máy thì đăng xuất / đăng nhập.
+> **Bổ sung 23/11/2026:** chỉ người đã được sắp ca mới chấm vào được — [ADR-067](../quyết-định/ADR-067-chi-cham-cong-trong-ca.md) D-259 (chủ dự án: "người ko có sắp ca làm thì sẽ không thấy chỗ chấm và mã pin… admin hoặc quản lý nhập ca thì mới xuất hiện và chấm công"); [TASK-131](../công-việc/TASK-131.md).
 
 - **Status:** CONFIRMED (ADR-030, ADR-031) · Triển khai: [TASK-089](../công-việc/TASK-089.md), [TASK-090](../công-việc/TASK-090.md)
 - **Actor:** **ACT-STAFF / ACT-LEAD** (đặt PIN, chấm vào / ra, nhập PIN thao tác tiền, xem giờ công, báo sai, đóng ca); **ACT-ADMIN** (chọn cách chấm công, bật PIN thao tác tiền, xóa PIN, báo cáo tuần).
@@ -36,13 +37,21 @@
 8. Nhắc (chỉ `KIOSK`): có lịch, qua giờ bắt đầu ≥ 10 phút, chưa tới giờ hết, không có lần chấm công nào giao với lịch → `NOT_IN`; đang làm, lịch gần nhất đã hết > 15 phút, không lịch nào đang chạy / bắt đầu trong 30 phút → `NOT_OUT`. Không nhắc người làm ngoài lịch, người đã nghỉ việc, quản lý.
 9. Báo quên chấm công: giờ vào + giờ ra (ra sau vào, không tương lai, ≤ 24 giờ) + lý do ≥ 3 ký tự; trong 7 ngày (`400 MISSED_PUNCH_TOO_OLD`); trùng chấm công đã có `409 ATTENDANCE_OVERLAP`; trùng báo quên đang chờ `409 MISSED_PUNCH_OPEN`; tháng đã chốt `409 PAYROLL_LOCKED`; quản lý không tự gửi `403 MISSED_PUNCH_ADMIN`. Đang chờ → việc chờ `MISSED_PUNCH` (chặn chốt lương). Duyệt (chỉ quản lý, sửa giờ được) → lần chấm công `MANUAL`, người sửa = người duyệt, lý do "Báo quên chấm công: …"; không duyệt bắt buộc lý do. Không xóa được.
 
+## Quy tắc bổ sung (BR-130, ADR-067)
+
+10. **Chỉ chấm vào trong ca đã sắp** (chế độ `KIOSK`):
+    - **Khung được chấm vào:** từ 60 phút trước giờ bắt đầu ca ở Lịch làm tuần tới giờ kết thúc. Ca qua đêm tính sang ngày sau.
+    - **Màn Chấm công** chỉ liệt kê người đang có khung (ô người ghi "Ca hh:mm–hh:mm · Chưa vào ca") và người đang trong ca (để ra ca, kể cả khi lịch bị xóa). Chưa ai → "Chưa có ai có ca lúc này. Quản lý sắp ca ở …".
+    - **Chấm `IN` ngoài khung** → `409 NOT_SCHEDULED`, kiểm trước PIN: không thử PIN, không tính lần sai, không tạo chấm công.
+    - **Chấm ra không cần lịch.**
+
 ## API
 
 | Method & path | Quyền | Mô tả |
 | --- | --- | --- |
 | `POST /api/auth/pin` | Nhân viên | `{ password, pin }` → `{ hasPin: true }` |
 | ~~`POST /api/auth/switch`~~ | — | Đã bỏ (ADR-050) → `404` |
-| `GET /api/attendance/board` | Nhân viên | `{ mode, people: [{ userId, fullName, role, hasPin, workingSince, roster }] }` |
+| `GET /api/attendance/board` | Nhân viên | `{ mode, people: [{ userId, fullName, role, hasPin, workingSince, roster }] }` — (ADR-067) chỉ người có ca lúc này hoặc đang trong ca; `roster` = giờ ca đang cho chấm vào |
 | `POST /api/attendance/punch` | Nhân viên | `{ userId, pin, action: IN \| OUT }` → bản ghi chấm công |
 | `GET /api/attendance/shift/{id}` | Nhân viên | `{ mode, rows: [bản ghi + self] }` |
 | `POST /api/shifts/{id}/close` | Nhân viên | Thêm `attendance: { clockOut, present, absent }` → trả `attendance: { closed, checked, disputed }` |
@@ -71,7 +80,9 @@
 - AC-072-10: Ngày có lịch đã qua mà không chấm công → Giờ công của tôi có trong `missingDays` (báo được); nhân viên gửi báo quên (giờ thật + lý do) → `PENDING`, ngày đó "đã báo", việc chờ `MISSED_PUNCH` ở bảng lương tháng đó; lý do ngắn 400, giờ ra không sau giờ vào 400, quá 7 ngày 400, giờ tương lai 400, trùng báo quên 409, trùng chấm công đã có 409, quản lý tự gửi 403. _(bổ sung — TASK-090, 06/11/2026)_
 - AC-072-11: Trưởng ca duyệt 403; quản lý duyệt có sửa giờ → lần chấm công `MANUAL` ghi người duyệt + lý do, ngày đó hết vắng, giờ được tính theo lịch, hết việc chờ, có nhật ký thao tác; duyệt lại 404; không duyệt thiếu lý do 400, có lý do → `REJECTED`, không tạo chấm công, nhân viên thấy lý do; không xóa được (`HISTORY_NO_DELETE`); báo quên đang chờ chặn chốt lương (`409 PAYROLL_PENDING`); tháng đã chốt không duyệt được (`409 PAYROLL_LOCKED`). _(bổ sung — TASK-090, 06/11/2026)_
 - AC-072-12: Trên trình duyệt: máy quầy hiện dải "… có lịch … nhưng chưa chấm vào ca" → Mở Chấm công → người chưa có PIN chạm tên, đặt PIN bằng mật khẩu → vào ca bằng PIN → hết dải nhắc; bàn phím PIN có "Quên PIN?" mở hộp đặt lại PIN; Giờ công của tôi → "Quên chấm công?" → Báo quên chấm công (điền sẵn giờ lịch) → "Đã báo quên", "chờ quản lý duyệt"; trang Lương → Duyệt… (điền sẵn giờ) → hết việc chờ. _(bổ sung — TASK-090, 06/11/2026)_
+- AC-072-13: (ADR-067) Người không có ca lúc này không có trên `GET /api/attendance/board`; `POST /api/attendance/punch` `IN` (PIN đúng hay sai) → `409 NOT_SCHEDULED`, không thêm lần sai PIN, không tạo chấm công; ca còn hơn 60 phút mới bắt đầu → chưa có tên, `409 NOT_SCHEDULED`; ca bắt đầu trong 45 phút → có tên kèm giờ ca, chấm vào `200`; quản lý xóa lịch khi người đó đang trong ca → vẫn có tên, ra ca `200`, ra xong hết tên. Hàm `clockInOpen`: ca 08:00–14:00 cho chấm 07:00…13:59, không cho 06:59 / 14:00; ca qua đêm 22:00–02:00 cho chấm 21:00…01:59 hôm sau.
+- AC-072-14: (ADR-067, trình duyệt) Máy quầy → Chấm công: hộp có dòng "Chỉ người có ca lúc này mới có tên. Không thấy tên mình → nhờ quản lý sắp ca."; người được sắp ca quanh giờ hiện tại có ô "Ca hh:mm–hh:mm · Chưa vào ca" và vào ca bằng PIN được; người đang đứng máy nhưng không có ca không có ô.
 
 ## Bằng chứng
 
-`tests/attendance-kiosk.test.js` (AC-072-01…06) · E2E "chấm công nhiều người + lương…" (AC-072-07) · `tests/attendance-missed.test.js` (AC-072-08…11) · E2E "nhắc & báo quên chấm công…" (AC-072-12).
+`tests/attendance-kiosk.test.js` (AC-072-01…06, AC-072-13) · E2E "chấm công nhiều người + lương…" (AC-072-07, AC-072-14) · `tests/attendance-missed.test.js` (AC-072-08…11) · E2E "nhắc & báo quên chấm công…" (AC-072-12).

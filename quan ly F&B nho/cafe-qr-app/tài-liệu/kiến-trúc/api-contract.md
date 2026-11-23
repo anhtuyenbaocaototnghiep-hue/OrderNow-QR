@@ -665,8 +665,8 @@ Chi tiết: [FEATURE-072](../chức-năng/FEATURE-072.md), [FEATURE-073](../ch�
 | Method & path | Quyền | Kết quả |
 | --- | --- | --- |
 | `POST /api/auth/pin` | Nhân viên | `{ password, pin }` → `{ hasPin: true }`; mật khẩu sai `403 PASSWORD_INVALID`; PIN yếu `400 PIN_WEAK` |
-| `GET /api/attendance/board` | Nhân viên | `{ mode, people: [{ userId, fullName, role, hasPin, workingSince, roster }] }` (không có quản lý) |
-| `POST /api/attendance/punch` | Nhân viên | `{ userId, pin, action: IN | OUT }` → bản ghi; `409 ALREADY_IN` / `NOT_IN` / `KIOSK_OFF` |
+| `GET /api/attendance/board` | Nhân viên | `{ mode, people: [{ userId, fullName, role, hasPin, workingSince, roster }] }` (không có quản lý). ADR-067: chỉ người có ca lúc này (60 phút trước giờ bắt đầu → giờ kết thúc) hoặc đang trong ca; `roster` = giờ các ca đang cho chấm vào |
+| `POST /api/attendance/punch` | Nhân viên | `{ userId, pin, action: IN | OUT }` → bản ghi; `409 ALREADY_IN` / `NOT_IN` / `KIOSK_OFF`; ADR-067: `IN` ngoài ca đã sắp → `409 NOT_SCHEDULED` (kiểm trước PIN) |
 | `GET /api/attendance/shift/{id}` | Nhân viên | `{ mode, rows }` — lần chấm công giao với ca, `self` = của người đang xem |
 | `GET /api/me/attendance` | Nhân viên | `?month=YYYY-MM` → `{ month, records: [{ attId, clockIn, clockOut, paidMinutes, actualMinutes, late, roster, issues, decision, decidedBy, edits, openDispute }], pay, disputes, payslipMonths }` — chỉ của mình |
 | `POST /api/me/attendance/{id}/dispute` | Nhân viên | `{ note }` → `201 { disputeId }`; đang chờ `409 DISPUTE_OPEN`; tháng đã chốt `409 PAYROLL_LOCKED` |

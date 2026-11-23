@@ -769,3 +769,25 @@ Chọn bàn trả chung với Bàn 02 — in một bill, đóng tất cả các 
 - **Thẻ bàn:** chạm cả thẻ để chọn, ô tích 24 px. Bàn đang chia bill thì mờ, ghi "đang chia bill, không gộp được".
 - **Dòng tổng:** chưa chọn → "Chưa chọn bàn nào — chạm vào bàn muốn thu chung", nút "Thu chung" khóa.
 - **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/quay-thu-chung-chon-ban.jpg`.
+
+## TASK-131 — Màn Chấm công chỉ có người có ca — máy quầy (F-072, ADR-067 D-259, 23/11/2026)
+
+Chủ dự án: "người ko có sắp ca làm thì sẽ không thấy chỗ chấm và mã pin… admin hoặc quản lý nhập ca thì mới xuất hiện và chấm công".
+
+```text
+Chấm công                                             ✕
+Chạm vào tên mình, nhập PIN riêng. Chưa có PIN hoặc quên PIN: …
+Chỉ người có ca lúc này mới có tên. Không thấy tên mình → nhờ quản lý sắp ca.
+┌──────────────────────┐ ┌──────────────────────┐
+│ Bảo                  │ │ Hà                   │
+│ Ca 08:00–14:00 ·     │ │ Đang làm từ 07:52    │
+│ Chưa vào ca          │ │                      │
+└──────────────────────┘ └──────────────────────┘
+                                             [Xong]
+```
+
+- **Chỉ có hai loại người:**
+  - người có ca ở **Quản lý → Nhân sự & chấm công → Lịch làm tuần** đang cho chấm vào (từ 60 phút trước giờ bắt đầu tới giờ kết thúc);
+  - người **đang trong ca** (để ra ca).
+- **Người không có ca:** không có ô nên không thấy bàn phím PIN. Máy chủ cũng chặn (`409 NOT_SCHEDULED`) nếu gọi thẳng.
+- **Chưa ai có ca:** ô xanh "Chưa có ai có ca lúc này. Quản lý sắp ca ở trang Quản lý → Nhân sự & chấm công → Lịch làm tuần."
