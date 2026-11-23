@@ -2738,6 +2738,31 @@ test('nhắc & báo quên chấm công: máy quầy nhắc người có lịch c
   await apiAs(request, 'put', '/api/admin/attendance-settings', { attendanceMode: 'LOGIN', moneyPin: false }); // trả lại cho các test sau
 });
 
+// ---------- TASK-132 (ADR-068): "Nhân sự & chấm công" + "Lương" gộp một mục ----------
+test('Nhân sự & lương gộp một mục: thanh bên chỉ còn "Nhân sự & lương" (không còn mục "Lương" riêng); hàng thẻ chung Chấm công · Lịch làm tuần · Năng suất · Báo cáo tuần · Lương; bấm "Lương" → trang Lương, mục vẫn sáng, thẻ Lương được chọn; bấm "Lịch làm tuần" ở trang Lương → về đúng thẻ (TASK-132, ADR-068, AC-073-10)', async () => {
+  await P.goto('/admin/staff');
+  const side = P.locator('#side');
+  const item = side.getByRole('link', { name: 'Nhân sự & lương' });
+  await expect(item).toHaveAttribute('href', '/admin/staff');
+  await expect(item).toHaveAttribute('aria-current', 'page');
+  await expect(side.locator('a[href="/admin/payroll"]')).toHaveCount(0);
+  await expect(P.getByRole('heading', { level: 1 })).toHaveText('Nhân sự & lương');
+  const bar = P.getByRole('tablist', { name: 'Nhân sự & lương' });
+  await expect(bar.getByRole('tab')).toHaveText(['Chấm công', 'Lịch làm tuần', 'Năng suất', 'Báo cáo tuần', 'Lương']);
+  await expect(bar.getByRole('tab', { name: 'Chấm công' })).toHaveAttribute('aria-selected', 'true');
+
+  await bar.getByRole('tab', { name: 'Lương' }).click();
+  await expect(P).toHaveURL(/\/admin\/payroll\?tab=payroll$/);
+  await expect(P.locator('#pay-month')).toBeVisible();
+  await expect(item).toHaveAttribute('aria-current', 'page'); // vẫn sáng mục gộp ở trang Lương
+  await expect(bar.getByRole('tab', { name: 'Lương' })).toHaveAttribute('aria-selected', 'true');
+
+  await bar.getByRole('tab', { name: 'Lịch làm tuần' }).click();
+  await expect(P).toHaveURL(/\/admin\/staff\?tab=roster$/);
+  await expect(bar.getByRole('tab', { name: 'Lịch làm tuần' })).toHaveAttribute('aria-selected', 'true');
+  await expect(P.getByRole('button', { name: 'Chép lịch tuần trước' })).toBeVisible();
+});
+
 test('bán khi mất mạng: máy quầy mất kết nối → tự chuyển "bán tạm" (giá niêm yết), thu tiền lưu đơn tạm T-… + in bill; có mạng lại tự gửi bù → đơn vào hệ thống, Ca & hoàn tiền có "Đơn bán lúc mất mạng"; quản lý nhập đơn từ phiếu bán tay (F-074, AC-074-05)', async ({
   request,
 }) => {
@@ -2911,6 +2936,10 @@ test('phân quyền: chủ quán tạo tài khoản "Quản lý cửa hàng" ở
     await expect(side.locator(`a[href="${href}"]`), href).toHaveCount(0);
   }
   await expect(side).toContainText('Quản lý cửa hàng');
+  // TASK-132 (ADR-068): quản lý cửa hàng (chưa được giao quyền Lương) thấy mục "Nhân sự & lương" nhưng không có thẻ Lương
+  await expect(side.locator('a[href="/admin/staff"]')).toHaveText('Nhân sự & lương'); // nhóm "Quỹ & nhân sự" đang gập ở trang Hôm nay
+  await S.goto('/admin/staff');
+  await expect(S.getByRole('tablist', { name: 'Nhân sự & lương' }).getByRole('tab')).toHaveText(['Chấm công', 'Lịch làm tuần', 'Năng suất', 'Báo cáo tuần']);
 
   // Đổi giá Latte ở Thực đơn → chủ quán được báo
   const latte = (await apiAs(request, 'get', '/api/admin/menu-items')).find((m) => m.name === 'Latte');

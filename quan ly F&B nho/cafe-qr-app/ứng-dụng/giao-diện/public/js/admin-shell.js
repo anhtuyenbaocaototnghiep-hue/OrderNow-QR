@@ -60,8 +60,8 @@ const NAV = [
       ['shifts', '/admin/shifts', 'Ca & hoàn tiền'],
       ['cash', '/admin/cash', 'Sổ quỹ'],
       ['alerts', '/admin/alerts', 'Cảnh báo', 'Cảnh báo bất thường'], // F-060
-      ['staff', '/admin/staff', 'Nhân sự & chấm công'],
-      ['payroll', '/admin/payroll', 'Lương'], // F-073
+      // TASK-132 (ADR-068 D-260): "Nhân sự & chấm công" + "Lương" gộp một mục — hàng thẻ chung ở hai trang (staff-nav.js)
+      ['staff', '/admin/staff', 'Nhân sự & lương', 'Chấm công, lịch làm, năng suất, báo cáo tuần & lương'],
     ],
   },
   {
@@ -97,10 +97,17 @@ export const MODULE_OF = {
   audit: 'advanced',
   'api-docs': 'advanced',
 };
-// TASK-109 (F-089): trang không có mục riêng ở thanh bên → sáng mục chứa nó
-const NAV_ALIAS = { purchasing: 'stock' };
+// TASK-109 (F-089) · TASK-132 (ADR-068): trang không có mục riêng ở thanh bên → sáng mục chứa nó
+const NAV_ALIAS = { purchasing: 'stock', payroll: 'staff' };
 const shown = (key) => !MODULE_OF[key] || current.modules.includes(MODULE_OF[key]);
 const allowed = (key) => canOpenAdminPage(current.user, key); // F-077
+// TASK-132 (ADR-068): mục gộp hiện khi mở được MỘT trong các trang của nó (quyền / nhóm menu giữ theo từng trang);
+// link tới trang đầu tiên mở được — người chỉ có quyền Lương vẫn vào được thẻ Lương
+const NAV_MERGED = { staff: [['payroll', '/admin/payroll']] };
+const navTarget = ([key, href, ...rest]) => {
+  const hit = [[key, href], ...(NAV_MERGED[key] ?? [])].find(([k]) => shown(k) && allowed(k));
+  return hit ? [key, hit[1], ...rest] : null;
+};
 
 // Nhóm người dùng tự mở được nhớ trên máy (tiện ích riêng mỗi trình duyệt; bị chặn lưu thì chỉ mất ghi nhớ)
 const OPEN_KEY = 'admin.nav.open';
@@ -123,7 +130,7 @@ const navLink = ([key, href, label, full], active, ...lead) =>
   el('a', { href, class: key === active ? 'active' : '', 'aria-current': key === active ? 'page' : null, title: full || null }, ...lead, label);
 
 function navGroup(g, active, open) {
-  const items = g.items.filter(([key]) => shown(key) && allowed(key));
+  const items = g.items.map(navTarget).filter(Boolean);
   if (!items.length) return null; // cả nhóm đang ẩn (chế độ cơ bản) hoặc không thuộc quyền
   const here = items.some(([key]) => key === active);
   const summary = el('summary', {}, icon(g.icon), el('span', { class: 'grow' }, g.title), icon('chevron-down'));

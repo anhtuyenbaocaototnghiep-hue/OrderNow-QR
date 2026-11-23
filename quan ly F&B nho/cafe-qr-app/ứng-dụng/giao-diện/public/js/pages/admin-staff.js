@@ -6,6 +6,7 @@ import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { isOwner } from '../roles.js';
 import { attendanceDialog, attendanceTable, hoursText, ROLE_LABEL } from '../attendance.js';
+import { initialStaffTab, staffTabs } from '../staff-nav.js';
 import { $, clear, confirmDialog, dateTime, el, errorMessage, modal, money, time, toast, todayVn } from '../ui.js';
 
 const me = await mountAdminShell('staff');
@@ -13,32 +14,24 @@ const me = await mountAdminShell('staff');
 const addDays = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
 const mondayOf = (d) => addDays(d, -((new Date(`${d}T00:00:00Z`).getUTCDay() + 6) % 7));
 const DOW = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-const state = { tab: 'attendance', from: addDays(todayVn(), -6), to: todayVn(), userId: '', week: mondayOf(todayVn()), users: [] };
+const state = {
+  tab: initialStaffTab('staff', 'attendance'),
+  from: addDays(todayVn(), -6),
+  to: todayVn(),
+  userId: '',
+  week: mondayOf(todayVn()),
+  users: [],
+};
 const body = el('div');
-const tabs = el(
-  'div',
-  { class: 'tabs', role: 'tablist' },
-  [
-    ['attendance', 'Chấm công'],
-    ['roster', 'Lịch làm tuần'],
-    ['productivity', 'Năng suất'],
-    ['week', 'Báo cáo tuần'],
-  ].map(([key, label]) =>
-    el(
-      'button',
-      {
-        type: 'button',
-        role: 'tab',
-        'aria-selected': String(state.tab === key),
-        onclick: (e) => {
-          state.tab = key;
-          tabs.querySelectorAll('button').forEach((b) => b.setAttribute('aria-selected', String(b === e.currentTarget)));
-          load();
-        },
-      },
-      label,
-    ),
-  ),
+// TASK-132 (ADR-068): hàng thẻ chung với trang Lương — một mục "Nhân sự & lương" ở thanh bên
+const tabs = staffTabs(
+  'staff',
+  state.tab,
+  (key) => {
+    state.tab = key;
+    load();
+  },
+  me,
 );
 clear($('#content'), tabs, body);
 

@@ -5,8 +5,9 @@
 import { staffApi } from '../api.js';
 import { mountAdminShell } from '../admin-shell.js';
 import { $, clear, confirmDialog, dateOnly, dateTime, el, errorMessage, modal, money, reasonDialog, time, toast, todayVn } from '../ui.js';
+import { staffTabs } from '../staff-nav.js';
 
-await mountAdminShell('payroll');
+const me = await mountAdminShell('payroll');
 
 const hours = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 const monthLabel = (m) => `Tháng ${m.slice(5)}/${m.slice(0, 4)}`;
@@ -17,7 +18,12 @@ const months = Array.from({ length: 12 }, (_, i) => {
 });
 const state = { month: months[1], data: null, profiles: [], banks: [], users: [], disputes: [] };
 const body = el('div');
-clear($('#content'), body);
+// TASK-132 (ADR-068): hàng thẻ chung với trang Nhân sự — một mục "Nhân sự & lương" ở thanh bên; trang này là thẻ "Lương"
+clear(
+  $('#content'),
+  staffTabs('payroll', 'payroll', () => {}, me),
+  body,
+);
 
 async function load() {
   clear(body, el('p', { class: 'muted' }, 'Đang tải…'));
