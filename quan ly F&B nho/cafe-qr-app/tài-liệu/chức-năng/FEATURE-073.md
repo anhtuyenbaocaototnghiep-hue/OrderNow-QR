@@ -3,6 +3,7 @@
 > **Nguồn:** chủ dự án 05/11/2026 (duyệt phương án chấm công + tính lương). Quyết định: [ADR-030](../quyết-định/ADR-030-cham-cong-tinh-luong.md) D-129…D-134.
 
 - **Status:** CONFIRMED (ADR-030) · Triển khai: [TASK-089](../công-việc/TASK-089.md)
+- **Cập nhật 23/11/2026 — [ADR-068](../quyết-định/ADR-068-gop-nhan-su-va-luong.md) D-260 ([TASK-132](../công-việc/TASK-132.md)):** chủ dự án "gộp 2 cái này lại" → thanh bên chỉ còn một mục **"Nhân sự & lương"**; trang Lương là thẻ **Lương** trong hàng thẻ chung với Nhân sự (Chấm công · Lịch làm tuần · Năng suất · Báo cáo tuần · Lương). Đường dẫn `/admin/payroll`, quyền `admin.payroll` giữ nguyên.
 - **Actor:** **ACT-ADMIN** (hồ sơ lương, ngày lễ, quyết định giờ, thưởng / khấu trừ, chốt / mở lại, trả lương); **ACT-STAFF / ACT-LEAD** (xem giờ công + lương của mình, báo sai, "Đã xem" phiếu lương, ghi tạm ứng ở sổ quỹ).
 - **Màn hình:** **Lương** `/admin/payroll` (SCR-51); **Giờ công của tôi** `/pos/me` (SCR-52); **Sổ quỹ** (tạm ứng chọn người nhận); **Lãi/lỗ** (dòng "Lương nhân viên").
 - **Dữ liệu:** `PayProfiles`, `Holidays`, `PayrollAdjustments`, `PayrollRuns`, `PayrollLines`, `AttendanceDisputes`, `CashTransactions.EmployeeId`, danh mục `SALARY_ADVANCE`.
@@ -54,7 +55,8 @@
 - AC-073-07: Tạm ứng: thiếu người nhận 400; luôn chờ duyệt; người nhận tự duyệt 403 SELF_APPROVAL; người khác duyệt → trừ vào lương tháng.
 - AC-073-08: Thưởng chung chia theo phút trong ca; báo cáo tuần (lịch vs giờ được tính, sửa tay theo ngày sửa, % lương / doanh thu theo ca); Lãi/lỗ có "Lương nhân viên", tạm ứng không là chi phí.
 - AC-073-09: Trên trình duyệt: quản lý chọn tháng ở trang Lương, thấy việc chờ "Chưa có hồ sơ lương" của người vừa chấm công, nhập hồ sơ lương → người đó vào bảng lương.
+- AC-073-10: (ADR-068, trình duyệt) Thanh bên trang Quản lý chỉ có một mục "Nhân sự & lương" (không còn mục "Lương"), sáng ở cả `/admin/staff` và `/admin/payroll`; hai trang có cùng tiêu đề "Nhân sự & lương" và cùng hàng thẻ Chấm công · Lịch làm tuần · Năng suất · Báo cáo tuần · Lương; bấm "Lương" → `/admin/payroll?tab=payroll` (thẻ Lương được chọn); bấm "Lịch làm tuần" ở trang Lương → `/admin/staff?tab=roster` mở đúng thẻ; quản lý cửa hàng chưa được giao quyền Lương thấy mục nhưng không có thẻ Lương.
 
 ## Bằng chứng
 
-`tests/payroll.test.js` (AC-073-01…08) · E2E "chấm công nhiều người + lương…" (AC-073-09).
+`tests/payroll.test.js` (AC-073-01…08) · E2E "chấm công nhiều người + lương…" (AC-073-09) · E2E "Nhân sự & lương gộp một mục: …" + "phân quyền: …" (AC-073-10).

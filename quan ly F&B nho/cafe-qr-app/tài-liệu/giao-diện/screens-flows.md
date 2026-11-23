@@ -791,3 +791,17 @@ Chỉ người có ca lúc này mới có tên. Không thấy tên mình → nh�
   - người **đang trong ca** (để ra ca).
 - **Người không có ca:** không có ô nên không thấy bàn phím PIN. Máy chủ cũng chặn (`409 NOT_SCHEDULED`) nếu gọi thẳng.
 - **Chưa ai có ca:** ô xanh "Chưa có ai có ca lúc này. Quản lý sắp ca ở trang Quản lý → Nhân sự & chấm công → Lịch làm tuần."
+
+## TASK-132 — Một mục "Nhân sự & lương" — SCR-37, SCR-51 (F-073, ADR-068 D-260, 23/11/2026)
+
+Chủ dự án gửi ảnh hai mục "Nhân sự & chấm công" + "Lương" ở thanh bên: "gộp 2 cái này lại".
+
+- **Thanh bên, nhóm Quỹ & nhân sự:**
+  - một mục **"Nhân sự & lương"**, không còn mục "Lương";
+  - mục sáng ở cả `/admin/staff` và `/admin/payroll`.
+- **Hai trang cùng tiêu đề "Nhân sự & lương"** và cùng hàng thẻ: **Chấm công · Lịch làm tuần · Năng suất · Báo cáo tuần · Lương**.
+  - Thẻ "Lương" mở trang bảng lương (`/admin/payroll?tab=payroll`).
+  - Các thẻ khác mở trang Nhân sự đúng thẻ (`/admin/staff?tab=roster` …).
+- **Quyền:**
+  - Người không có quyền Lương không thấy thẻ Lương (ví dụ quản lý cửa hàng chưa được giao quyền).
+  - Người chỉ có quyền Lương: mục ở thanh bên trỏ thẳng tới trang Lương.
