@@ -745,3 +745,27 @@ Chủ dự án gửi ảnh hộp "Thu tiền bàn": "bạn thiết kế cái nà
   - **Nút tiền nhanh:** lưới nút cao 48 px, "Đủ tiền (…k)" rộng gấp đôi. "Tiền thừa trả khách" có nền xanh nhạt; "Còn thiếu" nền đỏ nhạt.
   - **Màn 1366 × 768, bàn có đơn đã tiếp nhận:** nút "Đủ tiền" và nút thu nằm trọn trong màn hình, không phải cuộn.
 - **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/quay-mot-man-hinh-thu-tien.jpg` (vùng Quầy), `quay-drawer-thu-tien-viec-khac.jpg` ("Việc khác" mở).
+
+## TASK-130 — Hộp "Thu chung với bàn khác" dễ thấy — SCR-14 (F-057, 22/11/2026)
+
+Chủ dự án gửi ảnh hộp "Thu chung với Bàn 02": "hơi khó thấy… làm sao dễ thấy hơn".
+
+```text
+Thu chung với Bàn 02                                ✕
+Chọn bàn trả chung với Bàn 02 — in một bill, đóng tất cả các bàn.
+┌──────────────────────────────────────────────────┐
+│ [✓]  Bàn 01                              25.000đ │  ← đã chọn: viền + nền màu chính
+│      1 đơn · mở 14:32                            │
+└──────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│ [ ]  Bàn 05                              40.000đ │
+│      2 đơn · mở 14:50                            │
+└──────────────────────────────────────────────────┘
+ Bàn 02 + 1 bàn                     tạm tính 50.000đ
+──────────────────────────────────────────────────────
+                                   [Hủy] [Thu chung]
+```
+
+- **Thẻ bàn:** chạm cả thẻ để chọn, ô tích 24 px. Bàn đang chia bill thì mờ, ghi "đang chia bill, không gộp được".
+- **Dòng tổng:** chưa chọn → "Chưa chọn bàn nào — chạm vào bàn muốn thu chung", nút "Thu chung" khóa.
+- **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/quay-thu-chung-chon-ban.jpg`.

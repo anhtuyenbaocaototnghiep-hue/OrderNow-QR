@@ -3,6 +3,7 @@
 > **Nguồn:** chủ dự án yêu cầu 24/10/2026: "thêm chức năng gộp hóa đơn"; chọn: gộp nhiều bàn để thu một lần (không gộp hẳn nhóm trước lúc thu). Quyết định: [ADR-019](../quyết-định/ADR-019-chuyen-khoan-gop-tach-hoa-don.md) D-73.
 
 - **Status:** CONFIRMED (ADR-019 D-73) · Triển khai: [TASK-073](../công-việc/TASK-073.md)
+- **Cập nhật 22/11/2026 — [TASK-130](../công-việc/TASK-130.md)** (chủ dự án: ảnh hộp "Thu chung với Bàn 02" — "hơi khó thấy… làm sao dễ thấy hơn"): hộp chọn bàn đổi thành **thẻ lớn cho mỗi bàn** (chạm cả thẻ để chọn, ô tích lớn, tên bàn đậm, số đơn · giờ mở, tiền bên phải; thẻ đã chọn viền + nền màu chính) và **dòng tổng** "Bàn A + n bàn · tạm tính …"; chưa chọn bàn nào thì nút **"Thu chung"** khóa (bỏ thu chung dùng nút "Bỏ thu chung" ở ngăn). Máy chủ, cách tính tiền không đổi.
 - **Actor:** **ACT-STAFF / ACT-LEAD / ACT-ADMIN** (thu tiền); **ACT-GUEST / ACT-MEMBER** (điện thoại ở bàn được gộp).
 - **Màn hình:**
   - **Ngăn Thu tiền bàn** (SCR-14): nút **"Thu chung với bàn khác"** → hộp chọn các bàn / nhóm đang phục vụ (ô tích) → ngăn hiện "Thu chung: Bàn A + Bàn B…", đơn xếp theo bàn, tổng chung; nút **"Bỏ thu chung"**. In tạm tính in tổng chung.
@@ -37,7 +38,7 @@
 - AC-057-02: Thu chung với `expectedAmountDue` sai / bàn B còn đơn chờ tiếp nhận / bàn B đang chia bill → `409` (`AMOUNT_CHANGED` / `HAS_PENDING_ORDERS` / `SESSION_HAS_SPLITS`); phiên A, B vẫn mở, đơn B vẫn ở phiên B, không có lượt thu.
 - AC-057-03: Điện thoại ở bàn B nhận `session.settled` có `mergedInto`; xem phiên B thấy `mergedInto`; đánh giá món được trên phiên A.
 - AC-057-04: Bill in sau khi thu chung liệt kê món theo từng bàn, tổng đúng.
-- AC-057-05: Trên trình duyệt: ngăn Thu tiền Bàn A → "Thu chung với bàn khác" → tích Bàn B → ngăn hiện tổng chung → thu → cả hai bàn biến khỏi danh sách bàn đang phục vụ.
+- AC-057-05: Trên trình duyệt: ngăn Thu tiền Bàn A → "Thu chung với bàn khác" → tích Bàn B → ngăn hiện tổng chung → thu → cả hai bàn biến khỏi danh sách bàn đang phục vụ. (TASK-130) Hộp chọn bàn: chưa chọn → nút "Thu chung" khóa, dòng tổng "Chưa chọn bàn nào"; chọn Bàn B → thẻ Bàn B sáng lên (viền + nền màu chính) ghi tiền của bàn, dòng tổng "Bàn A + 1 bàn · tạm tính …" bằng tổng hai bàn; hộp đạt kiểm tra khả năng tiếp cận.
 
 ## Bằng chứng
 
