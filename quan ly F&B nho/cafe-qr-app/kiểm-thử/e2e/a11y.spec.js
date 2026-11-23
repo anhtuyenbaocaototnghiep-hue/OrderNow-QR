@@ -627,6 +627,38 @@ test('quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộ
   await P.locator('.drawer').getByRole('button', { name: 'Việc khác' }).click();
   await expect(P.locator('#settle-tasks')).toBeVisible();
   await check(P, 'quay-drawer-thu-tien-viec-khac');
+  // TASK-130: hộp "Thu chung với bàn khác" (thẻ bàn lớn + dòng tổng) — cần một bàn khác đang phục vụ: mở nhóm + gửi món ở Bàn AM1, dọn ngay sau
+  const mAuth = { Authorization: `Bearer ${adminToken}` };
+  const mt = await (await P.request.post('/api/admin/tables', { headers: mAuth, data: { code: 'AM1', name: 'Bàn AM1' } })).json();
+  const mctx = await browser.newContext(phone);
+  const MP = await mctx.newPage();
+  await MP.goto(`/t/${mt.qrToken}`);
+  await expect(MP).toHaveURL(/\/menu$/);
+  const mSid = await MP.evaluate(
+    async ({ qr, item }) => {
+      const scan = await (
+        await globalThis.fetch('/api/sessions/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ qrToken: qr }) })
+      ).json();
+      const sid = scan.session?.sessionId;
+      await globalThis.fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: sid, items: [{ menuItemId: item, quantity: 1 }] }),
+      });
+      return sid;
+    },
+    { qr: mt.qrToken, item: waterId },
+  );
+  await mctx.close();
+  await expect(P.locator('#tables .table-row', { hasText: 'Bàn AM1' })).toBeVisible();
+  await P.locator('.drawer').getByRole('button', { name: 'Thu chung với bàn khác' }).click();
+  const pick = P.locator('.modal', { hasText: 'Thu chung với Bàn A11Y' });
+  await pick.getByLabel(/^Bàn AM1/).check();
+  await expect(pick.locator('.merge-pick.on')).toHaveCount(1);
+  await check(P, 'quay-thu-chung-chon-ban');
+  await P.keyboard.press('Escape');
+  await expect(pick).toHaveCount(0);
+  expect((await P.request.post(`/api/sessions/${mSid}/cancel`, { headers: mAuth, data: { reason: 'Dọn bàn kiểm tra a11y thu chung' } })).ok()).toBeTruthy();
   await P.locator('.drawer').getByRole('button', { name: 'Sửa Nước suối' }).click();
   await expect(P.locator('.modal')).toBeVisible();
   // NFR-A11Y-09: mở hộp thoại → focus vào ô đầu trong hộp thoại; Esc đóng hộp thoại

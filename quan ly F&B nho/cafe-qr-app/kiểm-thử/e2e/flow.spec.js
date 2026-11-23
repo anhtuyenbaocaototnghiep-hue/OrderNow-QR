@@ -1566,7 +1566,14 @@ test('thu chung nhiều bàn: ngăn Thu tiền Bàn GH1 → "Thu chung với bà
   await drawer.getByRole('button', { name: 'Việc khác' }).click(); // TASK-129
   await drawer.getByRole('button', { name: 'Thu chung với bàn khác' }).click();
   const pick = P.locator('.modal', { hasText: 'Thu chung với Bàn GH1' });
+  // TASK-130: mỗi bàn một thẻ lớn; chưa chọn → nút Thu chung khóa; chọn → thẻ sáng lên, dòng tổng "Bàn GH1 + 1 bàn · tạm tính …"
+  await expect(pick.getByRole('button', { name: 'Thu chung', exact: true })).toBeDisabled();
+  await expect(pick.locator('.merge-total')).toContainText('Chưa chọn bàn nào');
   await pick.getByLabel(/^Bàn GH2/).check();
+  await expect(pick.locator('.merge-pick.on')).toHaveCount(1);
+  await expect(pick.locator('.merge-pick.on .mp-amount')).toHaveText('10.000đ');
+  await expect(pick.locator('.merge-total')).toContainText('Bàn GH1 + 1 bàn');
+  await expect(pick.locator('.merge-total')).toContainText('tạm tính 35.000đ');
   await pick.getByRole('button', { name: 'Thu chung', exact: true }).click();
   await expect(drawer.locator('h3')).toHaveText('Thu chung: Bàn GH1 + Bàn GH2');
   await expect(drawer).toContainText('Nước suối');

@@ -2067,40 +2067,65 @@ function openSettle(sessionId, { tasks = false } = {}) {
   }
 
   /** F-057: chọn các bàn đang phục vụ để thu chung với bàn này. */
+  /**
+   * F-057 "Thu chung với bàn khác" — TASK-130 (chủ quán: "hơi khó thấy… làm sao dễ thấy hơn"): mỗi bàn một thẻ lớn, chạm cả thẻ để chọn
+   * (ô tích lớn, tên bàn đậm, tiền bên phải, thẻ đã chọn viền + nền màu chính); dòng dưới cùng ghi số bàn + tạm tính chung; chưa chọn
+   * bàn nào thì nút "Thu chung" khóa.
+   */
   async function pickMerge() {
     const others = state.sessions.filter((x) => x.sessionId !== sessionId);
     if (!others.length) return toast('Không có bàn nào khác đang phục vụ', 'info');
-    const boxes = others.map((x) =>
-      el(
+    const base = state.sessions.find((x) => x.sessionId === sessionId)?.amountDue ?? session.amountDue ?? 0;
+    const cards = others.map((x) => {
+      const busySplit = x.splitCount > 0;
+      return el(
         'label',
-        { class: 'check merge-pick' },
-        el('input', { type: 'checkbox', value: x.sessionId, checked: mergeIds.includes(x.sessionId), disabled: x.splitCount > 0 }),
-        `${x.table.name} · ${x.orderCount} đơn · ${money(x.amountDue)} · mở ${time(x.openedAt)}`,
-        x.splitCount > 0 ? el('span', { class: 'small muted' }, ' (đang chia bill)') : null,
-      ),
-    );
-    const ok = await modal({
+        { class: `merge-pick${busySplit ? ' off' : ''}` },
+        el('input', { type: 'checkbox', value: x.sessionId, checked: mergeIds.includes(x.sessionId), disabled: busySplit, onchange: () => sync() }),
+        el(
+          'span',
+          { class: 'mp-text' },
+          el('strong', { class: 'mp-name' }, x.table.name),
+          ' ',
+          el('span', { class: 'mp-meta' }, `${x.orderCount} đơn · mở ${time(x.openedAt)}${busySplit ? ' · đang chia bill, không gộp được' : ''}`),
+        ),
+        ' ',
+        el('strong', { class: 'mp-amount' }, money(x.amountDue)),
+      );
+    });
+    const total = el('div', { class: 'merge-total', role: 'status' });
+    const picked = () => cards.map((c) => c.querySelector('input')).filter((i) => i.checked);
+    const m = modal({
       title: `Thu chung với ${session.table.name}`,
       body: el(
         'div',
         { class: 'stack' },
-        el(
-          'p',
-          { class: 'small muted' },
-          'Chọn các bàn trả chung. Tổng tiền tính trên tất cả các bàn; lúc bấm thu, các bàn được gộp vào bàn này, in một bill và đóng tất cả.',
-        ),
-        boxes,
+        el('p', { class: 'merge-help' }, `Chọn bàn trả chung với ${session.table.name} — in một bill, đóng tất cả các bàn.`),
+        el('div', { class: 'merge-list' }, cards),
+        total,
       ),
       actions: [
         { label: 'Hủy', value: false },
         { label: 'Thu chung', class: 'btn-primary', value: true },
       ],
-    }).result;
+    });
+    const okBtn = m.root.querySelector('.modal-foot .btn-primary');
+    function sync() {
+      for (const c of cards) c.classList.toggle('on', c.querySelector('input').checked);
+      const ids = new Set(picked().map((i) => i.value));
+      const sum = base + others.filter((x) => ids.has(String(x.sessionId))).reduce((s, x) => s + x.amountDue, 0);
+      clear(
+        total,
+        ids.size
+          ? [el('span', {}, `${session.table.name} + ${ids.size} bàn`), el('span', {}, `tạm tính ${money(sum)}`)]
+          : el('span', {}, 'Chưa chọn bàn nào — chạm vào bàn muốn thu chung'),
+      );
+      if (okBtn) okBtn.disabled = !ids.size;
+    }
+    sync();
+    const ok = await m.result;
     if (ok !== true) return;
-    mergeIds = boxes
-      .map((b) => b.querySelector('input'))
-      .filter((i) => i.checked)
-      .map((i) => i.value);
+    mergeIds = picked().map((i) => i.value);
     reload();
   }
 

@@ -880,11 +880,79 @@ body.pos .tc-main .btn {
   margin: 0.6rem 0 0.35rem;
   font-size: 1rem;
 }
-.merge-pick,
 .sep-pick {
   min-height: 44px;
   padding: 0.3rem 0;
   border-bottom: 1px solid var(--c-border);
+}
+/* TASK-130: "Thu chung với bàn khác" — mỗi bàn một thẻ lớn (chạm cả thẻ để chọn), ô tích lớn, tên bàn đậm, tiền bên phải;
+   thẻ đã chọn viền + nền màu chính; dòng tổng chung bên dưới */
+.merge-help {
+  margin: 0;
+  font-size: 1rem;
+}
+.merge-list {
+  display: grid;
+  gap: 0.5rem;
+}
+.merge-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 64px;
+  padding: 0.6rem 0.85rem;
+  border: 2px solid var(--c-border);
+  border-radius: 12px;
+  background: var(--c-surface);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-1) var(--ease-out),
+    background var(--dur-1) var(--ease-out);
+}
+.merge-pick:hover {
+  border-color: var(--c-primary);
+}
+.merge-pick input[type='checkbox'] {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+}
+.merge-pick .mp-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.merge-pick .mp-name {
+  font-size: 1.15rem;
+}
+.merge-pick .mp-meta {
+  font-size: 0.875rem;
+  color: var(--c-muted);
+}
+.merge-pick .mp-amount {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.merge-pick.on {
+  border-color: var(--c-primary);
+  background: var(--c-primary-50);
+}
+.merge-pick.off {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.merge-total {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.3rem 1rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: var(--c-surface-2);
+  font-weight: 700;
 }
 
 /* Drawer thu tiền (S-14) */

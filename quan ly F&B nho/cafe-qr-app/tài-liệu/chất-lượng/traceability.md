@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 512 test, sửa lúc 2026-11-19 06:49 UTC
-- `npm run test:e2e` (JSON): 113 test, sửa lúc 2026-11-19 06:57 UTC
+- `npm test` (JUnit): 512 test, sửa lúc 2026-11-22 08:26 UTC
+- `npm run test:e2e` (JSON): 114 test, sửa lúc 2026-11-22 08:34 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 207 |
-| Acceptance Criteria | 582 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 582 |
+| Acceptance Criteria | 583 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 583 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -34,10 +34,8 @@
 - **BR chưa gắn Story nào:** 0 — mọi BR đều có Story
 - **Màn hình (SCR trong sitemap) chưa gắn Story nào:** 0 — mọi màn hình đều có Story
 - **Test FAIL bất kỳ (kể cả test không gắn AC, file test không nạp được):** 0 — không có
-- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 59
+- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 57
   - kiểm-thử/e2e/a11y.spec.js › khách chuyển khoản (F-099): hộp Gọi thanh toán chọn cách trả, khung mã VietQR có số tiền + nội dung + nút Chép / Lưu ảnh, theo dõi đơn có nút Xem mã chuyển khoản — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px (AC-099-05)
-  - kiểm-thử/e2e/a11y.spec.js › quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính
-  - kiểm-thử/e2e/a11y.spec.js › quầy một màn hình (F-088): hai vùng Hàng pha + Quầy có thẻ (← / → chuyển thẻ), hộp Báo hết món trong vùng, ngăn Quầy ở màn 900 px — nhãn, tương phản, vùng chạm, dấu focus
   - kiểm-thử/e2e/a11y.spec.js › tiền vào chưa khớp (F-100): dải ở quầy, hộp Ghép & thu / Đã xử lý, Cài đặt "Tự xác nhận khi tiền vào" + hộp Giả lập tiền vào — nhãn, tương phản, vùng chạm (AC-100-06)
   - kiểm-thử/e2e/flow.spec.js › báo lỗi xong vẫn lưu được (DEF-024): thêm bàn trùng mã / nhân viên trùng tên đăng nhập / món có ảnh sai → máy chủ báo lỗi, nút không bị khóa → sửa lại → lưu được ngay trong cùng hộp
   - kiểm-thử/e2e/flow.spec.js › bố cục quầy (ADR-018): lưới bàn hiện cả bàn trống; màn 1024 px lưới bàn là ngăn trượt — nút "Bàn" mở, Esc / nền mờ đóng, focus trả về nút (TASK-072)
@@ -453,7 +451,7 @@
 | AC-057-02 | TC-057-02 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | Integration: `merge-bills.test.js` › AC-057-02: tiền đổi / bàn B còn đơn chờ / bàn B đang chia bill → 409, không gộp, không thu — **PASS** | **PASS** |
 | AC-057-03 | TC-057-03 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | Integration: `merge-bills.test.js` › AC-057-03, AC-057-04: điện thoại bàn B nhận session.settled có mergedInto; phiên B có mergedInto; đánh giá được trên phiên A; bill nhóm món theo bàn — **PASS** | **PASS** |
 | AC-057-04 | TC-057-04 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | Integration: `merge-bills.test.js` › AC-057-03, AC-057-04: điện thoại bàn B nhận session.settled có mergedInto; phiên B có mergedInto; đánh giá được trên phiên A; bill nhóm món theo bàn — **PASS** | **PASS** |
-| AC-057-05 | TC-057-05 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | E2E: `flow.spec.js` › thu chung nhiều bàn: ngăn Thu tiền Bàn GH1 → "Thu chung với bàn khác" → tích Bàn GH2 → tổng chung → thu một lần, cả hai bàn đóng (F-057, AC-057-05) — **PASS** | **PASS** |
+| AC-057-05 | TC-057-05 | F-057 | US-057-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-TABLE | SCR-14, SCR-12, SCR-05 | BR-090 | E2E: `flow.spec.js` › thu chung nhiều bàn: ngăn Thu tiền Bàn GH1 → "Thu chung với bàn khác" → tích Bàn GH2 → tổng chung → thu một lần, cả hai bàn đóng (F-057, AC-057-05) — **PASS**<br>E2E: `a11y.spec.js` › quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính — **PASS** | **PASS** |
 | AC-058-01 | TC-058-01 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | Integration: `merge-bills.test.js` › AC-058-01: tách 2 trong 3 món ra "Anh A" → "Anh A" + "Phần còn lại" (Chung trống); thu "Anh A" đúng tổng 2 món, bàn còn mở — **PASS** | **PASS** |
 | AC-058-02 | TC-058-02 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | Integration: `merge-bills.test.js` › AC-058-02: dòng đã thu / dòng bàn khác / dòng thành phần combo → 409 LINE_LOCKED, không tạo phần; chưa mở ca → 409 NO_OPEN_SHIFT; khách → 401 — **PASS** | **PASS** |
 | AC-058-03 | TC-058-03 | F-058 | US-058-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-04 | MOD-BILLING | SCR-14 | BR-091 | E2E: `flow.spec.js` › tách hóa đơn theo món: "Tách hóa đơn" → tích món → "Anh A" + "Phần còn lại"; thu "Anh A" bằng chuyển khoản, phần còn lại bằng tiền mặt (F-058, AC-058-03) — **PASS** | **PASS** |
@@ -627,6 +625,7 @@
 | AC-088-08 | TC-088-08 | F-088 | US-088-3 | ACT-STAFF, ACT-GUEST | UC-03 | MOD-ORDER, MOD-NOTIFY | SCR-10, SCR-05 | BR-126 | E2E: `flow.spec.js` › mang ra bàn: khách Bàn S1 gọi món bằng điện thoại, quầy Tiếp nhận → Hoàn tất → không có dải "Mang ra" / nút "Đã mang"; điện thoại khách báo "nhân viên đang mang ra bàn", thẻ đơn "Đã xong" (3 bước), không tràn ngang ở 320 px (F-088, AC-088-08, ADR-064) — **PASS** | **PASS** |
 | AC-088-09 | TC-088-09 | F-088 | US-088-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN, ACT-STORE | UC-03, UC-04, UC-05, UC-08 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-13, SCR-14, SCR-16, SCR-33 | BR-126 | E2E: `flow.spec.js` › bố cục màn quầy một màn hình: màn 1024 px hai vùng cạnh nhau, không có nút mở vùng Quầy; màn 900 px vùng Quầy là ngăn trượt — nút "Quầy" mở, có thẻ, ← / → đổi thẻ (focus ở lại thẻ), Esc đóng; khách gọi thanh toán → bấm thẻ ở dải trên → ngăn Quầy tự mở kèm bill; chủ quán tắt "Màn quầy một màn hình" ở Cài đặt → /pos về bố cục cũ, mục "Bán mang đi" mở trang riêng (F-088, AC-088-09) — **PASS** | **PASS** |
 | AC-088-10 | TC-088-10 | F-088 | US-088-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN, ACT-STORE | UC-03, UC-04, UC-05, UC-08 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-13, SCR-14, SCR-16, SCR-33 | BR-126 | E2E: `flow.spec.js` › màn quầy gọn: thanh trên một hàng ở 1366 px chỉ Màn quầy / Kho / Giờ công (không trùng thẻ), kết nối là chấm, "?" và máy in tự in là nút biểu tượng; thẻ đơn một nút, chạm thẻ → chi tiết có Hủy đơn / In phiếu pha / Tiếp nhận & Hoàn tất, "Mở bàn / Thu tiền" mở bill ở vùng Quầy; "Đã xong hôm nay" thu gọn, "Xem" mở; thẻ bàn một nút, chạm tên bàn → bill có Chuyển bàn / Ghi chú, "Gọi thêm món" đóng bill mở thẻ Gọi món đúng bàn; hai hộp thoại hai vùng — Esc đóng hộp đang có focus (F-088, AC-088-10) — **PASS** | **PASS** |
+| AC-088-11 | TC-088-11 | F-088 | US-088-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN, ACT-STORE | UC-03, UC-04, UC-05, UC-08 | MOD-ORDER, MOD-ADMIN | SCR-10, SCR-13, SCR-14, SCR-16, SCR-33 | BR-126 | E2E: `flow.spec.js` › hộp Thu tiền gọn: mở bằng "Thu tiền" → "Việc khác" gập, không còn dòng "Không ghi nợ", nút tiền nhanh + nút thu thấy ngay ở 1366 × 768 không phải cuộn; "Việc khác" mở ra Gọi thêm món / Ghi chú bàn / Chuyển bàn / Tách hóa đơn / Thu chung với bàn khác / Hủy bàn, bấm một việc thì gập lại; "Xóa đơn" là chữ nhỏ trên đầu thẻ đơn; chạm tên bàn → bill mở sẵn "Việc khác" (TASK-129, ADR-066, AC-088-11) — **PASS**<br>E2E: `a11y.spec.js` › quầy (máy tính): đăng nhập, đơn hàng + drawer thu tiền + hộp thoại sửa món, gọi món tại bàn, mang đi, ca, kho, phiếu tạm tính — **PASS**<br>E2E: `a11y.spec.js` › quầy một màn hình (F-088): hai vùng Hàng pha + Quầy có thẻ (← / → chuyển thẻ), hộp Báo hết món trong vùng, ngăn Quầy ở màn 900 px — nhãn, tương phản, vùng chạm, dấu focus — **PASS** | **PASS** |
 | AC-089-01 | TC-089-01 | F-089 | US-089-1 | ACT-ADMIN, ACT-STORE | UC-13 | MOD-INVENTORY | SCR-23, SCR-31 | BR-041 | Integration: `ingredient-expiry.test.js` › AC-089-01: danh sách nguyên liệu trả lô còn hàng gần hết hạn nhất — ngày, số ngày còn lại (âm = đã hết hạn), lượng của các lô cùng ngày; không theo lô hoặc lô không ghi hạn → không có hạn — **PASS** | **PASS** |
 | AC-089-02 | TC-089-02 | F-089 | US-089-1 | ACT-ADMIN, ACT-STORE | UC-13 | MOD-INVENTORY | SCR-23, SCR-31 | BR-041 | Integration: `ingredient-expiry.test.js` › AC-089-02: hủy lô hết hạn / dùng hết các lô gần hạn (FEFO) → hạn chuyển sang lô kế tiếp; tắt theo lô → không còn hạn — **PASS** | **PASS** |
 | AC-089-03 | TC-089-03 | F-089 | US-089-1, US-089-2 | ACT-ADMIN, ACT-STORE | UC-13 | MOD-INVENTORY, MOD-ADMIN | SCR-23, SCR-31, SCR-35 | BR-041 | E2E: `flow.spec.js` › kho nguyên liệu: cột Hạn sử dụng hiện lô gần hết hạn nhất (ngày, "Còn 2 ngày", lượng của lô) + dải "Sắp hết hạn"; mỗi dòng chỉ còn Điều chỉnh · Sửa · ⋯, "⋯" mở ngăn Lịch sử kho / Lô & hạn dùng / Kho nâng cao / Xóa nguyên liệu; nguyên liệu chưa theo dõi → "Theo dõi hạn" một chạm → dòng nhập kho có ô Hạn sử dụng (F-089, AC-089-03) — **PASS** | **PASS** |
