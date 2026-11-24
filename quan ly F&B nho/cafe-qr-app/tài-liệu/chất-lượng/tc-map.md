@@ -126,6 +126,8 @@
 | AC-010-06 | TC-010-06 | Integration | ứng-dụng/máy-chủ/tests/delete.test.js | món đã bán → xóa mềm: ẩn khỏi menu, không đặt được nữa, lịch sử/báo cáo vẫn giữ tên | — |
 | AC-010-07 | TC-010-07 | Integration | ứng-dụng/máy-chủ/tests/delete.test.js | danh mục: còn món → 409 HAS_ITEMS; chỉ còn món đã xóa mềm → ARCHIVED; trống → DELETED | — |
 | AC-010-08 | TC-010-08 | Integration | ứng-dụng/máy-chủ/tests/delete.test.js | bàn: đang có khách → 409 TABLE_BUSY; đã dùng → ARCHIVED + QR cũ chết; chưa dùng → DELETED; mã bàn dùng lại được | — |
+| AC-010-09 | TC-010-09 | E2E | kiểm-thử/e2e/flow.spec.js | thẻ QR bàn dạng ảnh: trang In QR vẽ mỗi bàn một ảnh 1200 × 1800 (10 × 15 cm, 300 dpi) có chữ thay thế; "Tải ảnh" tải đúng tệp the-qr-<mã bàn>.png; "Tải tất cả ảnh" bấm được khi vẽ xong; in ra đúng cỡ 10 × 15 cm (TASK-134, AC-010-09) | đủ |
+| AC-010-09 | TC-010-09 | E2E | kiểm-thử/e2e/a11y.spec.js | quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm | đủ: quét trang In QR khi đã vẽ xong ảnh thẻ, lưu một thẻ cỡ thật (TASK-134) |
 | AC-011-01 | TC-011-01 | Integration | ứng-dụng/máy-chủ/tests/api.test.js | BOM: -10 hoặc thiếu nguyên liệu → 400 + BOM cũ giữ nguyên; hợp lệ → lưu (AC-011-01, 02) | một phần: lưu BOM hợp lệ 2 dòng qua API; không bán / hoàn tất |
 | AC-011-01 | TC-011-01 | SP | ứng-dụng/máy-chủ/tests/sp.test.js | hoàn tất trừ đúng BOM, ghi N dòng DEDUCT (AC-007-03, AC-011-01) | đủ với BOM seed Cà phê đen [25 cốt, 10 g đường]: hoàn tất → kho giảm đúng 25 và 10 |
 | AC-011-02 | TC-011-02 | Integration | ứng-dụng/máy-chủ/tests/api.test.js | BOM: -10 hoặc thiếu nguyên liệu → 400 + BOM cũ giữ nguyên; hợp lệ → lưu (AC-011-01, 02) | đủ: 400 + thông báo + 2 ô lỗi, BOM cũ giữ nguyên |

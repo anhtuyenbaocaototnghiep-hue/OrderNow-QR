@@ -825,3 +825,19 @@ Chống mã QR giả dán ở bàn: điện thoại khách không bao giờ hi�
 - **Thẻ bàn in ra (Bàn & mã QR → In):** khung đậm **"Mã này chỉ để gọi món, không dùng để trả tiền. Chuyển khoản theo mã QR trên bill nhân viên đưa."**
 - **Cài đặt → Nhận chuyển khoản:** công tắc "Hiện mã chuyển khoản trên điện thoại khách" (mặc định tắt) + giải thích. Đổi tài khoản nhận tiền ở cùng thẻ này.
 - **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/khach-cho-chuyen-khoan-qua-nhan-vien.jpg`.
+
+## TASK-134 — Thẻ QR bàn dạng ảnh 10 × 15 cm — SCR-22 In QR (F-010, 24/11/2026)
+
+Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị tươi") và nhờ: "thiết kế cái này thành cái mã QR bàn thật đẹp và chuyên nghiệp, ko quá bị AI hóa, thành bức ảnh thôi để tôi in ra dán lên bàn".
+
+- **Trang Bàn & mã QR → In (`/admin/tables/print`):** mỗi bàn một **ảnh 1200 × 1800 px** (= 10 × 15 cm ở 300 dpi, cỡ ảnh in thông dụng), vẽ bằng canvas (`js/table-card.js`). Lớp ảnh từ trên xuống:
+  - **Đầu thẻ:** logo + tên quán (chữ có chân, nâu đậm) + "Gọi món ngay trên điện thoại" (nghiêng). Góc phải: đĩa kem + chùm hạt cà phê vẽ nét (không ảnh AI).
+  - **Khung viền đôi xanh rêu:** **QUÉT MÃ GỌI MÓN** + "(Xem thực đơn · Gọi món · Gọi thanh toán)".
+  - **Tên bàn** cam đất giữa hai đường kẻ.
+  - **Mã QR** 660 px trên ô trắng viền xanh rêu. Có Wi-Fi ở Cài đặt → ① QR Wi-Fi (kèm tên / mật khẩu) bên trái, ② QR gọi món bên phải.
+  - **Ba bước** có số: Quét mã · Chọn món & gửi · Nhân viên mang ra (hoặc "Nhận món ở quầy").
+  - **Dòng thanh toán** + khung cam "Mã này chỉ để gọi món, không dùng để trả tiền…" (ADR-069) + dòng sinh nhật (nếu bật).
+  - **Dải chân xanh rêu:** tên + địa chỉ quán, "Cảm ơn quý khách!".
+- **Dưới mỗi ảnh:** nút **Tải ảnh** (`the-qr-<mã bàn>.png`). Đầu trang: **Tải tất cả ảnh** (bấm được khi vẽ xong) và **In** (2 thẻ một trang A4, đúng cỡ 10 × 15 cm).
+- **Chữ trên ảnh** có bản văn bản ẩn trong `<figcaption>` (trình đọc màn hình).
+- **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/the-qr-ban-mau.png` (cỡ thật), `quan-ly-tables-print.jpg`.
