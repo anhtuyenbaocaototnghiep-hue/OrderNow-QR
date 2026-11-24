@@ -1378,7 +1378,7 @@ Database bật **`READ_COMMITTED_SNAPSHOT ON`** (bước cuối của `kịch-b�
 | --- | --- |
 | `0061_chuyen_khoan_vietqr.sql` | `Sessions.PayMethodHint VARCHAR(10) NULL` + `CK_Sessions_PayMethodHint` (`CASH` \| `TRANSFER`) — cách trả khách chọn lúc gọi thanh toán; chỉ là gợi ý cho quầy, không phải trạng thái thanh toán. |
 | `sp_RequestPayment` | Thêm `@Method VARCHAR(10) = NULL` → ghi `PayMethodHint` (khác `CASH` / `TRANSFER` → `CASH`). |
-| Cài đặt | `pay.transfer_enabled` (`'true'` = bật; mặc định tắt), `pay.bank_bin`, `pay.bank_number`, `pay.bank_kind` (`ACCOUNT` \| `CARD`), `pay.bank_holder`. |
+| Cài đặt | `pay.transfer_enabled` (`'true'` = bật; mặc định tắt), `pay.bank_bin`, `pay.bank_number`, `pay.bank_kind` (`ACCOUNT` \| `CARD`), `pay.bank_holder`; ADR-069: `pay.guest_qr` (`'true'` = điện thoại khách xem mã chuyển khoản; mặc định tắt — mã chỉ trên bill in / máy quầy). |
 
 ## Tự xác nhận chuyển khoản qua SePay (FEATURE-100, ADR-063 D-249…D-252, 17/11/2026)
 

@@ -805,3 +805,23 @@ Chủ dự án gửi ảnh hai mục "Nhân sự & chấm công" + "Lương" ở
 - **Quyền:**
   - Người không có quyền Lương không thấy thẻ Lương (ví dụ quản lý cửa hàng chưa được giao quyền).
   - Người chỉ có quyền Lương: mục ở thanh bên trỏ thẳng tới trang Lương.
+
+## TASK-133 — Chuyển khoản qua nhân viên: mã chỉ trên bill — SCR-05, SCR-10, SCR-12, SCR-14, thẻ bàn (F-099, ADR-069 D-261, 24/11/2026)
+
+Chống mã QR giả dán ở bàn: điện thoại khách không bao giờ hiện mã chuyển khoản, trừ khi chủ quán bật.
+
+- **SCR-05 Gọi thanh toán (điện thoại khách):**
+  - hộp có hai nút "Tiền mặt" / "Chuyển khoản", dòng "Chuyển khoản: nhân viên mang bill có mã QR tới bàn để bạn quét";
+  - chọn Chuyển khoản → báo "Đã báo quầy. Nhân viên sẽ mang bill có mã QR chuyển khoản tới bàn";
+  - thẻ "Đã gọi thanh toán": "Tổng … (chuyển khoản) · nhân viên sẽ mang bill có mã QR chuyển khoản tới bàn" + dòng vàng nâu "Quán chỉ nhận chuyển khoản theo mã QR trên bill do nhân viên đưa — không chuyển theo trang nào khác". Không có nút xem mã.
+- **SCR-10 dải "Gọi thanh toán" (máy quầy):** mỗi bàn = thẻ (chạm → hộp Thu tiền) + nút **"In bill"** (in phiếu tạm tính có mã QR đúng số tiền của bàn).
+- **SCR-14 hộp Thu tiền:** nút chân hộp "In tạm tính" đổi thành **"In bill"**.
+- **SCR-12 bill in:** khối "QUÉT ĐỂ CHUYỂN KHOẢN" gồm:
+  - mã;
+  - ngân hàng · số;
+  - **"Chủ tài khoản: …"**;
+  - nội dung;
+  - dòng "Kiểm tên người nhận trong app ngân hàng trùng tên trên trước khi chuyển".
+- **Thẻ bàn in ra (Bàn & mã QR → In):** khung đậm **"Mã này chỉ để gọi món, không dùng để trả tiền. Chuyển khoản theo mã QR trên bill nhân viên đưa."**
+- **Cài đặt → Nhận chuyển khoản:** công tắc "Hiện mã chuyển khoản trên điện thoại khách" (mặc định tắt) + giải thích. Đổi tài khoản nhận tiền ở cùng thẻ này.
+- **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/khach-cho-chuyen-khoan-qua-nhan-vien.jpg`.

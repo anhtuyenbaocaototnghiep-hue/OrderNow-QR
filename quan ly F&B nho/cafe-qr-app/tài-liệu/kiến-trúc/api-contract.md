@@ -910,6 +910,13 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 - `GET /api/sessions/{id}/receipt?mode=provisional`: thêm `transfer: { qr, amount, content, bankName, kind, number, holder } | null`. TASK-125 (18/11/2026): thêm `&bill=<JSON>` — lựa chọn đang có ở hộp Thu tiền (`memberId`, `manualDiscount`, `manualReason`, `voucherCode`, `reward`, `skipBirthday`, `skipWinback`; không có tài khoản duyệt) → `amountDue`, `breakdown`, `transfer` tính như `POST /api/sessions/{id}/settle/preview`; bàn chia bill bỏ qua `bill`; sai → `400 VALIDATION_ERROR`.
 - Ghi đã trả: không đổi — `POST /api/sessions/{id}/settle` `{ method: "TRANSFER" }` của thu ngân (ADR-019).
 
+## Bổ sung ADR-069 — chuyển khoản qua nhân viên (TASK-133, 24/11/2026)
+
+- `GET /api/shop`: `transfer: { enabled, guestQr }` — `guestQr = true` chỉ khi quán nhận chuyển khoản **và** bật "Hiện mã chuyển khoản trên điện thoại khách".
+- `PUT /api/admin/settings` (chỉ chủ quán): thêm `guestTransferQr` (bool, khóa `pay.guest_qr`, mặc định `false`).
+- `GET /api/sessions/{id}/transfer` (khách): quán nhận chuyển khoản nhưng `guestTransferQr = false` → `409 TRANSFER_STAFF_ONLY` ("Quán thu chuyển khoản qua nhân viên — nhân viên sẽ mang bill có mã QR tới bàn"); kiểm sau quyền xem nhóm.
+- Không đổi: `POST /api/payments/transfer-qr`, `GET /api/sessions/{id}/receipt?mode=provisional` (bill tạm tính vẫn có `transfer`).
+
 ## Bổ sung F-100 — tự xác nhận chuyển khoản qua SePay (ADR-063, TASK-123, 17/11/2026)
 
 - `PUT /api/admin/settings` (chỉ chủ quán — quản lý cửa hàng `403 OWNER_ONLY`): thêm `autoConfirm` (bool). Bật (từ tắt) → máy chủ ghi `autoConfirmSince` = lúc bật, xóa `sepaySinceId` (không xét tiền vào trước lúc bật). `GET /api/admin/settings` trả thêm `autoConfirm`, `autoConfirmSince`, `sepaySinceId` (hai trường sau máy chủ ghi, route không nhận).

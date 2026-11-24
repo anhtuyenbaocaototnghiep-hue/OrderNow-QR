@@ -10,6 +10,7 @@
 > **Nền:** [F-005](FEATURE-005.md) gọi thanh toán, [F-006](FEATURE-006.md) thu tiền, [F-056](FEATURE-056.md) cách trả tiền mặt / chuyển khoản, [F-073](FEATURE-073.md) VietQR trả lương.
 
 - **Status:** CONFIRMED (ADR-062) · Triển khai: [TASK-122](../công-việc/TASK-122.md)
+- **Cập nhật 24/11/2026 — [ADR-069](../quyết-định/ADR-069-chuyen-khoan-qua-nhan-vien.md) D-261 ([TASK-133](../công-việc/TASK-133.md)):** chống mã QR giả dán ở bàn — **mặc định điện thoại khách không hiện mã chuyển khoản** (cài đặt "Hiện mã chuyển khoản trên điện thoại khách"); khách chọn "Chuyển khoản" → nhân viên bấm **"In bill"** ở dải Gọi thanh toán và mang bill in sẵn mã QR (ghi "Chủ tài khoản") tới bàn; thẻ bàn in "Mã này chỉ để gọi món, không dùng để trả tiền".
 - **Actor:**
   - **ACT-GUEST / ACT-MEMBER:** điện thoại khách.
   - **ACT-STAFF:** thu ngân ở quầy.
@@ -50,6 +51,19 @@
 
 ## Acceptance Criteria
 
+- **AC-099-08:** (ADR-069) Mặc định (`guestTransferQr` tắt), quán đã bật nhận chuyển khoản:
+  - `GET /api/shop` → `transfer = { enabled: true, guestQr: false }`;
+  - `GET /api/sessions/{id}/transfer` (khách trong nhóm) → `409 TRANSFER_STAFF_ONLY`;
+  - khách vẫn `request-payment` với `TRANSFER` (`payMethod = TRANSFER`);
+  - phiếu tạm tính của quầy có mã VietQR đúng số phải thu, `holder`, nội dung "CF <mã bàn> <mã phiên>"; `POST /api/payments/transfer-qr` vẫn chạy;
+  - quản lý cửa hàng đổi công tắc → `403 OWNER_ONLY`; chủ quán bật lại → điện thoại khách lấy được mã.
+- **AC-099-09:** (ADR-069, trình duyệt) Khách gọi thanh toán:
+  - hộp ghi "Chuyển khoản: nhân viên mang bill có mã QR tới bàn để bạn quét", nút "Chuyển khoản" (không "quét QR");
+  - chọn → báo "Nhân viên sẽ mang bill có mã QR chuyển khoản tới bàn", không mở mã; thẻ "Đã gọi thanh toán" không có nút xem mã, có dòng "Quán chỉ nhận chuyển khoản theo mã QR trên bill do nhân viên đưa…";
+  - máy quầy: dải Gọi thanh toán có "In bill <bàn>" → in bill tạm tính có mã QR, "Chủ tài khoản: …", dòng "Kiểm tên người nhận…";
+  - trang in thẻ bàn có khung "Mã này chỉ để gọi món, không dùng để trả tiền. Chuyển khoản theo mã QR trên bill nhân viên đưa.";
+  - thẻ "Đã gọi thanh toán" đạt kiểm tra khả năng tiếp cận.
+
 - **AC-099-01:** Chủ quán nhập đủ thông tin và bật → `GET /api/shop` có `transfer.enabled = true`.
   - Thiếu số hoặc tắt → `false`.
   - Quản lý cửa hàng đổi số tài khoản → `403 OWNER_ONLY`.
@@ -87,6 +101,6 @@
 
 ## Bằng chứng
 
-- **Integration:** `ứng-dụng/máy-chủ/tests/transfer-qr.test.js` (AC-099-01…04, AC-099-06).
-- **E2E:** `kiểm-thử/e2e/flow.spec.js` "chuyển khoản bằng mã QR…" (AC-099-05), "in bill có mã QR…" (AC-099-07).
+- **Integration:** `ứng-dụng/máy-chủ/tests/transfer-qr.test.js` (AC-099-01…04, AC-099-06, AC-099-08).
+- **E2E:** `kiểm-thử/e2e/flow.spec.js` "chuyển khoản bằng mã QR…" (AC-099-05), "in bill có mã QR…" (AC-099-07), "chuyển khoản qua nhân viên (mặc định)…" (AC-099-09).
 - **a11y:** quét khung mã QR trên điện thoại.
