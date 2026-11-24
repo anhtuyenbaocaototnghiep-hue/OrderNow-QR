@@ -437,25 +437,7 @@ body.admin .chip {
   body.admin {
     background: #fff;
   }
-  /* TASK-134: in đúng cỡ ảnh 10 × 15 cm, hai thẻ một trang A4 dọc */
-  .qr-grid {
-    display: block;
-  }
-  .qr-card {
-    display: inline-block;
-    width: 10cm;
-    margin: 0 0.2cm 0.4cm 0;
-    padding: 0;
-    border: 0;
-    background: none;
-    vertical-align: top;
-  }
-  .qr-card .qr-card-img {
-    width: 10cm;
-    height: 15cm;
-    border-radius: 0;
-    box-shadow: none;
-  }
+  /* TASK-134: thẻ QR bàn in khổ ngang 10 × 15 cm — css/qr-print.css (chỉ trang In QR nạp) */
 }
 
 /* ---------- ADR-005 ---------- */

@@ -130,7 +130,7 @@ try {
       el(
         'p',
         { class: 'small muted no-print' },
-        'Mỗi thẻ là một ảnh 10 × 15 cm: bấm "Tải ảnh" để in ở tiệm ảnh, hoặc "In" để in bằng máy in (2 thẻ một trang A4).',
+        'Mỗi thẻ là một ảnh 10 × 15 cm: bấm "Tải ảnh" để in ở tiệm ảnh, hoặc "In" để in bằng máy in (2 thẻ một tờ A4 ngang).',
       ),
       progress,
       grid,

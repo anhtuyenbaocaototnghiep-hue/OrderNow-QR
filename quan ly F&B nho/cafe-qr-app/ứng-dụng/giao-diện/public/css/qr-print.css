@@ -1,0 +1,35 @@
+/* TASK-134: chỉ trang In mã QR các bàn (/admin/tables/print) nạp tệp này — @page ở đây không đổi khổ in của trang khác.
+   Thẻ 10 × 15 cm in khổ NGANG: tờ A4 ngang (29,7 × 21 cm, lề 1 cm) vừa đúng 2 thẻ cạnh nhau, chừa khoảng để cắt.
+   A4 dọc sau lề máy in chỉ rộng ~19 cm < 2 thẻ (20 cm) → mỗi tờ chỉ được 1 thẻ (phát hiện khi đi luồng thật 24/11/2026). */
+@page {
+  size: landscape;
+  margin: 10mm;
+}
+@media print {
+  .admin-head {
+    display: none; /* tiêu đề trang không in lên tờ thẻ */
+  }
+  .qr-grid {
+    display: block;
+    text-align: center;
+    orphans: 1;
+    widows: 1;
+  }
+  .qr-card {
+    display: inline-block;
+    width: 10cm;
+    margin: 0 0.6cm 1cm;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    vertical-align: top;
+    outline: 0.2mm solid #c9c9c9; /* đường cắt mảnh — không làm thẻ to ra */
+  }
+  .qr-card .qr-card-img {
+    width: 10cm;
+    height: 15cm;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

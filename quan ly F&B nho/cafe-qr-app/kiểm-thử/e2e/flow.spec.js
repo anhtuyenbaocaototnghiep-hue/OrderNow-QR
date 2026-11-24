@@ -1681,8 +1681,15 @@ test('thẻ QR bàn dạng ảnh: trang In QR vẽ mỗi bàn một ảnh 1200 �
     const r = i.getBoundingClientRect();
     return [Math.round(r.width), Math.round(r.height)];
   });
-  await P.emulateMedia({ media: 'screen' });
+  // Bỏ giả lập (không đặt 'screen'): sau 'screen', P.pdf() bên dưới in bằng giao diện MÀN HÌNH chứ không phải giao diện in
+  await P.emulateMedia({ media: null });
   expect(size).toEqual([378, 567]);
+  // In ra giấy như hộp thoại In (giao diện in + @page của trang): tờ A4 NGANG, 2 thẻ một tờ — A4 dọc chỉ vừa 1 thẻ (đi luồng thật 24/11)
+  const pdf = (await P.pdf({ format: 'A4', preferCSSPageSize: true })).toString('latin1');
+  const [, w, h] = /\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/.exec(pdf).map(Number);
+  expect(w).toBeGreaterThan(h);
+  const sheets = (pdf.match(/\/Type\s*\/Page(?!s)/g) ?? []).length;
+  expect(sheets).toBe(Math.ceil((await P.locator('.qr-card').count()) / 2));
 });
 
 test('cảnh báo bất thường qua email: quản lý nhập email nhận ở Cài đặt, "Gửi email thử" báo đã gửi; đóng ca thừa 50.000đ → trang Cảnh báo tự hiện cảnh báo Lệch két, bấm Đã xem (F-060, AC-060-09)', async ({
