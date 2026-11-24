@@ -481,7 +481,15 @@ test('khách chuyển khoản (F-099): hộp Gọi thanh toán chọn cách tr�
   const before = await (await request.get('/api/admin/settings', { headers: admin })).json();
   await request.put('/api/admin/settings', {
     headers: admin,
-    data: { guestWelcome: false, transferEnabled: true, bankBin: '970403', bankNumber: '060123456789', bankKind: 'ACCOUNT', bankHolder: 'NGUYEN VAN A' },
+    data: {
+      guestWelcome: false,
+      transferEnabled: true,
+      guestTransferQr: true,
+      bankBin: '970403',
+      bankNumber: '060123456789',
+      bankKind: 'ACCOUNT',
+      bankHolder: 'NGUYEN VAN A',
+    },
   });
   const qrTable = await (await request.post('/api/admin/tables', { headers: admin, data: { code: 'AQ1' } })).json();
   const ctx = await browser.newContext(phone);
@@ -506,9 +514,18 @@ test('khách chuyển khoản (F-099): hộp Gọi thanh toán chọn cách tr�
     await qr.locator('.modal-foot').getByRole('button', { name: 'Đóng' }).click();
     await expect(T.locator('#show-transfer')).toBeVisible();
     await check(T, 'khach-cho-chuyen-khoan', { narrow: true });
+    // ADR-069 (TASK-133): mặc định quán thu chuyển khoản qua nhân viên — thẻ "Đã gọi thanh toán" không có mã, có dòng nhắc
+    await request.put('/api/admin/settings', { headers: admin, data: { guestTransferQr: false } });
+    await T.reload();
+    await expect(T.locator('#pay-status .pay-safe')).toBeVisible();
+    await expect(T.locator('#show-transfer')).toHaveCount(0);
+    await check(T, 'khach-cho-chuyen-khoan-qua-nhan-vien', { narrow: true });
   } finally {
     await ctx.close();
-    await request.put('/api/admin/settings', { headers: admin, data: { transferEnabled: before.transferEnabled, guestWelcome: before.guestWelcome } });
+    await request.put('/api/admin/settings', {
+      headers: admin,
+      data: { transferEnabled: before.transferEnabled, guestTransferQr: before.guestTransferQr, guestWelcome: before.guestWelcome },
+    });
     // Dọn nhóm của bàn AQ1 (đơn chưa thu) để ca đóng được ở afterAll
     const tb = (await (await request.get('/api/tables', { headers: admin })).json()).find((x) => x.code === 'AQ1');
     for (const s of tb?.sessions ?? [])

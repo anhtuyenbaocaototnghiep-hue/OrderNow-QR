@@ -61,6 +61,11 @@ function wifiBlock(settings, src) {
 try {
   const [tables, settings] = await Promise.all([staffApi('/api/admin/tables'), staffApi('/api/admin/settings')]);
   const active = tables.filter((t) => t.isActive);
+  const transferOn = Boolean(settings.transferEnabled && settings.bankBin && settings.bankNumber && settings.bankHolder);
+  const safeText = transferOn
+    ? 'Mã này chỉ để gọi món, không dùng để trả tiền. Chuyển khoản theo mã QR trên bill nhân viên đưa.'
+    : 'Mã này chỉ để gọi món, không dùng để trả tiền.';
+  const safeLine = transferOn && settings.guestTransferQr ? null : () => el('div', { class: 'qr-safe' }, safeText);
   // Một ảnh QR Wi-Fi dùng chung cho mọi thẻ; tải lỗi (vd. tên Wi-Fi vừa bị xóa ở máy khác) → vẫn in thẻ bàn, không có khối Wi-Fi (review G3)
   const wifiSrc = settings.wifiSsid ? await staffBlobUrl('/api/admin/wifi-qr.png').catch(() => null) : null;
   const wifiWarn =
@@ -81,6 +86,8 @@ try {
         img,
         el('strong', {}, 'Quét mã để xem thực đơn & gọi món'),
         el('div', { class: 'small muted' }, 'Thanh toán tiền mặt hoặc chuyển khoản — bấm "Gọi thanh toán" khi xong'),
+        // ADR-069 D-261: mã bàn không dùng để trả tiền (mã dán đè / trang lạ đòi chuyển tiền là giả) — trừ khi quán bật mã trên điện thoại khách
+        safeLine?.(),
         settings.birthdayEnabled
           ? el('div', { class: 'qr-bday small' }, icon('gift'), 'Hội viên: thêm ngày sinh trong Thẻ thành viên — quán tặng quà tuần sinh nhật')
           : null,

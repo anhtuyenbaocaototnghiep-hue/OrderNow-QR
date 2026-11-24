@@ -423,10 +423,16 @@ function paymentStatus() {
       'p',
       {},
       transfer
-        ? `Tổng ${total} (chuyển khoản) · quét mã để chuyển, nhân viên xác nhận khi tiền vào tài khoản quán`
+        ? shopGuestQr
+          ? `Tổng ${total} (chuyển khoản) · quét mã để chuyển, nhân viên xác nhận khi tiền vào tài khoản quán`
+          : `Tổng ${total} (chuyển khoản) · nhân viên sẽ mang bill có mã QR chuyển khoản tới bàn`
         : `Nhân viên sẽ đến bàn trong giây lát · Tổng ${total} (tiền mặt)`,
     ),
-    transfer
+    // ADR-069 D-261: quán chỉ thu chuyển khoản qua bill nhân viên đưa — mã dán ở bàn / trang lạ đòi chuyển tiền là giả
+    transfer && !shopGuestQr
+      ? el('p', { class: 'small pay-safe' }, 'Quán chỉ nhận chuyển khoản theo mã QR trên bill do nhân viên đưa — không chuyển theo trang nào khác.')
+      : null,
+    transfer && shopGuestQr
       ? el(
           'button',
           { class: 'btn btn-primary', type: 'button', id: 'show-transfer', style: { width: '100%', margin: '0.25rem 0 0.5rem' }, onclick: showTransfer },
@@ -631,10 +637,14 @@ function updateCallButton() {
 
 // F-099 (ADR-062): quán có nhận chuyển khoản bằng mã QR không (null = chưa hỏi)
 let shopTransfer = null;
+// ADR-069 D-261: điện thoại khách có được xem mã không — mặc định không: nhân viên mang bill in sẵn mã QR tới bàn
+let shopGuestQr = false;
 async function transferOn() {
   if (shopTransfer === null) {
     try {
-      shopTransfer = Boolean((await api('/api/shop')).transfer?.enabled);
+      const t = (await api('/api/shop')).transfer;
+      shopTransfer = Boolean(t?.enabled);
+      shopGuestQr = Boolean(t?.guestQr);
     } catch {
       shopTransfer = false;
     }
@@ -681,6 +691,8 @@ async function requestPayment() {
       'div',
       {},
       el('p', {}, canTransfer ? `Tổng ${money(due)} — bạn trả bằng cách nào?` : `Gọi nhân viên ra thu tiền ${money(due)} (tiền mặt)?`),
+      // ADR-069 D-261: chuyển khoản qua bill nhân viên mang tới (điện thoại không hiện mã)
+      canTransfer && !shopGuestQr ? el('p', { class: 'small muted' }, 'Chuyển khoản: nhân viên mang bill có mã QR tới bàn để bạn quét.') : null,
       el(
         'ul',
         { class: 'small muted' },
@@ -692,7 +704,7 @@ async function requestPayment() {
       ? [
           { label: 'Hủy', value: null },
           { label: 'Tiền mặt', value: 'CASH' },
-          { label: 'Chuyển khoản (quét QR)', class: 'btn-primary', value: 'TRANSFER' },
+          { label: shopGuestQr ? 'Chuyển khoản (quét QR)' : 'Chuyển khoản', class: 'btn-primary', value: 'TRANSFER' },
         ]
       : [
           { label: 'Hủy', value: null },
@@ -706,8 +718,9 @@ async function requestPayment() {
     await api(`/api/sessions/${sessionId}/request-payment`, { method: 'POST', body: { method: choice } });
     // Chuyển khoản: khung mã QR tự nói việc cần làm — không thêm toast (toast nằm trên cùng khi đang mở hộp, sẽ che tiêu đề hộp)
     if (choice === 'CASH') toast('Đã báo quầy. Nhân viên sẽ đến bàn thu tiền.', 'success');
+    else if (!shopGuestQr) toast('Đã báo quầy. Nhân viên sẽ mang bill có mã QR chuyển khoản tới bàn.', 'success'); // ADR-069
     await load();
-    if (choice === 'TRANSFER') await showTransfer();
+    if (choice === 'TRANSFER' && shopGuestQr) await showTransfer();
   } catch (err) {
     if (err.code === 'SESSION_CLOSED') return load();
     toast(errorMessage(err), 'error');
@@ -749,6 +762,7 @@ setInterval(() => {
 // F-092 (ADR-054): màn chào gửi sang với ?act=pay → mở ngay hộp "Gọi thanh toán" (bỏ tham số khỏi địa chỉ — tải lại không mở lại)
 const act = new URLSearchParams(location.search).get('act');
 if (act) history.replaceState(null, '', location.pathname);
+await transferOn(); // ADR-069: biết trước điện thoại có được xem mã không (thẻ "Đã gọi thanh toán" vẽ ngay lần đầu)
 await load();
 const hasOrders = session?.orders.some((o) => o.status !== 'CANCELLED' && o.status !== 'VOIDED');
 if (act === 'pay' && session?.status === 'OPEN' && hasOrders) requestPayment();

@@ -371,6 +371,8 @@ function render(s) {
     el('div', { class: 'card', style: { maxWidth: '720px', marginBottom: '1rem' } }, el('h2', { style: { fontSize: '1rem' } }, title), ...children);
   // F-099 (ADR-062 D-245): nhận chuyển khoản bằng VietQR — tiền vào thẳng tài khoản / thẻ của quán; đã trả do nhân viên xác nhận
   const transferCheck = el('input', { type: 'checkbox', name: 'transferEnabled', id: 'transfer-enabled', checked: s.transferEnabled });
+  // ADR-069 D-261: mã chuyển khoản trên điện thoại khách — mặc định tắt (nhân viên mang bill in sẵn mã QR; mã dán giả ở bàn không lấy được tiền)
+  const guestQrCheck = el('input', { type: 'checkbox', name: 'guestTransferQr', id: 'guest-qr', checked: s.guestTransferQr });
   const bankBin = el(
     'select',
     { class: 'input', name: 'bankBin', id: 'bank-bin' },
@@ -668,12 +670,20 @@ function render(s) {
         'div',
         { class: transferReady ? 'alert success' : 'alert warning', id: 'transfer-status' },
         transferReady
-          ? 'Đang nhận: khách chọn "Chuyển khoản" khi gọi thanh toán sẽ thấy mã QR có sẵn số tiền; quầy thấy mã ở hộp Thu tiền.'
+          ? s.guestTransferQr
+            ? 'Đang nhận: khách chọn "Chuyển khoản" khi gọi thanh toán sẽ thấy mã QR có sẵn số tiền; quầy thấy mã ở hộp Thu tiền.'
+            : 'Đang nhận: khách chọn "Chuyển khoản" khi gọi thanh toán → nhân viên bấm "In bill" ở dải Gọi thanh toán, mang bill in sẵn mã QR tới bàn; quầy cũng thấy mã ở hộp Thu tiền.'
           : s.transferEnabled
             ? 'Đã bật nhưng còn thiếu ngân hàng / số / tên chủ tài khoản — khách chưa thấy mã.'
             : 'Đang tắt — khách chỉ thấy "Gọi thanh toán" như trước.',
       ),
       el('label', { class: 'check', for: 'transfer-enabled' }, transferCheck, ' Cho khách chuyển khoản bằng mã QR (VietQR)'),
+      el('label', { class: 'check', for: 'guest-qr' }, guestQrCheck, ' Hiện mã chuyển khoản trên điện thoại khách'),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Nên để tắt: mã chuyển khoản chỉ có trên bill nhân viên in và mang tới bàn — kẻ gian dán mã QR giả ở bàn cũng không lấy được tiền. Thẻ bàn in ra ghi "Mã này chỉ để gọi món, không dùng để trả tiền".',
+      ),
       el(
         'div',
         { class: 'form-grid' },
@@ -761,6 +771,7 @@ function render(s) {
                 guestSeasonDecor: seasonCheck.checked, // F-094
                 // F-099: nhận chuyển khoản bằng VietQR (chỉ chủ quán)
                 transferEnabled: transferCheck.checked,
+                guestTransferQr: guestQrCheck.checked, // ADR-069 D-261
                 bankBin: bankBin.value,
                 bankKind: bankKind.value,
                 bankNumber: bankNumber.value.trim(),

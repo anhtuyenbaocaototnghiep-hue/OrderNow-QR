@@ -13,7 +13,8 @@ const ok = (r, status = 200) => {
   return r.body;
 };
 const q1 = async (text) => (await pool.request().query(text)).recordset;
-const BANK = { transferEnabled: true, bankBin: '970403', bankNumber: '060123456789', bankKind: 'ACCOUNT', bankHolder: 'NGUYEN VAN A' };
+// ADR-069: các bài F-099 thử mã trên điện thoại khách → bật guestTransferQr (mặc định tắt — bài AC-099-08)
+const BANK = { transferEnabled: true, guestTransferQr: true, bankBin: '970403', bankNumber: '060123456789', bankKind: 'ACCOUNT', bankHolder: 'NGUYEN VAN A' };
 const settings = (patch, token = admin) => call(token, 'put', '/api/admin/settings', patch);
 const shop = async () => (await api.get('/api/shop')).body;
 const codeOf = (sessionId) => sessionId.replace(/-/g, '').slice(0, 6).toUpperCase();
@@ -162,5 +163,25 @@ describe('Chuyển khoản bằng VietQR (F-099)', () => {
     const sneaky = { ...bill, adminUsername: 'admin', adminPassword: 'Admin@123' };
     const ignored = ok(await call(staff, 'get', `/api/sessions/${s}/receipt?mode=provisional&bill=${encodeURIComponent(JSON.stringify(sneaky))}`));
     assert.equal(ignored.amountDue, printed.amountDue, 'tài khoản duyệt không có tác dụng ở phiếu in');
+  });
+  test('AC-099-08: (ADR-069) mặc định điện thoại khách KHÔNG nhận mã chuyển khoản — /api/shop transfer.guestQr = false, GET /api/sessions/{id}/transfer → 409 TRANSFER_STAFF_ONLY; khách vẫn gọi thanh toán chọn chuyển khoản; quầy vẫn có mã và bill tạm tính in sẵn mã QR + tên chủ tài khoản; chỉ chủ quán đổi công tắc; bật lại → điện thoại lấy được mã', async () => {
+    const { guestTransferQr: _on, ...bankOnly } = BANK;
+    ok(await settings({ ...bankOnly, guestTransferQr: false }));
+    assert.deepEqual((await shop()).transfer, { enabled: true, guestQr: false });
+    const { C, s } = await guestOrder('02', [{ menuItemId: ids['Nước suối'], quantity: 1 }]);
+    const blocked = await C.get(`/api/sessions/${s}/transfer`);
+    assert.deepEqual([blocked.status, blocked.body.code], [409, 'TRANSFER_STAFF_ONLY']);
+    assert.equal(ok(await C.post(`/api/sessions/${s}/request-payment`, { method: 'TRANSFER' })).payMethod, 'TRANSFER', 'quầy biết khách muốn chuyển khoản');
+
+    const bill = ok(await call(staff, 'get', `/api/sessions/${s}/receipt?mode=provisional`));
+    assert.match(bill.transfer.qr, /^data:image\/png;base64,/);
+    assert.deepEqual([bill.transfer.amount, bill.transfer.holder, bill.transfer.content], [bill.amountDue, 'NGUYEN VAN A', `CF 02 ${codeOf(s)}`]);
+    ok(await call(staff, 'post', '/api/payments/transfer-qr', { amount: bill.amountDue, sessionId: s }));
+
+    const denied = await settings({ guestTransferQr: true }, mgr);
+    assert.deepEqual([denied.status, denied.body.code], [403, 'OWNER_ONLY']);
+    ok(await settings({ guestTransferQr: true }));
+    assert.equal((await shop()).transfer.guestQr, true);
+    assert.equal(ok(await C.get(`/api/sessions/${s}/transfer`)).amount, bill.amountDue, 'bật lại → điện thoại lấy được mã');
   });
 });

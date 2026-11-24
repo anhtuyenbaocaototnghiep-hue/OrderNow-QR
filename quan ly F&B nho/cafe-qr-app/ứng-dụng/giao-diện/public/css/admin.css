@@ -435,6 +435,15 @@ body.admin .chip {
 .qr-card .qr-wifi strong {
   white-space: pre-wrap;
 }
+/* ADR-069 D-261: "Mã này chỉ để gọi món, không dùng để trả tiền" — khung đậm, in đen trắng vẫn rõ */
+.qr-card .qr-safe {
+  margin-top: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
 /* F-068: dòng mời hội viên thêm ngày sinh */
 .qr-card .qr-bday {
   margin-top: 0.5rem;

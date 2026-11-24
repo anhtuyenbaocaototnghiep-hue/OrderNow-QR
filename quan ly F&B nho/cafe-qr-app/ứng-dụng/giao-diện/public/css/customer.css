@@ -1954,6 +1954,13 @@ body.customer .alert.info {
   text-underline-offset: 2px;
 }
 
+/* ADR-069 D-261: thẻ "Đã gọi thanh toán" (chuyển khoản qua nhân viên) — nhắc chỉ chuyển theo mã trên bill nhân viên đưa */
+.pay-status .pay-safe {
+  margin: 0.15rem 0 0.45rem;
+  color: var(--c-warning-text);
+  font-weight: 600;
+}
+
 /* ADR-065 D-255 + TASK-128: vừa tự vào nhóm của bàn → thẻ nổi bật "Bàn … đang có khách — Bạn đi chung hay đi riêng?", hai nút lớn
    ngang nhau (màn chào, đầu thực đơn). Màu theo bộ màu của màn khách nên đúng cả giao diện tối. */
 .together-card {

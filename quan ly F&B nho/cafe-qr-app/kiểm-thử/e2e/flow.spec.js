@@ -4971,6 +4971,7 @@ test('chuyển khoản bằng mã QR: khách gọi thanh toán chọn "Chuyển 
   await apiAs(request, 'put', '/api/admin/settings', {
     guestWelcome: false,
     transferEnabled: true,
+    guestTransferQr: true, // ADR-069: bài này thử mã trên điện thoại khách (mặc định tắt)
     bankBin: '970403',
     bankNumber: '060123456789',
     bankKind: 'ACCOUNT',
@@ -5026,7 +5027,11 @@ test('chuyển khoản bằng mã QR: khách gọi thanh toán chọn "Chuyển 
     // Điện thoại khách sang màn cảm ơn (đã trả do nhân viên ghi)
     await expect(G.locator('.thanks')).toContainText('Đã thanh toán');
   } finally {
-    await apiAs(request, 'put', '/api/admin/settings', { transferEnabled: before.transferEnabled, guestWelcome: before.guestWelcome });
+    await apiAs(request, 'put', '/api/admin/settings', {
+      transferEnabled: before.transferEnabled,
+      guestTransferQr: before.guestTransferQr,
+      guestWelcome: before.guestWelcome,
+    });
     await phone.close();
     await quay.close();
     await clearTables(request, ['QR1']);
@@ -5046,6 +5051,7 @@ test('tự xác nhận chuyển khoản: chủ quán bật tự xác nhận, kh�
     bankKind: 'ACCOUNT',
     bankHolder: 'NGUYEN VAN A',
     autoConfirm: true,
+    guestTransferQr: true, // ADR-069: khách đọc nội dung dưới mã trên điện thoại (mặc định tắt)
   });
   const tb = await apiAs(request, 'post', '/api/admin/tables', { code: 'SP1', name: 'Bàn SP1' });
   const phone = await browser.newContext(phoneOpts);
@@ -5100,6 +5106,7 @@ test('tự xác nhận chuyển khoản: chủ quán bật tự xác nhận, kh�
     await apiAs(request, 'put', '/api/admin/settings', {
       autoConfirm: before.autoConfirm,
       transferEnabled: before.transferEnabled,
+      guestTransferQr: before.guestTransferQr,
       guestWelcome: before.guestWelcome,
     });
     await phone.close();
@@ -5154,6 +5161,82 @@ test('in bill có mã QR: hộp Thu tiền chọn "Chuyển khoản" → khung m
     await apiAs(request, 'put', '/api/admin/settings', { transferEnabled: before.transferEnabled });
     await quay.close();
     await clearTables(request, ['QR2']);
+  }
+});
+
+// ---------- TASK-133 (ADR-069): chuyển khoản qua nhân viên — điện thoại khách không hiện mã ----------
+test('chuyển khoản qua nhân viên (mặc định): khách gọi thanh toán chọn "Chuyển khoản" → điện thoại báo nhân viên sẽ mang bill có mã QR, không có mã / nút xem mã, nhắc chỉ chuyển theo mã trên bill nhân viên đưa; dải Gọi thanh toán ở quầy có "In bill" → in bill có mã QR + "Chủ tài khoản"; thẻ bàn in ra ghi "Mã này chỉ để gọi món, không dùng để trả tiền" (TASK-133, ADR-069, AC-099-09)', async ({
+  request,
+}) => {
+  await ensureShift(request);
+  const before = await apiAs(request, 'get', '/api/admin/settings');
+  await apiAs(request, 'put', '/api/admin/settings', {
+    guestWelcome: false,
+    transferEnabled: true,
+    guestTransferQr: false,
+    bankBin: '970403',
+    bankNumber: '060123456789',
+    bankKind: 'ACCOUNT',
+    bankHolder: 'NGUYEN VAN A',
+  });
+  const tb = await apiAs(request, 'post', '/api/admin/tables', { code: 'NV1', name: 'Bàn NV1' });
+  const phone = await browser.newContext(phoneOpts);
+  const quay = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  try {
+    const G = await phone.newPage();
+    watch(G, 'chuyen-khoan-nhan-vien');
+    await G.goto(`/t/${tb.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .c-item')
+      .filter({ has: G.getByRole('button', { name: 'Nước suối', exact: true }) })
+      .locator('.add-btn')
+      .click();
+    await G.click('#open-cart');
+    await G.locator('.sheet .modal-foot .btn-primary').click();
+    await expect(G).toHaveURL(/\/track$/);
+    const order = (await apiAs(request, 'get', '/api/orders')).find((o) => o.table?.name === 'Bàn NV1' && o.status === 'PENDING');
+    expect(order, 'đơn của Bàn NV1').toBeTruthy();
+    await apiAs(request, 'post', `/api/orders/${order.orderId}/accept`);
+
+    // Khách: chọn "Chuyển khoản" → không có mã trên điện thoại, nhân viên mang bill có mã tới bàn
+    await G.locator('#pay').click();
+    const ask = G.getByRole('dialog', { name: 'Gọi thanh toán' });
+    await expect(ask).toContainText('Chuyển khoản: nhân viên mang bill có mã QR tới bàn để bạn quét.');
+    await ask.getByRole('button', { name: 'Chuyển khoản', exact: true }).click();
+    await expect(G.locator('.toast', { hasText: 'Nhân viên sẽ mang bill có mã QR chuyển khoản tới bàn' })).toBeVisible();
+    await expect(G.locator('#pay-status')).toContainText('nhân viên sẽ mang bill có mã QR chuyển khoản tới bàn');
+    await expect(G.locator('#pay-status .pay-safe')).toHaveText(
+      'Quán chỉ nhận chuyển khoản theo mã QR trên bill do nhân viên đưa — không chuyển theo trang nào khác.',
+    );
+    await expect(G.locator('#show-transfer')).toHaveCount(0);
+    await expect(G.getByRole('dialog')).toHaveCount(0);
+
+    // Quầy: dải Gọi thanh toán → "In bill Bàn NV1" → bill tạm tính in sẵn mã QR + "Chủ tài khoản"
+    const sid = (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === 'NV1').sessions[0].sessionId;
+    const S = await counterLogin(quay, 'in-bill-nhan-vien');
+    const printed = S.waitForResponse((r) => r.url().includes(`/api/sessions/${sid}/receipt?mode=provisional`));
+    await S.getByRole('button', { name: 'In bill Bàn NV1' }).click();
+    const data = await (await printed).json();
+    expect(data.transfer?.qr).toMatch(/^data:image\/png;base64,/);
+    expect([data.transfer.amount, data.transfer.holder]).toEqual([data.amountDue, 'NGUYEN VAN A']);
+    const bill = S.frameLocator('iframe[src*="mode=provisional"]').locator('#receipt');
+    await expect(bill).toContainText('Chủ tài khoản: NGUYEN VAN A');
+    await expect(bill).toContainText('Kiểm tên người nhận trong app ngân hàng');
+
+    // Thẻ bàn in ra: mã bàn không dùng để trả tiền
+    await P.goto('/admin/tables/print');
+    await expect(P.locator('.qr-card', { hasText: 'Bàn NV1' }).locator('.qr-safe')).toHaveText(
+      'Mã này chỉ để gọi món, không dùng để trả tiền. Chuyển khoản theo mã QR trên bill nhân viên đưa.',
+    );
+  } finally {
+    await apiAs(request, 'put', '/api/admin/settings', {
+      transferEnabled: before.transferEnabled,
+      guestTransferQr: before.guestTransferQr,
+      guestWelcome: before.guestWelcome,
+    });
+    await phone.close();
+    await quay.close();
+    await clearTables(request, ['NV1']);
   }
 });
 

@@ -16,7 +16,8 @@ const ok = (r, status = 200) => {
   return r.body;
 };
 const q1 = async (text) => (await pool.request().query(text)).recordset;
-const BANK = { transferEnabled: true, bankBin: '970403', bankNumber: '060123456789', bankKind: 'ACCOUNT', bankHolder: 'NGUYEN VAN A' };
+// ADR-069: bài đọc nội dung mã từ điện thoại khách (qrOf) → bật guestTransferQr (mặc định tắt)
+const BANK = { transferEnabled: true, guestTransferQr: true, bankBin: '970403', bankNumber: '060123456789', bankKind: 'ACCOUNT', bankHolder: 'NGUYEN VAN A' };
 const settings = (patch, token = admin) => call(token, 'put', '/api/admin/settings', patch);
 const simulate = (body, token = admin) => call(token, 'post', '/api/admin/bank-feed/simulate', body);
 const feedStatus = (token = admin) => call(token, 'get', '/api/admin/bank-feed');
@@ -77,7 +78,8 @@ describe('Tự xác nhận chuyển khoản qua SePay (F-100)', () => {
     assert.equal(s.autoConfirm, true);
     assert.ok(new Date(s.autoConfirmSince).getTime() >= t0 - 1000, 'mốc bắt đầu = lúc bật (không xét tiền vào cũ)');
     assert.equal(s.sepaySinceId, null);
-    assert.deepEqual(Object.keys(ok(await api.get('/api/shop')).transfer), ['enabled'], '/api/shop không lộ thêm gì');
+    // /api/shop không lộ thêm gì ngoài hai cờ bật / tắt (ADR-069 thêm guestQr — không có số tài khoản, khóa SePay)
+    assert.deepEqual(Object.keys(ok(await api.get('/api/shop')).transfer), ['enabled', 'guestQr'], '/api/shop không lộ thêm gì');
 
     // Có khóa trong .env → "đã cấu hình"; điện thoại khách ghi "quán tự xác nhận" chỉ khi đã bật + có khóa
     pendingTable = await guestOrder('06', [{ menuItemId: ids['Nước suối'], quantity: 1 }], { accept: false });

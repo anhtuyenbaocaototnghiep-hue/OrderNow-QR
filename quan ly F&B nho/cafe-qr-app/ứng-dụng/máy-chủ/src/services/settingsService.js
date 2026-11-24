@@ -79,6 +79,9 @@ function toSettings(map) {
     bankNumber: map.get('pay.bank_number') || null,
     bankKind: map.get('pay.bank_kind') === 'CARD' ? 'CARD' : 'ACCOUNT',
     bankHolder: map.get('pay.bank_holder') || null,
+    // ADR-069 D-261: hiện mã chuyển khoản trên điện thoại khách — mặc định TẮT (mã QR giả dán ở bàn không lấy được tiền):
+    // khách gọi thanh toán → nhân viên mang bill in sẵn mã QR; bật = như ADR-062 (khách tự xem mã trên điện thoại)
+    guestTransferQr: map.get('pay.guest_qr') === 'true',
     // F-100 (ADR-063 D-249): tự xác nhận chuyển khoản qua SePay — mặc định tắt. Mốc bắt đầu + mã giao dịch SePay cuối do máy chủ ghi
     autoConfirm: map.get('pay.auto_confirm') === 'true',
     autoConfirmSince: map.get('pay.auto_confirm_since') || null,
@@ -196,6 +199,7 @@ const KEYS = {
   bankNumber: 'pay.bank_number',
   bankKind: 'pay.bank_kind',
   bankHolder: 'pay.bank_holder',
+  guestTransferQr: 'pay.guest_qr', // ADR-069
   autoConfirm: 'pay.auto_confirm', // F-100 (ADR-063): tự xác nhận khi tiền vào (SePay)
   autoConfirmSince: 'pay.auto_confirm_since', // máy chủ ghi — route không nhận
   sepaySinceId: 'pay.sepay_since_id', // máy chủ ghi — route không nhận
@@ -290,7 +294,8 @@ export const publicShop = async () => {
     logoUrl: logoUrlOf(s.shopLogo), // F-095
     guestTheme: { daypart: s.guestDaypartTheme, season: s.guestSeasonDecor },
     // F-099: khách được chọn "Chuyển khoản (quét QR)" khi gọi thanh toán — chỉ cờ bật / tắt, số tài khoản trả ở mã QR của từng bàn
-    transfer: { enabled: transferReady(s) },
+    // ADR-069 D-261: guestQr = điện thoại khách được xem mã; tắt → nhân viên mang bill có mã QR tới bàn
+    transfer: { enabled: transferReady(s), guestQr: transferReady(s) && s.guestTransferQr },
   };
 };
 

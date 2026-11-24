@@ -800,12 +800,29 @@ function renderPayStrip() {
     el('span', { class: 'label' }, icon('bell-ring'), 'Gọi thanh toán'),
     requested.map((s) =>
       el(
-        'button',
-        { class: 'pay-card', type: 'button', onclick: () => openSettle(s.sessionId) },
-        el('strong', {}, s.table.name),
-        el('span', {}, money(s.amountDue)),
-        s.payMethod === 'TRANSFER' ? el('span', { class: 'badge preparing pay-kind' }, 'Chuyển khoản') : null, // F-099
-        el('span', { class: 'wait', dataset: { since: s.paymentRequestedAt } }, elapsed(s.paymentRequestedAt)),
+        'span',
+        { class: 'pay-item' },
+        el(
+          'button',
+          { class: 'pay-card', type: 'button', onclick: () => openSettle(s.sessionId) },
+          el('strong', {}, s.table.name),
+          el('span', {}, money(s.amountDue)),
+          s.payMethod === 'TRANSFER' ? el('span', { class: 'badge preparing pay-kind' }, 'Chuyển khoản') : null, // F-099
+          el('span', { class: 'wait', dataset: { since: s.paymentRequestedAt } }, elapsed(s.paymentRequestedAt)),
+        ),
+        // ADR-069 D-261: in bill (phiếu tạm tính in sẵn mã QR chuyển khoản khi quán nhận chuyển khoản) ngay từ dải — nhân viên mang tới bàn
+        el(
+          'button',
+          {
+            class: 'btn btn-sm pay-print',
+            type: 'button',
+            'aria-label': `In bill ${s.table.name}`,
+            title: 'In bill có mã QR chuyển khoản',
+            onclick: () => printUrl(`/pos/sessions/${s.sessionId}/receipt?mode=provisional`),
+          },
+          icon('printer'),
+          'In bill',
+        ),
       ),
     ),
   );
@@ -1526,7 +1543,8 @@ function openSettle(sessionId, { tasks = false } = {}) {
   const changeBox = el('div', { class: 'change' });
   const breakdown = el('div', { class: 'breakdown' });
   const settleBtn = el('button', { class: 'btn btn-success btn-lg', type: 'button' }, 'Đã thu tiền & In bill');
-  const provisionalBtn = el('button', { class: 'btn', type: 'button' }, 'In tạm tính');
+  // ADR-069 D-261: "In bill" (phiếu tạm tính — có mã QR chuyển khoản khi quán nhận chuyển khoản) để nhân viên mang tới bàn
+  const provisionalBtn = el('button', { class: 'btn', type: 'button' }, icon('printer'), 'In bill');
   const closeBtn = el('button', { class: 'btn', type: 'button', hidden: true }, 'Đóng bàn trống');
   let session = null;
   let preview = null;

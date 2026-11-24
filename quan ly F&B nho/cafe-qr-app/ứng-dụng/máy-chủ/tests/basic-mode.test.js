@@ -110,7 +110,8 @@ describe('Chính sách dữ liệu (F-062, BR-098)', () => {
     assert.deepEqual({ name: shop.name, address: shop.address }, { name: 'Quán Thử Chính Sách', address: '12 Đường Thử' });
     // F-094 (ADR-056 D-233) cờ giao diện; F-099 (ADR-062) chỉ cờ bật chuyển khoản — không lộ ngân hàng / số tài khoản
     assert.deepEqual(Object.keys(shop).sort(), ['address', 'guestTheme', 'logoUrl', 'name', 'transfer'], 'không lộ cài đặt nào khác');
-    assert.deepEqual(Object.keys(shop.transfer), ['enabled'], 'chuyển khoản: chỉ cờ bật / tắt');
+    // ADR-069 thêm guestQr (điện thoại khách có xem mã không) — vẫn chỉ là cờ, không có số tài khoản
+    assert.deepEqual(Object.keys(shop.transfer), ['enabled', 'guestQr'], 'chuyển khoản: chỉ cờ bật / tắt');
   });
 
   test('AC-062-02: câu đồng ý phía khách và 2 hộp đăng ký ở quầy có link /chinh-sach-du-lieu; đăng ký thiếu đồng ý vẫn 400 CONSENT_REQUIRED', async () => {

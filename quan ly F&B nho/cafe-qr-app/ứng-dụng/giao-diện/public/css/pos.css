@@ -214,6 +214,16 @@ body.pos .btn:not(.btn-sm):not(.btn-lg) {
 .pay-card strong {
   font-size: 1.05rem;
 }
+/* ADR-069 D-261: mỗi bàn gọi thanh toán = thẻ (mở hộp Thu tiền) + nút "In bill" (bill in sẵn mã QR chuyển khoản) */
+.pay-item {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.pay-item .pay-print {
+  min-height: 44px;
+}
 .pay-card .wait {
   font-family: var(--mono);
   color: var(--c-danger);

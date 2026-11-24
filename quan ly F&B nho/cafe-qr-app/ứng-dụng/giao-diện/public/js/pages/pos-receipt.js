@@ -110,8 +110,10 @@ function render(data) {
             el('img', { class: 'spin-qr', src: data.transfer.qr, alt: `Mã VietQR chuyển ${money(data.transfer.amount)}`, width: 150, height: 150 }),
           ),
           el('div', { class: 'center note' }, `${data.transfer.bankName} · ${data.transfer.number}`),
-          el('div', { class: 'center note' }, data.transfer.holder),
+          el('div', { class: 'center note' }, `Chủ tài khoản: ${data.transfer.holder}`),
           el('div', { class: 'center note' }, `Nội dung: ${data.transfer.content}`),
+          // ADR-069 D-261: khách đối chiếu tên người nhận trong app ngân hàng — kẻ gian không giả được dòng tên này
+          el('div', { class: 'center note' }, 'Kiểm tên người nhận trong app ngân hàng trùng tên trên trước khi chuyển.'),
         ]
       : null,
     // F-047 (ADR-008 D-38): quyền lợi hội viên lúc in — điểm hiện có, thẻ tem, voucher còn hạn

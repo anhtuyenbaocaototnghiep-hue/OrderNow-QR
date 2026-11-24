@@ -160,6 +160,7 @@ operationsRouter.put('/settings', async (req, res) => {
       guestSeasonDecor: z.boolean().optional(), // F-094: trang trí theo mùa
       // F-099 (ADR-062 D-245): nhận chuyển khoản bằng VietQR — chỉ chủ quán (không có trong STORE_MGR_SETTINGS); null / '' = xóa
       transferEnabled: z.boolean().optional(),
+      guestTransferQr: z.boolean().optional(), // ADR-069 D-261: mã chuyển khoản trên điện thoại khách (mặc định tắt)
       bankBin: z
         .string()
         .refine((v) => v === '' || Boolean(bankName(v)), 'Chọn ngân hàng trong danh sách')

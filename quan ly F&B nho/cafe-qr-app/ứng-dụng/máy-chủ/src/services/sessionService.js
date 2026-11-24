@@ -262,6 +262,11 @@ export async function requestPayment(sessionId, clientToken, method = 'CASH') {
  */
 export async function transferForCustomer(sessionId, clientToken) {
   await assertViewer(sessionId, { clientToken });
+  // ADR-069 D-261: quán thu chuyển khoản qua nhân viên (mặc định) → điện thoại khách không nhận mã — nhân viên mang bill in sẵn mã QR
+  const s = await getSettings();
+  if (transferReady(s) && !s.guestTransferQr) {
+    throw conflict('TRANSFER_STAFF_ONLY', 'Quán thu chuyển khoản qua nhân viên — nhân viên sẽ mang bill có mã QR tới bàn');
+  }
   const session = await sessionsRepo.findById(sessionId);
   if (!session || session.status === 'CLOSED') throw conflict('SESSION_CLOSED', 'Bàn đã thanh toán / đã đóng');
   const bill = await estimate(session, await ordersRepo.listBySession(sessionId));
