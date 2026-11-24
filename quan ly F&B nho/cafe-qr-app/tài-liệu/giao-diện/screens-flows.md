@@ -838,6 +838,6 @@ Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị t
   - **Ba bước** có số: Quét mã · Chọn món & gửi · Nhân viên mang ra (hoặc "Nhận món ở quầy").
   - **Dòng thanh toán** + khung cam "Mã này chỉ để gọi món, không dùng để trả tiền…" (ADR-069) + dòng sinh nhật (nếu bật).
   - **Dải chân xanh rêu:** tên + địa chỉ quán, "Cảm ơn quý khách!".
-- **Dưới mỗi ảnh:** nút **Tải ảnh** (`the-qr-<mã bàn>.png`). Đầu trang: **Tải tất cả ảnh** (bấm được khi vẽ xong) và **In** (2 thẻ một trang A4, đúng cỡ 10 × 15 cm).
+- **Dưới mỗi ảnh:** nút **Tải ảnh** (`the-qr-<mã bàn>.png`). Đầu trang: **Tải tất cả ảnh** (bấm được khi vẽ xong) và **In** (đúng cỡ 10 × 15 cm, 2 thẻ một tờ A4 ngang — `css/qr-print.css` đặt khổ ngang chỉ cho trang này; có đường cắt mảnh).
 - **Chữ trên ảnh** có bản văn bản ẩn trong `<figcaption>` (trình đọc màn hình).
 - **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/the-qr-ban-mau.png` (cỡ thật), `quan-ly-tables-print.jpg`.
