@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 514 test, sửa lúc 2026-11-24 08:15 UTC
-- `npm run test:e2e` (JSON): 116 test, sửa lúc 2026-11-24 06:01 UTC
+- `npm test` (JUnit): 514 test, sửa lúc 2026-11-24 08:41 UTC
+- `npm run test:e2e` (JSON): 117 test, sửa lúc 2026-11-24 09:10 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 207 |
-| Acceptance Criteria | 588 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 588 |
+| Acceptance Criteria | 589 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 589 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -167,6 +167,7 @@
 | AC-010-06 | TC-010-06 | F-010 | US-010-1 | ACT-ADMIN | UC-14 | MOD-MENU, MOD-NOTIFY | SCR-21, SCR-02 | — | Integration: `delete.test.js` › món đã bán → xóa mềm: ẩn khỏi menu, không đặt được nữa, lịch sử/báo cáo vẫn giữ tên — **PASS** | **PASS** |
 | AC-010-07 | TC-010-07 | F-010 | US-010-1 | ACT-ADMIN | UC-14 | MOD-MENU, MOD-NOTIFY | SCR-21, SCR-02 | — | Integration: `delete.test.js` › danh mục: còn món → 409 HAS_ITEMS; chỉ còn món đã xóa mềm → ARCHIVED; trống → DELETED — **PASS** | **PASS** |
 | AC-010-08 | TC-010-08 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | Integration: `delete.test.js` › bàn: đang có khách → 409 TABLE_BUSY; đã dùng → ARCHIVED + QR cũ chết; chưa dùng → DELETED; mã bàn dùng lại được — **PASS** | **PASS** |
+| AC-010-09 | TC-010-09 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | E2E: `flow.spec.js` › thẻ QR bàn dạng ảnh: trang In QR vẽ mỗi bàn một ảnh 1200 × 1800 (10 × 15 cm, 300 dpi) có chữ thay thế; "Tải ảnh" tải đúng tệp the-qr-<mã bàn>.png; "Tải tất cả ảnh" bấm được khi vẽ xong; in ra đúng cỡ 10 × 15 cm (TASK-134, AC-010-09) — **PASS**<br>E2E: `a11y.spec.js` › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm — **PASS** | **PASS** |
 | AC-011-01 | TC-011-01 | F-011 | US-011-1 | ACT-ADMIN | UC-14 | MOD-INVENTORY, MOD-MENU | SCR-24 | BR-003 | Integration: `api.test.js` › BOM: -10 hoặc thiếu nguyên liệu → 400 + BOM cũ giữ nguyên; hợp lệ → lưu (AC-011-01, 02) — **PASS**<br>SP: `sp.test.js` › hoàn tất trừ đúng BOM, ghi N dòng DEDUCT (AC-007-03, AC-011-01) — **PASS** | **PASS** |
 | AC-011-02 | TC-011-02 | F-011 | US-011-1 | ACT-ADMIN | UC-14 | MOD-INVENTORY, MOD-MENU | SCR-24 | BR-003 | Integration: `api.test.js` › BOM: -10 hoặc thiếu nguyên liệu → 400 + BOM cũ giữ nguyên; hợp lệ → lưu (AC-011-01, 02) — **PASS**<br>E2E: `flow.spec.js` › quản lý: tạo nhân viên trùng tên báo lỗi; BOM -10 bị từ chối (AC-009-02, AC-011-02) — **PASS** | **PASS** |
 | AC-011-03 | TC-011-03 | F-011 | US-011-2 | ACT-ADMIN | UC-13 | MOD-INVENTORY | SCR-23, SCR-25 | BR-001, BR-010, BR-016 | Integration: `api.test.js` › kho: điều chỉnh có lý do ghi ADJUST; dưới phần giữ → 409; cảnh báo sắp hết (AC-011-03, 04) — **PASS**<br>SP: `sp.test.js` › không cho âm / dưới phần đang giữ; ghi ADJUST — **PASS** | **PASS** |

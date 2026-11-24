@@ -179,6 +179,23 @@ async function check(page, key, { shot = true, narrow = false } = {}) {
   issues.push(...found.map((x) => `[${key}] ${x}`));
 }
 
+/** TASK-134: lưu ảnh thẻ QR bàn đầu tiên đúng cỡ in (1200 × 1800) vào thư mục ảnh chuẩn. */
+async function saveFullCard(page) {
+  const b64 = await page
+    .locator('.qr-card-img')
+    .first()
+    .evaluate((img) => {
+      // CSP chặn fetch(blob:) — chép ảnh qua canvas (cùng nguồn, không bị khóa)
+      const c = globalThis.document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      return c.toDataURL('image/png').split(',')[1];
+    });
+  fs.mkdirSync(SHOTS, { recursive: true });
+  fs.writeFileSync(`${SHOTS}/the-qr-ban-mau.png`, Buffer.from(b64, 'base64'));
+}
+
 /** 2.4.7: Tab tới vài phần tử đầu tiên — mỗi phần tử đang focus phải có viền / bóng nhìn thấy được. */
 async function focusVisible(page, key, tabs = 4) {
   const missing = [];
@@ -751,7 +768,10 @@ test('quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, t�
   ];
   for (const r of routes) {
     await A.goto(`/admin/${r}`);
+    // TASK-134: trang In QR vẽ ảnh thẻ lần lượt — chờ vẽ xong rồi mới quét; lưu một thẻ cỡ thật (ảnh chuẩn để duyệt thiết kế)
+    if (r === 'tables/print') await expect(A.getByRole('button', { name: 'Tải tất cả ảnh' })).toBeEnabled({ timeout: 30_000 });
     await check(A, `quan-ly-${r.replace(/\//g, '-').replace(/-\d+-/, '-id-')}`);
+    if (r === 'tables/print') await saveFullCard(A);
   }
   // F-090 / F-091 (TASK-110, TASK-112): hộp Thêm tài khoản (ô Số điện thoại + "Vai trò này được làm"); trang Quyền nâng cao (công tắc Cho phép / Không cho phép)
   await A.goto('/admin/users');

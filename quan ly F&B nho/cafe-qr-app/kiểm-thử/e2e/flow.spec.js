@@ -1641,16 +1641,48 @@ test('QR Wi-Fi cho khách: quản lý nhập Wi-Fi ở Cài đặt → trang In 
 
   await P.goto('/admin/tables/print');
   const cards = P.locator('.qr-card');
+  await expect(P.getByRole('button', { name: 'Tải tất cả ảnh' })).toBeEnabled({ timeout: 30_000 }); // TASK-134: vẽ xong mọi ảnh thẻ
   await expect(cards.first()).toBeVisible();
   // Mọi thẻ bàn đều có khối Wi-Fi, dùng chung một ảnh QR Wi-Fi
   await expect(P.locator('.qr-card .qr-wifi')).toHaveCount(await cards.count());
   const wifi = cards.first().locator('.qr-wifi');
   await expect(wifi).toContainText('① Quét để vào Wi-Fi');
   await expect(wifi).toContainText('Wi-Fi: QuanMoc-Khach · Mật khẩu: matkhau123');
-  await expect.poll(() => wifi.locator('img').evaluate((img) => img.complete && img.naturalWidth > 0)).toBe(true);
+  // TASK-134: thẻ là một ảnh 10 × 15 cm có sẵn QR Wi-Fi + QR gọi món (chữ ở trên là bản văn bản của ảnh)
+  await expect
+    .poll(() =>
+      cards
+        .first()
+        .locator('img.qr-card-img')
+        .evaluate((img) => img.complete && img.naturalWidth === 1200),
+    )
+    .toBe(true);
   await expect(cards.first()).toContainText('② Quét để gọi món');
   await expect(cards.first()).toContainText('Thanh toán tiền mặt hoặc chuyển khoản');
   // Giữ Wi-Fi đã nhập: dự án a11y chạy sau flow quét luôn khối Wi-Fi ở trang In QR
+});
+
+// ---------- TASK-134: thẻ QR bàn dạng ảnh 10 × 15 cm ----------
+test('thẻ QR bàn dạng ảnh: trang In QR vẽ mỗi bàn một ảnh 1200 × 1800 (10 × 15 cm, 300 dpi) có chữ thay thế; "Tải ảnh" tải đúng tệp the-qr-<mã bàn>.png; "Tải tất cả ảnh" bấm được khi vẽ xong; in ra đúng cỡ 10 × 15 cm (TASK-134, AC-010-09)', async () => {
+  await P.goto('/admin/tables/print');
+  await expect(P.getByRole('button', { name: 'Tải tất cả ảnh' })).toBeEnabled({ timeout: 30_000 });
+  const card = P.locator('.qr-card').first();
+  const img = card.locator('img.qr-card-img');
+  await expect(img).toHaveAttribute('alt', /^Thẻ QR gọi món — /);
+  expect(await img.evaluate((i) => [i.naturalWidth, i.naturalHeight])).toEqual([1200, 1800]);
+  const code = (await img.getAttribute('alt')).replace(/^Thẻ QR gọi món — /, '');
+  expect(code.length).toBeGreaterThan(0);
+  const download = P.waitForEvent('download');
+  await card.getByRole('link', { name: 'Tải ảnh' }).click();
+  expect((await download).suggestedFilename()).toMatch(/^the-qr-[\w-]+\.png$/);
+  // In: ảnh đúng 10 × 15 cm (96 px / inch → 378 × 567 px CSS)
+  await P.emulateMedia({ media: 'print' });
+  const size = await img.evaluate((i) => {
+    const r = i.getBoundingClientRect();
+    return [Math.round(r.width), Math.round(r.height)];
+  });
+  await P.emulateMedia({ media: 'screen' });
+  expect(size).toEqual([378, 567]);
 });
 
 test('cảnh báo bất thường qua email: quản lý nhập email nhận ở Cài đặt, "Gửi email thử" báo đã gửi; đóng ca thừa 50.000đ → trang Cảnh báo tự hiện cảnh báo Lệch két, bấm Đã xem (F-060, AC-060-09)', async ({
@@ -4772,7 +4804,7 @@ test('logo quán: chủ quán chọn ảnh ở Cài đặt → Thông tin quán 
     await O.reload();
     await expect(O.locator('.admin-side .brand .brand-mark img')).toHaveAttribute('src', logoUrl);
     await O.goto('/admin/tables/print');
-    await expect(O.locator('.qr-card').first().locator('img.qr-logo')).toHaveAttribute('src', logoUrl);
+    await expect(O.locator('.qr-card').first()).toHaveAttribute('data-logo', logoUrl); // TASK-134: logo vẽ vào ảnh thẻ QR
 
     // Điện thoại khách: màn chào + đầu thực đơn có logo (ảnh tải được); gửi một đơn để có phiếu tạm tính
     const C = await open(phoneCtx, 'logo-khach');
