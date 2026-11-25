@@ -5,8 +5,8 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 514 test, sửa lúc 2026-11-24 08:41 UTC
-- `npm run test:e2e` (JSON): 117 test, sửa lúc 2026-11-24 09:54 UTC
+- `npm test` (JUnit): 516 test, sửa lúc 2026-11-25 05:56 UTC
+- `npm run test:e2e` (JSON): 118 test, sửa lúc 2026-11-25 11:37 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
@@ -14,8 +14,8 @@
 | Chỉ số | Số lượng |
 | --- | --- |
 | User Story | 207 |
-| Acceptance Criteria | 589 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 589 |
+| Acceptance Criteria | 593 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 593 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -168,6 +168,7 @@
 | AC-010-07 | TC-010-07 | F-010 | US-010-1 | ACT-ADMIN | UC-14 | MOD-MENU, MOD-NOTIFY | SCR-21, SCR-02 | — | Integration: `delete.test.js` › danh mục: còn món → 409 HAS_ITEMS; chỉ còn món đã xóa mềm → ARCHIVED; trống → DELETED — **PASS** | **PASS** |
 | AC-010-08 | TC-010-08 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | Integration: `delete.test.js` › bàn: đang có khách → 409 TABLE_BUSY; đã dùng → ARCHIVED + QR cũ chết; chưa dùng → DELETED; mã bàn dùng lại được — **PASS** | **PASS** |
 | AC-010-09 | TC-010-09 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | E2E: `flow.spec.js` › thẻ QR bàn dạng ảnh: trang In QR vẽ mỗi bàn một ảnh 1200 × 1800 (10 × 15 cm, 300 dpi) có chữ thay thế; "Tải ảnh" tải đúng tệp the-qr-<mã bàn>.png; "Tải tất cả ảnh" bấm được khi vẽ xong; in ra đúng cỡ 10 × 15 cm (TASK-134, AC-010-09) — **PASS**<br>E2E: `a11y.spec.js` › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm — **PASS** | **PASS** |
+| AC-010-10 | TC-010-10 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | E2E: `flow.spec.js` › số điện thoại quán + chữ WIFI giữa mã Wi-Fi: quản lý nhập số ở Cài đặt (số sai báo dưới ô) → thẻ QR bàn in "ĐT: …", mã Wi-Fi trên ảnh thẻ có nhãn WIFI ở giữa (ADR-070, AC-053-08, AC-010-10) — **PASS** | **PASS** |
 | AC-011-01 | TC-011-01 | F-011 | US-011-1 | ACT-ADMIN | UC-14 | MOD-INVENTORY, MOD-MENU | SCR-24 | BR-003 | Integration: `api.test.js` › BOM: -10 hoặc thiếu nguyên liệu → 400 + BOM cũ giữ nguyên; hợp lệ → lưu (AC-011-01, 02) — **PASS**<br>SP: `sp.test.js` › hoàn tất trừ đúng BOM, ghi N dòng DEDUCT (AC-007-03, AC-011-01) — **PASS** | **PASS** |
 | AC-011-02 | TC-011-02 | F-011 | US-011-1 | ACT-ADMIN | UC-14 | MOD-INVENTORY, MOD-MENU | SCR-24 | BR-003 | Integration: `api.test.js` › BOM: -10 hoặc thiếu nguyên liệu → 400 + BOM cũ giữ nguyên; hợp lệ → lưu (AC-011-01, 02) — **PASS**<br>E2E: `flow.spec.js` › quản lý: tạo nhân viên trùng tên báo lỗi; BOM -10 bị từ chối (AC-009-02, AC-011-02) — **PASS** | **PASS** |
 | AC-011-03 | TC-011-03 | F-011 | US-011-2 | ACT-ADMIN | UC-13 | MOD-INVENTORY | SCR-23, SCR-25 | BR-001, BR-010, BR-016 | Integration: `api.test.js` › kho: điều chỉnh có lý do ghi ADJUST; dưới phần giữ → 409; cảnh báo sắp hết (AC-011-03, 04) — **PASS**<br>SP: `sp.test.js` › không cho âm / dưới phần đang giữ; ghi ADJUST — **PASS** | **PASS** |
@@ -432,6 +433,9 @@
 | AC-053-03 | TC-053-03 | F-053 | US-053-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33 | BR-085 | Integration: `shop-info.test.js` › AC-053-03: tên rỗng / chỉ khoảng trắng / > 100 ký tự, địa chỉ > 200 ký tự → 400 VALIDATION_ERROR, tên đang dùng không đổi — **PASS** | **PASS** |
 | AC-053-04 | TC-053-04 | F-053 | US-053-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33 | BR-085 | Integration: `shop-info.test.js` › AC-053-04: nhân viên, trưởng ca sửa cài đặt → 403; chưa đăng nhập → 401 — **PASS** | **PASS** |
 | AC-053-05 | TC-053-05 | F-053 | US-053-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33 | BR-085 | E2E: `flow.spec.js` › đổi tên quán: quản lý mở Cài đặt đổi tên → thanh bên hiện tên mới ngay; khách mở menu thấy tên mới ở đầu trang (F-053, AC-053-05) — **PASS** | **PASS** |
+| AC-053-06 | TC-053-06 | F-053 | US-053-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33 | BR-085 | Integration: `shop-info.test.js` › AC-053-06: chủ quán lưu số (bỏ khoảng trắng thừa, giữ cách viết) → cài đặt, /auth/me, /menu, hóa đơn, /api/shop đều có số; lưu rỗng → không còn số ở đâu — **PASS** | **PASS** |
+| AC-053-07 | TC-053-07 | F-053 | US-053-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33 | BR-085 | Integration: `shop-info.test.js` › AC-053-07: số sai (thiếu / thừa chữ số, có chữ, đầu số lạ, > 20 ký tự) → 400 VALIDATION_ERROR ở ô shopPhone, số đang dùng không đổi; số bàn / +84 / tổng đài hợp lệ; nhân viên → 403 — **PASS** | **PASS** |
+| AC-053-08 | TC-053-08 | F-053 | US-053-1 | ACT-ADMIN | UC-17 | MOD-ADMIN, MOD-AUTH | SCR-33 | BR-085 | E2E: `flow.spec.js` › số điện thoại quán + chữ WIFI giữa mã Wi-Fi: quản lý nhập số ở Cài đặt (số sai báo dưới ô) → thẻ QR bàn in "ĐT: …", mã Wi-Fi trên ảnh thẻ có nhãn WIFI ở giữa (ADR-070, AC-053-08, AC-010-10) — **PASS** | **PASS** |
 | AC-054-01 | TC-054-01 | F-054 | US-054-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT, MOD-AUTH | SCR-15 | BR-086 | Integration: `logout-shift.test.js` › AC-054-01: nhân viên mở ca rồi đăng xuất → 409 SHIFT_OPEN (shiftId), chấm công vẫn mở; đóng ca (ghi giờ ra) xong đăng xuất → 200 — **PASS** | **PASS** |
 | AC-054-02 | TC-054-02 | F-054 | US-054-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT, MOD-AUTH | SCR-15 | BR-086 | Integration: `logout-shift.test.js` › AC-054-02: ca do người khác mở đang chạy → nhân viên / trưởng ca khác đăng xuất 200, ca vẫn mở — **PASS** | **PASS** |
 | AC-054-03 | TC-054-03 | F-054 | US-054-1 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-11 | MOD-SHIFT, MOD-AUTH | SCR-15 | BR-086 | Integration: `logout-shift.test.js` › AC-054-03: quản lý mở ca → đăng xuất 409 SHIFT_OPEN; không có ca mở → mọi vai đăng xuất 200 — **PASS** | **PASS** |

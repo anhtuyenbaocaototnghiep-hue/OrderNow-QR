@@ -18,4 +18,17 @@
 ## Test
 
 - E2E cũ bấm nhóm theo chữ (`#tabs .chip` có chữ …) vẫn đúng — không đổi chữ / thứ tự.
-- Chạy toàn bộ E2E + a11y (trang quầy) sau khi sửa — xem phần Bàn giao.
+- **Kết quả 25/11/2026 (nhánh `task/TASK-136-nhom-mon-xuong-dong`, gồm TASK-135):**
+  - `npm run lint`, `npm run format:check`: sạch.
+  - `npm test`: 516/516 PASS.
+  - `npm run test:e2e`: 118/118 PASS (lần chạy cuối, 9,1 phút).
+  - `npm run trace -- --check`: 207 US, 593 AC — PASS 593, FAIL 0, NOT_RUN 0, GAP 0.
+- **Các lần chạy trước (ghi đúng sự thật):**
+  - Lần 1: 3 test cũ so nguyên danh sách khóa `/api/shop` và từng byte ảnh QR Wi-Fi mức M → cập nhật theo ADR-070 (37a138f).
+  - Lần 2: lỗi thật — dòng số điện thoại ở màn chào dùng chung class `.h-addr`, E2E F-092 báo 2 phần tử → tách `.h-tel` (698a4f1).
+  - Các lần còn lại hỏng ngẫu nhiên, không do thay đổi này:
+    - AC-007-05 "mất kết nối quầy";
+    - F-055 dải "Chưa mở ca" chưa kịp ẩn;
+    - "Mất kết nối mạng" lúc laptop đổi băng Wi-Fi;
+    - SQL ETIMEOUT 15 s ở CafeQrTest.
+  - Chạy lại đều đạt.
