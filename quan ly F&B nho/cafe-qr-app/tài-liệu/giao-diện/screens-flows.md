@@ -850,3 +850,7 @@ Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị t
 - **SCR-22 thẻ QR bàn (ảnh 10 × 15 cm):**
   - giữa mã Wi-Fi: ô trắng viền xanh rêu, biểu tượng sóng Wi-Fi + chữ **WIFI** (mã Wi-Fi tạo ở mức sửa lỗi H nên vẫn quét được);
   - dải chân: "ĐT: …" dưới "Cảm ơn quý khách!" (khi quán có số).
+
+## TASK-136 — Nhóm món ở quầy tự xuống dòng — SCR-13, SCR-16 (25/11/2026)
+
+- **Bán mang đi, Gọi món tại bàn:** nút nhóm món (Combo, Cà phê, Nước ép tươi, …) **tự xuống dòng** thay vì cuộn ngang ẩn thanh cuộn — luôn thấy đủ mọi nhóm, bấm một lần là tới. Màn khách trên điện thoại vẫn vuốt ngang.

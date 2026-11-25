@@ -2170,3 +2170,10 @@ body.single-screen .tc-main .btn {
   min-height: 48px;
   font-size: 1rem;
 }
+
+/* TASK-136 (chủ quán 25/11: 7 nhóm món thì nhóm cuối bị che, "làm thêm thanh lướt… cho dễ kéo"): ở quầy (Bán mang đi, Gọi món tại bàn)
+   nút nhóm món tự xuống dòng — luôn thấy đủ mọi nhóm, không phải kéo ngang bằng chuột. Màn khách (điện thoại) vẫn vuốt ngang. */
+body.pos .c-tabs {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
