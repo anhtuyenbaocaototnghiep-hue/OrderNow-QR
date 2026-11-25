@@ -1430,7 +1430,8 @@ body.customer .alert.info {
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
-.h-addr {
+.h-addr,
+.h-tel {
   display: flex;
   align-items: flex-start;
   gap: 0.35rem;
@@ -1438,14 +1439,15 @@ body.customer .alert.info {
   color: var(--c-muted);
   font-size: 0.92rem;
 }
-.h-addr .ic {
+.h-addr .ic,
+.h-tel .ic {
   flex: none;
   width: 1rem;
   height: 1rem;
   margin: 0.15rem 0 0;
 }
-/* ADR-070: số điện thoại quán bấm gọi được — vùng chạm ≥ 24 px (WCAG 2.5.8) mà dòng chữ vẫn sát dòng địa chỉ */
-.h-addr .h-phone {
+/* ADR-070: số điện thoại quán (dòng riêng .h-tel dưới địa chỉ) bấm gọi được — vùng chạm ≥ 24 px (WCAG 2.5.8) mà vẫn sát dòng địa chỉ */
+.h-tel .h-phone {
   display: inline-flex;
   align-items: center;
   min-height: 1.75rem;

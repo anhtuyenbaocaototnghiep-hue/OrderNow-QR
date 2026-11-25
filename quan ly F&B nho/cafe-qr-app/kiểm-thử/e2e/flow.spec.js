@@ -4509,6 +4509,9 @@ test('màn chào khi quét QR: quán bật ở Cài đặt → điện thoại q
     const home = G.locator('.c-home');
     await expect(home.locator('h1')).toHaveText(before.shopName);
     await expect(home.locator('.h-addr')).toHaveText('Số 12 Đường Thử, Quận 1');
+    // ADR-070: số điện thoại quán (bài "số điện thoại quán + chữ WIFI…" nhập trước trong chuỗi flow) — dòng riêng dưới địa chỉ, bấm là gọi
+    await expect(home.locator('.h-tel a')).toHaveText('0909 123 456');
+    await expect(home.locator('.h-tel a')).toHaveAttribute('href', 'tel:0909123456');
     await expect(home.locator('.h-greet')).toHaveText(/^Chào buổi (sáng|trưa|chiều|tối), Quý khách$/);
     await expect(home.locator('.h-table')).toHaveText('Quán sẽ mang món ra cho bạn tại Bàn W1');
     await expect(home.locator('.member-box')).toContainText('Nhập SĐT để nhận ưu đãi');

@@ -389,7 +389,7 @@ function showHome(menu, first) {
         menu.shop.phone
           ? el(
               'p',
-              { class: 'h-addr' },
+              { class: 'h-tel' },
               el('span', { 'aria-hidden': 'true' }, icon('phone')),
               el('a', { class: 'h-phone', href: `tel:${menu.shop.phone.replace(/[^\d+]/g, '')}` }, menu.shop.phone),
             )
