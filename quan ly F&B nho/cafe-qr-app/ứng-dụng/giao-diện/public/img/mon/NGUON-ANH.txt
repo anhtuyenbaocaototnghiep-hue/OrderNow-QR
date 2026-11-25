@@ -9,3 +9,36 @@ nuoc-suoi.jpg  ←  Nước suối  ←  https://www.pexels.com/photo/11860560/
 sua-tuoi-duong.jpg  ←  Sữa tươi đường  ←  https://www.pexels.com/photo/4324359/
 tra-dao.jpg  ←  Trà đào  ←  https://www.pexels.com/photo/17525264/
 combo-gai-ngau-trai-xiu.jpg  ←  gái ngầu trai xỉu  ←  https://www.pexels.com/photo/10540639/
+
+Ảnh món thêm 25/11/2026 cho menu quán (TASK-135) — cũng tải từ Pexels, cắt vuông 640 × 640, Pexels License như trên.
+Sinh tố mãng cầu, Ya-ua đá, Nước ép thơm - táo, Nước ép táo - dưa lưới dùng ảnh gần giống (Pexels không có ảnh đúng món) — thay ảnh thật của quán khi có.
+
+ca-phe-muoi.jpg  ←  Cà phê muối  ←  https://www.pexels.com/photo/15756423/
+ca-phe-sua-da-xay.jpg  ←  Cà phê sữa đá xay  ←  https://www.pexels.com/photo/22222976/
+nuoc-ep-tao.jpg  ←  Nước ép táo  ←  https://www.pexels.com/photo/5817625/
+nuoc-ep-dua-luoi.jpg  ←  Nước ép dưa lưới  ←  https://www.pexels.com/photo/8146360/
+nuoc-ep-cam.jpg  ←  Nước ép cam  ←  https://www.pexels.com/photo/6412586/
+nuoc-ep-thom.jpg  ←  Nước ép thơm  ←  https://www.pexels.com/photo/8963407/
+nuoc-ep-thom-tao.jpg  ←  Nước ép thơm - táo  ←  https://www.pexels.com/photo/5668170/
+nuoc-ep-cam-thom.jpg  ←  Nước ép cam - thơm  ←  https://www.pexels.com/photo/20205971/
+nuoc-ep-tao-dua-luoi.jpg  ←  Nước ép táo - dưa lưới  ←  https://www.pexels.com/photo/4051442/
+sinh-to-bo.jpg  ←  Sinh tố bơ  ←  https://www.pexels.com/photo/11009209/
+sinh-to-dua-luoi.jpg  ←  Sinh tố dưa lưới  ←  https://www.pexels.com/photo/18664060/
+sinh-to-xoai.jpg  ←  Sinh tố xoài  ←  https://www.pexels.com/photo/8211179/
+sinh-to-thom.jpg  ←  Sinh tố thơm  ←  https://www.pexels.com/photo/36738480/
+sinh-to-mang-cau.jpg  ←  Sinh tố mãng cầu  ←  https://www.pexels.com/photo/13425811/
+matcha-da-xay.jpg  ←  Matcha đá xay  ←  https://www.pexels.com/photo/19341280/
+caramel-da-xay.jpg  ←  Caramel đá xay  ←  https://www.pexels.com/photo/20854091/
+choco-caramel-da-xay.jpg  ←  Choco Caramel đá xay  ←  https://www.pexels.com/photo/11512983/
+mint-choco-da-xay.jpg  ←  Mint Choco đá xay  ←  https://www.pexels.com/photo/12419191/
+cookie-cream-da-xay.jpg  ←  Cookie & Cream đá xay  ←  https://www.pexels.com/photo/38795005/
+chanh-da-xay.jpg  ←  Chanh đá xay  ←  https://www.pexels.com/photo/13777196/
+tra-vai.jpg  ←  Trà vải  ←  https://www.pexels.com/photo/35028649/
+tra-lipton-chanh.jpg  ←  Trà Lipton chanh  ←  https://www.pexels.com/photo/792613/
+tra-lipton-mat-ong.jpg  ←  Trà Lipton mật ong  ←  https://www.pexels.com/photo/18581551/
+matcha-latte.jpg  ←  Matcha Latte  ←  https://www.pexels.com/photo/32695045/
+cacao-sua.jpg  ←  Cacao sữa  ←  https://www.pexels.com/photo/12642348/
+ya-ua-da.jpg  ←  Ya-ua đá  ←  https://www.pexels.com/photo/26698544/
+soda-dau.jpg  ←  Soda dâu  ←  https://www.pexels.com/photo/25389770/
+soda-viet-quat.jpg  ←  Soda việt quất  ←  https://www.pexels.com/photo/5817610/
+dua-trai.jpg  ←  Dừa trái  ←  https://www.pexels.com/photo/32083194/
