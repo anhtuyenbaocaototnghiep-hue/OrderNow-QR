@@ -14,7 +14,8 @@ const call = (token, method, path, body) => {
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 const wifiPng = (token = admin) => call(token, 'get', '/api/admin/wifi-qr.png').buffer(true);
 /** Ảnh QR mong đợi — cùng tham số với adminService.wifiQrPng() → so từng byte (ảnh dựng từ đúng tên / mật khẩu đã lưu). */
-const expectedPng = (ssid, password) => QRCode.toBuffer(wifiQrText({ ssid, password }), { type: 'png', width: 480, margin: 2, errorCorrectionLevel: 'M' });
+// ADR-070 D-263: mã Wi-Fi mức sửa lỗi H (nhãn WIFI giữa mã trên thẻ bàn)
+const expectedPng = (ssid, password) => QRCode.toBuffer(wifiQrText({ ssid, password }), { type: 'png', width: 480, margin: 2, errorCorrectionLevel: 'H' });
 
 before(async () => {
   app = await startApp();
