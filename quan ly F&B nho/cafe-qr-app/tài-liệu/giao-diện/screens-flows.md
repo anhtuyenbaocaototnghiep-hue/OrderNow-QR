@@ -841,3 +841,12 @@ Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị t
 - **Dưới mỗi ảnh:** nút **Tải ảnh** (`the-qr-<mã bàn>.png`). Đầu trang: **Tải tất cả ảnh** (bấm được khi vẽ xong) và **In** (đúng cỡ 10 × 15 cm, 2 thẻ một tờ A4 ngang — `css/qr-print.css` đặt khổ ngang chỉ cho trang này; có đường cắt mảnh).
 - **Chữ trên ảnh** có bản văn bản ẩn trong `<figcaption>` (trình đọc màn hình).
 - **Ảnh chuẩn:** `kiểm-thử/kết-quả/ảnh/the-qr-ban-mau.png` (cỡ thật), `quan-ly-tables-print.jpg`.
+
+## TASK-135 — Số điện thoại quán + chữ WIFI giữa mã Wi-Fi — SCR-33, SCR-01, SCR-12, SCR-22 (ADR-070, 25/11/2026)
+
+- **SCR-33 Cài đặt → Thông tin quán:** ô **"Số điện thoại quán"** (sau ô Địa chỉ, bàn phím số trên điện thoại, gợi ý "Ví dụ: 0909 123 456 — để trống nếu không in"). Số sai → "Số điện thoại chưa đúng — ví dụ 0909 123 456, 028 3822 1234 hoặc 1900 1234" ngay dưới ô.
+- **SCR-01 màn chào khi quét QR:** dưới dòng địa chỉ có biểu tượng điện thoại + số (gạch chân, bấm là gọi; vùng chạm ≥ 24 px).
+- **SCR-12 hóa đơn / phiếu tạm tính, hóa đơn bán lúc mất mạng, phiếu bán tay, phiếu đặt hàng:** dòng "ĐT: …" dưới địa chỉ quán.
+- **SCR-22 thẻ QR bàn (ảnh 10 × 15 cm):**
+  - giữa mã Wi-Fi: ô trắng viền xanh rêu, biểu tượng sóng Wi-Fi + chữ **WIFI** (mã Wi-Fi tạo ở mức sửa lỗi H nên vẫn quét được);
+  - dải chân: "ĐT: …" dưới "Cảm ơn quý khách!" (khi quán có số).

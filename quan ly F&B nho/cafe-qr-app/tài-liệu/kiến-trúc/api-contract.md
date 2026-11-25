@@ -437,6 +437,12 @@ Chi tiết: [FEATURE-053](../chức-năng/FEATURE-053.md), BR-085. Không có en
 - `PUT /api/admin/settings` (ADMIN): nhận thêm `shopName` (1–100 ký tự sau khi bỏ khoảng trắng hai đầu), `shopAddress` (0–200; rỗng = không in địa chỉ). Sai → `400 VALIDATION_ERROR` (`details.fields[].path` = `shopName` / `shopAddress`). Nhật ký thao tác: `settings.update` (trước = ảnh bảng `Settings`, sau = `{ input, result }`).
 - `GET /api/auth/me` (`shop`), `GET /api/menu` (`shop.name`), hóa đơn `GET /api/sessions/{id}/receipt`, `GET /api/payments/{id}/receipt`, `GET /api/orders/{id}/receipt` (`shop`): đọc từ cài đặt thay vì `.env`.
 
+**Bổ sung ADR-070 (TASK-135, 25/11/2026) — số điện thoại quán + chữ WIFI giữa mã Wi-Fi.** Không có endpoint mới.
+- `GET /api/admin/settings`: thêm `shopPhone` (`''` = chưa có).
+- `PUT /api/admin/settings` (chỉ ADMIN): nhận thêm `shopPhone` — tối đa 20 ký tự; chữ số, khoảng trắng, `.`, `-`, `(`, `)`, `+` ở đầu; `0` + 9–10 số, `+84` + 9–10 số hoặc `1800` / `1900` + 4–6 số; `''` = xóa. Lưu sau khi bỏ khoảng trắng hai đầu + gộp khoảng trắng liền nhau. Sai → `400 VALIDATION_ERROR` (`details.fields[].path` = `shopPhone`).
+- `shop` ở `GET /api/auth/me`, `GET /api/menu`, ba endpoint hóa đơn: thêm `phone` (`string | null`). `GET /api/shop`: thêm `phone` (`string | null`).
+- `GET /api/admin/wifi-qr.png`: mã tạo ở mức sửa lỗi **H** (trước: M) — thẻ bàn đặt nhãn "WIFI" giữa mã.
+
 ## Bổ sung F-054 — đăng xuất phải đóng ca (ADR-014, 23/10/2026)
 
 Chi tiết: [FEATURE-054](../chức-năng/FEATURE-054.md), BR-086. Không có endpoint mới.

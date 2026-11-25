@@ -69,3 +69,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-127-plan.md](TASK-127-plan.md) — đi riêng, hóa đơn riêng (F-097, ADR-065).
 - [TASK-131-plan.md](TASK-131-plan.md) — chỉ chấm vào trong ca đã sắp (F-072, ADR-067).
 - [TASK-133-plan.md](TASK-133-plan.md) — chuyển khoản qua nhân viên, mã chỉ trên bill (F-099, ADR-069).
+- [TASK-135-plan.md](TASK-135-plan.md) — số điện thoại quán + chữ WIFI giữa mã Wi-Fi (F-053, F-010, ADR-070).

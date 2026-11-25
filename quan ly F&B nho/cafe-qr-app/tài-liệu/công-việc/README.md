@@ -150,6 +150,7 @@
 | [TASK-132](TASK-132.md) | Gộp "Nhân sự & chấm công" và "Lương" thành một mục "Nhân sự & lương" — hàng thẻ chung cho hai trang, quyền giữ theo từng trang; ADR-068 | FEATURE-073 | TASK-131 | Agent | — | chủ dự án 23/11 | READY_FOR_REVIEW |
 | [TASK-133](TASK-133.md) | Chuyển khoản qua nhân viên (chống mã QR giả ở bàn): điện thoại khách không hiện mã (mặc định), "In bill" có mã QR ngay ở dải Gọi thanh toán, bill ghi Chủ tài khoản, thẻ bàn "chỉ để gọi món"; ADR-069 | FEATURE-099 | TASK-132 | Agent | — | chủ dự án 24/11 | READY_FOR_REVIEW |
 | [TASK-134](TASK-134.md) | Thẻ QR bàn dạng ảnh 10 × 15 cm (phong cách thẻ in: nền kem, hạt cà phê vẽ nét, khung tiêu đề xanh rêu, tên bàn cam đất, dải chân) — xem, tải ảnh, in đúng cỡ | FEATURE-010 | TASK-133 | Agent | — | chủ dự án 24/11 | READY_FOR_REVIEW |
+| [TASK-135](TASK-135.md) | Số điện thoại quán trong Cài đặt (hóa đơn, phiếu đặt hàng, thẻ QR bàn, màn chào bấm gọi) + chữ WIFI giữa mã Wi-Fi trên thẻ bàn; ADR-070 | FEATURE-053, FEATURE-010 | TASK-134 | Agent | — | chủ dự án 25/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 
