@@ -47,6 +47,7 @@ function render(data) {
     data.shop.logoUrl ? el('img', { class: 'receipt-logo', src: data.shop.logoUrl, alt: '' }) : null, // F-095
     el('h1', {}, data.shop.name),
     data.shop.address ? el('div', { class: 'center' }, data.shop.address) : null,
+    data.shop.phone ? el('div', { class: 'center' }, `ĐT: ${data.shop.phone}`) : null, // ADR-070
     el('div', { class: 'title' }, provisional ? 'PHIẾU TẠM TÍNH' : 'HÓA ĐƠN THANH TOÁN'),
     el('div', { class: 'center' }, where),
     data.kind === 'session'

@@ -14,6 +14,7 @@ try {
     $('#sheet'),
     el('h1', {}, current.shop?.name ?? 'Quán cà phê'),
     current.shop?.address ? el('div', { class: 'muted' }, current.shop.address) : null,
+    current.shop?.phone ? el('div', { class: 'muted' }, `ĐT: ${current.shop.phone}`) : null, // ADR-070: nhà cung cấp gọi lại quán
     el('h2', {}, `ĐƠN ĐẶT HÀNG #${po.poId}`),
     el('div', {}, `Gửi: ${po.supplierName}`),
     el('div', {}, `Ngày đặt: ${dateTime(po.sentAt ?? po.createdAt)} · Ngày giao mong muốn: ${fmtDate(po.expectedDate)}`),

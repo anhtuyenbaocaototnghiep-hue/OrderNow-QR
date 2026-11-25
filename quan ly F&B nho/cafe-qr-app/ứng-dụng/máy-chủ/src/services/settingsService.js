@@ -116,6 +116,8 @@ function toSettings(map) {
     // F-053 thông tin quán (BR-085): chưa lưu lần nào → SHOP_NAME / SHOP_ADDRESS của .env; địa chỉ lưu rỗng = không in
     shopName: map.get('shop.name') || config.shop.name,
     shopAddress: map.has('shop.address') ? map.get('shop.address') : config.shop.address,
+    // ADR-070 D-262: số điện thoại quán ('' = chưa có / không in); không có giá trị mặc định ở .env
+    shopPhone: map.get('shop.phone') ?? '',
     // F-095 (ADR-057 D-234): tệp logo trong uploads/ ('' = chưa có) — chỉ đổi qua PUT / DELETE /api/admin/settings/logo
     shopLogo: map.get('shop.logo') || '',
     // F-059 Wi-Fi cho khách (BR-092): tên rỗng = không in QR Wi-Fi
@@ -226,6 +228,7 @@ const KEYS = {
   reviewMenuDays: 'review.menu_days',
   shopName: 'shop.name',
   shopAddress: 'shop.address',
+  shopPhone: 'shop.phone', // ADR-070 D-262
   wifiSsid: 'wifi.ssid',
   wifiPassword: 'wifi.password',
   alertEmails: 'alert.emails',
@@ -279,10 +282,10 @@ export const storeStatus = async () => {
 /** F-095: địa chỉ công khai của logo — `v` = tên tệp, đổi mỗi lần thay ảnh (trình duyệt lưu đệm lâu vẫn thấy ảnh mới); chưa có → null. */
 export const logoUrlOf = (rel) => (rel ? `/api/shop/logo?v=${encodeURIComponent(rel.split('/').pop())}` : null);
 
-/** Tên + địa chỉ quán (F-053) + logo (F-095) — một nguồn cho thanh quầy / quản lý, menu khách, hóa đơn. */
+/** Tên + địa chỉ quán (F-053) + số điện thoại (ADR-070, null = không in) + logo (F-095) — một nguồn cho thanh quầy / quản lý, menu khách, hóa đơn. */
 export const shopInfo = async () => {
   const s = await getSettings();
-  return { name: s.shopName, address: s.shopAddress, logoUrl: logoUrlOf(s.shopLogo) };
+  return { name: s.shopName, address: s.shopAddress, phone: s.shopPhone || null, logoUrl: logoUrlOf(s.shopLogo) };
 };
 
 /** `GET /api/shop` (công khai): tên, địa chỉ (F-062), logo (F-095) + cờ giao diện màn khách theo giờ / theo mùa (F-094, ADR-056 D-233). */
@@ -291,6 +294,7 @@ export const publicShop = async () => {
   return {
     name: s.shopName,
     address: s.shopAddress,
+    phone: s.shopPhone || null, // ADR-070: số điện thoại quán — thông tin công khai như địa chỉ
     logoUrl: logoUrlOf(s.shopLogo), // F-095
     guestTheme: { daypart: s.guestDaypartTheme, season: s.guestSeasonDecor },
     // F-099: khách được chọn "Chuyển khoản (quét QR)" khi gọi thanh toán — chỉ cờ bật / tắt, số tài khoản trả ở mã QR của từng bàn

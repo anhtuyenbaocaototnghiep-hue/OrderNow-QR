@@ -10,6 +10,7 @@ import * as bankFeedService from '../services/bankFeedService.js';
 import * as brandService from '../services/brandService.js';
 import * as mailService from '../services/mailService.js';
 import { MODULES } from '../utils/modules.js';
+import { isShopPhone } from '../utils/shopPhone.js';
 import { bankName } from '../domain/vietqr.js';
 import * as modifierService from '../services/modifierService.js';
 import * as refundService from '../services/refundService.js';
@@ -111,6 +112,14 @@ operationsRouter.put('/settings', async (req, res) => {
       // F-053 thông tin quán (BR-085)
       shopName: z.string().trim().max(100, 'Tên quán tối đa 100 ký tự').min(1, 'Nhập tên quán').optional(),
       shopAddress: z.string().trim().max(200, 'Địa chỉ tối đa 200 ký tự').optional(),
+      // ADR-070 D-262: số điện thoại quán — rỗng = không in; giữ cách viết (khoảng trắng / dấu chấm), gộp khoảng trắng liền nhau
+      shopPhone: z
+        .string()
+        .trim()
+        .max(20, 'Số điện thoại tối đa 20 ký tự')
+        .transform((s) => s.replace(/\s+/g, ' '))
+        .refine((s) => s === '' || isShopPhone(s), 'Số điện thoại chưa đúng — ví dụ 0909 123 456, 028 3822 1234 hoặc 1900 1234')
+        .optional(),
       // F-059 Wi-Fi cho khách (BR-092): tên ≤ 32 byte (chuẩn Wi-Fi); mật khẩu rỗng (mạng mở) hoặc 8–63 ký tự ASCII in được (chuẩn WPA —
       // chữ có dấu do bộ gõ tiếng Việt sẽ cho QR không bao giờ vào được mạng), giữ nguyên khoảng trắng.
       // Không cho kết thúc bằng "\": Android đọc sai chuỗi QR khi giá trị kết thúc bằng dấu này (review G3).

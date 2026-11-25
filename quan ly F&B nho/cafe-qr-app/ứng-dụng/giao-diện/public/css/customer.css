@@ -1444,6 +1444,17 @@ body.customer .alert.info {
   height: 1rem;
   margin: 0.15rem 0 0;
 }
+/* ADR-070: số điện thoại quán bấm gọi được — vùng chạm ≥ 24 px (WCAG 2.5.8) mà dòng chữ vẫn sát dòng địa chỉ */
+.h-addr .h-phone {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  margin: -0.3rem 0;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .h-hero {
   /* Màu khung cố định (không theo token): giao diện tối đổi --c-primary sang caramel sáng, còn khung vẫn phải đậm để chữ trắng đọc rõ.
      Mùa (F-094, ADR-056 D-232) đổi bộ màu này ở khối F-094 cuối tệp */

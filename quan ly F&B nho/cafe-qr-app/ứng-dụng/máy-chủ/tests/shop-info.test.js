@@ -46,7 +46,7 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
     assert.equal((await q1("SELECT COUNT(*) AS n FROM dbo.Settings WHERE SettingKey LIKE 'shop.%'"))[0].n, 0);
     const s = await shopEverywhere();
     assert.deepEqual(s.settings, { name: config.shop.name, address: config.shop.address });
-    const env = { name: config.shop.name, address: config.shop.address, logoUrl: null }; // F-095: chưa có logo
+    const env = { name: config.shop.name, address: config.shop.address, phone: null, logoUrl: null }; // F-095: chưa có logo · ADR-070: chưa có số
     assert.deepEqual(s.me, env);
     assert.deepEqual(s.menu, env); // F-092: thực đơn công khai có cả địa chỉ (màn chào)
     assert.deepEqual(s.receipt, env);
@@ -65,9 +65,10 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
     const s = await shopEverywhere();
     const want = { name: 'Cà phê Mộc Test', address: '12 Lê Lợi, phường Bến Nghé' };
     assert.deepEqual(s.settings, want);
-    assert.deepEqual(s.me, { ...want, logoUrl: null }); // F-095: thông tin quán có thêm logo (chưa tải)
-    assert.deepEqual(s.menu, { ...want, logoUrl: null }); // F-092: màn chào khi quét QR hiện cả địa chỉ
-    assert.deepEqual(s.receipt, { ...want, logoUrl: null });
+    // F-095: thông tin quán có thêm logo (chưa tải) · ADR-070: số điện thoại (chưa nhập = null)
+    assert.deepEqual(s.me, { ...want, phone: null, logoUrl: null });
+    assert.deepEqual(s.menu, { ...want, phone: null, logoUrl: null }); // F-092: màn chào khi quét QR hiện cả địa chỉ
+    assert.deepEqual(s.receipt, { ...want, phone: null, logoUrl: null });
     // Lần đổi thứ hai: nhật ký có tên cũ (BeforeJson) → tên mới (AfterJson)
     assert.equal((await call(admin, 'put', '/api/admin/settings', { shopName: 'Cà phê Mộc 2' })).status, 200);
     await flushAudit();
@@ -94,6 +95,7 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
     assert.deepEqual((await call(staff, 'get', '/api/auth/me')).body.shop, {
       name: 'Cà phê Mộc 2',
       address: '12 Lê Lợi, phường Bến Nghé',
+      phone: null,
       logoUrl: null,
     });
     // Biên hợp lệ: đúng 100 / 200 ký tự
@@ -115,5 +117,55 @@ describe('Đổi tên quán và địa chỉ trong Cài đặt (F-053)', () => {
     assert.equal(s.receipt.address, '');
     assert.equal(s.me.address, '');
     assert.equal(s.receipt.name, 'Cà phê Mộc 2');
+  });
+});
+
+// ADR-070 D-262: số điện thoại quán — một nguồn như tên / địa chỉ
+async function phoneEverywhere() {
+  const s = await shopEverywhere();
+  return {
+    settings: (await call(admin, 'get', '/api/admin/settings')).body.shopPhone,
+    me: s.me.phone,
+    menu: s.menu.phone,
+    receipt: s.receipt.phone,
+    shop: (await api.get('/api/shop')).body.phone,
+  };
+}
+
+describe('Số điện thoại quán trong Cài đặt (ADR-070)', () => {
+  test('AC-053-06: chủ quán lưu số (bỏ khoảng trắng thừa, giữ cách viết) → cài đặt, /auth/me, /menu, hóa đơn, /api/shop đều có số; lưu rỗng → không còn số ở đâu', async () => {
+    assert.deepEqual(await phoneEverywhere(), { settings: '', me: null, menu: null, receipt: null, shop: null });
+    const r = await call(admin, 'put', '/api/admin/settings', { shopPhone: '  0909   123 456 ' });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    assert.equal(r.body.shopPhone, '0909 123 456');
+    const n = '0909 123 456';
+    assert.deepEqual(await phoneEverywhere(), { settings: n, me: n, menu: n, receipt: n, shop: n });
+    // Lưu cài đặt khác không đụng tới số
+    assert.equal((await call(admin, 'put', '/api/admin/settings', { shopName: 'Cà phê Mộc 2' })).status, 200);
+    assert.equal((await phoneEverywhere()).receipt, n);
+    assert.equal((await call(admin, 'put', '/api/admin/settings', { shopPhone: '' })).status, 200);
+    assert.deepEqual(await phoneEverywhere(), { settings: '', me: null, menu: null, receipt: null, shop: null });
+  });
+
+  test('AC-053-07: số sai (thiếu / thừa chữ số, có chữ, đầu số lạ, > 20 ký tự) → 400 VALIDATION_ERROR ở ô shopPhone, số đang dùng không đổi; số bàn / +84 / tổng đài hợp lệ; nhân viên → 403', async () => {
+    assert.equal((await call(admin, 'put', '/api/admin/settings', { shopPhone: '0909 123 456' })).status, 200);
+    for (const bad of ['12345', '0909 12', 'abc 0909 123 456', '0909123456789', '+1 202 555 0100', '09 09 12 34 56 78 90 1', '0909+123456', '2909 123 456']) {
+      const r = await call(admin, 'put', '/api/admin/settings', { shopPhone: bad });
+      assert.equal(r.status, 400, bad);
+      assert.equal(r.body.code, 'VALIDATION_ERROR');
+      assert.ok(
+        r.body.details.fields.some((f) => f.path === 'shopPhone'),
+        JSON.stringify(r.body),
+      );
+    }
+    assert.equal((await phoneEverywhere()).me, '0909 123 456');
+    for (const good of ['028 3822 1234', '+84 909 123 456', '1900 1234', '1800.6868', '(028) 3822-1234', '0909123456']) {
+      const r = await call(admin, 'put', '/api/admin/settings', { shopPhone: good });
+      assert.equal(r.status, 200, `${good}: ${JSON.stringify(r.body)}`);
+      assert.equal(r.body.shopPhone, good);
+    }
+    assert.equal((await call(staff, 'put', '/api/admin/settings', { shopPhone: '0909 000 111' })).status, 403);
+    assert.equal((await call(lead, 'put', '/api/admin/settings', { shopPhone: '0909 000 111' })).status, 403);
+    assert.equal((await phoneEverywhere()).shop, '0909123456');
   });
 });

@@ -144,6 +144,42 @@ function qrBox(ctx, img, x, y, size, pad) {
   ctx.imageSmoothingEnabled = true;
 }
 
+/**
+ * ADR-070 D-263: nhãn "WIFI" giữa mã Wi-Fi — khách nhận ra ngay mã nào để vào mạng, mã nào để gọi món.
+ * Mã Wi-Fi tạo ở mức sửa lỗi H (khôi phục ~30 %); nhãn 78 px trên mã 280 px che khoảng 9 % diện tích nên vẫn quét được.
+ */
+function wifiBadge(ctx, cx, cy) {
+  const s = 78;
+  const x = cx - s / 2;
+  const y = cy - s / 2;
+  roundRect(ctx, x, y, s, s, 14);
+  ctx.fillStyle = C.white;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = C.teal;
+  ctx.stroke();
+  // Biểu tượng Wi-Fi (chấm + 3 cung như Lucide "wifi")
+  ctx.fillStyle = C.teal;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 4;
+  const iy = y + 40;
+  for (const r of [9, 17, 25]) {
+    ctx.beginPath();
+    ctx.arc(cx, iy, r, Math.PI * 1.25, Math.PI * 1.75);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.arc(cx, iy, 3.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineCap = 'butt';
+  ctx.font = font(21, { weight: 800 });
+  spaced(ctx, 1);
+  ctx.textAlign = 'center';
+  ctx.fillText('WIFI', cx, y + s - 12);
+  ctx.textAlign = 'left';
+  spaced(ctx, 0);
+}
+
 function centerText(ctx, text, y) {
   ctx.textAlign = 'center';
   ctx.fillText(text, CARD_W / 2, y);
@@ -152,7 +188,7 @@ function centerText(ctx, text, y) {
 
 /**
  * Vẽ một thẻ QR bàn → <canvas> 1200 × 1800.
- * o: { shopName, shopAddress, logo (HTMLImageElement | null), tableName, qr (HTMLImageElement),
+ * o: { shopName, shopAddress, shopPhone, logo (HTMLImageElement | null), tableName, qr (HTMLImageElement),
  *      wifi: { img, ssid, password } | null, counterPickup (bool), payLine, safeText (string | null), birthday (string | null) }
  */
 export function drawTableCard(o) {
@@ -242,6 +278,7 @@ export function drawTableCard(o) {
     const lx = M;
     label('① Quét để vào Wi-Fi', lx + leftW / 2, qy + 40);
     qrBox(ctx, o.wifi.img, lx + 20, qy + 66, 320, 20);
+    wifiBadge(ctx, lx + 20 + 160, qy + 66 + 160);
     ctx.fillStyle = C.ink;
     ctx.font = font(26, { weight: 600 });
     ctx.textAlign = 'center';
@@ -331,11 +368,18 @@ export function drawTableCard(o) {
   ctx.fillStyle = C.white;
   const thanks = 'Cảm ơn quý khách!';
   ctx.font = font(36, { family: SERIF, italic: true });
-  const thanksW = ctx.measureText(thanks).width;
+  let rightW = ctx.measureText(thanks).width;
   ctx.textAlign = 'right';
-  ctx.fillText(thanks, CARD_W - M, fy2 + 88);
+  ctx.fillText(thanks, CARD_W - M, o.shopPhone ? fy2 + 66 : fy2 + 88);
+  // ADR-070 D-262: số điện thoại quán (Cài đặt) dưới lời cảm ơn
+  if (o.shopPhone) {
+    const phone = `ĐT: ${o.shopPhone}`;
+    ctx.font = font(28, { weight: 600 });
+    rightW = Math.max(rightW, ctx.measureText(phone).width);
+    ctx.fillText(phone, CARD_W - M, fy2 + 110);
+  }
   ctx.textAlign = 'left';
-  const leftMax = CARD_W - M * 2 - thanksW - 40;
+  const leftMax = CARD_W - M * 2 - rightW - 40;
   const shop = fitLines(ctx, o.shopName || '', leftMax, 40, { weight: 700, family: SERIF }, 1, 26);
   ctx.font = font(shop.size, { weight: 700, family: SERIF });
   ctx.fillText(shop.lines[0] ?? '', M, o.shopAddress ? fy2 + 66 : fy2 + 88);

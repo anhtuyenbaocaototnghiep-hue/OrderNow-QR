@@ -145,7 +145,7 @@ const RECEIPT_CSS = `
   .note { font-size: 0.9em; font-style: italic; } .kv { display: flex; justify-content: space-between; gap: 2mm; }
   .kv.total { font-weight: 800; font-size: 1.2em; }`;
 
-/** In hóa đơn đơn bán tạm ngay trên máy này (không cần máy chủ). shop: { name, address }. */
+/** In hóa đơn đơn bán tạm ngay trên máy này (không cần máy chủ). shop: { name, address, phone }. */
 export function printOfflineReceipt(sale, shop = {}) {
   const w = receiptWidth();
   const lines = sale.items
@@ -161,7 +161,7 @@ export function printOfflineReceipt(sale, shop = {}) {
   const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Hóa đơn ${esc(sale.localCode)}</title>
     <style>@page { size: ${w}mm auto; margin: 0; } ${RECEIPT_CSS}</style></head>
     <body><main class="receipt ${w === 58 ? 'w58' : ''}">
-      <h1>${esc(shop.name || 'Hóa đơn')}</h1>${shop.address ? `<div class="center">${esc(shop.address)}</div>` : ''}
+      <h1>${esc(shop.name || 'Hóa đơn')}</h1>${shop.address ? `<div class="center">${esc(shop.address)}</div>` : ''}${shop.phone ? `<div class="center">ĐT: ${esc(shop.phone)}</div>` : ''}
       <div class="title">HÓA ĐƠN THANH TOÁN</div>
       <div class="flag">BÁN LÚC MẤT MẠNG · Đơn tạm ${esc(sale.localCode)}</div>
       <div class="center">${esc(at)}</div>${sale.note ? `<div class="center">${esc(sale.note)}</div>` : ''}<hr>

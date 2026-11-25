@@ -385,6 +385,15 @@ function showHome(menu, first) {
         menu.shop.logoUrl ? el('img', { class: 'h-logo', src: menu.shop.logoUrl, alt: '' }) : null, // F-095: tên quán ngay bên → ảnh trang trí
         el('h1', { class: 'h-shop' }, menu.shop.name),
         menu.shop.address ? el('p', { class: 'h-addr' }, el('span', { 'aria-hidden': 'true' }, icon('map-pin')), menu.shop.address) : null,
+        // ADR-070 D-262: số điện thoại quán — bấm là gọi (đặt bàn, quên đồ…)
+        menu.shop.phone
+          ? el(
+              'p',
+              { class: 'h-addr' },
+              el('span', { 'aria-hidden': 'true' }, icon('phone')),
+              el('a', { class: 'h-phone', href: `tel:${menu.shop.phone.replace(/[^\d+]/g, '')}` }, menu.shop.phone),
+            )
+          : null,
       ),
       // ADR-065 D-255 + TASK-128: vừa tự vào nhóm của bàn → "Bạn đi chung hay đi riêng?"
       togetherCard(qr, sessionId, {

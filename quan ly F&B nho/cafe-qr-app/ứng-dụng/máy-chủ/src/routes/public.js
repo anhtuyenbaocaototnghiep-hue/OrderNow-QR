@@ -77,8 +77,8 @@ publicRouter.get('/qr-check', requireStaff, async (_req, res) => res.json(await 
 publicRouter.get('/menu', optionalStaff, async (req, res) => {
   res.set('Cache-Control', 'no-store');
   // F-092: màn chào hiện cả địa chỉ quán (địa chỉ in trên hóa đơn — thông tin công khai)
-  const { name, address, logoUrl } = await settingsService.shopInfo();
-  res.json({ shop: { name, address: address || null, logoUrl }, ...(await menuService.getPublicMenu({ staff: Boolean(req.user) })) });
+  const { name, address, phone, logoUrl } = await settingsService.shopInfo();
+  res.json({ shop: { name, address: address || null, phone, logoUrl }, ...(await menuService.getPublicMenu({ staff: Boolean(req.user) })) });
 });
 
 // ---- Hội viên (FEATURE-014): khách thấy tên che; quầy (Bearer) thấy tên đầy đủ. Giới hạn tra cứu D-6 ----

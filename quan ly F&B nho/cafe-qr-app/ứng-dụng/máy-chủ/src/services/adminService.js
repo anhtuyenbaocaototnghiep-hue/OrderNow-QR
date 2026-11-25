@@ -209,11 +209,14 @@ export async function qrPng(id) {
   return { table: t, png: await QRCode.toBuffer(qrUrl(t.qrToken), { type: 'png', width: 480, margin: 2, errorCorrectionLevel: 'M' }) };
 }
 
-/** F-059 (BR-092): QR Wi-Fi cho khách in cạnh QR bàn — chưa nhập tên Wi-Fi trong Cài đặt → 404. */
+/**
+ * F-059 (BR-092): QR Wi-Fi cho khách in cạnh QR bàn — chưa nhập tên Wi-Fi trong Cài đặt → 404.
+ * ADR-070 D-263: mức sửa lỗi H (khôi phục ~30 %) — thẻ bàn đặt nhãn "WIFI" giữa mã (che ≤ 10 % diện tích) mà vẫn quét được.
+ */
 export async function wifiQrPng() {
   const { wifiSsid: ssid, wifiPassword: password } = await getSettings();
   if (!ssid) throw notFound('Chưa nhập Wi-Fi cho khách trong Cài đặt');
-  return QRCode.toBuffer(wifiQrText({ ssid, password }), { type: 'png', width: 480, margin: 2, errorCorrectionLevel: 'M' });
+  return QRCode.toBuffer(wifiQrText({ ssid, password }), { type: 'png', width: 480, margin: 2, errorCorrectionLevel: 'H' });
 }
 
 // ---------- Nguyên liệu / kho ----------

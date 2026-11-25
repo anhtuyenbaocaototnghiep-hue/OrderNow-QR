@@ -1662,6 +1662,42 @@ test('QR Wi-Fi cho khách: quản lý nhập Wi-Fi ở Cài đặt → trang In 
   // Giữ Wi-Fi đã nhập: dự án a11y chạy sau flow quét luôn khối Wi-Fi ở trang In QR
 });
 
+test('số điện thoại quán + chữ WIFI giữa mã Wi-Fi: quản lý nhập số ở Cài đặt (số sai báo dưới ô) → thẻ QR bàn in "ĐT: …", mã Wi-Fi trên ảnh thẻ có nhãn WIFI ở giữa (ADR-070, AC-053-08, AC-010-10)', async () => {
+  await P.goto('/admin/settings');
+  const phone = P.getByLabel('Số điện thoại quán');
+  await phone.fill('12345');
+  await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+  await expect(P.getByText('Số điện thoại chưa đúng').first()).toBeVisible();
+  await phone.fill('0909 123 456');
+  await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+  await expect(P.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
+
+  await P.goto('/admin/tables/print');
+  await expect(P.getByRole('button', { name: 'Tải tất cả ảnh' })).toBeEnabled({ timeout: 30_000 });
+  const card = P.locator('.qr-card').first();
+  await expect(card.locator('.qr-phone')).toHaveText('ĐT: 0909 123 456');
+  await expect(card.locator('.qr-wifi')).toContainText('chữ WIFI ở giữa');
+  // Nhãn vẽ thật lên ảnh: giữa mã Wi-Fi (tâm 260, 838 trên ảnh 1200 × 1800) là ô trắng chữ xanh rêu — không còn ô đen của mã
+  const px = await card.locator('img.qr-card-img').evaluate((img) => {
+    const cv = img.ownerDocument.createElement('canvas');
+    cv.width = img.naturalWidth;
+    cv.height = img.naturalHeight;
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const { data } = ctx.getImageData(230, 808, 60, 60);
+    let black = 0;
+    let teal = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+      if (r + g + b < 150) black += 1;
+      if (Math.abs(r - 0x1f) < 40 && Math.abs(g - 0x5e) < 40 && Math.abs(b - 0x57) < 40) teal += 1;
+    }
+    return { black: black / (data.length / 4), teal: teal / (data.length / 4) };
+  });
+  expect(px.black).toBeLessThan(0.02);
+  expect(px.teal).toBeGreaterThan(0.03);
+});
+
 // ---------- TASK-134: thẻ QR bàn dạng ảnh 10 × 15 cm ----------
 test('thẻ QR bàn dạng ảnh: trang In QR vẽ mỗi bàn một ảnh 1200 × 1800 (10 × 15 cm, 300 dpi) có chữ thay thế; "Tải ảnh" tải đúng tệp the-qr-<mã bàn>.png; "Tải tất cả ảnh" bấm được khi vẽ xong; in ra đúng cỡ 10 × 15 cm (TASK-134, AC-010-09)', async () => {
   await P.goto('/admin/tables/print');

@@ -65,7 +65,7 @@ const toBlobUrl = (canvas) => new Promise((resolve) => canvas.toBlob((b) => reso
 
 /** Chữ Be Vietnam Pro (cả bộ tiếng Việt) phải tải xong trước khi vẽ lên canvas — không thì canvas dùng chữ thay thế. */
 async function fontsReady() {
-  const sample = 'Quét mã gọi món Bàn Thanh toán chuyển khoản Nhân viên Mật khẩu ① ②';
+  const sample = 'Quét mã gọi món Bàn Thanh toán chuyển khoản Nhân viên Mật khẩu ① ② WIFI ĐT';
   await Promise.all(['400 28px', '600 30px', '700 34px', '800 70px'].map((f) => document.fonts.load(`${f} "Be Vietnam Pro"`, sample).catch(() => null)));
 }
 
@@ -80,7 +80,7 @@ function cardText(t, { settings, wifi, payLine, safeText, birthday }) {
           el(
             'div',
             { class: 'qr-wifi' },
-            el('div', { class: 'qr-step' }, '① Quét để vào Wi-Fi'),
+            el('div', { class: 'qr-step' }, '① Quét để vào Wi-Fi (mã có chữ WIFI ở giữa)'),
             el(
               'div',
               {},
@@ -97,6 +97,7 @@ function cardText(t, { settings, wifi, payLine, safeText, birthday }) {
     // ADR-069 D-261: mã bàn không dùng để trả tiền (mã dán đè / trang lạ đòi chuyển tiền là giả) — trừ khi quán bật mã trên điện thoại khách
     safeText ? el('div', { class: 'qr-safe' }, safeText) : null,
     birthday ? el('div', { class: 'qr-bday' }, birthday) : null,
+    settings.shopPhone ? el('div', { class: 'qr-phone' }, `ĐT: ${settings.shopPhone}`) : null, // ADR-070
   );
 }
 
@@ -146,6 +147,7 @@ try {
       const canvas = drawTableCard({
         shopName: current.shop?.name ?? settings.shopName ?? '',
         shopAddress: settings.shopAddress ?? '',
+        shopPhone: settings.shopPhone ?? '', // ADR-070
         logo,
         tableName: t.name,
         qr,

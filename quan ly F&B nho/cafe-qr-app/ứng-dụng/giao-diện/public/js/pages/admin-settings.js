@@ -172,6 +172,17 @@ function render(s) {
     placeholder: 'Ví dụ: 12 Lê Lợi, phường Bến Nghé — để trống nếu không in',
     value: s.shopAddress,
   });
+  // ADR-070 D-262: số điện thoại quán — in trên hóa đơn, thẻ QR bàn, phiếu đặt hàng; khách bấm gọi được ở màn chào
+  const shopPhone = el('input', {
+    class: 'input',
+    name: 'shopPhone',
+    type: 'tel',
+    inputmode: 'tel',
+    maxlength: 20,
+    autocomplete: 'off',
+    placeholder: 'Ví dụ: 0909 123 456 — để trống nếu không in',
+    value: s.shopPhone ?? '',
+  });
   // F-059: Wi-Fi cho khách — in QR Wi-Fi cạnh QR bàn (BR-092). Mật khẩu hiện chữ: chủ quán cần đọc lại, và nó in trên thẻ bàn
   const wifiSsid = el('input', { class: 'input', name: 'wifiSsid', maxlength: 32, autocomplete: 'off', value: s.wifiSsid });
   // Mật khẩu WPA chỉ gồm ký tự không dấu — tắt bộ gõ tiếng Việt khi nhập (review G3)
@@ -419,6 +430,7 @@ function render(s) {
         { class: 'form-grid' },
         el('div', { class: 'field' }, el('label', {}, 'Tên quán'), shopName),
         el('div', { class: 'field' }, el('label', {}, 'Địa chỉ (in trên hóa đơn)'), shopAddress),
+        el('div', { class: 'field' }, el('label', {}, 'Số điện thoại quán'), shopPhone),
       ),
       el('div', { class: 'field' }, el('label', { for: 'shop-logo' }, 'Logo quán'), logoBox),
       el(
@@ -741,6 +753,7 @@ function render(s) {
                 // Chỉ gửi khi đổi: lưu cài đặt khác không chép tên / địa chỉ mặc định (.env) vào DB (review G3)
                 shopName: shopName.value.trim() !== s.shopName ? shopName.value.trim() : undefined,
                 shopAddress: shopAddress.value.trim() !== s.shopAddress ? shopAddress.value.trim() : undefined,
+                shopPhone: shopPhone.value.trim() !== (s.shopPhone ?? '') ? shopPhone.value.trim() : undefined,
                 wifiSsid: wifiSsid.value.trim() !== s.wifiSsid ? wifiSsid.value.trim() : undefined,
                 wifiPassword: wifiPassword.value !== s.wifiPassword ? wifiPassword.value : undefined,
                 // F-060: danh sách email chỉ gửi khi đổi (đổi → thư báo cả địa chỉ cũ lẫn mới)
