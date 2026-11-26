@@ -23,4 +23,13 @@
 
 ## Lệnh kiểm chứng
 
-Xem phần Bàn giao (cập nhật sau khi chạy).
+- **Kết quả 26/11/2026 (nhánh `task/TASK-138-goi-nhan-vien-5-lan`, gồm TASK-137):**
+  - `npm run lint`, `npm run format:check`: sạch.
+  - `npm test`: 518/518 PASS. 2 test mới (AC-101-01/02) FAIL trên mã máy chủ cũ (cất bằng `git stash`), PASS trên mã mới.
+  - `npm run test:e2e`: 120/120 PASS.
+  - `npm run trace -- --check`: 208 US, 597 AC — PASS 597, FAIL 0, NOT_RUN 0, GAP 0.
+- **Các lần chạy trước:** E2E hỏng mỗi lần một bài khác nhau, không do thay đổi này:
+  - "thu tiền mặt" — tiền thừa chưa kịp cập nhật;
+  - TASK-133 tìm thẻ Bàn NV1 khi trang In QR chưa vẽ xong — đã thêm bước chờ, e9edd84;
+  - F-088 quá 60 giây.
+  - Chạy lại đều đạt.

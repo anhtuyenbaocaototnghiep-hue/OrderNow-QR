@@ -20,4 +20,9 @@
 
 ## Lệnh kiểm chứng
 
-Xem phần Bàn giao (cập nhật sau khi chạy).
+- **Kết quả 26/11/2026 (nhánh `task/TASK-138-goi-nhan-vien-5-lan`):**
+  - `npm run lint`, `npm run format:check`: sạch.
+  - `npm test`: 518/518 PASS — gồm "Gọi nhân viên (F-021)" theo quy tắc mới.
+  - `npm run test:e2e`: 120/120 PASS — gồm "gọi nhân viên…" (nút vẫn bấm được) và bài mới "gọi nhân viên 5 lần / 1 phút".
+  - `npm run trace -- --check`: 208 US, 597 AC — PASS 597.
+  - Máy chủ của quán đã khởi động lại (26/11).

@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 516 test, sửa lúc 2026-11-25 05:56 UTC
-- `npm run test:e2e` (JSON): 118 test, sửa lúc 2026-11-25 11:37 UTC
+- `npm test` (JUnit): 518 test, sửa lúc 2026-11-26 06:13 UTC
+- `npm run test:e2e` (JSON): 120 test, sửa lúc 2026-11-26 06:24 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 207 |
-| Acceptance Criteria | 593 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 593 |
+| User Story | 208 |
+| Acceptance Criteria | 597 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 597 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -227,10 +227,11 @@
 | AC-020-02 | TC-020-02 | F-020 | US-020-2 | ACT-ADMIN | UC-19 | MOD-MENU | SCR-21, SCR-02 | BR-030 | Integration: `sales.test.js` › danh mục ngoài giờ bán: khách không thấy + không đặt được; quầy vẫn thấy — **PASS** | **PASS** |
 | AC-020-03 | TC-020-03 | F-020 | US-020-3 | ACT-GUEST | UC-02 | MOD-MENU, MOD-INVENTORY, MOD-NOTIFY | SCR-02 | BR-009, BR-010 | Integration: `api.test.js` › hết nguyên liệu → 409 OUT_OF_STOCK kèm tên món, không tạo đơn (AC-003-02) — **PASS**<br>Integration: `acceptance.test.js` › AC-020-03: món hết nguyên liệu tự hiện "Hết món"; nhập kho xong tự bán lại, không cần bật tay — **PASS**<br>E2E: `flow.spec.js` › món vừa hết nguyên liệu lúc gửi → từ chối cả đơn, báo tên món, bỏ khỏi giỏ (AC-003-02, Q-005) — **PASS** | **PASS** |
 | AC-020-04 | TC-020-04 | F-020 | US-020-2 | ACT-ADMIN | UC-19 | MOD-MENU | SCR-21, SCR-02 | BR-030 | Integration: `sales.test.js` › danh mục ngoài giờ bán: khách không thấy + không đặt được; quầy vẫn thấy — **PASS** | **PASS** |
-| AC-021-01 | TC-021-01 | F-021 | US-021-1 | ACT-GUEST | UC-18 | MOD-TABLE, MOD-NOTIFY | SCR-05, SCR-10 | — | Integration: `sales.test.js` › khách gọi → quầy nhận realtime; gọi lại < 60 giây → 429; phiên khác 403; quầy xử lý → khách nhận báo — **PASS**<br>E2E: `flow.spec.js` › gọi nhân viên: khách bấm → quầy có dải + chuông, bấm Đã xử lý → khách được báo (F-021) — **PASS** | **PASS** |
-| AC-021-02 | TC-021-02 | F-021 | US-021-1 | ACT-GUEST | UC-18 | MOD-TABLE, MOD-NOTIFY | SCR-05, SCR-10 | — | Integration: `sales.test.js` › khách gọi → quầy nhận realtime; gọi lại < 60 giây → 429; phiên khác 403; quầy xử lý → khách nhận báo — **PASS** | **PASS** |
-| AC-021-03 | TC-021-03 | F-021 | US-021-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-18 | MOD-TABLE, MOD-NOTIFY | SCR-10, SCR-05 | — | Integration: `sales.test.js` › khách gọi → quầy nhận realtime; gọi lại < 60 giây → 429; phiên khác 403; quầy xử lý → khách nhận báo — **PASS**<br>E2E: `flow.spec.js` › gọi nhân viên: khách bấm → quầy có dải + chuông, bấm Đã xử lý → khách được báo (F-021) — **PASS** | **PASS** |
+| AC-021-01 | TC-021-01 | F-021 | US-021-1 | ACT-GUEST | UC-18 | MOD-TABLE, MOD-NOTIFY | SCR-05, SCR-10 | — | Integration: `sales.test.js` › khách gọi → quầy nhận realtime; gọi liên tiếp 5 lần / 60 giây được, lần 6 → 429 TOO_SOON, qua 60 giây gọi lại được (ADR-072, AC-021-02); phiên khác 403; quầy xử lý → khách nhận báo — **PASS**<br>E2E: `flow.spec.js` › gọi nhân viên: khách bấm → quầy có dải + chuông, bấm Đã xử lý → khách được báo (F-021) — **PASS** | **PASS** |
+| AC-021-02 | TC-021-02 | F-021 | US-021-1 | ACT-GUEST | UC-18 | MOD-TABLE, MOD-NOTIFY | SCR-05, SCR-10 | — | Integration: `sales.test.js` › khách gọi → quầy nhận realtime; gọi liên tiếp 5 lần / 60 giây được, lần 6 → 429 TOO_SOON, qua 60 giây gọi lại được (ADR-072, AC-021-02); phiên khác 403; quầy xử lý → khách nhận báo — **PASS** | **PASS** |
+| AC-021-03 | TC-021-03 | F-021 | US-021-2 | ACT-STAFF, ACT-LEAD, ACT-ADMIN | UC-18 | MOD-TABLE, MOD-NOTIFY | SCR-10, SCR-05 | — | Integration: `sales.test.js` › khách gọi → quầy nhận realtime; gọi liên tiếp 5 lần / 60 giây được, lần 6 → 429 TOO_SOON, qua 60 giây gọi lại được (ADR-072, AC-021-02); phiên khác 403; quầy xử lý → khách nhận báo — **PASS**<br>E2E: `flow.spec.js` › gọi nhân viên: khách bấm → quầy có dải + chuông, bấm Đã xử lý → khách được báo (F-021) — **PASS** | **PASS** |
 | AC-021-04 | TC-021-04 | F-021 | US-021-1 | ACT-GUEST | UC-18 | MOD-TABLE, MOD-NOTIFY | SCR-05, SCR-10 | — | Integration: `acceptance.test.js` › AC-021-04: khách gọi nhân viên khi phiên đã thu tiền (CLOSED) → 409 SESSION_CLOSED, quầy không nhận yêu cầu — **PASS** | **PASS** |
+| AC-021-05 | TC-021-05 | F-021 | US-021-1 | ACT-GUEST | UC-18 | MOD-TABLE, MOD-NOTIFY | SCR-05, SCR-10 | — | E2E: `flow.spec.js` › gọi nhân viên 5 lần / 1 phút: khách bấm "Gọi nhân viên" 5 lần liền vẫn gửi được, nút không khóa; lần 6 máy chủ báo chờ → nút khóa "Đã gọi nhân viên (gọi lại sau … s)" (ADR-072, AC-021-05) — **PASS**<br>E2E: `flow.spec.js` › gọi nhân viên: khách bấm → quầy có dải + chuông, bấm Đã xử lý → khách được báo (F-021) — **PASS** | **PASS** |
 | AC-022-01 | TC-022-01 | F-022 | US-022-1 | ACT-STAFF, ACT-LEAD | UC-04, UC-05 | MOD-BILLING | SCR-14, SCR-13 | BR-021, BR-027 | Integration: `members.test.js` › thiếu lý do → 400; trong ngưỡng (≤10% và ≤20.000đ) nhân viên tự giảm, không ghi người duyệt — **PASS**<br>Unit: `pricing.test.js` › giảm tay theo số tiền / % (sau hội viên), không vượt số còn lại, không âm — **PASS**<br>Unit: `pricing.test.js` › ngưỡng giảm tay của nhân viên: vượt 10% hoặc vượt 20.000đ → cần quản lý duyệt — **PASS** | **PASS** |
 | AC-022-02 | TC-022-02 | F-022 | US-022-2 | ACT-ADMIN, ACT-LEAD | UC-04, UC-05 | MOD-BILLING, MOD-AUTH | SCR-14, SCR-13 | BR-027, BR-045 | Integration: `members.test.js` › vượt ngưỡng: không có quản lý → 403 ADMIN_APPROVAL_REQUIRED; sai mật khẩu → 403; đúng → ghi người duyệt — **PASS**<br>Unit: `pricing.test.js` › ngưỡng giảm tay của nhân viên: vượt 10% hoặc vượt 20.000đ → cần quản lý duyệt — **PASS** | **PASS** |
 | AC-022-03 | TC-022-03 | F-022 | US-022-1 | ACT-STAFF, ACT-LEAD | UC-04, UC-05 | MOD-BILLING | SCR-14, SCR-13 | BR-021, BR-027 | Integration: `members.test.js` › thiếu lý do → 400; trong ngưỡng (≤10% và ≤20.000đ) nhân viên tự giảm, không ghi người duyệt — **PASS** | **PASS** |
@@ -689,4 +690,7 @@
 | AC-100-04 | TC-100-04 | F-100 | US-100-1 | ACT-GUEST, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-33 | BR-018, BR-128, BR-129 | Integration: `bank-feed.test.js` › AC-100-04: thu ngân xử lý khoản chưa khớp — ghép vào bàn đúng số phải thu → thu chuyển khoản (người ghi là thu ngân), lệch → 409 AMOUNT_MISMATCH; "Đã xử lý" phải có ghi chú; khoản đã xử lý không xử lý lại (409); CSDL chặn xóa; chưa đăng nhập / khách không xem được — **PASS** | **PASS** |
 | AC-100-05 | TC-100-05 | F-100 | US-100-1 | ACT-GUEST, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-33 | BR-018, BR-128, BR-129 | Integration: `bank-feed.test.js` › AC-100-05: hỏi SePay (máy chủ SePay giả): Bearer khóa trong .env, chỉ tiền vào của tài khoản quán, lần đầu từ lúc bật, sau đó theo giao dịch cuối; khớp thì tự thu, khoản không phải của quán bỏ qua; hỏi lại không xử lý trùng; 401 / 429 ghi lỗi, đợi rồi hỏi tiếp — **PASS** | **PASS** |
 | AC-100-06 | TC-100-06 | F-100 | US-100-1 | ACT-GUEST, ACT-STAFF, ACT-ADMIN | UC-04 | MOD-BILLING, MOD-NOTIFY | SCR-05, SCR-10, SCR-33 | BR-018, BR-128, BR-129 | E2E: `flow.spec.js` › tự xác nhận chuyển khoản: chủ quán bật tự xác nhận, khách gọi thanh toán chuyển khoản → giả lập tiền vào đúng số tiền → quầy báo "đã chuyển khoản", bàn rời dải Gọi thanh toán, điện thoại khách sang màn cảm ơn; khách chuyển lần hai → dải "Tiền vào chưa khớp" ở quầy, thu ngân "Đã xử lý" (F-100, AC-100-06) — **PASS** | **PASS** |
+| AC-101-01 | TC-101-01 | F-101 | US-101-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN, MOD-LOYALTY | SCR-33, SCR-01, SCR-03, SCR-04 | BR-131 | Integration: `guest-member-box.test.js` › AC-101-01: mặc định bật; chủ quán tắt → cài đặt, /api/menu ui.memberBox, /api/shop memberBox đều false; bật lại → true; quản lý cửa hàng, trưởng ca, nhân viên đổi → 403 — **PASS** | **PASS** |
+| AC-101-02 | TC-101-02 | F-101 | US-101-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN, MOD-LOYALTY | SCR-33, SCR-01, SCR-03, SCR-04 | BR-131 | Integration: `guest-member-box.test.js` › AC-101-02: tắt → khách tự tra SĐT / đăng ký / gắn SĐT / thêm ngày sinh → 403 MEMBER_SELF_OFF, không tạo hội viên, phiên không có hội viên; nhân viên vẫn tra và gắn được; bật lại → khách tự đăng ký được — **PASS** | **PASS** |
+| AC-101-03 | TC-101-03 | F-101 | US-101-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN, MOD-LOYALTY | SCR-33, SCR-01, SCR-03, SCR-04 | BR-131 | E2E: `flow.spec.js` › ô hội viên trên màn khách: chủ quán bỏ tích "Ô Nhập SĐT để nhận ưu đãi" ở Cài đặt → giỏ hàng và trang theo dõi đơn của khách không còn ô hội viên; tích lại → ô hiện lại (F-101, AC-101-03) — **PASS** | **PASS** |
 
