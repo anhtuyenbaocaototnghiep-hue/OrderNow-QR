@@ -1720,7 +1720,8 @@ test('thẻ QR bàn nhắc vào Wi-Fi quán: mã QR trỏ tới máy trong quán
       ctx.drawImage(img, 0, 0);
       const { data } = ctx.getImageData(90, 1125, 340, 130);
       let n = 0;
-      for (let i = 0; i < data.length; i += 4) if (Math.abs(data[i] - 0xb4) < 40 && Math.abs(data[i + 1] - 0x56) < 40 && Math.abs(data[i + 2] - 0x1e) < 40) n += 1;
+      for (let i = 0; i < data.length; i += 4)
+        if (Math.abs(data[i] - 0xb4) < 40 && Math.abs(data[i + 1] - 0x56) < 40 && Math.abs(data[i + 2] - 0x1e) < 40) n += 1;
       return n / (data.length / 4);
     });
   expect(orange).toBeGreaterThan(0.03);
