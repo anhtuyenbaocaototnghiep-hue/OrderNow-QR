@@ -1700,6 +1700,32 @@ test('số điện thoại quán + chữ WIFI giữa mã Wi-Fi: quản lý nhậ
   expect(px.teal).toBeGreaterThan(0.03);
 });
 
+test('thẻ QR bàn nhắc vào Wi-Fi quán: mã QR trỏ tới máy trong quán (localhost / địa chỉ IP) → mọi thẻ có khung cam "Lưu ý: vào Wi-Fi của quán (mã ①) rồi mới quét mã ② — dùng 4G hay mạng khác sẽ không gọi món được." dưới tên / mật khẩu Wi-Fi (TASK-139, AC-010-11)', async () => {
+  await P.goto('/admin/tables/print');
+  await expect(P.getByRole('button', { name: 'Tải tất cả ảnh' })).toBeEnabled({ timeout: 30_000 });
+  const cards = P.locator('.qr-card');
+  await expect(cards.locator('.qr-lan')).toHaveCount(await cards.count());
+  await expect(cards.first().locator('.qr-lan')).toHaveText(
+    'Lưu ý: vào Wi-Fi của quán (mã ①) rồi mới quét mã ② — dùng 4G hay mạng khác sẽ không gọi món được.',
+  );
+  // Khung vẽ thật lên ảnh: vùng dưới tên / mật khẩu Wi-Fi (x 90–430, y 1125–1255 trên ảnh 1200 × 1800) có chữ + viền màu cam #B4561E
+  const orange = await cards
+    .first()
+    .locator('img.qr-card-img')
+    .evaluate((img) => {
+      const cv = img.ownerDocument.createElement('canvas');
+      cv.width = img.naturalWidth;
+      cv.height = img.naturalHeight;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const { data } = ctx.getImageData(90, 1125, 340, 130);
+      let n = 0;
+      for (let i = 0; i < data.length; i += 4) if (Math.abs(data[i] - 0xb4) < 40 && Math.abs(data[i + 1] - 0x56) < 40 && Math.abs(data[i + 2] - 0x1e) < 40) n += 1;
+      return n / (data.length / 4);
+    });
+  expect(orange).toBeGreaterThan(0.03);
+});
+
 // ---------- TASK-134: thẻ QR bàn dạng ảnh 10 × 15 cm ----------
 test('thẻ QR bàn dạng ảnh: trang In QR vẽ mỗi bàn một ảnh 1200 × 1800 (10 × 15 cm, 300 dpi) có chữ thay thế; "Tải ảnh" tải đúng tệp the-qr-<mã bàn>.png; "Tải tất cả ảnh" bấm được khi vẽ xong; in ra đúng cỡ 10 × 15 cm (TASK-134, AC-010-09)', async () => {
   await P.goto('/admin/tables/print');

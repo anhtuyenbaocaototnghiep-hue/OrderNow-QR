@@ -154,6 +154,7 @@
 | [TASK-136](TASK-136.md) | Nhóm món ở quầy (Bán mang đi, Gọi món tại bàn) tự xuống dòng — thấy đủ 7 nhóm, không phải kéo ngang | — (giao diện) | TASK-135 | Agent | — | chủ dự án 25/11 | READY_FOR_REVIEW |
 | [TASK-137](TASK-137.md) | Công tắc bật / tắt ô "Nhập SĐT để nhận ưu đãi" trên màn khách (Cài đặt) — tắt thì ẩn ô + chặn khách tự đăng ký; ADR-071 | FEATURE-101 | TASK-136 | Agent | — | chủ dự án 26/11 | READY_FOR_REVIEW |
 | [TASK-138](TASK-138.md) | Gọi nhân viên tối đa 5 lần / 1 phút (thay 1 lần / 60 giây); nút điện thoại chỉ khóa khi đủ 5 lần; ADR-072 | FEATURE-021 | TASK-137 | Agent | — | chủ dự án 26/11 | READY_FOR_REVIEW |
+| [TASK-139](TASK-139.md) | Thẻ QR bàn nhắc "vào Wi-Fi của quán rồi mới quét — 4G / mạng khác không gọi món được" (chỉ khi mã QR là địa chỉ máy trong quán); xuất lại 20 thẻ Xanh 2 GO | FEATURE-010 | TASK-138 | Agent | — | chủ dự án 26/11 | READY_FOR_REVIEW |
 
 **Cập nhật 14/10/2026:** chủ dự án yêu cầu triển khai hoàn chỉnh không theo tiến độ 8 tuần → TASK-002…017 và 019 đã làm xong (READY_FOR_REVIEW, có bằng chứng ở `tài-liệu/chất-lượng/test-strategy.md`). Báo cáo bàn giao: [`tài-liệu/chất-lượng/handover-2026-10-14.md`](../chất-lượng/handover-2026-10-14.md). So với bảng ở tài liệu nguồn, có hai chỗ thay đổi: TASK-004 phụ thuộc thêm **Q-013** (mới phát hiện), và TASK-018 ghi rõ phụ thuộc **Q-008** (trước đây chỉ nhắc trong Q-008).
 

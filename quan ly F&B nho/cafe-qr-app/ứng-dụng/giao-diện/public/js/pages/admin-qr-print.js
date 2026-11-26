@@ -7,7 +7,7 @@ import { mountAdminShell, refreshQrBanner } from '../admin-shell.js';
 import { current } from '../auth.js';
 import { $, clear, el, errorMessage } from '../ui.js';
 import { icon } from '../icons.js';
-import { CARD_H, CARD_W, drawTableCard } from '../table-card.js';
+import { CARD_H, CARD_W, drawTableCard, LAN_NOTE, LAN_NOTE_WIFI } from '../table-card.js';
 
 await mountAdminShell('tables');
 
@@ -70,7 +70,7 @@ async function fontsReady() {
 }
 
 /** Bản chữ của thẻ (ẩn — cho trình đọc màn hình, giữ đủ nội dung in trên ảnh). */
-function cardText(t, { settings, wifi, payLine, safeText, birthday }) {
+function cardText(t, { settings, wifi, payLine, safeText, birthday, lanNote }) {
   return el(
     'figcaption',
     { class: 'sr-only' },
@@ -98,6 +98,7 @@ function cardText(t, { settings, wifi, payLine, safeText, birthday }) {
     safeText ? el('div', { class: 'qr-safe' }, safeText) : null,
     birthday ? el('div', { class: 'qr-bday' }, birthday) : null,
     settings.shopPhone ? el('div', { class: 'qr-phone' }, `ĐT: ${settings.shopPhone}`) : null, // ADR-070
+    lanNote ? el('div', { class: 'qr-lan' }, wifi ? LAN_NOTE_WIFI : LAN_NOTE) : null, // TASK-139
   );
 }
 
@@ -144,6 +145,10 @@ try {
       // Lần lượt từng bàn — mỗi ảnh lớn, vẽ cùng lúc dễ tốn bộ nhớ ở máy quầy yếu
       const qr = await loadImg(await staffBlobUrl(`/api/admin/tables/${t.tableId}/qr.png`));
       const wifi = wifiImg ? { img: wifiImg, ssid: settings.wifiSsid, password: settings.wifiPassword } : null;
+      // TASK-139: mã QR trỏ tới địa chỉ IP / localhost = app chạy trên máy trong quán → khách phải vào Wi-Fi quán mới gọi món được.
+      // Sau này dùng tên miền (app trên mạng) thì 4G vẫn gọi được → không in dòng nhắc.
+      const host = new URL(t.qrUrl, location.origin).hostname;
+      const lanNote = host === 'localhost' || /^\d{1,3}(\.\d{1,3}){3}$/.test(host) || host.startsWith('[');
       const canvas = drawTableCard({
         shopName: current.shop?.name ?? settings.shopName ?? '',
         shopAddress: settings.shopAddress ?? '',
@@ -156,6 +161,7 @@ try {
         payLine,
         safeText,
         birthday,
+        lanNote,
       });
       const url = await toBlobUrl(canvas);
       grid.append(
@@ -164,7 +170,7 @@ try {
           // data-logo: logo quán (F-095) đã vẽ vào ảnh thẻ — để kiểm tra / gỡ lỗi
           { class: 'qr-card', dataset: logo ? { logo: current.shop.logoUrl } : null },
           el('img', { class: 'qr-card-img', src: url, alt: `Thẻ QR gọi món — ${t.name}`, width: CARD_W, height: CARD_H }),
-          cardText(t, { settings, wifi, payLine, safeText, birthday }),
+          cardText(t, { settings, wifi, payLine, safeText, birthday, lanNote }),
           el('a', { class: 'btn btn-sm no-print', href: url, download: `the-qr-${t.code}.png` }, 'Tải ảnh'),
         ),
       );

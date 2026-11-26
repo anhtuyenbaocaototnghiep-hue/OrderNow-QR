@@ -3,6 +3,9 @@
 // = 10 × 15 cm ở 300 dpi (cỡ ảnh in thông dụng). Phong cách thẻ in giấy: nền kem, góc hạt cà phê vẽ nét, khung tiêu đề viền đôi xanh rêu
 // chữ có chân, tên bàn cam đất, mã QR lớn trên nền trắng, ba bước, dòng thanh toán, dải chân xanh rêu. Tên / logo / địa chỉ lấy từ Cài đặt.
 export const CARD_W = 1200;
+// TASK-139: app chạy trên máy trong quán (mã QR là địa chỉ IP / localhost) → khách phải vào Wi-Fi quán mới gọi món được
+export const LAN_NOTE_WIFI = 'Lưu ý: vào Wi-Fi của quán (mã ①) rồi mới quét mã ② — dùng 4G hay mạng khác sẽ không gọi món được.';
+export const LAN_NOTE = 'Lưu ý: bắt Wi-Fi của quán rồi mới quét mã — dùng 4G hay mạng khác sẽ không gọi món được.';
 export const CARD_H = 1800;
 
 const C = {
@@ -189,7 +192,8 @@ function centerText(ctx, text, y) {
 /**
  * Vẽ một thẻ QR bàn → <canvas> 1200 × 1800.
  * o: { shopName, shopAddress, shopPhone, logo (HTMLImageElement | null), tableName, qr (HTMLImageElement),
- *      wifi: { img, ssid, password } | null, counterPickup (bool), payLine, safeText (string | null), birthday (string | null) }
+ *      wifi: { img, ssid, password } | null, counterPickup (bool), payLine, safeText (string | null), birthday (string | null),
+ *      lanNote (bool — TASK-139: nhắc vào Wi-Fi quán, 4G / mạng khác không gọi món được) }
  */
 export function drawTableCard(o) {
   const cv = document.createElement('canvas');
@@ -289,16 +293,40 @@ export function drawTableCard(o) {
       ctx.fillText(lines[0] ?? '', lx + leftW / 2, qy + 436 + i * 38);
     });
     ctx.textAlign = 'left';
+    // TASK-139: khung nhắc dưới tên / mật khẩu Wi-Fi — vào Wi-Fi quán (mã ①) trước, 4G / mạng khác không gọi món được
+    let noteBottom = 0;
+    if (o.lanNote) {
+      ctx.font = font(22, { weight: 700 });
+      const lines = wrap(ctx, LAN_NOTE_WIFI, leftW - 44).slice(0, 5);
+      const by = qy + 436 + (wifiLines.length - 1) * 38 + 34;
+      const bh = lines.length * 29 + 26;
+      roundRect(ctx, lx + 6, by, leftW - 12, bh, 12);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = C.orange;
+      ctx.stroke();
+      ctx.fillStyle = C.orange;
+      ctx.textAlign = 'center';
+      lines.forEach((l, i) => ctx.fillText(l, lx + leftW / 2, by + 36 + i * 29));
+      ctx.textAlign = 'left';
+      noteBottom = by + bh;
+    }
     const rx = M + leftW + 40;
     const rw = CARD_W - M - rx;
     label('② Quét để gọi món', rx + rw / 2, qy + 40);
     const size = Math.min(rw, 560);
     qrBox(ctx, o.qr, rx + (rw - size) / 2, qy + 66, size, 26);
-    qrBottom = qy + 66 + size;
+    qrBottom = Math.max(qy + 66 + size, noteBottom - 6); // khung nhắc cao hơn mã ② → đẩy ba bước xuống
   } else {
     const size = 660;
     qrBox(ctx, o.qr, (CARD_W - size) / 2, qy, size, 28);
     qrBottom = qy + size;
+    if (o.lanNote) {
+      const f = fitLines(ctx, LAN_NOTE, CARD_W - M * 2, 26, { weight: 700 }, 1, 18);
+      ctx.fillStyle = C.orange;
+      ctx.font = font(f.size, { weight: 700 });
+      centerText(ctx, f.lines[0] ?? '', qrBottom + 46);
+      qrBottom += 52;
+    }
   }
 
   // ---- Ba bước ----

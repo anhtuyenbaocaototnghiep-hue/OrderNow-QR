@@ -863,3 +863,7 @@ Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị t
 ## TASK-138 — Gọi nhân viên tối đa 5 lần / 1 phút — SCR-04, SCR-01 (ADR-072, 26/11/2026)
 
 - **Theo dõi đơn:** gọi xong vẫn hiện "Đã gọi nhân viên lúc … — nhân viên sẽ đến bàn ngay", nút **Gọi nhân viên** vẫn bấm được để xin thêm. Gọi đủ 5 lần trong 1 phút → nút khóa "Đã gọi nhân viên (gọi lại sau N giây)", đếm ngược theo máy chủ.
+
+## TASK-139 — Thẻ QR bàn nhắc vào Wi-Fi quán — SCR-22 (F-010, 26/11/2026)
+
+- **Thẻ QR bàn (ảnh 10 × 15 cm):** khi mã QR trỏ tới máy trong quán (`localhost` / địa chỉ IP), dưới tên / mật khẩu Wi-Fi có khung viền cam **"Lưu ý: vào Wi-Fi của quán (mã ①) rồi mới quét mã ② — dùng 4G hay mạng khác sẽ không gọi món được."**; thẻ không có Wi-Fi: một dòng cam dưới mã gọi món. Mã dùng tên miền → không in.
