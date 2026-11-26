@@ -22,4 +22,14 @@
 
 ## Lệnh kiểm chứng
 
-Xem phần Bàn giao (cập nhật sau khi chạy).
+- **Kết quả 26/11/2026:**
+  - `npm run lint`, `npm run format:check`: sạch.
+  - E2E "thẻ QR bàn nhắc vào Wi-Fi quán…" (AC-010-11) cùng các bài thẻ QR khác (F-059, ADR-070, TASK-134): PASS cả 3 lần chạy.
+  - Kiểm 20 thẻ thật bằng jsQR: 20/20 đúng bàn, đúng mạng Wi-Fi.
+- **Chạy toàn bộ E2E: CHƯA ĐẠT TRỌN.** 3 lần chạy, mỗi lần hỏng đúng 1 bài khác nhau, không thuộc phạm vi task này. Bài hỏng chặn chuỗi `flow` chạy nối tiếp nên `npm run trace -- --check` còn NOT_RUN.
+  - Lần 1: vòng quay may mắn — trang kẹt "Đang tải…" > 5 giây.
+  - Lần 2: quà sinh nhật — có 5 dòng SQL ETIMEOUT trong log máy chủ test.
+  - Lần 3: ra món khi bạn tới — phiếu "Chờ bạn tới" chưa tới quầy trong 5 giây.
+  - Lần 2 và 3 cùng kiểu lỗi DEF-025: trang tải xong mới nối realtime nên lỡ sự kiện.
+  - Lần chạy đủ gần nhất: TASK-138 — 120/120, truy vết 597/597.
+- **Đề xuất:** sửa DEF-025 (8 trang realtime — cần chủ dự án duyệt) và tìm nguyên nhân SQL chậm lúc chạy E2E — hai việc này gây phần lớn lần hỏng ngẫu nhiên gần đây.
