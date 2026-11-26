@@ -5348,6 +5348,8 @@ test('chuyển khoản qua nhân viên (mặc định): khách gọi thanh toán
 
     // Thẻ bàn in ra: mã bàn không dùng để trả tiền
     await P.goto('/admin/tables/print');
+    // TASK-134 vẽ thẻ lần lượt từng bàn — chờ vẽ xong mọi thẻ (Bàn NV1 nằm cuối danh sách, CSDL test lúc này đã nhiều bàn)
+    await expect(P.getByRole('button', { name: 'Tải tất cả ảnh' })).toBeEnabled({ timeout: 30_000 });
     await expect(P.locator('.qr-card', { hasText: 'Bàn NV1' }).locator('.qr-safe')).toHaveText(
       'Mã này chỉ để gọi món, không dùng để trả tiền. Chuyển khoản theo mã QR trên bill nhân viên đưa.',
     );
