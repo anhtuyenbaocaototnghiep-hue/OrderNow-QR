@@ -408,7 +408,9 @@ test('gọi nhân viên: khách bấm → quầy có dải + chuông, bấm Đã
   await C.getByRole('button', { name: 'Gọi nhân viên' }).click();
   await C.locator('.sheet .chip', { hasText: 'Xin thêm đá' }).click();
   await C.locator('.sheet').getByRole('button', { name: 'Gọi nhân viên' }).click();
-  await expect(C.getByRole('button', { name: /Đã gọi nhân viên/ })).toBeDisabled();
+  // ADR-072 (AC-021-05): gọi xong vẫn hiện "Đã gọi nhân viên lúc …" nhưng nút còn bấm được để xin thêm (chỉ khóa khi đủ 5 lần / 1 phút)
+  await expect(C.locator('#call-status')).toContainText('Đã gọi nhân viên lúc');
+  await expect(C.getByRole('button', { name: 'Gọi nhân viên' })).toBeEnabled();
   const card = P.locator('#call-strip .call-card', { hasText: 'Xin thêm đá' });
   await expect(card).toBeVisible({ timeout: 2000 });
   await card.getByRole('button', { name: 'Đã xử lý' }).click();
@@ -1938,6 +1940,40 @@ test('ô hội viên trên màn khách: chủ quán bỏ tích "Ô Nhập SĐT �
     if (s) await apiAs(request, 'post', `/api/sessions/${s.sessionId}/cancel`, { reason: 'Dọn bàn thử ô hội viên' });
     await apiAs(request, 'delete', `/api/admin/tables/${t.tableId}`);
     if (!(await apiAs(request, 'get', '/api/admin/settings')).guestMemberBox) await apiAs(request, 'put', '/api/admin/settings', { guestMemberBox: true });
+  }
+});
+
+test('gọi nhân viên 5 lần / 1 phút: khách bấm "Gọi nhân viên" 5 lần liền vẫn gửi được, nút không khóa; lần 6 máy chủ báo chờ → nút khóa "Đã gọi nhân viên (gọi lại sau … s)" (ADR-072, AC-021-05)', async ({
+  request,
+}) => {
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  await apiAs(request, 'post', '/api/admin/tables', { code: 'GN', name: 'Bàn thử gọi nhân viên' });
+  const t = (await apiAs(request, 'get', '/api/admin/tables')).find((x) => x.code === 'GN');
+  const phone = await browser.newContext(phoneOpts);
+  try {
+    const G = await phone.newPage();
+    watch(G, 'G');
+    await G.goto(`/t/${t.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.goto(`/t/${t.qrToken}/track`);
+    const btn = G.locator('#call-staff');
+    for (let i = 1; i <= 5; i++) {
+      await btn.click();
+      await G.locator('.sheet').getByRole('button', { name: 'Gọi nhân viên' }).click();
+      await expect(G.locator('.sheet')).toHaveCount(0);
+      await expect(btn).toBeEnabled(); // chưa đủ 5 lần → vẫn gọi tiếp được
+    }
+    await btn.click();
+    await G.locator('.sheet').getByRole('button', { name: 'Gọi nhân viên' }).click();
+    await expect(btn).toBeDisabled();
+    await expect(btn).toHaveText(/Đã gọi nhân viên \(gọi lại sau \d+s\)/);
+    expect((await apiAs(request, 'get', '/api/staff-calls')).filter((c) => c.table?.code === 'GN')).toHaveLength(5);
+  } finally {
+    await phone.close();
+    const s = (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === 'GN')?.sessions?.[0];
+    if (s && !(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+    if (s) await apiAs(request, 'post', `/api/sessions/${s.sessionId}/cancel`, { reason: 'Dọn bàn thử gọi nhân viên' });
+    await apiAs(request, 'delete', `/api/admin/tables/${t.tableId}`);
   }
 });
 

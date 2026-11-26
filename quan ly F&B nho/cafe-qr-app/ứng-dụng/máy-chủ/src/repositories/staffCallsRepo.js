@@ -26,28 +26,32 @@ export const map = (r) =>
   };
 
 /** Tạo yêu cầu nếu phiên còn mở và không có yêu cầu nào trong `cooldownSec` giây gần nhất (chống spam — một câu lệnh, không tách kiểm-rồi-ghi). */
-export async function create(sessionId, message, cooldownSec) {
+/** ADR-072 D-265: chèn khi phiên còn mở và số lần gọi STAFF trong `windowSec` giây gần nhất < `limit` — kiểm và ghi một câu lệnh có khóa. */
+export async function create(sessionId, message, limit, windowSec) {
   const r = await query(
     `INSERT dbo.StaffCalls (SessionId, Message)
      OUTPUT inserted.CallId
      SELECT @s, @m
      WHERE EXISTS (SELECT 1 FROM dbo.Sessions WITH (UPDLOCK, HOLDLOCK) WHERE SessionId = @s AND Status <> 'CLOSED')
-       AND NOT EXISTS (SELECT 1 FROM dbo.StaffCalls WITH (UPDLOCK, HOLDLOCK)
-                       WHERE SessionId = @s AND Type = 'STAFF' AND RequestedAt > DATEADD(SECOND, -@cool, SYSUTCDATETIME()))`,
-    { s: [sql.UniqueIdentifier, sessionId], m: [sql.NVarChar(100), message || null], cool: [sql.Int, cooldownSec] },
+       AND (SELECT COUNT(*) FROM dbo.StaffCalls WITH (UPDLOCK, HOLDLOCK)
+            WHERE SessionId = @s AND Type = 'STAFF' AND RequestedAt > DATEADD(SECOND, -@w, SYSUTCDATETIME())) < @lim`,
+    { s: [sql.UniqueIdentifier, sessionId], m: [sql.NVarChar(100), message || null], w: [sql.Int, windowSec], lim: [sql.Int, limit] },
   );
   return r.recordset[0]?.CallId ?? null;
 }
 
-export async function findById(id) {
-  const r = await query(`${SELECT} WHERE c.CallId = @id`, { id: [sql.Int, id] });
-  return map(r.recordset[0]);
+/** ADR-072: các lần gọi STAFF của phiên trong `windowSec` giây gần nhất, mới trước — để tính còn phải chờ bao lâu. */
+export async function recentForSession(sessionId, windowSec) {
+  const r = await query(
+    `${SELECT} WHERE c.SessionId = @s AND c.Type = 'STAFF' AND c.RequestedAt > DATEADD(SECOND, -@w, SYSUTCDATETIME())
+     ORDER BY c.RequestedAt DESC, c.CallId DESC`,
+    { s: [sql.UniqueIdentifier, sessionId], w: [sql.Int, windowSec] },
+  );
+  return r.recordset.map(map);
 }
 
-export async function lastForSession(sessionId) {
-  const r = await query(`${SELECT} WHERE c.SessionId = @s AND c.Type = 'STAFF' ORDER BY c.RequestedAt DESC, c.CallId DESC`, {
-    s: [sql.UniqueIdentifier, sessionId],
-  });
+export async function findById(id) {
+  const r = await query(`${SELECT} WHERE c.CallId = @id`, { id: [sql.Int, id] });
   return map(r.recordset[0]);
 }
 

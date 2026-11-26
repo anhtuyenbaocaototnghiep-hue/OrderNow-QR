@@ -9,7 +9,7 @@ import { connectRealtime } from '../socket.js';
 import { $, clear, el, elapsed, errorMessage, modal, money, setBusy, time, toast } from '../ui.js';
 import { CUSTOMER_STATUS, clearSessionId, followMerged, followTable, getSessionId, goEntry, holdState, qrToken, takeFlash } from '../customer.js';
 import { icon } from '../icons.js';
-import { CALL_COOLDOWN_MS, callStaffSheet } from '../call-staff.js';
+import { callStaffSheet } from '../call-staff.js';
 import { transferPanel } from '../transfer-qr.js';
 
 const qr = qrToken();
@@ -28,7 +28,8 @@ let splits = null; // F-026: ảnh chụp chia bill khi phiên có chia
 let splitSheet = null;
 let prevStatuses = null;
 let loadTimer = null;
-let lastCall = null; // { at, handled }
+let lastCall = null; // { at, handled } — dòng "Đã gọi nhân viên lúc …"
+let callBlockedUntil = 0; // ADR-072: chỉ khóa nút khi máy chủ báo đủ 5 lần / 1 phút (TOO_SOON) — tới lúc này mới gọi lại được
 let review = null; // F-051: { canReview, reason, submitted, items[] } khi phiên đã thanh toán
 let spins = []; // F-065: lượt quay may mắn của các lượt thu trong phiên
 let holdTimer = null; // F-066: tải lại đúng lúc đơn hẹn giờ tới giờ làm
@@ -639,7 +640,7 @@ function updatePayButton() {
 function updateCallButton() {
   const btn = $('#call-staff');
   if (!btn) return;
-  const left = lastCall ? CALL_COOLDOWN_MS - (Date.now() - lastCall.at) : 0;
+  const left = callBlockedUntil - Date.now();
   btn.disabled = left > 0;
   btn.replaceChildren(icon('hand'), left > 0 ? `Đã gọi nhân viên (gọi lại sau ${Math.ceil(left / 1000)}s)` : 'Gọi nhân viên');
 }
@@ -747,7 +748,7 @@ async function callStaff() {
     await load();
     return;
   }
-  if (r.retryAfter !== null) lastCall = { at: Date.now() - (CALL_COOLDOWN_MS - r.retryAfter * 1000), handled: false };
+  if (r.retryAfter !== null) callBlockedUntil = Date.now() + r.retryAfter * 1000;
   updateCallButton();
 }
 

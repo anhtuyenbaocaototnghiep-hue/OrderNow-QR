@@ -355,7 +355,7 @@ describe('Công tắc nhận đơn + giờ bán (F-020)', () => {
 });
 
 describe('Gọi nhân viên (F-021)', () => {
-  test('khách gọi → quầy nhận realtime; gọi lại < 60 giây → 429; phiên khác 403; quầy xử lý → khách nhận báo', async () => {
+  test('khách gọi → quầy nhận realtime; gọi liên tiếp 5 lần / 60 giây được, lần 6 → 429 TOO_SOON, qua 60 giây gọi lại được (ADR-072, AC-021-02); phiên khác 403; quầy xử lý → khách nhận báo', async () => {
     const C = await app.customer();
     const s = await app.seat(C, '06');
     const D = await app.customer();
@@ -367,10 +367,23 @@ describe('Gọi nhân viên (F-021)', () => {
     const p = await evt;
     assert.equal(p.message, 'Xin nước lọc');
     assert.equal(p.table.code, '06');
-    const again = await C.post(`/api/sessions/${s}/call-staff`, { message: 'Nữa' });
+    // ADR-072 D-265: tối đa 5 lần trong 60 giây gần nhất — lần 2…5 vẫn được (xin thêm đá, khăn giấy…), lần 6 → 429
+    for (const m of ['Xin thêm đá', 'Xin khăn giấy', 'Dọn bàn', 'Thêm ống hút']) {
+      assert.equal((await C.post(`/api/sessions/${s}/call-staff`, { message: m })).status, 201, m);
+    }
+    const again = await C.post(`/api/sessions/${s}/call-staff`, { message: 'Lần 6' });
     assert.equal(again.status, 429);
     assert.equal(again.body.code, 'TOO_SOON');
+    const wait = again.body.details.retryAfter;
+    assert.ok(Number.isInteger(wait) && wait >= 1 && wait <= 60, `retryAfter ${wait}`);
     assert.equal((await D.post(`/api/sessions/${s}/call-staff`, {})).status, 403);
+    // Lần gọi cũ nhất trong 5 lần qua đủ 60 giây → gọi lại được (lùi giờ trong CSDL thay vì chờ thật)
+    await pool
+      .request()
+      .input('s', s)
+      .query(`UPDATE dbo.StaffCalls SET RequestedAt = DATEADD(SECOND, -61, RequestedAt) WHERE SessionId = @s AND CallId = ${r.body.callId}`);
+    assert.equal((await C.post(`/api/sessions/${s}/call-staff`, { message: 'Sau 1 phút' })).status, 201);
+    assert.equal((await C.post(`/api/sessions/${s}/call-staff`, { message: 'Lại lần 6' })).status, 429, 'vẫn 5 lần trong 60 giây gần nhất');
     const open = await api.get('/api/staff-calls').set(auth(staff));
     assert.ok(open.body.some((c) => c.callId === r.body.callId));
     const handled = app.waitFor(cSock, 'session.staff_call_handled', (x) => x.callId === r.body.callId);

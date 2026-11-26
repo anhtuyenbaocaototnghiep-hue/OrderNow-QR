@@ -1,4 +1,5 @@
-// FEATURE-021 Gọi nhân viên: khách gọi từ màn theo dõi đơn (chống spam 60 giây/phiên); quầy bấm "Đã xử lý".
+// FEATURE-021 Gọi nhân viên: khách gọi từ màn theo dõi đơn / màn chào; quầy bấm "Đã xử lý".
+// Chống spam (ADR-072 D-265): mỗi phiên tối đa CALL_LIMIT lần trong CALL_WINDOW_SEC giây gần nhất.
 import { badRequest, conflict, notFound, tooMany } from '../errors.js';
 import * as sessionsRepo from '../repositories/sessionsRepo.js';
 import * as staffCallsRepo from '../repositories/staffCallsRepo.js';
@@ -6,18 +7,22 @@ import * as tablesRepo from '../repositories/tablesRepo.js';
 import { publish, ROOMS } from '../realtime/publisher.js';
 import { assertViewer, moveSession } from './sessionService.js';
 
-export const COOLDOWN_SEC = 60;
+export const CALL_LIMIT = 5;
+export const CALL_WINDOW_SEC = 60;
 
 export async function call(sessionId, message, clientToken) {
   await assertViewer(sessionId, { clientToken });
   const session = await sessionsRepo.findById(sessionId);
   if (!session) throw notFound('Không tìm thấy phiên');
   if (session.status === 'CLOSED') throw conflict('SESSION_CLOSED', 'Phiên đã đóng (đã thanh toán)');
-  const callId = await staffCallsRepo.create(sessionId, message, COOLDOWN_SEC);
+  const callId = await staffCallsRepo.create(sessionId, message, CALL_LIMIT, CALL_WINDOW_SEC);
   if (!callId) {
-    const last = await staffCallsRepo.lastForSession(sessionId);
-    const wait = last ? Math.max(1, COOLDOWN_SEC - Math.floor((Date.now() - new Date(last.requestedAt).getTime()) / 1000)) : COOLDOWN_SEC;
-    throw tooMany('TOO_SOON', `Bạn vừa gọi nhân viên, vui lòng chờ ${wait} giây nữa`, { retryAfter: wait });
+    // Đủ CALL_LIMIT lần trong cửa sổ → chờ tới khi lần cũ nhất trong CALL_LIMIT lần gần nhất qua đủ CALL_WINDOW_SEC giây
+    const recent = await staffCallsRepo.recentForSession(sessionId, CALL_WINDOW_SEC);
+    const oldest = recent[Math.min(CALL_LIMIT, recent.length) - 1];
+    const age = oldest ? Math.floor((Date.now() - new Date(oldest.requestedAt).getTime()) / 1000) : 0;
+    const wait = Math.min(CALL_WINDOW_SEC, Math.max(1, CALL_WINDOW_SEC - age));
+    throw tooMany('TOO_SOON', `Bạn đã gọi nhân viên ${CALL_LIMIT} lần trong 1 phút, vui lòng chờ ${wait} giây nữa`, { retryAfter: wait });
   }
   const c = await staffCallsRepo.findById(callId);
   publish([ROOMS.staff, ROOMS.session(sessionId)], 'session.staff_called', c);

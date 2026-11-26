@@ -1,9 +1,9 @@
 // F-021 Gọi nhân viên — hộp chọn nhanh yêu cầu (hoặc ghi chú) dùng chung: trang Theo dõi đơn và màn chào khi quét QR (F-092).
-// Quầy nhận dải "Gọi nhân viên" + chuông; mỗi phiên gọi lại được sau 60 giây (máy chủ trả 429 TOO_SOON kèm retryAfter).
+// Quầy nhận dải "Gọi nhân viên" + chuông. ADR-072: mỗi phiên gọi tối đa 5 lần trong 1 phút — quá thì máy chủ trả 429 TOO_SOON
+// kèm retryAfter (giây); điện thoại chỉ khóa nút khi nhận TOO_SOON.
 import { api } from './api.js';
 import { el, errorMessage, modal, toast } from './ui.js';
 
-export const CALL_COOLDOWN_MS = 60 * 1000;
 export const CALL_CHOICES = ['Xin nước lọc', 'Xin thêm đá', 'Xin khăn giấy', 'Dọn bàn'];
 
 /** Mở hộp, gửi yêu cầu. → { sent: true } | { sent: false, retryAfter: số giây còn phải chờ | null } (bấm Hủy: retryAfter null). */
