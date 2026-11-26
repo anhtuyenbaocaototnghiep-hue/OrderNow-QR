@@ -3,6 +3,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { request, withDeadlockRetry } from '../db.js';
+import { forbidden } from '../errors.js';
 import { capsOf } from '../auth/permissions.js';
 import { optionalStaff, requireStaff } from '../middleware/auth.js';
 import { loginLimiter, memberLimiters, orderLimiter } from '../middleware/rateLimit.js';
@@ -83,12 +84,18 @@ publicRouter.get('/menu', optionalStaff, async (req, res) => {
 
 // ---- Hội viên (FEATURE-014): khách thấy tên che; quầy (Bearer) thấy tên đầy đủ. Giới hạn tra cứu D-6 ----
 const zPhone = () => z.string().trim().min(1, 'Nhập số điện thoại').max(20);
-publicRouter.post('/members/lookup', optionalStaff, ...memberLimiters, async (req, res) => {
+// F-101 (ADR-071 D-264): quán tắt ô hội viên trên màn khách → khách không tự tra / đăng ký / gắn SĐT / thêm ngày sinh; quầy (Bearer) như cũ.
+// Đặt trước bộ giới hạn tra cứu: lượt bị chặn không ăn vào hạn mức.
+const guestMemberOn = async (req, _res, next) => {
+  if (req.user || (await settingsService.getSettings()).guestMemberBox) return next();
+  next(forbidden('Quán đang tắt đăng ký hội viên trên điện thoại — nhờ nhân viên ở quầy', 'MEMBER_SELF_OFF'));
+};
+publicRouter.post('/members/lookup', optionalStaff, guestMemberOn, ...memberLimiters, async (req, res) => {
   const { phone } = parse(z.object({ phone: zPhone() }), req.body);
   res.json(await memberService.lookup(phone, { staff: Boolean(req.user) }));
 });
 
-publicRouter.post('/members', optionalStaff, ...memberLimiters, async (req, res) => {
+publicRouter.post('/members', optionalStaff, guestMemberOn, ...memberLimiters, async (req, res) => {
   const body = parse(
     z.object({
       phone: zPhone(),
@@ -102,7 +109,7 @@ publicRouter.post('/members', optionalStaff, ...memberLimiters, async (req, res)
   res.status(201).json(await memberService.register(body, { staff: Boolean(req.user) }));
 });
 
-publicRouter.post('/sessions/:id/member', optionalStaff, ...memberLimiters, async (req, res) => {
+publicRouter.post('/sessions/:id/member', optionalStaff, guestMemberOn, ...memberLimiters, async (req, res) => {
   const body = parse(
     z.object({ phone: zPhone().optional(), memberId: zId().optional() }).refine((b) => b.phone || b.memberId, 'Nhập số điện thoại'),
     req.body,
@@ -111,7 +118,7 @@ publicRouter.post('/sessions/:id/member', optionalStaff, ...memberLimiters, asyn
 });
 
 // F-067: khách thêm ngày sinh ở Thẻ thành viên (một lần) để nhận quà sinh nhật
-publicRouter.post('/sessions/:id/member/birthday', optionalStaff, ...memberLimiters, async (req, res) => {
+publicRouter.post('/sessions/:id/member/birthday', optionalStaff, guestMemberOn, ...memberLimiters, async (req, res) => {
   const { birthDate } = parse(z.object({ birthDate: zBirthDate() }), req.body);
   res.json(await sessionService.selfBirthDate(paramGuid(req), birthDate, { user: req.user, clientToken: req.clientToken }));
 });

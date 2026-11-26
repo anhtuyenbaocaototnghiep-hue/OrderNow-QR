@@ -70,6 +70,8 @@ function toSettings(map) {
     // F-092 (ADR-054 D-228): khách quét QR → màn chào của quán (tên, bàn, gọi thanh toán / nhân viên, xem thực đơn) — mặc định bật;
     // tắt: vào thẳng thực đơn như trước
     guestWelcome: map.get('guest.welcome') !== 'false',
+    // F-101 (ADR-071 D-264): ô "Nhập SĐT để nhận ưu đãi" trên màn khách — mặc định bật; tắt: ẩn ô + khách không tự đăng ký / gắn SĐT
+    guestMemberBox: map.get('guest.member_box') !== 'false',
     // F-094 (ADR-056 D-231…D-233): màn khách tự đổi sáng / tối theo giờ, trang trí khung giới thiệu theo mùa — mặc định bật
     guestDaypartTheme: map.get('guest.daypart_theme') !== 'false',
     guestSeasonDecor: map.get('guest.season_decor') !== 'false',
@@ -194,6 +196,7 @@ const KEYS = {
   serveMode: 'pos.serve_mode',
   menuSheetAll: 'menu.sheet_all',
   guestWelcome: 'guest.welcome', // F-092
+  guestMemberBox: 'guest.member_box', // F-101 (ADR-071)
   guestDaypartTheme: 'guest.daypart_theme', // F-094
   guestSeasonDecor: 'guest.season_decor', // F-094
   transferEnabled: 'pay.transfer_enabled', // F-099 (ADR-062): VietQR chuyển khoản
@@ -297,6 +300,7 @@ export const publicShop = async () => {
     phone: s.shopPhone || null, // ADR-070: số điện thoại quán — thông tin công khai như địa chỉ
     logoUrl: logoUrlOf(s.shopLogo), // F-095
     guestTheme: { daypart: s.guestDaypartTheme, season: s.guestSeasonDecor },
+    memberBox: s.guestMemberBox, // F-101 (ADR-071): trang theo dõi đơn biết có gắn ô hội viên không
     // F-099: khách được chọn "Chuyển khoản (quét QR)" khi gọi thanh toán — chỉ cờ bật / tắt, số tài khoản trả ở mã QR của từng bàn
     // ADR-069 D-261: guestQr = điện thoại khách được xem mã; tắt → nhân viên mang bill có mã QR tới bàn
     transfer: { enabled: transferReady(s), guestQr: transferReady(s) && s.guestTransferQr },

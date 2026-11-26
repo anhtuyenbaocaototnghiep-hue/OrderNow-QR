@@ -370,9 +370,10 @@ function showHome(menu, first) {
     }
     paintGreet();
     paintTiles();
-    memberBox.render();
+    memberBox?.render();
   }
-  const memberBox = mountMemberBox(memberSlot, { sessionId, getSession: () => session, onChange: refresh });
+  // F-101 (ADR-071): quán tắt ô "Nhập SĐT để nhận ưu đãi" ở Cài đặt → không gắn ô hội viên
+  const memberBox = menu.ui?.memberBox === false ? null : mountMemberBox(memberSlot, { sessionId, getSession: () => session, onChange: refresh });
 
   clear(
     app,
@@ -440,7 +441,7 @@ function showHome(menu, first) {
   paintGreet();
   paintSeason();
   paintTiles();
-  memberBox.render();
+  memberBox?.render();
 }
 
 start();

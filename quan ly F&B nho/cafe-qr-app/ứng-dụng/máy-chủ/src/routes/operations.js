@@ -165,6 +165,7 @@ operationsRouter.put('/settings', async (req, res) => {
       serveMode: z.enum(['TABLE', 'COUNTER'], { message: 'Chọn "nhân viên mang ra bàn" hoặc "khách nhận tại quầy"' }).optional(), // F-088
       menuSheetAll: z.boolean().optional(), // F-083: bấm "+" mở bảng chọn cho mọi món (màn khách)
       guestWelcome: z.boolean().optional(), // F-092: màn chào khi khách quét QR
+      guestMemberBox: z.boolean().optional(), // F-101 (ADR-071): ô hội viên trên màn khách — chỉ chủ quán
       guestDaypartTheme: z.boolean().optional(), // F-094: màn khách tự đổi sáng / tối theo giờ
       guestSeasonDecor: z.boolean().optional(), // F-094: trang trí theo mùa
       // F-099 (ADR-062 D-245): nhận chuyển khoản bằng VietQR — chỉ chủ quán (không có trong STORE_MGR_SETTINGS); null / '' = xóa

@@ -36,7 +36,7 @@ describe('Giao diện màn khách theo giờ và theo mùa (F-094)', () => {
     const off = ok(await call(admin, 'get', '/api/admin/settings'));
     assert.deepEqual([off.guestDaypartTheme, off.guestSeasonDecor], [false, false]);
     // /api/shop công khai chỉ có tên, địa chỉ, logo (F-095), hai cờ giao diện và cờ bật chuyển khoản (F-099 — không có số tài khoản)
-    assert.deepEqual(Object.keys(await shop()).sort(), ['address', 'guestTheme', 'logoUrl', 'name', 'phone', 'transfer']); // ADR-070: + phone
+    assert.deepEqual(Object.keys(await shop()).sort(), ['address', 'guestTheme', 'logoUrl', 'memberBox', 'name', 'phone', 'transfer']); // ADR-070: + phone · ADR-071: + memberBox
 
     // Quản lý cửa hàng đổi được (trải nghiệm khách như màn chào — STORE_MGR_SETTINGS); nhân viên không vào được Cài đặt
     ok(await call(admin, 'post', '/api/admin/users', { username: 'ql_giaodien', password: 'Pass@123', fullName: 'QL giao diện', role: 'STORE_MGR' }), 201);

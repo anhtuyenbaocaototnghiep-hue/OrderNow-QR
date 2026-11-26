@@ -650,15 +650,19 @@ function openCart() {
   });
   m.root.append(el('div', { class: 'modal-foot' }, sendBtn));
   state.sheet.close = m.close;
-  state.sheet.member = mountMemberBox(memberSlot, {
-    sessionId,
-    getSession: () => state.session,
-    onChange: async () => {
-      await loadSession();
-      state.sheet?.member.render();
-      if (state.sheet) renderTotals();
-    },
-  });
+  // F-101 (ADR-071): quán tắt ô hội viên trên màn khách → giỏ hàng không có ô "Nhập SĐT để nhận ưu đãi"
+  state.sheet.member =
+    state.menu?.ui?.memberBox === false
+      ? null
+      : mountMemberBox(memberSlot, {
+          sessionId,
+          getSession: () => state.session,
+          onChange: async () => {
+            await loadSession();
+            state.sheet?.member?.render();
+            if (state.sheet) renderTotals();
+          },
+        });
   renderSheet();
 }
 
@@ -931,7 +935,7 @@ socket?.on('store.status_changed', (p) => {
 });
 socket?.on('session.member_changed', async () => {
   await loadSession().catch(() => {});
-  state.sheet?.member.render();
+  state.sheet?.member?.render();
   if (state.sheet) renderTotals();
 });
 socket?.on('order.created', () => loadSession().catch(() => {}));

@@ -36,6 +36,12 @@ const reviewDraft = { picked: new Map(), comment: '' }; // bản nháp giữ qua
 let closedKey = null; // màn cảm ơn đang vẽ — không vẽ lại khi không đổi (giữ ô đang gõ / đang chọn)
 const memberSlot = el('div');
 let memberBox = null;
+// F-101 (ADR-071): quán tắt ô hội viên → không gắn ô. Đọc cờ một lần, không gửi cookie (như guest-theme); lỗi → vẫn gắn (máy chủ tự chặn)
+const memberBoxOn = fetch('/api/shop', { credentials: 'omit' })
+  .then((r) => r.json())
+  .then((s) => s.memberBox !== false)
+  .catch(() => true);
+let memberBoxEnabled = true; // gán trong load() trước lần vẽ đầu tiên
 
 $('#menu-link').href = `/t/${qr}/menu`;
 $('#more').href = `/t/${qr}/menu`;
@@ -43,6 +49,7 @@ const flash = takeFlash();
 if (flash) toast(flash.message, flash.type, 5000);
 
 async function load() {
+  memberBoxEnabled = await memberBoxOn;
   try {
     session = await api(`/api/sessions/${sessionId}`);
   } catch (err) {
@@ -378,8 +385,10 @@ function render() {
   actions.hidden = false;
   $('#pay').hidden = active.length === 0; // BR-018: chưa có đơn → ẩn nút
 
-  memberBox ??= mountMemberBox(memberSlot, { sessionId, getSession: () => session, onChange: load });
-  memberBox.render();
+  if (memberBoxEnabled) {
+    memberBox ??= mountMemberBox(memberSlot, { sessionId, getSession: () => session, onChange: load });
+    memberBox.render();
+  }
   clear(
     main,
     paymentStatus(),

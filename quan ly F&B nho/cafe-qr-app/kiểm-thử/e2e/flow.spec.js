@@ -1896,6 +1896,51 @@ test('chính sách dữ liệu: khách đăng ký hội viên ở giỏ bấm "X
   }
 });
 
+test('ô hội viên trên màn khách: chủ quán bỏ tích "Ô Nhập SĐT để nhận ưu đãi" ở Cài đặt → giỏ hàng và trang theo dõi đơn của khách không còn ô hội viên; tích lại → ô hiện lại (F-101, AC-101-03)', async ({
+  request,
+}) => {
+  const toggle = async (want) => {
+    await P.goto('/admin/settings');
+    await P.locator('label', { hasText: 'Nhập SĐT để nhận ưu đãi' }).click();
+    await P.getByRole('button', { name: 'Lưu cài đặt' }).click();
+    await expect(P.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
+    expect((await apiAs(request, 'get', '/api/admin/settings')).guestMemberBox).toBe(want);
+  };
+  await toggle(false);
+  if (!(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+  await apiAs(request, 'post', '/api/admin/tables', { code: 'MB', name: 'Bàn thử ô hội viên' });
+  const t = (await apiAs(request, 'get', '/api/admin/tables')).find((x) => x.code === 'MB');
+  const phone = await browser.newContext(phoneOpts);
+  try {
+    const G = await phone.newPage();
+    watch(G, 'G');
+    await G.goto(`/t/${t.qrToken}`);
+    await expect(G).toHaveURL(/\/menu$/);
+    await G.locator('.c-section.cat .c-item', { hasText: 'Cà phê đen' }).locator('.add-btn').click();
+    await G.click('#open-cart');
+    await expect(G.locator('.sheet .cart-line-main').first()).toBeVisible();
+    await expect(G.locator('.sheet .member-box')).toHaveCount(0);
+    await G.goto(`/t/${t.qrToken}/track`);
+    await expect(G.locator('#actions')).toBeVisible(); // trang đã vẽ xong (ô hội viên gắn cùng lượt vẽ này)
+    await expect(G.locator('.member-box')).toHaveCount(0);
+
+    await toggle(true);
+    await G.reload();
+    await expect(G.locator('#actions')).toBeVisible();
+    await expect(G.locator('.member-box')).toBeVisible();
+    await G.goto(`/t/${t.qrToken}/menu`);
+    await G.click('#open-cart');
+    await expect(G.locator('.sheet .member-box')).toBeVisible();
+  } finally {
+    await phone.close();
+    const s = (await apiAs(request, 'get', '/api/tables')).find((x) => x.code === 'MB')?.sessions?.[0];
+    if (s && !(await apiAs(request, 'get', '/api/shifts/current')).shift) await apiAs(request, 'post', '/api/shifts/open', { openingCash: 0 });
+    if (s) await apiAs(request, 'post', `/api/sessions/${s.sessionId}/cancel`, { reason: 'Dọn bàn thử ô hội viên' });
+    await apiAs(request, 'delete', `/api/admin/tables/${t.tableId}`);
+    if (!(await apiAs(request, 'get', '/api/admin/settings')).guestMemberBox) await apiAs(request, 'put', '/api/admin/settings', { guestMemberBox: true });
+  }
+});
+
 test('cảnh báo QR sai địa chỉ: trang In QR báo địa chỉ localhost; bấm In → lưu địa chỉ đang chạy; QR in ở địa chỉ cũ hoặc máy chủ đã đổi IP → dải đỏ ở trang quản lý và màn quầy (F-063, AC-063-04)', async () => {
   await P.goto('/admin/tables/print');
   await expect(P.locator('#qr-wrong')).toContainText('điện thoại không mở được địa chỉ localhost');

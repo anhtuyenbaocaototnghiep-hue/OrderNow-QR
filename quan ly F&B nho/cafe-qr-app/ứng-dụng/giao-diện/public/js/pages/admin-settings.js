@@ -305,6 +305,8 @@ function render(s) {
   const sheetAllCheck = el('input', { type: 'checkbox', name: 'menuSheetAll', id: 'sheet-all', checked: s.menuSheetAll });
   // F-092 (ADR-054): màn chào khi khách quét QR
   const welcomeCheck = el('input', { type: 'checkbox', name: 'guestWelcome', id: 'guest-welcome', checked: s.guestWelcome });
+  // F-101 (ADR-071): ô "Nhập SĐT để nhận ưu đãi" trên màn khách
+  const memberBoxCheck = el('input', { type: 'checkbox', name: 'guestMemberBox', id: 'guest-member-box', checked: s.guestMemberBox });
   // F-094 (ADR-056): màn khách theo giờ (sáng / tối) và trang trí theo mùa
   const daypartCheck = el('input', { type: 'checkbox', name: 'guestDaypartTheme', id: 'guest-daypart', checked: s.guestDaypartTheme });
   const seasonCheck = el('input', { type: 'checkbox', name: 'guestSeasonDecor', id: 'guest-season', checked: s.guestSeasonDecor });
@@ -484,6 +486,22 @@ function render(s) {
         ),
       ),
       el('p', { class: 'small muted' }, 'Tắt: quét QR là vào thẳng thực đơn (nhanh hơn 1 chạm). Địa chỉ quán trên màn chào lấy từ ô Địa chỉ ở trên.'),
+      el(
+        'label',
+        { class: 'check' },
+        memberBoxCheck,
+        el(
+          'span',
+          {},
+          el('strong', {}, 'Ô "Nhập SĐT để nhận ưu đãi" (hội viên)'),
+          ' — khách tự nhập số để thành hội viên, nhận giảm giá và xem thẻ thành viên ở màn chào, giỏ hàng, trang theo dõi đơn',
+        ),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Tắt: khách không thấy ô này và không tự đăng ký / gắn số được; nhân viên vẫn gắn hội viên cho khách ở quầy. Điện thoại khách đổi theo khi tải lại trang.',
+      ),
       el(
         'label',
         { class: 'check' },
@@ -780,6 +798,7 @@ function render(s) {
                 serveMode: serveMode.value, // F-088
                 menuSheetAll: sheetAllCheck.checked, // F-083
                 guestWelcome: welcomeCheck.checked, // F-092
+                guestMemberBox: memberBoxCheck.checked, // F-101
                 guestDaypartTheme: daypartCheck.checked, // F-094
                 guestSeasonDecor: seasonCheck.checked, // F-094
                 // F-099: nhận chuyển khoản bằng VietQR (chỉ chủ quán)
