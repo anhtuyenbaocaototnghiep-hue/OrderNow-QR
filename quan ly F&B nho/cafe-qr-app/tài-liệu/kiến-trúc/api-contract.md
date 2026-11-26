@@ -943,3 +943,10 @@ Chi tiết: [FEATURE-075](../chức-năng/FEATURE-075.md), BR-113.
 
 - `POST /api/sessions/{id}/separate` (khách, cookie điện thoại) `{ qrToken }` → `{ table, session }` (nhóm mới ở cùng bàn, điện thoại này là thành viên). Điện thoại rời nhóm `{id}` (không còn xem được — `403`). Phát `session.opened` (room `staff`). Lỗi: `404` (nhóm không ở bàn này / mã bàn sai), `409 SESSION_CLOSED`, `403 NOT_IN_GROUP` (điện thoại không ở nhóm), `409 ALREADY_ORDERED` (điện thoại đã gửi món trong nhóm — trả riêng bằng Chia bill theo người).
 - `POST /api/orders` (khách): gửi thành công → ghi mốc điện thoại này đã gửi món trong nhóm (`SessionClients.OrderedAt`).
+
+## Bổ sung F-101 — bật / tắt ô hội viên trên màn khách (ADR-071, TASK-137, 26/11/2026)
+
+Chi tiết: [FEATURE-101](../chức-năng/FEATURE-101.md), BR-131. Không có endpoint mới.
+- `GET /api/admin/settings`: thêm `guestMemberBox` (boolean, mặc định `true`). `PUT /api/admin/settings`: nhận `guestMemberBox` — chỉ chủ quán (quản lý cửa hàng gửi → `403`).
+- `GET /api/menu`: `ui.memberBox` (boolean). `GET /api/shop`: `memberBox` (boolean).
+- Khi tắt, khách (không gửi đăng nhập nhân viên) gọi `POST /api/members/lookup`, `POST /api/members`, `POST /api/sessions/{id}/member`, `POST /api/sessions/{id}/member/birthday` → `403 MEMBER_SELF_OFF` ("Quán đang tắt đăng ký hội viên trên điện thoại — nhờ nhân viên ở quầy"). Gọi kèm Bearer của nhân viên → như cũ. `DELETE /api/sessions/{id}/member`, `GET /api/sessions/{id}/member-card` không đổi.

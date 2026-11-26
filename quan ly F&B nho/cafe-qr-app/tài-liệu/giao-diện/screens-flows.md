@@ -854,3 +854,8 @@ Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị t
 ## TASK-136 — Nhóm món ở quầy tự xuống dòng — SCR-13, SCR-16 (25/11/2026)
 
 - **Bán mang đi, Gọi món tại bàn:** nút nhóm món (Combo, Cà phê, Nước ép tươi, …) **tự xuống dòng** thay vì cuộn ngang ẩn thanh cuộn — luôn thấy đủ mọi nhóm, bấm một lần là tới. Màn khách trên điện thoại vẫn vuốt ngang.
+
+## TASK-137 — Bật / tắt ô "Nhập SĐT để nhận ưu đãi" — SCR-33, SCR-01, SCR-03, SCR-04 (F-101, ADR-071, 26/11/2026)
+
+- **SCR-33 Cài đặt → Màn gọi món của khách:** ô tích **"Ô Nhập SĐT để nhận ưu đãi (hội viên)"** (mặc định tích) + giải thích: tắt thì khách không thấy ô và không tự đăng ký / gắn SĐT; nhân viên vẫn gắn hội viên ở quầy.
+- **Khi tắt — điện thoại khách:** màn chào, giỏ hàng, trang theo dõi đơn không còn ô hội viên (ô mời lẫn thẻ thành viên). Bật lại → hiện như cũ (khi tải lại trang).
