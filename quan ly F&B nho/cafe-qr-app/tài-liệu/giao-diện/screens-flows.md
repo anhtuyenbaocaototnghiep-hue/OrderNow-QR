@@ -859,3 +859,7 @@ Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị t
 
 - **SCR-33 Cài đặt → Màn gọi món của khách:** ô tích **"Ô Nhập SĐT để nhận ưu đãi (hội viên)"** (mặc định tích) + giải thích: tắt thì khách không thấy ô và không tự đăng ký / gắn SĐT; nhân viên vẫn gắn hội viên ở quầy.
 - **Khi tắt — điện thoại khách:** màn chào, giỏ hàng, trang theo dõi đơn không còn ô hội viên (ô mời lẫn thẻ thành viên). Bật lại → hiện như cũ (khi tải lại trang).
+
+## TASK-138 — Gọi nhân viên tối đa 5 lần / 1 phút — SCR-04, SCR-01 (ADR-072, 26/11/2026)
+
+- **Theo dõi đơn:** gọi xong vẫn hiện "Đã gọi nhân viên lúc … — nhân viên sẽ đến bàn ngay", nút **Gọi nhân viên** vẫn bấm được để xin thêm. Gọi đủ 5 lần trong 1 phút → nút khóa "Đã gọi nhân viên (gọi lại sau N giây)", đếm ngược theo máy chủ.

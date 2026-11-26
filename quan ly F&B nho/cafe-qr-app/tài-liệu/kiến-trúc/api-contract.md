@@ -950,3 +950,7 @@ Chi tiết: [FEATURE-101](../chức-năng/FEATURE-101.md), BR-131. Không có en
 - `GET /api/admin/settings`: thêm `guestMemberBox` (boolean, mặc định `true`). `PUT /api/admin/settings`: nhận `guestMemberBox` — chỉ chủ quán (quản lý cửa hàng gửi → `403`).
 - `GET /api/menu`: `ui.memberBox` (boolean). `GET /api/shop`: `memberBox` (boolean).
 - Khi tắt, khách (không gửi đăng nhập nhân viên) gọi `POST /api/members/lookup`, `POST /api/members`, `POST /api/sessions/{id}/member`, `POST /api/sessions/{id}/member/birthday` → `403 MEMBER_SELF_OFF` ("Quán đang tắt đăng ký hội viên trên điện thoại — nhờ nhân viên ở quầy"). Gọi kèm Bearer của nhân viên → như cũ. `DELETE /api/sessions/{id}/member`, `GET /api/sessions/{id}/member-card` không đổi.
+
+## Bổ sung ADR-072 — gọi nhân viên tối đa 5 lần / 1 phút (TASK-138, 26/11/2026)
+
+- `POST /api/sessions/{id}/call-staff`: mỗi phiên tối đa **5** yêu cầu `STAFF` trong **60 giây gần nhất**; lần thứ 6 → `429 TOO_SOON` `{ details: { retryAfter } }` — số giây tới khi lần cũ nhất trong 5 lần qua đủ 60 giây (1–60). Trước: 1 lần / 60 giây. Yêu cầu chuyển bàn (`MOVE`, F-086) không tính.
