@@ -62,4 +62,5 @@
 
 ## Kết quả chạy đủ
 
-_(ghi sau khi chạy)_
+- `npm test` (28/11/2026): **527/527 PASS** (521 của TASK-140 + 6 test F-102), 0 hỏng.
+- `npm run test:e2e` + `npm run trace -- --check`: chạy một lần trên đỉnh chồng nhánh sau TASK-142 (E2E và `npm test` dùng chung CSDL `CafeQrTest`). Kết quả ghi ở [TASK-142](TASK-142.md).
