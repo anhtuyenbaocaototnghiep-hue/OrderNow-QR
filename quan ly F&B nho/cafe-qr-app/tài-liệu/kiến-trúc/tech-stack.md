@@ -37,8 +37,18 @@ Nguồn: `package.json` / `package-lock.json`. Phiên bản dưới đây là b�
 | Auth | jsonwebtoken / bcryptjs | 9.0.3 / 3.0.3 | bcryptjs thuần JS (không cần build native trên Windows), cost 10 |
 | Bảo mật | helmet / express-rate-limit / cookie-parser | 8.3.0 / 8.7.1 / 1.4.7 | CSP chặn script ngoài; tắt `upgrade-insecure-requests` để chạy http trong LAN |
 | QR | qrcode | 1.5.4 | PNG cho từng bàn |
+| Email | nodemailer | 10.6.1 (ghim đúng bản) | Email cảnh báo (ADR-020). 28/11/2026 nâng từ 10.1.0 — vá 3 lỗi đọc địa chỉ email (GHSA-8c8m-p3m8-cjg8, GHSA-m943-m63m-w62w, GHSA-85x2-q946-cp5h) (TASK-140) |
 | Test | `node --test` + supertest | Node 24 / 7.3.1 | Thay Jest vì code là ES modules (ADR-002) |
 | E2E | @playwright/test + Chromium | 1.64.0 | `npm run test:e2e` |
 | Chất lượng | eslint / prettier | 9.39.5 / 3.9.10 | ESLint 9 (flat config) thay vì 10 vừa ra |
 | FE | HTML5/CSS3/ES modules | — | Không framework, không build; biểu đồ báo cáo vẽ bằng SVG tự viết (không Chart.js) |
 | DB dev | SQL Server 2019 Developer (15.0.2000.5) | — | Instance cài sẵn trên máy dev; `docker-compose.yml` cho máy có Docker (2022) |
+
+**Vá thư viện 28/11/2026 (TASK-140).** `npm audit --omit=dev` trước khi vá: 5 lỗ hổng (3 cao, 2 vừa). Sau khi vá: 0; cả thư viện chỉ dùng khi phát triển (`npm audit`) cũng 0.
+
+- `npm install --save-exact nodemailer@10.6.1`: lỗi đọc địa chỉ email, mức vừa.
+- `npm audit fix` nâng các thư viện đi kèm, không đổi `package.json`:
+  - `qs` 6.16.0 → 6.17.1 (DoS, vừa).
+  - `body-parser` 2.3.0 → 2.4.0 (DoS khi thân request nén, cao).
+  - `@azure/identity` 4.14.0 → 4.14.1, kéo theo `@azure/msal-node` 6.0.1 → 7.2.3 (cao). Thư viện này do `mssql` / tedious kéo vào cho đăng nhập Azure AD; app đăng nhập SQL bằng tài khoản SQL nên không dùng tới.
+- Lặp lại `npm audit --omit=dev` trước mỗi bản phát hành.

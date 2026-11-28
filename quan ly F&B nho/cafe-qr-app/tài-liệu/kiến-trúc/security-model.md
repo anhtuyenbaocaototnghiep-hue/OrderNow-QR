@@ -112,6 +112,13 @@ Bằng chứng: `members.test.js` (giảm tay vượt ngưỡng), `finance.test.
 - Trình duyệt: phiên trang Quản lý (`localStorage cf_admin_session`) tách với máy quầy (`cf_staff_token`). Phiên Quản lý **chỉ có được bằng đăng nhập** (ADR-044, 08/11/2026): không đi theo phiên máy quầy (bỏ "Vào bằng tài khoản này", `?from=pos`, tự dùng token máy quầy); phiên `adopted` cũ bị bỏ khi đọc, `cf_admin_skip` được dọn. Phiên máy quầy cũ đứng tên chủ quán bị bỏ (F-084). Chiều trang Quản lý → máy quầy (ADR-045): `/pos?from=admin` dùng lại token Quản lý (cùng người đã gõ mật khẩu), `POST /api/auth/pos-session` chỉ chấm công vào — không cấp token mới nên không kéo dài phiên; máy quầy đang có người khác thì giữ nguyên. Đây chỉ là tiện ích trên máy — quyền thật vẫn kiểm ở máy chủ mỗi request.
 - Máy quầy dùng chung: phiên Quản lý đăng nhập riêng không hết khi máy quầy đổi người → chủ quán bấm Đăng xuất trang Quản lý khi rời máy (ghi trong hướng dẫn).
 
+### 3.9. Đường dẫn không phân biệt hoa / thường (DEF-036, TASK-140, 28/11/2026)
+
+- Express 5 định tuyến **không phân biệt hoa / thường**: `POST /api/admin/members/5/Anonymize` chạy đúng handler của `…/anonymize`. Mọi luật so đường dẫn ở tầng kiểm quyền / nhật ký phải khớp y như vậy, nếu không thì viết hoa một chữ là lách được.
+- `auth/permissions.js`: luật `only` / `DENY_RULES` dựng regex cờ `i`; `areaKey` đổi đoạn đường dẫn về chữ thường trước khi tra bảng phạm vi. `middleware/audit.js`: mọi luật `RULES` được thêm cờ `i` lúc nạp (luật viết sau quên cờ vẫn an toàn); mã trong đường dẫn (đơn vị "KG", tên job) giữ nguyên chữ.
+- Biến thể khác đã dò (`route-case.test.js` + phép dò ghi ở TASK-140): chữ mã hóa (`%61nonymize`, `%6Dembers`), `//`, `%2F`, `.json`, `%20`, `%00` không tới được handler (404) — Express 5 không giải mã phần chữ cố định của route. "/" cuối và `?query` tới handler và đã được luật khớp.
+- Quy ước cho route / luật mới: so đường dẫn **luôn** không phân biệt hoa / thường; không thêm chỗ kiểm quyền nào so `req.path` bằng `===` / regex không cờ `i`.
+
 ## 4. Sở hữu tài nguyên và dữ liệu chỉ dành cho nhân viên
 
 | Dữ liệu | Khách (`ACT-GUEST` / `ACT-MEMBER`) | Nhân viên | Cơ chế |
@@ -156,6 +163,7 @@ Bộ đếm `express-rate-limit` và cache `Idempotency-Key` nằm **trong bộ 
 - Middleware `auditTrail` gắn ở `/api` trước mọi router (`middleware/audit.js`). Ghi: mọi request đổi dữ liệu dưới `/api/admin/*` và các route quầy theo bảng luật (thu tiền, hoàn tiền, hủy / xóa món / hủy bàn, mang đi, ca, sổ quỹ, sơ chế, hủy hàng, hủy lô, nhận PO, điều chỉnh kho, kiểm kê, chấm công, công tắc nhận đơn). Không ghi thao tác đơn thường (gửi, tiếp nhận, hoàn tất) và không ghi đăng nhập.
 - Nội dung: người làm (id, tên, vai trò), hành động, thực thể, ảnh **trước** (chụp dòng DB trước khi xử lý), ảnh **sau** (input + kết quả), IP, User-Agent, thời điểm. `sanitize` bỏ mọi khóa chứa `pass`, `hash`, `token`, `secret`, `otp`; SĐT còn 3 số cuối.
 - Chỉ ghi khi response hoàn tất với status < 400 (tức sau commit); lỗi ghi nhật ký không làm hỏng thao tác chính.
+- Luật nhật ký khớp đường dẫn **không phân biệt hoa / thường** như Express (DEF-036, §3.9): `PUT /api/admin/SETTINGS` vẫn ghi `settings.update`.
 - `AuditLogs.UserId` không có FK (giữ nhật ký khi tài khoản bị xóa hẳn). Trigger `TR_AuditLogs_ReadOnly` (INSTEAD OF UPDATE) chặn sửa → 50160 `AUDIT_READONLY`. Xóa chỉ do job `audit-retention` (giữ 12 tháng); **DB không chặn DELETE**. Chỉ ADMIN đọc (`GET /api/admin/audit-logs`), không có API sửa / xóa.
 - Log ứng dụng: lỗi 500 ghi `console.error` kèm method + URL (tắt khi test); không có log có cấu trúc, không có cảnh báo / giám sát tập trung.
 
@@ -261,5 +269,6 @@ Tổng hợp 32 mối đe dọa: **Đạt 19**, **Một phần 8**, **Gap 5**. T
 | G-08 | Chưa có test tự động cho header bảo mật, limiter đăng nhập / gửi đơn | Thấp | Thêm test (không cần thư viện mới) | PROPOSED |
 | G-09 | Token nhân viên lưu trong `localStorage`; JSON API không đặt `Cache-Control: no-store` | Thấp | Giữ CSP chặt; cân nhắc `no-store` cho `/api/*` có dữ liệu cá nhân | PROPOSED |
 | G-10 | `npm run db:seed` tạo sẵn tài khoản `staff1` với mật khẩu cố định ghi trong `kịch-bản/db-seed.js` (dữ liệu mẫu cho máy dev) | Trung bình nếu seed lên máy thật | Không chạy seed mẫu ở môi trường thật, hoặc khóa / đổi mật khẩu `staff1` ngay — đưa vào checklist bước 15 | PROPOSED |
+| G-11 | Thư viện có lỗ hổng đã công bố (`npm audit --omit=dev` 28/11/2026: 5 — 3 cao, 2 vừa: nodemailer, body-parser, qs, @azure/msal-node) | Cao | Nâng bản vá; chạy lại `npm audit --omit=dev` trước mỗi bản phát hành ([tech-stack.md](tech-stack.md)) | ĐÃ XỬ LÝ 28/11/2026 (TASK-140) — còn 0 |
 
 Rủi ro chấp nhận có chủ đích (không phải gap): hội viên nhận diện bằng SĐT không OTP (D-6); nhiều nhân viên có thể dùng chung tài khoản trên nhiều máy (roles-permissions §4.3) — hệ thống an toàn trong trường hợp đó nhờ khóa dòng trong SP, nhưng nhật ký không phân biệt được người thật.
