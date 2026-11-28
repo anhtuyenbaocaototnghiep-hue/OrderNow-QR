@@ -5,17 +5,17 @@
 
 ## Lần chạy làm bằng chứng
 
-- `npm test` (JUnit): 518 test, sửa lúc 2026-11-26 06:13 UTC
-- `npm run test:e2e` (JSON): 120 test, sửa lúc 2026-11-26 06:24 UTC
+- `npm test` (JUnit): 531 test, sửa lúc 2026-11-28 09:09 UTC
+- `npm run test:e2e` (JSON): 124 test, sửa lúc 2026-11-28 09:17 UTC
 - `npm run load`: 10/10 vòng PASS
 
 ## Tổng hợp
 
 | Chỉ số | Số lượng |
 | --- | --- |
-| User Story | 208 |
-| Acceptance Criteria | 597 |
-| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 597 |
+| User Story | 211 |
+| Acceptance Criteria | 609 |
+| AC **PASS** (mọi test tự động liên quan đạt ở lần chạy trên) | 609 |
 | AC kiểm **thủ công** (UAT / thiết bị thật — xem [uat-plan.md](uat-plan.md)) | 0 |
 | AC **FAIL** | 0 |
 | AC **NOT_RUN** (chưa có kết quả chạy) | 0 |
@@ -34,7 +34,7 @@
 - **BR chưa gắn Story nào:** 0 — mọi BR đều có Story
 - **Màn hình (SCR trong sitemap) chưa gắn Story nào:** 0 — mọi màn hình đều có Story
 - **Test FAIL bất kỳ (kể cả test không gắn AC, file test không nạp được):** 0 — không có
-- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 56
+- **Test có kết quả nhưng không gắn AC** (kiểm bất biến, khả năng tiếp cận, header… — không phải lỗi, ghi để biết): 60
   - kiểm-thử/e2e/a11y.spec.js › tiền vào chưa khớp (F-100): dải ở quầy, hộp Ghép & thu / Đã xử lý, Cài đặt "Tự xác nhận khi tiền vào" + hộp Giả lập tiền vào — nhãn, tương phản, vùng chạm (AC-100-06)
   - kiểm-thử/e2e/flow.spec.js › báo lỗi xong vẫn lưu được (DEF-024): thêm bàn trùng mã / nhân viên trùng tên đăng nhập / món có ảnh sai → máy chủ báo lỗi, nút không bị khóa → sửa lại → lưu được ngay trong cùng hộp
   - kiểm-thử/e2e/flow.spec.js › bố cục quầy (ADR-018): lưới bàn hiện cả bàn trống; màn 1024 px lưới bàn là ngăn trượt — nút "Bàn" mở, Esc / nền mờ đóng, focus trả về nút (TASK-072)
@@ -72,6 +72,7 @@
   - ứng-dụng/máy-chủ/tests/ops.test.js › đích MOVE: CSDL mới → thư mục mặc định theo tên đích (nhiều file dữ liệu / nhật ký); CSDL có sẵn cùng số file → ghi đúng file đang dùng
   - ứng-dụng/máy-chủ/tests/ops.test.js › đọc kết quả RESTORE FILELISTONLY / HEADERONLY của sqlcmd (cột cách bởi "|"); bỏ dòng lạ
   - ứng-dụng/máy-chủ/tests/ops.test.js › ổ đĩa < 2 GB lỗi, < 10 GB cần để ý; CSDL bản Express ≥ 80 % giới hạn 10 GB cần để ý, ≥ 95 % lỗi, bản khác luôn ổn
+  - ứng-dụng/máy-chủ/tests/password-policy.test.js › D-266: mật khẩu dễ đoán — mẫu trong tài liệu, phổ biến, giống tên đăng nhập, lặp một ký tự, dãy số liền nhau; không phân biệt hoa / thường
   - ứng-dụng/máy-chủ/tests/phase4-unit.test.js › nextChangeAt: mốc đổi trạng thái gần nhất (để menu khách tự tải lại)
   - ứng-dụng/máy-chủ/tests/phase4-unit.test.js › tham số items "12:2,15:1": bỏ phần sai, tối đa 30 dòng
   - ứng-dụng/máy-chủ/tests/phase4-unit.test.js › thứ trong tuần (bit0 = CN), khung qua nửa đêm, lịch tắt bị bỏ qua
@@ -82,6 +83,9 @@
   - ứng-dụng/máy-chủ/tests/pricing.test.js › không giảm gì: bằng Σ đơn; đơn cũ (không SubtotalAmount) tính như cũ
   - ứng-dụng/máy-chủ/tests/pricing.test.js › món không có trong catalog → ITEM_UNAVAILABLE kèm id
   - ứng-dụng/máy-chủ/tests/pricing.test.js › vnClock quy đổi UTC+7; khung giờ thường và qua nửa đêm
+  - ứng-dụng/máy-chủ/tests/route-case.test.js › DEF-036: chủ quán sửa cài đặt qua PUT /api/admin/SETTINGS hoặc /api/Admin/Settings → vẫn ghi Nhật ký thao tác settings.update (mỗi lần một dòng)
+  - ứng-dụng/máy-chủ/tests/route-case.test.js › DEF-036: luật khớp không phân biệt hoa / thường — chặn chủ-quán-riêng, phạm vi quản lý cửa hàng, nhật ký quầy và trang Quản lý; mã trong đường dẫn giữ nguyên chữ
+  - ứng-dụng/máy-chủ/tests/route-case.test.js › DEF-036: quản lý cửa hàng gọi ẩn danh hội viên bằng đường dẫn viết hoa / có "/" cuối → 403 OWNER_ONLY, hội viên còn nguyên; chủ quán gọi đường dẫn viết hoa vẫn chạy (route có thật)
   - ứng-dụng/máy-chủ/tests/sales.test.js › quản lý tạo nhóm Size (bắt buộc 1) có BOM cộng thêm, gán cho món → menu khách có nhóm + tùy chọn
   - ứng-dụng/máy-chủ/tests/sp.test.js › gọi thêm món khi đang PAYMENT_REQUESTED → phiên về OPEN (Q-013/ADR-003)
   - ứng-dụng/máy-chủ/tests/sp.test.js › gửi đơn vào phiên CLOSED → 50031 (BR-020)
@@ -169,6 +173,7 @@
 | AC-010-08 | TC-010-08 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | Integration: `delete.test.js` › bàn: đang có khách → 409 TABLE_BUSY; đã dùng → ARCHIVED + QR cũ chết; chưa dùng → DELETED; mã bàn dùng lại được — **PASS** | **PASS** |
 | AC-010-09 | TC-010-09 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | E2E: `flow.spec.js` › thẻ QR bàn dạng ảnh: trang In QR vẽ mỗi bàn một ảnh 1200 × 1800 (10 × 15 cm, 300 dpi) có chữ thay thế; "Tải ảnh" tải đúng tệp the-qr-<mã bàn>.png; "Tải tất cả ảnh" bấm được khi vẽ xong; in ra đúng cỡ 10 × 15 cm (TASK-134, AC-010-09) — **PASS**<br>E2E: `a11y.spec.js` › quản lý (máy tính): mọi trang quản trị — nhãn, tên nút, tương phản, vùng chạm — **PASS** | **PASS** |
 | AC-010-10 | TC-010-10 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | E2E: `flow.spec.js` › số điện thoại quán + chữ WIFI giữa mã Wi-Fi: quản lý nhập số ở Cài đặt (số sai báo dưới ô) → thẻ QR bàn in "ĐT: …", mã Wi-Fi trên ảnh thẻ có nhãn WIFI ở giữa (ADR-070, AC-053-08, AC-010-10) — **PASS** | **PASS** |
+| AC-010-11 | TC-010-11 | F-010 | US-010-2 | ACT-ADMIN | UC-01 | MOD-TABLE | SCR-22, SCR-01 | — | E2E: `flow.spec.js` › thẻ QR bàn nhắc vào Wi-Fi quán: mã QR trỏ tới máy trong quán (localhost / địa chỉ IP) → mọi thẻ có khung cam "Lưu ý: vào Wi-Fi của quán (mã ①) rồi mới quét mã ② — dùng 4G hay mạng khác sẽ không gọi món được." dưới tên / mật khẩu Wi-Fi (TASK-139, AC-010-11) — **PASS** | **PASS** |
 | AC-011-01 | TC-011-01 | F-011 | US-011-1 | ACT-ADMIN | UC-14 | MOD-INVENTORY, MOD-MENU | SCR-24 | BR-003 | Integration: `api.test.js` › BOM: -10 hoặc thiếu nguyên liệu → 400 + BOM cũ giữ nguyên; hợp lệ → lưu (AC-011-01, 02) — **PASS**<br>SP: `sp.test.js` › hoàn tất trừ đúng BOM, ghi N dòng DEDUCT (AC-007-03, AC-011-01) — **PASS** | **PASS** |
 | AC-011-02 | TC-011-02 | F-011 | US-011-1 | ACT-ADMIN | UC-14 | MOD-INVENTORY, MOD-MENU | SCR-24 | BR-003 | Integration: `api.test.js` › BOM: -10 hoặc thiếu nguyên liệu → 400 + BOM cũ giữ nguyên; hợp lệ → lưu (AC-011-01, 02) — **PASS**<br>E2E: `flow.spec.js` › quản lý: tạo nhân viên trùng tên báo lỗi; BOM -10 bị từ chối (AC-009-02, AC-011-02) — **PASS** | **PASS** |
 | AC-011-03 | TC-011-03 | F-011 | US-011-2 | ACT-ADMIN | UC-13 | MOD-INVENTORY | SCR-23, SCR-25 | BR-001, BR-010, BR-016 | Integration: `api.test.js` › kho: điều chỉnh có lý do ghi ADJUST; dưới phần giữ → 409; cảnh báo sắp hết (AC-011-03, 04) — **PASS**<br>SP: `sp.test.js` › không cho âm / dưới phần đang giữ; ghi ADJUST — **PASS** | **PASS** |
@@ -693,4 +698,15 @@
 | AC-101-01 | TC-101-01 | F-101 | US-101-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN, MOD-LOYALTY | SCR-33, SCR-01, SCR-03, SCR-04 | BR-131 | Integration: `guest-member-box.test.js` › AC-101-01: mặc định bật; chủ quán tắt → cài đặt, /api/menu ui.memberBox, /api/shop memberBox đều false; bật lại → true; quản lý cửa hàng, trưởng ca, nhân viên đổi → 403 — **PASS** | **PASS** |
 | AC-101-02 | TC-101-02 | F-101 | US-101-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN, MOD-LOYALTY | SCR-33, SCR-01, SCR-03, SCR-04 | BR-131 | Integration: `guest-member-box.test.js` › AC-101-02: tắt → khách tự tra SĐT / đăng ký / gắn SĐT / thêm ngày sinh → 403 MEMBER_SELF_OFF, không tạo hội viên, phiên không có hội viên; nhân viên vẫn tra và gắn được; bật lại → khách tự đăng ký được — **PASS** | **PASS** |
 | AC-101-03 | TC-101-03 | F-101 | US-101-1 | ACT-ADMIN, ACT-GUEST, ACT-STAFF | UC-17 | MOD-ADMIN, MOD-LOYALTY | SCR-33, SCR-01, SCR-03, SCR-04 | BR-131 | E2E: `flow.spec.js` › ô hội viên trên màn khách: chủ quán bỏ tích "Ô Nhập SĐT để nhận ưu đãi" ở Cài đặt → giỏ hàng và trang theo dõi đơn của khách không còn ô hội viên; tích lại → ô hiện lại (F-101, AC-101-03) — **PASS** | **PASS** |
+| AC-102-01 | TC-102-01 | F-102 | US-102-1 | ACT-ADMIN, ACT-STORE, ACT-LEAD, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-56, SCR-59, SCR-33, SCR-20 | BR-132 | Integration: `password-policy.test.js` › AC-102-01: bật — đăng nhập đúng mật khẩu dễ đoán → mustChangePassword; token chỉ gọi /auth/me, đăng xuất; API quầy / Quản lý / realtime → 403 PASSWORD_CHANGE_REQUIRED; mật khẩu tốt hoặc tắt cài đặt → không có dấu — **PASS** | **PASS** |
+| AC-102-02 | TC-102-02 | F-102 | US-102-2 | ACT-ADMIN, ACT-STORE, ACT-LEAD, ACT-STAFF | UC-17 | MOD-AUTH | SCR-52, SCR-59 | BR-132 | Integration: `password-policy.test.js` › AC-102-02: tự đổi mật khẩu — sai mật khẩu đang dùng 403 (đếm lần sai), trùng cũ / dễ đoán (cả khi tắt) / quá ngắn 400; đúng → token mới dùng được, mật khẩu cũ hết dùng, nhật ký không chứa mật khẩu — **PASS** | **PASS** |
+| AC-102-03 | TC-102-03 | F-102 | US-102-1 | ACT-ADMIN, ACT-STORE, ACT-LEAD, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-56, SCR-59, SCR-33, SCR-20 | BR-132 | Integration: `password-policy.test.js` › AC-102-03: bật — chủ quán tạo tài khoản / đặt lại mật khẩu bằng mật khẩu dễ đoán → 400 WEAK_PASSWORD (ô password), không tạo / không đổi; tắt → như trước — **PASS** | **PASS** |
+| AC-102-04 | TC-102-04 | F-102 | US-102-1 | ACT-ADMIN, ACT-STORE, ACT-LEAD, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-56, SCR-59, SCR-33, SCR-20 | BR-132 | Integration: `password-policy.test.js` › AC-102-04: bật — mật khẩu đúng mà dễ đoán dùng ở ô duyệt / đặt PIN / xác nhận tạo chủ quán → 403 WEAK_PASSWORD_IN_USE, không có gì đổi; sai mật khẩu → lỗi cũ, vẫn đếm — **PASS** | **PASS** |
+| AC-102-05 | TC-102-05 | F-102 | US-102-1 | ACT-ADMIN, ACT-STORE, ACT-LEAD, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-56, SCR-59, SCR-33, SCR-20 | BR-132 | Integration: `password-policy.test.js` › AC-102-05: blockWeakPasswords mặc định true (chưa có khóa); chủ quán tắt / bật; quản lý cửa hàng, trưởng ca, nhân viên đổi → 403 — **PASS** | **PASS** |
+| AC-102-06 | TC-102-06 | F-102 | US-102-1, US-102-2 | ACT-ADMIN, ACT-STORE, ACT-LEAD, ACT-STAFF | UC-17 | MOD-AUTH, MOD-ADMIN | SCR-09, SCR-56, SCR-59, SCR-33, SCR-20, SCR-52 | BR-132 | E2E: `flow.spec.js` › mật khẩu mặc định / dễ đoán: bật chặn → đăng nhập quầy bằng mật khẩu mẫu hiện hộp "Đổi mật khẩu trước khi dùng tiếp" (không nút đóng, Esc không đóng); tải lại trang khi chưa đổi → hộp hỏi cả mật khẩu đang dùng; mật khẩu dễ đoán / nhập lại khác báo dưới ô; đổi xong vào màn quầy; Giờ công của tôi có nút Đổi mật khẩu; đăng nhập Quản lý: Đăng xuất ở hộp → ở lại trang đăng nhập, đổi xong vào trang Quản lý, nút Đổi mật khẩu ở khung trang; Cài đặt có ô "Chặn mật khẩu mặc định / dễ đoán" (F-102, AC-102-06) — **PASS**<br>E2E: `a11y.spec.js` › đổi mật khẩu (F-102): hộp bắt buộc khi đăng nhập quầy bằng mật khẩu mẫu (vừa đăng nhập / tải lại trang), hộp tự mở ở Giờ công của tôi — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px (AC-102-06) — **PASS** | **PASS** |
+| AC-103-01 | TC-103-01 | F-103 | US-103-1 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-133 | Integration: `backup.test.js` › AC-103-01: chủ quán bấm Sao lưu ngay → thư mục chưa có được tạo, có .bak đúng mẫu tên + last-backup.json, ảnh chép vào uploads, có bản chép thứ hai; GET trả bản vừa làm; quản lý cửa hàng / nhân viên → 403 — **PASS** | **PASS** |
+| AC-103-02 | TC-103-02 | F-103 | US-103-1 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-133 | Integration: `backup.test.js` › AC-103-02: dọn bản cũ đúng luật giữ — bản quá 14 ngày (không phải bản đầu tháng / có nhãn) và bản quá 12 tháng bị xóa; file khác mẫu, bản của CSDL khác còn nguyên — **PASS** | **PASS** |
+| AC-103-03 | TC-103-03 | F-103 | US-103-1 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-133 | Integration: `backup.test.js` › AC-103-03: lịch — chưa có bản / bản ≥ 20 giờ thì đến hạn, < 20 giờ thì chưa; sau đóng ca sao lưu khi bản gần nhất ≥ 30 phút (đóng ca thật → có bản mới) — **PASS** | **PASS** |
+| AC-103-04 | TC-103-04 | F-103 | US-103-1 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-133 | Integration: `backup.test.js` › AC-103-04: SQL Server không ghi được vào thư mục → 500 BACKUP_FAILED có lệnh icacls; GET trả lỗi gần nhất; JobRuns FAILED; bộ hẹn giờ chờ 60 phút mới thử lại; sửa xong sao lưu lại → hết lỗi — **PASS** | **PASS** |
+| AC-103-05 | TC-103-05 | F-103 | US-103-1 | ACT-ADMIN | UC-17 | MOD-ADMIN | SCR-33 | BR-133 | E2E: `flow.spec.js` › sao lưu dữ liệu: Cài đặt → thẻ "Sao lưu dữ liệu" hiện thư mục và chưa có bản nào; bấm "Sao lưu ngay" → báo đã sao lưu, thẻ hiện bản gần nhất (giờ, dung lượng) (F-103, AC-103-05) — **PASS** | **PASS** |
 

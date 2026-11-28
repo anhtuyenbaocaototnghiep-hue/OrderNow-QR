@@ -59,4 +59,9 @@
 
 ## Kết quả chạy đủ
 
-_(ghi sau khi chạy)_
+Chạy một lần trên đỉnh chồng nhánh (gồm cả TASK-140, TASK-141), 28/11/2026, đều đạt ngay lần đầu:
+
+- `npm test`: **531/531 PASS** (527 + 4 bài F-103), 0 hỏng.
+- `npm run test:e2e`: **124/124 PASS** (8,3 phút), không bài nào phải chạy lại. Có các bài mới F-102 (flow + a11y) và F-103. Các lần chạy đủ của TASK-139 trước đó đều hỏng ngẫu nhiên 1 bài.
+- `npm run trace -- --check`: **211 US, 609 AC — PASS 609**, thủ công 0, FAIL 0, NOT_RUN 0, GAP 0, chưa có TC 0. `traceability.md` sinh lại.
+- `npm run lint`, `npm run format:check`: sạch.
