@@ -885,3 +885,15 @@ Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị t
   - Tắt: như trước.
 - **SCR-20 Tài khoản:** tạo / đặt lại mật khẩu dễ đoán → lỗi ngay dưới ô Mật khẩu (khi bật).
 - **Ô duyệt ở quầy** (giảm giá tay, hoàn tiền, chi quỹ, xóa món…) và **Đặt PIN**: mật khẩu đúng mà dễ đoán → báo "Tài khoản … đang dùng mật khẩu mặc định / dễ đoán — người đó đăng nhập để đổi mật khẩu trước" (khi bật).
+
+## TASK-142 — Sao lưu tự động, thẻ "Sao lưu dữ liệu" — SCR-33 (F-103, ADR-074, 28/11/2026)
+
+- **SCR-33 Cài đặt → thẻ "Sao lưu dữ liệu"** (chỉ chủ quán; nằm sau thẻ "Bảo mật đăng nhập"):
+  - **Khung trạng thái:**
+    - Xanh "Bản gần nhất: 15:59 28/11/2026 · 19,1 MB · 12 ảnh".
+    - Vàng "Chưa có bản sao lưu nào — bấm Sao lưu ngay", hoặc bản đã quá 20 giờ.
+    - Đỏ: lỗi gần nhất kèm cách sửa (ví dụ lệnh `icacls`).
+  - **Giải thích:** app tự sao lưu sau mỗi lần đóng ca và khi bản gần nhất quá 20 giờ; sao lưu dữ liệu + ảnh, không gồm mật khẩu `.env`.
+  - **Thư mục:** cách giữ bản (14 ngày, mỗi tháng một bản trong 12 tháng), ổ còn trống.
+  - **Bản chép thứ hai:** có → đường dẫn (lần gần nhất chưa chép được thì báo). Chưa có → nhắc đặt `BACKUP_COPY_DIR` là thư mục Google Drive / OneDrive hoặc chép ra USB mỗi tuần.
+  - **Nút "Sao lưu ngay":** bấm → khóa nút trong lúc chạy → báo "Đã sao lưu — 19,1 MB", khung trạng thái cập nhật; lỗi → báo lỗi, thẻ hiện lỗi.

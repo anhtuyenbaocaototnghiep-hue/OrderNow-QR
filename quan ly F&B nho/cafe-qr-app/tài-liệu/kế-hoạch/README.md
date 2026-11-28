@@ -73,3 +73,4 @@ Không cần chờ người duyệt mọi plan nếu task đã được giao quy
 - [TASK-137-plan.md](TASK-137-plan.md) — bật / tắt ô hội viên trên màn khách (F-101, ADR-071).
 - [TASK-138-plan.md](TASK-138-plan.md) — gọi nhân viên tối đa 5 lần / 1 phút (F-021, ADR-072).
 - [TASK-141-plan.md](TASK-141-plan.md) — bắt đổi mật khẩu mặc định / dễ đoán, tự đổi mật khẩu (F-102, ADR-073).
+- [TASK-142-plan.md](TASK-142-plan.md) — sao lưu tự động trong máy chủ app + thẻ Sao lưu dữ liệu (F-103, ADR-074).

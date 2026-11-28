@@ -30,12 +30,21 @@ Muốn mất ít hơn: thêm một lần sao lưu giữa ngày (ví dụ 15:00, 
 
    Thư mục đám mây: script chỉ biết file **đã chép vào thư mục trên máy** (`copied = true`); việc tải lên mạng do ứng dụng OneDrive / Google Drive làm. Ứng dụng đó phải chạy và **đăng nhập bằng đúng tài khoản Windows chạy tác vụ sao lưu**; mỗi tuần mở trang web của dịch vụ xem bản mới nhất đã lên chưa.
 
-**Lịch:**
-- Hằng ngày sau giờ đóng cửa — tác vụ `cafe-qr-sao-luu` ([deployment-checklist.md](deployment-checklist.md) §A5).
+**Lịch** (cập nhật 28/11/2026 — [ADR-074](../quyết-định/ADR-074-sao-luu-tu-dong-trong-may-chu.md), F-103):
+- **Máy chủ app tự sao lưu**, không cần cài gì thêm:
+  - ngay sau mỗi lần đóng ca (nếu bản gần nhất cũ hơn 30 phút);
+  - khi bản thành công gần nhất cũ hơn 20 giờ — kiểm 2 phút sau khi mở app rồi mỗi 10 phút, nên máy tắt đêm thì sáng mở app là có bản mới;
+  - chủ quán bấm **Cài đặt → Sao lưu dữ liệu → Sao lưu ngay**.
+
+  Thẻ đó cũng hiện bản gần nhất, lỗi gần nhất (kèm cách sửa), thư mục, bản chép thứ hai, ổ còn trống.
+- Tác vụ Task Scheduler `cafe-qr-sao-luu` ([deployment-checklist.md](deployment-checklist.md) §A5) **không còn bắt buộc** — chỉ thêm nếu muốn sao lưu cả lúc app không chạy.
 - Trước mỗi lần phát hành / migration: `npm run db:backup -- --label truoc-v1.1`.
 - Trước khi sửa dữ liệu hàng loạt hoặc khôi phục: `npm run db:backup -- --label truoc-khoi-phuc`.
 
 **Thiết lập lần đầu (làm một lần trên máy chủ):**
+
+> Từ F-103 (28/11/2026): không đặt `BACKUP_DIR` thì máy Windows dùng `C:\CafeQr-SaoLuu`. Thư mục chưa có → app **tự tạo và tự cấp quyền** cho SQL Server (người tạo thư mục là chủ nên không cần quyền quản trị). Bước 1–3 dưới đây chỉ cần khi muốn thư mục khác (ổ khác) hoặc app báo thiếu quyền.
+
 1. Tạo thư mục, ví dụ `D:\cafe-qr-backup`.
 2. Cho SQL Server quyền ghi — PowerShell **Run as administrator**, giữ nguyên **dấu nháy đơn**:
    `icacls 'D:\cafe-qr-backup' /grant 'NT Service\MSSQLSERVER:(OI)(CI)M'`

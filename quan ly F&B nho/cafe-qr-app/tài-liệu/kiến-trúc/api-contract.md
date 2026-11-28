@@ -978,3 +978,17 @@ Chi tiết: [FEATURE-102](../chức-năng/FEATURE-102.md), BR-132. "Dễ đoán"
   - `confirmPassword` khi tạo / nâng tài khoản Chủ quán.
   - Sai mật khẩu vẫn trả lỗi cũ và vẫn đếm lần sai.
 - **Cài đặt** `GET /api/admin/settings`: thêm `blockWeakPasswords` (boolean, mặc định `true`). `PUT /api/admin/settings` nhận `blockWeakPasswords` — chỉ chủ quán (quản lý cửa hàng gửi → `403 OWNER_ONLY`).
+
+## Bổ sung F-103 — sao lưu tự động trong máy chủ app (ADR-074, TASK-142, 28/11/2026)
+
+Chi tiết: [FEATURE-103](../chức-năng/FEATURE-103.md), BR-133. Chỉ chủ quán: khóa `backup` không thuộc nhóm quyền nào, nên quản lý cửa hàng nhận `403 OWNER_ONLY`, vai khác `403`.
+
+- `GET /api/admin/backup` → `{ db, dir, copyDir, keepDays, keepMonths, last, lastError, freeBytes, due }`.
+  - `last`: `{ file, bytes, finishedAt, seconds, uploads, copied, copyError }` hoặc `null` (đọc `last-backup.json`).
+  - `lastError`: `{ at, message }` khi lần chạy lỗi mới hơn lần thành công; chưa đặt thư mục → `{ at: null, message }`; ngược lại `null`.
+  - `due`: bản gần nhất đã cũ hơn 20 giờ.
+- `POST /api/admin/backup/run` → chạy job `db-backup` ngay (ghi `JobRuns`, nhật ký thao tác `backup.run`) → `200 { result, status }`.
+  - `result`: `{ file, bytes, seconds, uploads, copied, removed }`.
+  - `status`: như `GET`.
+  - Lỗi: `409 BACKUP_RUNNING` (đang có lần khác chạy); `500 BACKUP_FAILED` (thông báo nói rõ, ví dụ lệnh `icacls` khi SQL Server không ghi được vào thư mục).
+- `GET /api/admin/jobs`: thêm job `db-backup` ("Sao lưu dữ liệu (CSDL + ảnh)", lịch "Sau mỗi lần đóng ca và khi bản gần nhất quá 20 giờ"). `POST /api/admin/jobs/db-backup/run` chạy được như job khác.

@@ -68,7 +68,7 @@ Cấp quyền ghi thư mục sao lưu cho SQL Server trước (lệnh `icacls` �
 | Tác vụ | Khi nào | Chạy | Cài đặt thêm |
 | --- | --- | --- | --- |
 | `cafe-qr-app` | Khi bật máy (*At startup*) | `cmd.exe /c "<thư mục app>\hướng-dẫn\11-chạy-máy-chủ-quán.cmd"` | Bỏ chọn *Stop the task if it runs longer than*. File `.cmd` **tự chạy lại app sau 15 giây** mỗi khi app dừng (SQL Server chưa sẵn sàng lúc mới bật máy, lỗi) — không dựa vào *restart on failure* của Task Scheduler |
-| `cafe-qr-sao-luu` | Hằng ngày, sau giờ đóng cửa (ví dụ 23:30) | `cmd.exe /c npm run db:backup`, *Start in* = thư mục app | *Run task as soon as possible after a scheduled start is missed* |
+| `cafe-qr-sao-luu` (không bắt buộc từ F-103 — app tự sao lưu sau đóng ca và khi bản gần nhất quá 20 giờ) | Hằng ngày, sau giờ đóng cửa (ví dụ 23:30) | `cmd.exe /c npm run db:backup`, *Start in* = thư mục app | *Run task as soon as possible after a scheduled start is missed* |
 | `cafe-qr-kiem-tra` | Mỗi 15 phút | `cmd.exe /c npm run ops:health`, *Start in* = thư mục app | — |
 
 Cách nhanh bằng PowerShell (quyền quản trị, đứng ở thư mục app; **chưa chạy thử trên máy thật**):
