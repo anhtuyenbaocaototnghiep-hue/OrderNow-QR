@@ -2,6 +2,7 @@
 // báo sai một lần chấm công, lương tạm tính tháng này, phiếu lương các tháng đã chốt (bấm "Đã xem").
 // ADR-031 D-136: ngày có lịch mà không chấm công (đang tính vắng) → "Báo quên chấm công" (giờ vào / ra thật + lý do) → chờ quản lý duyệt.
 import { staffApi } from '../api.js';
+import { changePasswordDialog } from '../change-password.js';
 import { mountPosShell } from '../pos-shell.js';
 import { setPinDialog } from '../staff-pin.js';
 import { $, clear, dateOnly, dateTime, el, errorMessage, modal, money, time, toast, todayVn } from '../ui.js';
@@ -308,6 +309,8 @@ function render(data) {
         { class: 'row wrap' },
         sel,
         el('button', { class: 'btn', type: 'button', onclick: () => setPinDialog() }, shell.user.hasPin ? 'Đổi PIN' : 'Đặt PIN'),
+        // F-102 (ADR-073 D-268): tự đổi mật khẩu đăng nhập
+        el('button', { class: 'btn', type: 'button', onclick: () => changePasswordDialog({ username: shell.user.username }) }, 'Đổi mật khẩu'),
       ),
     ),
     payCard(data),

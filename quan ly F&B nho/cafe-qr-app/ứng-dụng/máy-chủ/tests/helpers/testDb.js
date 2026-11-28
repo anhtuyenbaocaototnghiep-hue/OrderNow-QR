@@ -31,11 +31,12 @@ export async function resetTestDatabase() {
   const { seedBase } = await import('../../../../kịch-bản/seed-data.js');
   const pool = await new sql.ConnectionPool({ ...config.db, database: name }).connect();
   const seeded = await seedBase(pool, { adminUsername: 'admin', adminPassword: 'Admin@123' });
-  // F-072: test cũ viết theo chấm công bằng đăng nhập, thao tác tiền không hỏi PIN — test của F-072 / F-073 tự bật mặc định mới
+  // F-072: test cũ viết theo chấm công bằng đăng nhập, thao tác tiền không hỏi PIN — test của F-072 / F-073 tự bật mặc định mới.
+  // F-102 (ADR-073 D-271): test đăng nhập bằng mật khẩu mẫu (Admin@123, Staff@123, Pass@123) → tắt chặn mật khẩu dễ đoán; test F-102 tự bật
   await pool
     .request()
     .query(
-      `INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false'), ('pos.one_tap', 'false'), ('menu.sheet_all', 'false')`,
+      `INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false'), ('pos.one_tap', 'false'), ('menu.sheet_all', 'false'), ('security.block_weak_passwords', 'false')`,
     );
   return { pool, ...seeded };
 }

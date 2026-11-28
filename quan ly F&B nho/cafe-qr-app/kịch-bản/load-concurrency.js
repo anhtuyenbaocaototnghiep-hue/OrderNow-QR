@@ -27,6 +27,8 @@ const { config } = await import('../ứng-dụng/máy-chủ/src/config.js');
 const { seedBase } = await import('./seed-data.js');
 const pool = await new sql.ConnectionPool(config.db).connect();
 await seedBase(pool, { adminUsername: 'admin', adminPassword: 'Admin@123' });
+// F-102 (ADR-073 D-271): kiểm tải đăng nhập bằng mật khẩu mẫu → tắt chặn mật khẩu dễ đoán trên CSDL test này
+await pool.request().query("INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('security.block_weak_passwords', 'false')");
 
 const { createApp } = await import('../ứng-dụng/máy-chủ/src/app.js');
 const { attachRealtime } = await import('../ứng-dụng/máy-chủ/src/realtime/io.js');

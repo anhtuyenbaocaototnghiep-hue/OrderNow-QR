@@ -124,6 +124,10 @@ body.admin {
 .admin-side .btn:hover {
   background: #45311f;
 }
+/* F-102: "Đổi mật khẩu" ngay trên "Đăng xuất" */
+.admin-side .btn + .btn {
+  margin-top: 0.4rem;
+}
 /* Màn hẹp: menu nằm trên nội dung, vẫn dạng nhóm thu gọn (chỉ nhóm của trang đang xem mở) */
 @media (max-width: 860px) {
   .admin-side {

@@ -919,3 +919,43 @@ test('quầy một màn hình (F-088): hai vùng Hàng pha + Quầy có thẻ (�
     await ctx.close();
   }
 });
+
+test('đổi mật khẩu (F-102): hộp bắt buộc khi đăng nhập quầy bằng mật khẩu mẫu (vừa đăng nhập / tải lại trang), hộp tự mở ở Giờ công của tôi — nhãn, tương phản, vùng chạm, không cuộn ngang 320/390 px (AC-102-06)', async ({
+  request,
+}) => {
+  const admin = { Authorization: `Bearer ${adminToken}` };
+  const made = await request.post('/api/admin/users', {
+    headers: admin,
+    data: { username: 'nv_a11y_mk', password: 'Staff@123', fullName: 'Đổi mật khẩu a11y', role: 'STAFF' },
+  });
+  expect(made.ok(), `tạo tài khoản → ${made.status()}`).toBeTruthy();
+  await request.put('/api/admin/settings', { headers: admin, data: { blockWeakPasswords: true } });
+  const ctx = await browser.newContext(desk);
+  try {
+    const S = await ctx.newPage();
+    S.setDefaultTimeout(15_000);
+    await S.goto('/pos/login');
+    await S.fill('#username', 'nv_a11y_mk');
+    await S.fill('#password', 'Staff@123');
+    await S.click('#submit');
+    const forced = S.getByRole('dialog', { name: 'Đổi mật khẩu trước khi dùng tiếp' });
+    await expect(forced).toBeVisible();
+    await check(S, 'doi-mat-khau-bat-buoc');
+    await S.reload();
+    await expect(forced.getByLabel('Mật khẩu đang dùng')).toBeVisible();
+    await check(S, 'doi-mat-khau-bat-buoc-tai-lai', { narrow: true });
+    await forced.getByLabel('Mật khẩu đang dùng').fill('Staff@123');
+    await forced.getByLabel('Mật khẩu mới', { exact: true }).fill('A11y#Doi-Mat-Khau');
+    await forced.getByLabel('Nhập lại mật khẩu mới').fill('A11y#Doi-Mat-Khau');
+    await forced.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    await expect(forced).toHaveCount(0);
+    await S.setViewportSize(desk.viewport);
+    await S.goto('/pos/me');
+    await S.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    await expect(S.getByRole('dialog', { name: 'Đổi mật khẩu' })).toBeVisible();
+    await check(S, 'doi-mat-khau-tu-mo');
+  } finally {
+    await ctx.close();
+    await request.put('/api/admin/settings', { headers: admin, data: { blockWeakPasswords: false } });
+  }
+});

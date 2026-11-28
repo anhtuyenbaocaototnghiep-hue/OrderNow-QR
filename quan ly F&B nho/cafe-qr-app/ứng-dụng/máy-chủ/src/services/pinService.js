@@ -13,6 +13,7 @@ import { pinProblem } from '../domain/payroll.js';
 import { badRequest, forbidden, notFound } from '../errors.js';
 import * as usersRepo from '../repositories/usersRepo.js';
 import * as authGuard from './authGuardService.js';
+import { assertNotWeakInUse } from './passwordPolicy.js';
 import { getSettings } from './settingsService.js';
 
 const BCRYPT_COST = 10;
@@ -27,6 +28,14 @@ async function setPinWithPassword(target, { password, pin }, { kind, who }) {
     await authGuard.recordFailure(kind, who);
     throw forbidden('Mật khẩu đăng nhập không đúng', 'PASSWORD_INVALID');
   }
+  // F-102 (ADR-073 D-270): mật khẩu đúng nhưng mặc định / dễ đoán (ai cũng biết) không chứng minh được đúng người
+  await assertNotWeakInUse(
+    password,
+    full.username,
+    kind === 'PIN'
+      ? 'Mật khẩu của bạn là mật khẩu mặc định / dễ đoán — đổi mật khẩu trước (nút Đổi mật khẩu), rồi đặt PIN'
+      : `Mật khẩu của ${target.fullName} là mật khẩu mặc định / dễ đoán — người đó đăng nhập máy quầy để đổi mật khẩu trước, rồi đặt PIN`,
+  );
   await usersRepo.setPin(target.userId, await bcrypt.hash(String(pin), BCRYPT_COST));
   await authGuard.clearFailures('PIN', target.username);
   return { hasPin: true };

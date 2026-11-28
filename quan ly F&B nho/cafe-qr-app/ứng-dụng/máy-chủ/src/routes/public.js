@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { request, withDeadlockRetry } from '../db.js';
 import { forbidden } from '../errors.js';
 import { capsOf } from '../auth/permissions.js';
-import { optionalStaff, requireStaff } from '../middleware/auth.js';
+import { optionalStaff, requireStaff, requireStaffAllowPasswordChange } from '../middleware/auth.js';
 import { loginLimiter, memberLimiters, orderLimiter } from '../middleware/rateLimit.js';
 import { paramGuid, paramId, parse, zBirthDate, zGuid, zId, zOrderItems, zQrToken, zText } from '../middleware/validate.js';
 import * as memberService from '../services/memberService.js';
@@ -47,7 +47,20 @@ publicRouter.post('/auth/login', loginLimiter, async (req, res) => {
 
 // F-053: tên / địa chỉ quán đọc từ Cài đặt (chưa lưu → .env). F-061: nhóm menu nâng cao đang bật (`modules`), `user.tourSeenAt`
 // F-072: `attendance` — chấm công bằng màn chung (KIOSK) hay theo đăng nhập; có cần PIN cho thao tác tiền không
-publicRouter.get('/auth/me', requireStaff, async (req, res) => {
+// F-102 (ADR-073 D-268): tự đổi mật khẩu — mọi tài khoản; token "phải đổi mật khẩu" dùng được (đổi xong nhận token mới)
+publicRouter.post('/auth/change-password', requireStaffAllowPasswordChange, async (req, res) => {
+  const body = parse(
+    z.object({
+      currentPassword: z.string().min(1, 'Nhập mật khẩu đang dùng').max(100),
+      newPassword: z.string().min(6, 'Mật khẩu tối thiểu 6 ký tự').max(100, 'Mật khẩu tối đa 100 ký tự'),
+    }),
+    req.body,
+  );
+  res.json(await userService.changeOwnPassword(req.user, body, { ip: req.ip }));
+});
+
+// F-102: token "phải đổi mật khẩu" đọc được /auth/me (user.mustChangePassword = true) để giao diện hiện hộp đổi mật khẩu
+publicRouter.get('/auth/me', requireStaffAllowPasswordChange, async (req, res) => {
   const s = await settingsService.getSettings();
   res.json({
     user: { ...req.user, caps: capsOf(req.user) }, // F-079: quyền đang có (mặc định theo vai + đặt riêng) — giao diện ẩn / hiện theo đây

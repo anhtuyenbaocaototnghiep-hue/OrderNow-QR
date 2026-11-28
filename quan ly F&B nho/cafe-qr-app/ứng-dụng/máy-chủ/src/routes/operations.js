@@ -166,6 +166,7 @@ operationsRouter.put('/settings', async (req, res) => {
       menuSheetAll: z.boolean().optional(), // F-083: bấm "+" mở bảng chọn cho mọi món (màn khách)
       guestWelcome: z.boolean().optional(), // F-092: màn chào khi khách quét QR
       guestMemberBox: z.boolean().optional(), // F-101 (ADR-071): ô hội viên trên màn khách — chỉ chủ quán
+      blockWeakPasswords: z.boolean().optional(), // F-102 (ADR-073 D-271): chặn mật khẩu mặc định / dễ đoán — chỉ chủ quán
       guestDaypartTheme: z.boolean().optional(), // F-094: màn khách tự đổi sáng / tối theo giờ
       guestSeasonDecor: z.boolean().optional(), // F-094: trang trí theo mùa
       // F-099 (ADR-062 D-245): nhận chuyển khoản bằng VietQR — chỉ chủ quán (không có trong STORE_MGR_SETTINGS); null / '' = xóa

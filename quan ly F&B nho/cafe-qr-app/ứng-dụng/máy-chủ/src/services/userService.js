@@ -8,6 +8,7 @@ import { config } from '../config.js';
 import { onLogin } from './attendanceService.js';
 import * as authGuard from './authGuardService.js';
 import { onOwnerAdded } from './alertService.js';
+import { assertNotWeakInUse, assertStrongPassword, mustChangeOnLogin } from './passwordPolicy.js';
 
 const BCRYPT_COST = 10;
 // Hash giả để so sánh khi không có user → thời gian phản hồi như nhau (không lộ username tồn tại hay không)
@@ -35,7 +36,33 @@ export async function login(username, password, { ip = null, area } = {}) {
       if (config.env !== 'test') console.error('[attendance] không ghi được giờ vào', err.message);
     });
   }
-  return { accessToken: signToken(publicUser), user: publicUser };
+  // F-102 (ADR-073 D-267): mật khẩu mặc định / dễ đoán → vào được nhưng token chỉ dùng để đổi mật khẩu / đăng xuất
+  const mustChangePassword = await mustChangeOnLogin(password, user.username);
+  return { accessToken: signToken(publicUser, { mustChangePassword }), user: { ...publicUser, mustChangePassword }, mustChangePassword };
+}
+
+/**
+ * F-102 (ADR-073 D-268): tự đổi mật khẩu của mình — phải đúng mật khẩu đang dùng (sai → 403 CURRENT_PASSWORD_INVALID, đếm như một lần
+ * đăng nhập sai — F-071 khóa tạm theo tên + máy); mới khác cũ, không dễ đoán (luôn chặn). Trả token mới (không còn dấu "phải đổi").
+ * Token cũ vẫn dùng được tới khi hết hạn (security-model G-01).
+ */
+export async function changeOwnPassword(actor, { currentPassword, newPassword }, { ip = null } = {}) {
+  const field = (path, message) => ({ fields: [{ path, message }] });
+  const who = { username: actor.username, ip };
+  await authGuard.assertNotLocked('LOGIN', who);
+  const me = await usersRepo.findByUsernameWithHash(actor.username);
+  const ok = await bcrypt.compare(currentPassword, me?.passwordHash ?? DUMMY_HASH);
+  if (!me || !ok || me.userId !== actor.userId) {
+    await authGuard.recordFailure('LOGIN', who);
+    throw new AppError(403, 'CURRENT_PASSWORD_INVALID', 'Mật khẩu đang dùng không đúng', field('currentPassword', 'Mật khẩu đang dùng không đúng'));
+  }
+  if (newPassword === currentPassword) {
+    throw badRequest('PASSWORD_SAME', 'Mật khẩu mới phải khác mật khẩu đang dùng', field('newPassword', 'Mật khẩu mới phải khác mật khẩu đang dùng'));
+  }
+  await assertStrongPassword(newPassword, me.username, { field: 'newPassword', always: true });
+  await usersRepo.setPassword(me.userId, await bcrypt.hash(newPassword, BCRYPT_COST));
+  const { passwordHash: _omit, ...publicUser } = me;
+  return { accessToken: signToken(publicUser), user: { ...publicUser, mustChangePassword: false } };
 }
 
 /**
@@ -76,6 +103,12 @@ async function confirmOwnerGrant(actor, confirmPassword) {
     await authGuard.recordFailure('APPROVAL', attempt);
     throw new AppError(403, 'OWNER_CONFIRM_INVALID', 'Mật khẩu của bạn không đúng', field('Mật khẩu của bạn không đúng'));
   }
+  // F-102 (ADR-073 D-270): mật khẩu đúng nhưng mặc định / dễ đoán không đủ để trao toàn quyền
+  await assertNotWeakInUse(
+    confirmPassword,
+    me.username,
+    'Mật khẩu của bạn là mật khẩu mặc định / dễ đoán — đổi mật khẩu trước (nút Đổi mật khẩu) rồi tạo tài khoản Chủ quán',
+  );
 }
 
 /** F-096 (ADR-058 D-237): có chủ quán mới → cảnh báo cho mọi chủ quán (+ email). Lỗi gửi không làm hỏng việc tạo / sửa tài khoản. */
@@ -83,6 +116,7 @@ const notifyOwnerAdded = (target, actor, promoted) =>
   onOwnerAdded({ target, actor, promoted }).catch((err) => console.error('Không gửi được cảnh báo chủ quán mới:', err.message));
 
 export async function create({ username, password, fullName, role, positions = null, level = 'OFFICIAL', phone = null, confirmPassword }, actor) {
+  await assertStrongPassword(password, username); // F-102 (ADR-073 D-269)
   if (role === 'ADMIN') await confirmOwnerGrant(actor, confirmPassword);
   let user;
   try {
@@ -113,6 +147,9 @@ export async function update(id, { fullName, role, positions, level, phone, conf
 }
 
 export async function resetPassword(id, password) {
+  const target = await usersRepo.findById(id);
+  if (!target) throw notFound('Không tìm thấy tài khoản');
+  await assertStrongPassword(password, target.username); // F-102 (ADR-073 D-269)
   if (!(await usersRepo.setPassword(id, await bcrypt.hash(password, BCRYPT_COST)))) throw notFound('Không tìm thấy tài khoản');
 }
 
@@ -152,6 +189,12 @@ export async function resolveApproval(
     if (!admin || !ok) await authGuard.recordFailure('APPROVAL', attempt); // chỉ đếm sai tên / mật khẩu — đúng mật khẩu mà không đủ quyền không phải dò
     throw forbidden(`Tài khoản ${who} hoặc mật khẩu không đúng`, 'ADMIN_APPROVAL_INVALID');
   }
+  // F-102 (ADR-073 D-270): mật khẩu đúng nhưng mặc định / dễ đoán (ai cũng biết) không dùng để duyệt
+  await assertNotWeakInUse(
+    adminPassword,
+    admin.username,
+    `Tài khoản "${admin.username}" đang dùng mật khẩu mặc định / dễ đoán — người đó đăng nhập để đổi mật khẩu rồi duyệt lại`,
+  );
   const { passwordHash: _omit, ...approver } = admin;
   return approver;
 }

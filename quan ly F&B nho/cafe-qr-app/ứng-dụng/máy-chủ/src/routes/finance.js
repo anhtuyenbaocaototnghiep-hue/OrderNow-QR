@@ -4,7 +4,7 @@ import express from 'express';
 import { z } from 'zod';
 import { requirePermission, requirePosition } from '../auth/permissions.js';
 import { badRequest } from '../errors.js';
-import { requireStaff } from '../middleware/auth.js';
+import { requireStaff, requireStaffAllowPasswordChange } from '../middleware/auth.js';
 import { paramId, parse, parseUtcRange, zId, zMoney, zText } from '../middleware/validate.js';
 import * as usersRepo from '../repositories/usersRepo.js';
 import * as attendanceService from '../services/attendanceService.js';
@@ -14,7 +14,8 @@ import * as shiftService from '../services/shiftService.js';
 export const financeRouter = express.Router();
 
 // ---- Đăng xuất: kết thúc chấm công (D-25) ----
-financeRouter.post('/auth/logout', requireStaff, async (req, res) => {
+// F-102 (ADR-073 D-267): token "phải đổi mật khẩu" vẫn đăng xuất được (chấm công ra)
+financeRouter.post('/auth/logout', requireStaffAllowPasswordChange, async (req, res) => {
   await shiftService.assertCanLogout(req.user); // F-054: người mở ca phải đóng ca trước (409 SHIFT_OPEN, chưa ghi giờ ra)
   res.json({ clockedOut: await attendanceService.onLogout(req.user) });
 });

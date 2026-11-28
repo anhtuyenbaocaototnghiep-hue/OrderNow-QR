@@ -1,6 +1,7 @@
 // Khung trang quản lý: Chủ quán mọi mục; Quản lý cửa hàng chỉ mục được mở (F-077 — server vẫn kiểm quyền cho mọi API, đây chỉ là trải nghiệm).
 import { staffApi } from './api.js';
 import { adminLogout, current, requireStaffPage } from './auth.js';
+import { changePasswordDialog } from './change-password.js';
 import { $, clear, confirmDialog, el, errorMessage, toast } from './ui.js';
 import { brandMark, icon } from './icons.js';
 import { canOpenAdminPage, isOwner, ROLE_LABEL } from './roles.js';
@@ -175,6 +176,8 @@ export async function mountAdminShell(active) {
       isOwner(user) ? null : el('div', { class: 'small' }, ROLE_LABEL[user.role]),
       el('div', { class: 'small', title: 'Tên đăng nhập' }, `@${user.username}`),
     ),
+    // F-102 (ADR-073 D-268): tự đổi mật khẩu đăng nhập
+    el('button', { class: 'btn btn-sm', type: 'button', onclick: () => changePasswordDialog({ username: user.username }) }, icon('lock'), 'Đổi mật khẩu'),
     el('button', { class: 'btn btn-sm', type: 'button', onclick: adminLogout }, icon('log-out'), 'Đăng xuất'), // F-080: chỉ thoát trang Quản lý
   );
   noteHiddenPage(active);

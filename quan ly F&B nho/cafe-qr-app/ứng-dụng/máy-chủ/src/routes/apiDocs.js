@@ -2,7 +2,7 @@
 // Gắn dưới /api/admin (requireAdminArea ở adminRouter) — chỉ Chủ quán (không nằm trong STORE_MGR_AREAS). Mô tả request / response ghép ở apiDocsService từ api-contract.md.
 import express from 'express';
 import { capabilityForAdmin, PERMISSIONS, ROLES, storeManagerMay } from '../auth/permissions.js';
-import { optionalStaff, requireAdmin, requireStaff } from '../middleware/auth.js';
+import { optionalStaff, requireAdmin, requireStaff, requireStaffAllowPasswordChange } from '../middleware/auth.js';
 import * as apiDocsService from '../services/apiDocsService.js';
 
 export const apiDocsRouter = express.Router();
@@ -28,7 +28,8 @@ export function accessOf(handlers, route = null) {
     const access = roles.find((r) => r !== 'ADMIN') ?? 'ADMIN';
     return { access, roles, permission };
   }
-  if (handlers.includes(requireStaff)) return { access: 'STAFF', roles: ROLES, permission: null };
+  // F-102: requireStaffAllowPasswordChange = requireStaff + nhận token "phải đổi mật khẩu" (/auth/me, /auth/change-password, /auth/logout)
+  if (handlers.includes(requireStaff) || handlers.includes(requireStaffAllowPasswordChange)) return { access: 'STAFF', roles: ROLES, permission: null };
   if (handlers.includes(optionalStaff)) return { access: 'CLIENT_OR_STAFF', roles: [], permission: null };
   return { access: 'PUBLIC', roles: [], permission: null };
 }

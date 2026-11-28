@@ -35,10 +35,11 @@ await seedDemo(pool, seeded.adminId);
 // F-088: bài cũ chạy bố cục nhiều trang + khách nhận tại quầy — E2E "màn quầy một màn hình…" tự bật rồi trả lại
 // F-092: bài cũ quét QR vào thẳng thực đơn — E2E "màn chào khi quét QR…" tự bật rồi trả lại
 // F-094: bài cũ (kể cả quét tương phản a11y) chạy theo đồng hồ thật → giữ giao diện sáng, không trang trí mùa; bài F-094 tự bật rồi trả lại
+// F-102 (ADR-073 D-271): bài cũ đăng nhập bằng mật khẩu mẫu (Admin@123, Staff@123, Pass@123) → tắt chặn mật khẩu dễ đoán; bài F-102 tự bật rồi trả lại
 await pool.request().query(
   `INSERT dbo.Settings (SettingKey, SettingValue) VALUES ('attendance.mode', 'LOGIN'), ('security.money_pin', 'false'), ('pos.one_tap', 'false'), ('menu.sheet_all', 'false'),
        ('pos.single_screen', 'false'), ('pos.serve_mode', 'COUNTER'), ('guest.welcome', 'false'), ('guest.daypart_theme', 'false'),
-       ('guest.season_decor', 'false')`,
+       ('guest.season_decor', 'false'), ('security.block_weak_passwords', 'false')`,
 );
 // F-069 (E2E "mừng khách quay lại"): hội viên đã thanh toán 8 lần, lần cuối 52 ngày trước — không có API đặt "lần cuối ghé"
 await pool.request().query(`INSERT dbo.Members (Phone, FullName, TierCode, TotalSpent, VisitCount, FirstOrderDiscountUsed, ConsentAt, CreatedAt, LastVisitAt)

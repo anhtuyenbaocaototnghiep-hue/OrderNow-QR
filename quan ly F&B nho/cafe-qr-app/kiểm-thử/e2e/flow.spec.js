@@ -5576,3 +5576,142 @@ test('đi chung / đi riêng: bàn có nhóm → điện thoại khác quét QR 
     await clearTables(request, ['NR1']);
   }
 });
+
+// ---------- TASK-141 (F-102, ADR-073): bắt đổi mật khẩu mặc định / dễ đoán, tự đổi mật khẩu ----------
+test('mật khẩu mặc định / dễ đoán: bật chặn → đăng nhập quầy bằng mật khẩu mẫu hiện hộp "Đổi mật khẩu trước khi dùng tiếp" (không nút đóng, Esc không đóng); tải lại trang khi chưa đổi → hộp hỏi cả mật khẩu đang dùng; mật khẩu dễ đoán / nhập lại khác báo dưới ô; đổi xong vào màn quầy; Giờ công của tôi có nút Đổi mật khẩu; đăng nhập Quản lý: Đăng xuất ở hộp → ở lại trang đăng nhập, đổi xong vào trang Quản lý, nút Đổi mật khẩu ở khung trang; Cài đặt có ô "Chặn mật khẩu mặc định / dễ đoán" (F-102, AC-102-06)', async ({
+  request,
+}) => {
+  const desk = { viewport: { width: 1366, height: 860 }, locale: 'vi-VN' };
+  const contexts = [];
+  const open = async (name) => {
+    const ctx = await browser.newContext(desk);
+    contexts.push(ctx);
+    const page = await ctx.newPage();
+    page.setDefaultTimeout(15_000);
+    watch(page, name);
+    return page;
+  };
+  const canLogin = async (username, password) => {
+    const r = await request.post('/api/auth/login', { data: { username, password, area: 'admin' } });
+    return r.ok() ? (await r.json()).mustChangePassword === false : false;
+  };
+  // Tài khoản riêng của bài, tạo lúc còn tắt chặn (mật khẩu mẫu) — không đụng admin / staff1 mà các bài khác dùng
+  for (const [username, role] of [
+    ['nv_doimk', 'STAFF'],
+    ['ql_doimk', 'STORE_MGR'],
+  ]) {
+    await apiAs(request, 'post', '/api/admin/users', { username, password: 'Staff@123', fullName: `Đổi MK ${username}`, role });
+  }
+  try {
+    await apiAs(request, 'put', '/api/admin/settings', { blockWeakPasswords: true });
+
+    // 1) Máy quầy: đăng nhập bằng mật khẩu mẫu → hộp bắt buộc, không đóng được, không hỏi lại mật khẩu vừa gõ
+    const S = await open('doi-mk-quay');
+    await S.goto('/pos/login');
+    await S.fill('#username', 'nv_doimk');
+    await S.fill('#password', 'Staff@123');
+    await S.click('#submit');
+    const forced = S.getByRole('dialog', { name: 'Đổi mật khẩu trước khi dùng tiếp' });
+    await expect(forced).toBeVisible();
+    await expect(forced).toContainText('mật khẩu mặc định hoặc quá dễ đoán');
+    await expect(forced.getByRole('button', { name: 'Đóng' })).toHaveCount(0);
+    await expect(forced.getByLabel('Mật khẩu đang dùng')).toHaveCount(0);
+    await S.keyboard.press('Escape');
+    await expect(forced).toBeVisible();
+
+    // Tải lại trang khi chưa đổi → về /pos, hộp hiện lại và hỏi cả mật khẩu đang dùng
+    await S.reload();
+    await expect(S).toHaveURL(/\/pos$/);
+    await expect(forced.getByLabel('Mật khẩu đang dùng')).toBeVisible();
+    await forced.getByLabel('Mật khẩu đang dùng').fill('Staff@123');
+    await forced.getByLabel('Mật khẩu mới', { exact: true }).fill('123456');
+    await forced.getByLabel('Nhập lại mật khẩu mới').fill('123456');
+    await forced.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    await expect(forced.locator('.field-error')).toContainText('dễ đoán');
+    await forced.getByLabel('Mật khẩu mới', { exact: true }).fill('Quay-Sang#E2E');
+    await forced.getByLabel('Nhập lại mật khẩu mới').fill('Quay-Sang#E2E-khac');
+    await forced.getByLabel('Nhập lại mật khẩu mới').press('Enter'); // Enter = bấm Đổi mật khẩu
+    await expect(forced.locator('.field-error')).toHaveText('Hai lần nhập mật khẩu mới không giống nhau');
+    await forced.getByLabel('Nhập lại mật khẩu mới').fill('Quay-Sang#E2E');
+    await forced.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    await expect(forced).toHaveCount(0);
+    await expect(S.locator('#conn')).toHaveText('Đã kết nối'); // trang tải lại bằng token mới, màn quầy chạy bình thường
+    await S.getByRole('dialog')
+      .getByRole('button', { name: 'Bỏ qua' })
+      .click({ timeout: 3000 })
+      .catch(() => {}); // hướng dẫn 5 bước của tài khoản mới
+    expect(await canLogin('nv_doimk', 'Staff@123')).toBe(false);
+    expect(await canLogin('nv_doimk', 'Quay-Sang#E2E')).toBe(true);
+
+    // 2) Giờ công của tôi → Đổi mật khẩu (tự mở: có nút đóng, luôn hỏi mật khẩu đang dùng)
+    await S.goto('/pos/me');
+    await S.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    const self = S.getByRole('dialog', { name: 'Đổi mật khẩu' });
+    await expect(self.getByRole('button', { name: 'Đóng' })).toBeVisible();
+    await self.getByLabel('Mật khẩu đang dùng').fill('sai-mat-khau');
+    await self.getByLabel('Mật khẩu mới', { exact: true }).fill('Quay-Chieu#E2E');
+    await self.getByLabel('Nhập lại mật khẩu mới').fill('Quay-Chieu#E2E');
+    await self.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    await expect(self.locator('.field-error')).toHaveText('Mật khẩu đang dùng không đúng');
+    await self.getByLabel('Mật khẩu đang dùng').fill('Quay-Sang#E2E');
+    await self.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    await expect(S.locator('.toast', { hasText: 'Đã đổi mật khẩu' })).toBeVisible();
+    await expect(self).toHaveCount(0);
+    expect(await canLogin('nv_doimk', 'Quay-Chieu#E2E')).toBe(true);
+
+    // 3) Đăng nhập Quản lý bằng mật khẩu mẫu: "Đăng xuất" ở hộp → ở lại trang đăng nhập; đăng nhập lại, đổi → vào trang Quản lý
+    const M = await open('doi-mk-quan-ly');
+    const adminLoginWeak = async () => {
+      await M.goto('/admin/login');
+      await M.fill('#username', 'ql_doimk');
+      await M.fill('#password', 'Staff@123');
+      await M.click('#submit');
+      await expect(M.getByRole('dialog', { name: 'Đổi mật khẩu trước khi dùng tiếp' })).toBeVisible();
+    };
+    await adminLoginWeak();
+    await M.getByRole('dialog').getByRole('button', { name: 'Đăng xuất' }).click();
+    await expect(M).toHaveURL(/\/admin\/login/);
+    await expect(M.getByRole('dialog')).toHaveCount(0);
+    await adminLoginWeak();
+    const mdlg = M.getByRole('dialog', { name: 'Đổi mật khẩu trước khi dùng tiếp' });
+    await mdlg.getByLabel('Mật khẩu mới', { exact: true }).fill('Quan-Ly#E2E-26');
+    await mdlg.getByLabel('Nhập lại mật khẩu mới').fill('Quan-Ly#E2E-26');
+    await mdlg.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    await expect(M).toHaveURL(/\/admin\/(?!login)/);
+    await expect(M.locator('.admin-side')).toBeVisible();
+    // Nút Đổi mật khẩu ở khung trang Quản lý
+    await M.locator('.admin-side').getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    const mself = M.getByRole('dialog', { name: 'Đổi mật khẩu' });
+    await mself.getByLabel('Mật khẩu đang dùng').fill('Quan-Ly#E2E-26');
+    await mself.getByLabel('Mật khẩu mới', { exact: true }).fill('Quan-Ly#E2E-27');
+    await mself.getByLabel('Nhập lại mật khẩu mới').fill('Quan-Ly#E2E-27');
+    await mself.getByRole('button', { name: 'Đổi mật khẩu' }).click();
+    await expect(M.locator('.toast', { hasText: 'Đã đổi mật khẩu' })).toBeVisible();
+    await M.reload(); // phiên Quản lý đã thay token mới — tải lại vẫn ở trang Quản lý, không hỏi đổi nữa
+    await expect(M.locator('.admin-side')).toBeVisible();
+    await expect(M.getByRole('dialog')).toHaveCount(0);
+    expect(await canLogin('ql_doimk', 'Quan-Ly#E2E-27')).toBe(true);
+
+    // 4) Cài đặt (chủ quán): ô "Chặn mật khẩu mặc định / dễ đoán" — tắt chặn trước để chủ quán (mật khẩu mẫu của bộ test) vào được
+    await apiAs(request, 'put', '/api/admin/settings', { blockWeakPasswords: false });
+    const O = await open('doi-mk-cai-dat');
+    await O.goto('/admin/login');
+    await O.fill('#username', 'admin');
+    await O.fill('#password', 'Admin@123');
+    await O.click('#submit');
+    await expect(O).toHaveURL(/\/admin\/today$/);
+    await O.goto('/admin/settings');
+    const box = O.getByLabel(/Chặn mật khẩu mặc định \/ dễ đoán/);
+    await expect(box).not.toBeChecked();
+    await box.check();
+    await O.getByRole('button', { name: 'Lưu cài đặt' }).click();
+    await expect(O.locator('.toast', { hasText: 'Đã lưu cài đặt' })).toBeVisible();
+    expect((await apiAs(request, 'get', '/api/admin/settings')).blockWeakPasswords).toBe(true);
+  } finally {
+    await Promise.all(contexts.map((c) => c.close()));
+    await apiAs(request, 'put', '/api/admin/settings', { blockWeakPasswords: false }); // các bài sau đăng nhập bằng mật khẩu mẫu
+    for (const u of (await apiAs(request, 'get', '/api/admin/users')).filter((x) => ['nv_doimk', 'ql_doimk'].includes(x.username))) {
+      await apiAs(request, 'patch', `/api/admin/users/${u.userId}/active`, { isActive: false });
+    }
+  }
+});

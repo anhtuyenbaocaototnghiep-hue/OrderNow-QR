@@ -191,6 +191,11 @@ const ICONS = {
     ['path', { d: 'M21 12H9' }],
     ['path', { d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' }],
   ],
+  // F-102: nút "Đổi mật khẩu" (Lucide lock)
+  lock: [
+    ['rect', { width: '18', height: '11', x: '3', y: '11', rx: '2', ry: '2' }],
+    ['path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' }],
+  ],
   // F-092 (màn chào khi quét QR): ghim địa chỉ quán, lời chào theo giờ (Lucide map-pin, moon, sun)
   'map-pin': [
     ['path', { d: 'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0' }],

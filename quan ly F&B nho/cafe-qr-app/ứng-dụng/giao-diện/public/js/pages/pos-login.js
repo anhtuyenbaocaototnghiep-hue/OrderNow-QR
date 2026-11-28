@@ -1,8 +1,11 @@
 // S-09 Đăng nhập: sai → "Sai tên đăng nhập hoặc mật khẩu"; khóa → "Tài khoản đã bị khóa".
 // F-084 (ADR-043): tài khoản Chủ quán chỉ dùng trang Quản lý — server từ chối đăng nhập quầy (OWNER_ADMIN_ONLY) → đăng nhập trang Quản lý
 // bằng chính mật khẩu vừa gõ và chuyển sang đó (không có phiên máy quầy, không chấm công).
+// F-102 (ADR-073 D-267): mật khẩu mặc định / dễ đoán → hộp "Đổi mật khẩu trước khi dùng tiếp" ngay tại đây (đã biết mật khẩu vừa gõ, không hỏi lại).
 import { api } from '../api.js';
+import { logout } from '../auth.js';
 import { getToken, saveAdminSession, saveStaffSession } from '../auth-store.js';
+import { changePasswordDialog } from '../change-password.js';
 import { $, clear, el, errorMessage, setBusy } from '../ui.js';
 
 const params = new URLSearchParams(location.search);
@@ -25,8 +28,13 @@ $('#form').addEventListener('submit', async (e) => {
   const btn = $('#submit');
   setBusy(btn, true);
   try {
-    const { accessToken, user } = await api('/api/auth/login', { method: 'POST', body: { username, password, area: 'pos' } });
+    const { accessToken, user, mustChangePassword } = await api('/api/auth/login', { method: 'POST', body: { username, password, area: 'pos' } });
     saveStaffSession(accessToken, user);
+    if (mustChangePassword) {
+      setBusy(btn, false);
+      const changed = await changePasswordDialog({ forced: true, currentPassword: password, token: accessToken, username: user.username });
+      if (!changed || changed === 'logout') return logout(); // đăng nhập quầy đã chấm công vào → đăng xuất cho đúng giờ ra
+    }
     location.replace(safeNext || '/pos');
   } catch (err) {
     const shown = err?.code === 'OWNER_ADMIN_ONLY' ? await ownerToAdmin(username, password).catch((e) => e) : err;
@@ -39,7 +47,17 @@ $('#form').addEventListener('submit', async (e) => {
 
 /** F-084: chủ quán gõ tài khoản ở màn quầy → đăng nhập trang Quản lý (phiên Quản lý riêng) rồi chuyển sang; trả null khi đã chuyển. */
 async function ownerToAdmin(username, password) {
-  const { accessToken, user } = await api('/api/auth/login', { method: 'POST', body: { username, password, area: 'admin' } });
+  const login = await api('/api/auth/login', { method: 'POST', body: { username, password, area: 'admin' } });
+  let { accessToken, user } = login;
+  if (login.mustChangePassword) {
+    setBusy($('#submit'), false);
+    const changed = await changePasswordDialog({ forced: true, currentPassword: password, token: accessToken, username: user.username });
+    if (!changed || changed === 'logout') {
+      $('#password').value = ''; // chưa lưu phiên nào (đăng nhập trang Quản lý không chấm công) → ở lại trang đăng nhập
+      return null;
+    }
+    ({ accessToken, user } = changed);
+  }
   saveAdminSession(accessToken, user);
   location.replace(safeNext?.startsWith('/admin') ? safeNext : '/admin/today');
   return null;

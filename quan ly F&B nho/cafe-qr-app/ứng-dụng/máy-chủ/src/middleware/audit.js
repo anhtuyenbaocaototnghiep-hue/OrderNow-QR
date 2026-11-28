@@ -109,6 +109,7 @@ const RULES = [
   ['POST', /^\/ops\/stocktakes\/(\d+)\/post$/, 'stocktake.post', 'Stocktake'],
   ['DELETE', /^\/ops\/stocktakes\/(\d+)$/, 'stocktake.delete', 'Stocktake'],
   ['PUT', /^\/ops\/stocktakes\/(\d+)$/, 'stocktake.update', 'Stocktake'], // F-048
+  ['POST', /^\/auth\/change-password$/, 'auth.change-password', 'User'], // F-102 (ADR-073 D-268): tự đổi mật khẩu (sanitize bỏ mật khẩu)
   ['POST', /^\/attendance$/, 'attendance.create', 'Attendance'],
   ['PUT', /^\/attendance\/(\d+)$/, 'attendance.update', 'Attendance'],
 ];

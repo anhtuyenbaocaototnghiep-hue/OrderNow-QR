@@ -2,10 +2,12 @@
 //  - Phiên Quản lý riêng với máy quầy (auth-store saveAdminSession); đăng nhập ở đây gửi area = 'admin' → không chấm công vào.
 //  - ADR-044: luôn phải gõ mật khẩu — không còn nút "Vào bằng tài khoản này" (dùng phiên máy quầy đang mở).
 //  - Người không có trang Quản lý nào → báo + "Xin quyền" (chọn phần trang Quản lý cần, gửi bằng phiên vừa đăng nhập, không lưu phiên).
+//  - F-102 (ADR-073 D-267): mật khẩu mặc định / dễ đoán → hộp "Đổi mật khẩu trước khi dùng tiếp" trước khi vào (biết sẵn mật khẩu vừa gõ).
 import { api, ApiError } from '../api.js';
 import { getAdminSession, saveAdminSession } from '../auth-store.js';
 import { canOpenAdminPage, firstAdminHref, hasAdminPages } from '../roles.js';
 import { brandMark } from '../icons.js';
+import { changePasswordDialog } from '../change-password.js';
 import { $, clear, el, errorMessage, setBusy } from '../ui.js';
 
 const params = new URLSearchParams(location.search);
@@ -93,7 +95,17 @@ $('#form').addEventListener('submit', async (e) => {
   setBusy(btn, true);
   clear($('#noaccess'));
   try {
-    const { accessToken } = await api('/api/auth/login', { method: 'POST', body: { username, password, area: 'admin' } });
+    const login = await api('/api/auth/login', { method: 'POST', body: { username, password, area: 'admin' } });
+    let { accessToken } = login;
+    if (login.mustChangePassword) {
+      setBusy(btn, false);
+      const changed = await changePasswordDialog({ forced: true, currentPassword: password, token: accessToken, username: login.user.username });
+      if (!changed || changed === 'logout') {
+        $('#password').value = ''; // chưa lưu phiên nào → ở lại trang đăng nhập
+        return;
+      }
+      ({ accessToken } = changed);
+    }
     const { user } = await withToken(accessToken, '/api/auth/me');
     if (!mayEnter(user)) {
       setBusy(btn, false);

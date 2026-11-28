@@ -307,6 +307,8 @@ function render(s) {
   const welcomeCheck = el('input', { type: 'checkbox', name: 'guestWelcome', id: 'guest-welcome', checked: s.guestWelcome });
   // F-101 (ADR-071): ô "Nhập SĐT để nhận ưu đãi" trên màn khách
   const memberBoxCheck = el('input', { type: 'checkbox', name: 'guestMemberBox', id: 'guest-member-box', checked: s.guestMemberBox });
+  // F-102 (ADR-073 D-271): chặn mật khẩu mặc định / dễ đoán (chỉ chủ quán)
+  const weakPwCheck = el('input', { type: 'checkbox', name: 'blockWeakPasswords', id: 'block-weak-pw', checked: s.blockWeakPasswords });
   // F-094 (ADR-056): màn khách theo giờ (sáng / tối) và trang trí theo mùa
   const daypartCheck = el('input', { type: 'checkbox', name: 'guestDaypartTheme', id: 'guest-daypart', checked: s.guestDaypartTheme });
   const seasonCheck = el('input', { type: 'checkbox', name: 'guestSeasonDecor', id: 'guest-season', checked: s.guestSeasonDecor });
@@ -580,6 +582,25 @@ function render(s) {
       ),
     ),
     card(
+      'Bảo mật đăng nhập',
+      el(
+        'label',
+        { class: 'check' },
+        weakPwCheck,
+        el(
+          'span',
+          {},
+          el('strong', {}, 'Chặn mật khẩu mặc định / dễ đoán'),
+          ' — ai đăng nhập bằng mật khẩu mẫu (Admin@123, Staff@123…), 123456, tên đăng nhập… phải đổi mật khẩu ngay mới dùng tiếp',
+        ),
+      ),
+      el(
+        'p',
+        { class: 'small muted' },
+        'Mật khẩu như vậy cũng không duyệt được ở quầy, không đặt PIN được và không đặt được cho tài khoản mới. Nên luôn bật: khách dùng chung Wi-Fi của quán, ai biết mật khẩu mẫu đều thử được. Mỗi người tự đổi mật khẩu ở Giờ công của tôi (máy quầy) hoặc nút Đổi mật khẩu ở trang Quản lý.',
+      ),
+    ),
+    card(
       'Cảnh báo bất thường qua email',
       el('div', { class: 'field' }, el('label', {}, 'Email nhận cảnh báo (tối đa 5, cách nhau dấu phẩy)'), alertEmails),
       el('label', { class: 'check' }, alertImmediate, 'Cảnh báo tức thì — hoàn tiền lớn, hủy / sửa khoản sổ quỹ đã duyệt, giá nhập tăng làm món tụt lãi'),
@@ -799,6 +820,7 @@ function render(s) {
                 menuSheetAll: sheetAllCheck.checked, // F-083
                 guestWelcome: welcomeCheck.checked, // F-092
                 guestMemberBox: memberBoxCheck.checked, // F-101
+                blockWeakPasswords: weakPwCheck.checked, // F-102 (chỉ chủ quán)
                 guestDaypartTheme: daypartCheck.checked, // F-094
                 guestSeasonDecor: seasonCheck.checked, // F-094
                 // F-099: nhận chuyển khoản bằng VietQR (chỉ chủ quán)

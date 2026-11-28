@@ -5,6 +5,7 @@ import { clearAdminSession, clearStaffSession, getAdminSession, getPosToken, get
 import { confirmDialog } from './ui.js';
 import { canOpenAdminPage, firstAdminHref, hasAdminPages, pageCap } from './roles.js';
 import { currentPath, topNav } from './embed.js';
+import { changePasswordDialog } from './change-password.js';
 
 /** Thông tin phiên hiện tại sau requireStaffPage(): { user, shop, modules } — modules: nhóm menu nâng cao đang bật (F-061). */
 export const current = { user: null, shop: null, modules: [], attendance: { mode: 'LOGIN', moneyPin: false }, pos: { oneTap: false } };
@@ -54,6 +55,15 @@ export async function requireStaffPage({ admin = false, page = '' } = {}) {
     return new Promise(() => {}); // dừng trang trong lúc chuyển hướng
   }
   const { user, shop, modules, attendance, pos } = await staffApi('/api/auth/me');
+  // F-102 (ADR-073 D-267): token "phải đổi mật khẩu" (đăng nhập bằng mật khẩu mặc định / dễ đoán) → hộp bắt buộc trước mọi thứ khác;
+  // đổi xong tải lại trang bằng token mới, chọn Đăng xuất → về trang đăng nhập. Trang nhúng (F-088) chỉ dựng sau bước này.
+  if (user.mustChangePassword) {
+    const changed = await changePasswordDialog({ forced: true, username: user.username });
+    if (changed && changed !== 'logout') location.reload();
+    else if (isAdminArea()) adminLogout();
+    else await logout();
+    return new Promise(() => {});
+  }
   current.user = user;
   current.shop = shop;
   current.modules = modules ?? [];

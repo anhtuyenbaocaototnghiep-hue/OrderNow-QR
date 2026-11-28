@@ -59,6 +59,8 @@ function toSettings(map) {
     // F-072 (ADR-030 D-124, D-127): chấm công bằng màn chung + PIN (mặc định) hoặc theo đăng nhập; PIN cho thao tác tiền (mặc định bật)
     attendanceMode: map.get('attendance.mode') === 'LOGIN' ? 'LOGIN' : 'KIOSK',
     moneyPin: map.get('security.money_pin') !== 'false',
+    // F-102 (ADR-073 D-271): chặn mật khẩu mặc định / dễ đoán — đăng nhập phải đổi, không đặt được, không dùng để duyệt / đặt PIN (mặc định bật)
+    blockWeakPasswords: map.get('security.block_weak_passwords') !== 'false',
     // F-076 (ADR-034 D-153): màn Đơn hàng "Quy trình 1 chạm" — gộp Mới + Đang pha thành "Cần làm", một nút "Xong" (mặc định bật)
     oneTap: map.get('pos.one_tap') !== 'false',
     // F-088 (ADR-049 D-214, D-217): màn quầy một màn hình hai vùng (mặc định bật); món tại bàn nhân viên mang ra (TABLE, mặc định)
@@ -191,6 +193,7 @@ const KEYS = {
   giftValidDays: 'gift.valid_days',
   attendanceMode: 'attendance.mode',
   moneyPin: 'security.money_pin',
+  blockWeakPasswords: 'security.block_weak_passwords', // F-102 (ADR-073)
   oneTap: 'pos.one_tap',
   singleScreen: 'pos.single_screen',
   serveMode: 'pos.serve_mode',

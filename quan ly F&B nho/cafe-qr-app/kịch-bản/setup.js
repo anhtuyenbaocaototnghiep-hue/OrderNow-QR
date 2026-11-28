@@ -166,4 +166,5 @@ Cài đặt xong!
   • Địa chỉ:    ${config.publicBaseUrl}
   • Quầy:       staff1 / Staff@123
   • Quản lý:    admin / mật khẩu ADMIN_SEED_PASSWORD trong .env
+  • Mật khẩu mẫu / dễ đoán (như hai mật khẩu trên) phải đổi ngay ở lần đăng nhập đầu (F-102)
 `);
