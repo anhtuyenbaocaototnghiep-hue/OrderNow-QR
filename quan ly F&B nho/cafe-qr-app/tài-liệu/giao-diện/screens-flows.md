@@ -867,3 +867,21 @@ Chủ dự án gửi ảnh một thẻ menu in giấy ("Cà phê rang xay vị t
 ## TASK-139 — Thẻ QR bàn nhắc vào Wi-Fi quán — SCR-22 (F-010, 26/11/2026)
 
 - **Thẻ QR bàn (ảnh 10 × 15 cm):** khi mã QR trỏ tới máy trong quán (`localhost` / địa chỉ IP), dưới tên / mật khẩu Wi-Fi có khung viền cam **"Lưu ý: vào Wi-Fi của quán (mã ①) rồi mới quét mã ② — dùng 4G hay mạng khác sẽ không gọi món được."**; thẻ không có Wi-Fi: một dòng cam dưới mã gọi món. Mã dùng tên miền → không in.
+
+## TASK-141 — Bắt đổi mật khẩu mặc định / dễ đoán, tự đổi mật khẩu — SCR-59, SCR-09, SCR-56, SCR-52, SCR-33 (F-102, ADR-073, 28/11/2026)
+
+- **SCR-59 hộp Đổi mật khẩu, kiểu bắt buộc:**
+  - Mở khi đăng nhập (quầy hoặc Quản lý) bằng mật khẩu dễ đoán, hoặc mở trang bất kỳ khi token còn dấu "phải đổi".
+  - Tiêu đề **"Đổi mật khẩu trước khi dùng tiếp"**. Lời nhắn: mật khẩu vừa dùng là mật khẩu mặc định hoặc quá dễ đoán — ai dùng chung Wi-Fi của quán cũng thử được.
+  - Không có nút "×", Esc / chạm nền không đóng. Hai nút: **Đăng xuất** · **Đổi mật khẩu**.
+  - Ô: **Mật khẩu đang dùng** (ẩn khi vừa gõ ở trang đăng nhập), **Mật khẩu mới**, **Nhập lại mật khẩu mới**. Dòng gợi ý: ít nhất 6 ký tự, không dùng mật khẩu mẫu, 123456, tên đăng nhập.
+  - Lỗi hiện ngay dưới ô: hai lần nhập không giống nhau, mật khẩu đang dùng không đúng, mật khẩu mới trùng cũ / dễ đoán.
+  - Đổi xong → báo "Đã đổi mật khẩu", vào trang như thường (màn quầy / trang Quản lý).
+- **SCR-59 hộp Đổi mật khẩu, kiểu tự mở:**
+  - Mở từ nút **Đổi mật khẩu** ở SCR-52 Giờ công của tôi (cạnh Đặt / Đổi PIN) hoặc ở khung trang Quản lý (dưới tên người dùng, cạnh Đăng xuất).
+  - Tiêu đề **"Đổi mật khẩu"**, có "×", nút **Thôi** · **Đổi mật khẩu**. Luôn hỏi mật khẩu đang dùng.
+- **SCR-33 Cài đặt → thẻ "Bảo mật đăng nhập":** ô tích **"Chặn mật khẩu mặc định / dễ đoán"** (mặc định tích, chỉ chủ quán đổi).
+  - Giải thích khi bật: ai đăng nhập bằng mật khẩu mẫu (`Admin@123`, `Staff@123`…), 123456, tên đăng nhập… phải đổi ngay mới dùng tiếp. Mật khẩu như vậy không duyệt được ở quầy, không đặt được cho tài khoản mới.
+  - Tắt: như trước.
+- **SCR-20 Tài khoản:** tạo / đặt lại mật khẩu dễ đoán → lỗi ngay dưới ô Mật khẩu (khi bật).
+- **Ô duyệt ở quầy** (giảm giá tay, hoàn tiền, chi quỹ, xóa món…) và **Đặt PIN**: mật khẩu đúng mà dễ đoán → báo "Tài khoản … đang dùng mật khẩu mặc định / dễ đoán — người đó đăng nhập để đổi mật khẩu trước" (khi bật).

@@ -954,3 +954,27 @@ Chi tiết: [FEATURE-101](../chức-năng/FEATURE-101.md), BR-131. Không có en
 ## Bổ sung ADR-072 — gọi nhân viên tối đa 5 lần / 1 phút (TASK-138, 26/11/2026)
 
 - `POST /api/sessions/{id}/call-staff`: mỗi phiên tối đa **5** yêu cầu `STAFF` trong **60 giây gần nhất**; lần thứ 6 → `429 TOO_SOON` `{ details: { retryAfter } }` — số giây tới khi lần cũ nhất trong 5 lần qua đủ 60 giây (1–60). Trước: 1 lần / 60 giây. Yêu cầu chuyển bàn (`MOVE`, F-086) không tính.
+
+## Bổ sung F-102 — bắt đổi mật khẩu mặc định / dễ đoán, tự đổi mật khẩu (ADR-073, TASK-141, 28/11/2026)
+
+Chi tiết: [FEATURE-102](../chức-năng/FEATURE-102.md), BR-132. "Dễ đoán" theo D-266 (`domain/password.js`). Cài đặt `blockWeakPasswords` bật (mặc định) thì áp các dòng có ghi "khi bật".
+
+- **Đăng nhập** `POST /api/auth/login`:
+  - Thêm `mustChangePassword` (boolean) ở phản hồi và trong `user`.
+  - Khi bật: mật khẩu đúng mà dễ đoán → `true`, token mang dấu "phải đổi mật khẩu".
+- **Token "phải đổi"** chỉ dùng được cho `GET /api/auth/me` (`user.mustChangePassword = true`), `POST /api/auth/change-password`, `POST /api/auth/logout`.
+  - Mọi API nhân viên / trang Quản lý khác → `403 PASSWORD_CHANGE_REQUIRED`.
+  - Kết nối Socket.io bằng token đó bị từ chối.
+- **Mới** `POST /api/auth/change-password` (mọi tài khoản đang đăng nhập) `{ currentPassword, newPassword }` → `200 { accessToken, user }` (token mới không có dấu).
+  - `403 CURRENT_PASSWORD_INVALID` (ô `currentPassword`): sai mật khẩu đang dùng; tính một lần đăng nhập sai (F-071 — 10 lần / 15 phút → `429 LOGIN_LOCKED`).
+  - `400 PASSWORD_SAME` (ô `newPassword`): mới trùng cũ.
+  - `400 WEAK_PASSWORD` (ô `newPassword`): mới dễ đoán — luôn chặn, kể cả khi tắt cài đặt.
+  - `400 VALIDATION_ERROR`: mới dưới 6 / quá 100 ký tự.
+  - Nhật ký thao tác `auth.change-password` (bỏ mọi trường mật khẩu).
+- **Đặt mật khẩu cho người khác** `POST /api/admin/users`, `POST /api/admin/users/{id}/reset-password`: khi bật, mật khẩu dễ đoán → `400 WEAK_PASSWORD` (ô `password`).
+- **Mật khẩu đúng mà dễ đoán không xác nhận được gì** (khi bật) → `403 WEAK_PASSWORD_IN_USE`:
+  - Ô duyệt ở quầy (`adminUsername` / `adminPassword`).
+  - `POST /api/auth/pin`, `POST /api/auth/pin/kiosk`.
+  - `confirmPassword` khi tạo / nâng tài khoản Chủ quán.
+  - Sai mật khẩu vẫn trả lỗi cũ và vẫn đếm lần sai.
+- **Cài đặt** `GET /api/admin/settings`: thêm `blockWeakPasswords` (boolean, mặc định `true`). `PUT /api/admin/settings` nhận `blockWeakPasswords` — chỉ chủ quán (quản lý cửa hàng gửi → `403 OWNER_ONLY`).

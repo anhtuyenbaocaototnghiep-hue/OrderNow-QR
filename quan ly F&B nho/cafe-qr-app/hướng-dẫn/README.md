@@ -67,6 +67,8 @@ Bấm đúp **`2-mở-app.cmd`** → trình duyệt tự mở <http://localhost:
 | Quản lý | <http://localhost:3000/admin> | `admin` / mật khẩu `ADMIN_SEED_PASSWORD` trong `.env` (mặc định `Admin@123`) |
 | Khách | link QR từng bàn (bấm `8-xem-link-qr-bàn.cmd`) | không cần đăng nhập |
 
+> Lần đầu đăng nhập bằng mật khẩu mẫu (`Admin@123`, `Staff@123`…), app hiện hộp **"Đổi mật khẩu trước khi dùng tiếp"** — đặt mật khẩu mới (ít nhất 6 ký tự, không dùng 123456 hay tên đăng nhập) rồi mới dùng được. Sau này tự đổi ở **Giờ công của tôi** (máy quầy) hoặc nút **Đổi mật khẩu** dưới tên bạn ở trang Quản lý.
+
 > Lần đầu vào trang Quầy, bấm nút **"Bật âm thanh"** ở góc trên. Trình duyệt chặn âm thanh cho tới khi bạn bấm vào trang.
 
 ## 4. Thử nhanh một vòng (khoảng 5 phút)

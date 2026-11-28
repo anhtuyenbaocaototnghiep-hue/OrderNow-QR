@@ -46,7 +46,7 @@
 | `UPLOADS_DIR`, `LOG_DIR` | thư mục **ngoài** thư mục app, ví dụ `D:\cafe-qr-data\uploads`, `D:\cafe-qr-data\nhat-ky` — thay thư mục app khi phát hành không làm mất ảnh hóa đơn / nhật ký |
 | `RESTORE_SQL_SERVER` | để trống nếu cài *Default instance*; `.\SQLEXPRESS` nếu lỡ cài instance có tên |
 
-- [ ] `npm run setup`: tạo CSDL + login `cafe_app` + bảng + tài khoản quản lý đầu tiên. Đăng nhập `/admin` → **đổi mật khẩu admin**.
+- [ ] `npm run setup`: tạo CSDL + login `cafe_app` + bảng + tài khoản quản lý đầu tiên. Đăng nhập `/admin` → **đổi mật khẩu admin** (app tự hiện hộp đổi mật khẩu vì đang là mật khẩu mẫu — F-102).
 - [ ] **Bỏ dữ liệu mẫu do setup tạo** (setup luôn tạo để chạy thử):
   - Quản lý → Tài khoản → **xóa tài khoản `staff1`** (mật khẩu `Staff@123` có trong tài liệu công khai — ai trong Wi-Fi quán cũng đăng nhập quầy được nếu còn);
   - xóa món, nguyên liệu, bàn mẫu (nút Xóa — CSDL mới chưa có lịch sử nên xóa hẳn) trước khi nhập dữ liệu thật ở §A7;

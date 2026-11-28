@@ -40,6 +40,8 @@ npm run dev              # http://localhost:3000
 | Quầy | `/pos` | `staff1` / `Staff@123` |
 | Quản lý | `/admin` | `admin` / mật khẩu `ADMIN_SEED_PASSWORD` trong `.env` |
 
+Đăng nhập bằng mật khẩu mẫu / dễ đoán (như hai mật khẩu trên) → app bắt đổi mật khẩu ngay mới dùng tiếp (F-102). Mỗi người tự đổi mật khẩu ở **Giờ công của tôi** (quầy) hoặc nút **Đổi mật khẩu** ở trang Quản lý.
+
 Muốn điện thoại thật quét QR được: đặt `PUBLIC_BASE_URL=http://<IP-LAN>:3000` trong `.env`, mở port 3000 trên firewall, rồi in lại QR ở Quản lý → Bàn & mã QR.
 
 ## Kiểm thử

@@ -40,7 +40,7 @@ Gồm rủi ro vận hành và các lỗ hổng thiết kế G-01…G-10 ghi ở
 
 | ID | Rủi ro | Mức | Đề xuất | Quyết định |
 | --- | --- | --- | --- | --- |
-| SEC-R1 (G-10) | Tài khoản demo seed (`admin` / `Admin@123`, `staff1` / `Staff@123`) | Cao nếu chạy thật | Đổi mật khẩu ngay khi cài tại quán; không chạy `db:seed:demo` trên máy thật | |
+| SEC-R1 (G-10) | Tài khoản demo seed (`admin` / `Admin@123`, `staff1` / `Staff@123`) | Cao nếu chạy thật | Đổi mật khẩu ngay khi cài tại quán; không chạy `db:seed:demo` trên máy thật. **28/11/2026 (F-102, ADR-073):** app tự bắt đổi khi đăng nhập bằng mật khẩu mẫu / dễ đoán, không cho dùng chúng để duyệt / đặt PIN | |
 | SEC-R2 (G-05) | HTTP trong LAN: JWT / mật khẩu đi không mã hóa, cookie không `Secure` | Trung bình | Wi-Fi quán WPA2+ có mật khẩu; đưa lên Internet bắt buộc HTTPS (bước 15) | |
 | SEC-R3 (G-01, G-02) | JWT không thu hồi được khi đăng xuất / đổi mật khẩu (tối đa 8 giờ); socket đang mở không bị ngắt khi token hết hạn / tài khoản bị khóa | Trung bình | Danh sách token thu hồi + ngắt socket khi khóa tài khoản (task riêng) | |
 | SEC-R4 | Chưa rà soát pháp lý dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP) | Trung bình | Chủ dự án rà soát trước khi lưu SĐT khách thật ([project-brief.md](../sản-phẩm/project-brief.md)) | |
