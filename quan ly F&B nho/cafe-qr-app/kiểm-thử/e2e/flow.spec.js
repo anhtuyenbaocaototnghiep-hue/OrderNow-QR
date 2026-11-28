@@ -5715,3 +5715,33 @@ test('mật khẩu mặc định / dễ đoán: bật chặn → đăng nhập q
     }
   }
 });
+
+// ---------- TASK-142 (F-103, ADR-074): sao lưu tự động — thẻ "Sao lưu dữ liệu" ở Cài đặt ----------
+test('sao lưu dữ liệu: Cài đặt → thẻ "Sao lưu dữ liệu" hiện thư mục và chưa có bản nào; bấm "Sao lưu ngay" → báo đã sao lưu, thẻ hiện bản gần nhất (giờ, dung lượng) (F-103, AC-103-05)', async ({
+  request,
+}) => {
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 860 }, locale: 'vi-VN' });
+  try {
+    const O = await ctx.newPage();
+    O.setDefaultTimeout(30_000);
+    watch(O, 'sao-luu');
+    await O.goto('/admin/login');
+    await O.fill('#username', 'admin');
+    await O.fill('#password', 'Admin@123');
+    await O.click('#submit');
+    await expect(O).toHaveURL(/\/admin\/today$/);
+    await O.goto('/admin/settings');
+    const box = O.locator('#backup-box');
+    await expect(box).toContainText('Thư mục:');
+    await expect(box.locator('#backup-last')).toContainText('Chưa có bản sao lưu nào');
+    await box.getByRole('button', { name: 'Sao lưu ngay' }).click();
+    await expect(O.locator('.toast', { hasText: 'Đã sao lưu' })).toBeVisible();
+    await expect(box.locator('#backup-last')).toContainText('Bản gần nhất:');
+    await expect(box.locator('#backup-last')).toContainText('MB');
+    const s = await apiAs(request, 'get', '/api/admin/backup');
+    expect(s.last.file).toMatch(/^CafeQrTest_\d{8}-\d{4}\.bak$/);
+    expect(s.lastError).toBeNull();
+  } finally {
+    await ctx.close();
+  }
+});

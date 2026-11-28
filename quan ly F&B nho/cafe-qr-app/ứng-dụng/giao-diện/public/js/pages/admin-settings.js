@@ -146,6 +146,67 @@ function simulateBank() {
   });
 }
 
+const mb = (bytes) => `${(bytes / 1024 / 1024).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} MB`;
+const gb = (bytes) => `${(bytes / 1024 ** 3).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} GB`;
+
+/** F-103 (ADR-074 D-275): thẻ "Sao lưu dữ liệu" — bản gần nhất, lỗi gần nhất, thư mục, bản chép thứ hai, ổ còn trống, nút Sao lưu ngay. */
+function paintBackup(box, b) {
+  const now = el('button', { class: 'btn btn-primary', type: 'button', id: 'backup-now' }, 'Sao lưu ngay');
+  now.addEventListener('click', async () => {
+    setBusy(now, true);
+    try {
+      const r = await staffApi('/api/admin/backup/run', { method: 'POST', body: {} });
+      toast(`Đã sao lưu — ${mb(r.result.bytes)}`, 'success');
+      paintBackup(box, r.status);
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+      loadBackup(box); // hiện lỗi vừa gặp
+    }
+  });
+  const last = b.last
+    ? el(
+        'div',
+        { class: `alert ${b.due ? 'warning' : 'success'}`, id: 'backup-last' },
+        `Bản gần nhất: ${dateTime(b.last.finishedAt)} · ${mb(b.last.bytes)} · ${b.last.uploads} ảnh`,
+        b.due ? ' — đã hơn 20 giờ, app sẽ tự sao lưu khi đang chạy (hoặc bấm Sao lưu ngay)' : '',
+      )
+    : el('div', { class: 'alert warning', id: 'backup-last' }, 'Chưa có bản sao lưu nào — bấm "Sao lưu ngay".');
+  const error = b.lastError
+    ? el('div', { class: 'alert danger' }, b.lastError.at ? `Lần sao lưu lúc ${dateTime(b.lastError.at)} lỗi: ${b.lastError.message}` : b.lastError.message)
+    : null;
+  const copy = b.copyDir
+    ? `Bản chép thứ hai: ${b.copyDir}${b.last && !b.last.copied ? ` — lần gần nhất CHƯA chép được${b.last.copyError ? `: ${b.last.copyError}` : ''}` : ''}.`
+    : 'Chưa có bản chép thứ hai ngoài máy: máy hỏng / mất là mất cả bản sao lưu. Nên đặt BACKUP_COPY_DIR trong .env là thư mục Google Drive / OneDrive (hoặc chép thư mục trên ra USB mỗi tuần).';
+  clear(
+    box,
+    last,
+    error,
+    el(
+      'p',
+      { class: 'small muted' },
+      'App tự sao lưu sau mỗi lần đóng ca và khi bản gần nhất đã quá 20 giờ (máy tắt đêm thì sáng mở app là sao lưu). Sao lưu cả dữ liệu lẫn ảnh, không gồm mật khẩu trong .env.',
+    ),
+    el(
+      'p',
+      { class: 'small' },
+      b.dir
+        ? `Thư mục: ${b.dir} — giữ mọi bản ${b.keepDays} ngày gần nhất và mỗi tháng một bản trong ${b.keepMonths} tháng.`
+        : 'Chưa đặt thư mục sao lưu (BACKUP_DIR).',
+      b.freeBytes !== null ? ` Ổ còn trống ${gb(b.freeBytes)}.` : '',
+    ),
+    el('p', { class: 'small' }, copy),
+    el('div', {}, now),
+  );
+}
+
+async function loadBackup(box) {
+  try {
+    paintBackup(box, await staffApi('/api/admin/backup'));
+  } catch (err) {
+    clear(box, el('div', { class: 'alert warning' }, `Không đọc được tình trạng sao lưu: ${errorMessage(err)}`));
+  }
+}
+
 // F-099: danh sách ngân hàng VietQR (cùng danh sách trả lương) — người không xem được thì để trống
 let banks = [];
 async function load() {
@@ -308,6 +369,9 @@ function render(s) {
   // F-101 (ADR-071): ô "Nhập SĐT để nhận ưu đãi" trên màn khách
   const memberBoxCheck = el('input', { type: 'checkbox', name: 'guestMemberBox', id: 'guest-member-box', checked: s.guestMemberBox });
   // F-102 (ADR-073 D-271): chặn mật khẩu mặc định / dễ đoán (chỉ chủ quán)
+  // F-103 (ADR-074 D-275): thẻ Sao lưu dữ liệu — chỉ chủ quán (API chặn người khác)
+  const owner = current.user?.role === 'ADMIN';
+  const backupBox = el('div', { class: 'stack', id: 'backup-box', 'aria-live': 'polite' }, el('p', { class: 'muted' }, 'Đang tải…'));
   const weakPwCheck = el('input', { type: 'checkbox', name: 'blockWeakPasswords', id: 'block-weak-pw', checked: s.blockWeakPasswords });
   // F-094 (ADR-056): màn khách theo giờ (sáng / tối) và trang trí theo mùa
   const daypartCheck = el('input', { type: 'checkbox', name: 'guestDaypartTheme', id: 'guest-daypart', checked: s.guestDaypartTheme });
@@ -425,6 +489,7 @@ function render(s) {
   const autoCheck = el('input', { type: 'checkbox', name: 'autoConfirm', id: 'auto-confirm', checked: s.autoConfirm });
   const feedBox = el('div', { class: 'small', id: 'bank-feed-status', 'aria-live': 'polite' });
   paintFeed(feedBox, s);
+  if (owner) loadBackup(backupBox); // F-103
   clear(
     $('#content'),
     card(
@@ -600,6 +665,7 @@ function render(s) {
         'Mật khẩu như vậy cũng không duyệt được ở quầy, không đặt PIN được và không đặt được cho tài khoản mới. Nên luôn bật: khách dùng chung Wi-Fi của quán, ai biết mật khẩu mẫu đều thử được. Mỗi người tự đổi mật khẩu ở Giờ công của tôi (máy quầy) hoặc nút Đổi mật khẩu ở trang Quản lý.',
       ),
     ),
+    owner ? card('Sao lưu dữ liệu', backupBox) : null,
     card(
       'Cảnh báo bất thường qua email',
       el('div', { class: 'field' }, el('label', {}, 'Email nhận cảnh báo (tối đa 5, cách nhau dấu phẩy)'), alertEmails),

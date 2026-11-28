@@ -6,6 +6,7 @@ import { AppError, badRequest, forbidden, notFound } from '../errors.js';
 import { STORE_MGR_SETTINGS } from '../auth/permissions.js';
 import { paramId, parse, parseRange, zId, zMoney, zText } from '../middleware/validate.js';
 import * as alertService from '../services/alertService.js';
+import * as backupService from '../services/backupService.js';
 import * as bankFeedService from '../services/bankFeedService.js';
 import * as brandService from '../services/brandService.js';
 import * as mailService from '../services/mailService.js';
@@ -19,6 +20,7 @@ import * as settingsService from '../services/settingsService.js';
 import * as shiftService from '../services/shiftService.js';
 import * as stockService from '../services/stockService.js';
 import { addDays, todayVn, vnDayStartUtc } from '../utils/time.js';
+import { runJob } from '../jobs/scheduler.js';
 
 export const operationsRouter = express.Router();
 
@@ -214,6 +216,15 @@ operationsRouter.put('/settings', async (req, res) => {
   // F-060 (ADR-020 D-78): đổi cài đặt cảnh báo → thư báo tới cả địa chỉ cũ lẫn mới (lỗi gửi không làm hỏng việc lưu)
   if (before) await alertService.onAlertSettingsChanged(before, after, req.user).catch((err) => console.error('alert settings:', err?.message ?? err));
   res.json(after);
+});
+
+// F-103 (ADR-074 D-275): sao lưu dữ liệu — chỉ chủ quán (khóa "backup" không thuộc nhóm quyền nào → quản lý cửa hàng 403 OWNER_ONLY)
+operationsRouter.get('/backup', async (_req, res) => res.json(await backupService.status()));
+operationsRouter.post('/backup/run', async (_req, res) => {
+  const r = await runJob(backupService.JOB_NAME, { manual: true });
+  if (r.status === 'SKIPPED') throw new AppError(409, 'BACKUP_RUNNING', 'Đang có một lần sao lưu khác chạy — đợi một lát rồi xem lại');
+  if (r.status === 'FAILED') throw new AppError(500, 'BACKUP_FAILED', `Sao lưu không thành công: ${r.error}`);
+  res.json({ result: r.info, status: await backupService.status() });
 });
 
 // F-100 (ADR-063 D-249, D-252): tự xác nhận chuyển khoản — trạng thái hỏi SePay + giả lập tiền vào (thử trước khi có khóa); chỉ chủ quán

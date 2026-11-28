@@ -1,6 +1,7 @@
 // Server cho E2E (Playwright): reset DB test + seed, rồi chạy app ở cổng E2E_PORT (mặc định 3100).
 // Không bao giờ chạm DB dev: tên DB phải kết thúc bằng "Test".
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,7 +23,11 @@ Object.assign(process.env, {
   ADMIN_SEED_PASSWORD: 'Admin@123',
   // Ảnh tải lên khi chạy E2E (logo F-095, ảnh hóa đơn F-033) vào thư mục tạm — không lẫn vào uploads/ thật (sự cố 17/11/2026)
   UPLOADS_DIR: path.join(os.tmpdir(), 'cafe-qr-e2e-uploads'),
+  // F-103: "Sao lưu ngay" ở Cài đặt sao lưu CSDL test vào thư mục tạm — xóa trước để app tự tạo + cấp quyền cho SQL Server (D-274)
+  BACKUP_DIR: path.join(os.tmpdir(), 'cafe-qr-e2e-backup'),
+  BACKUP_COPY_DIR: '',
 });
+fs.rmSync(process.env.BACKUP_DIR, { recursive: true, force: true });
 process.env.JWT_SECRET ||= 'e2e-secret-only-for-local-tests';
 
 execFileSync(process.execPath, [path.join(root, 'kịch-bản/db-migrate.js'), '--db', dbName, '--reset', '--quiet'], { stdio: 'inherit', env: process.env });

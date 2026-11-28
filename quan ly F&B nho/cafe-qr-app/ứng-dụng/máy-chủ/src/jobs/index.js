@@ -6,6 +6,7 @@ import { invalidateSuggestions } from '../services/menuService.js';
 import * as forecastService from '../services/forecastService.js';
 import * as attendanceService from '../services/attendanceService.js';
 import * as auditRepo from '../repositories/auditRepo.js';
+import * as backupService from '../services/backupService.js';
 import * as campaignService from '../services/campaignService.js';
 import * as dashboardService from '../services/dashboardService.js';
 import * as inventoryService from '../services/inventoryService.js';
@@ -51,6 +52,13 @@ registerJob('campaigns-due', { label: 'Chạy chiến dịch đã hẹn giờ', 
 // F-086 (ADR-047 D-209): bàn có người quét QR nhưng không gọi món quá 30 phút → tự đóng (quầy không còn bàn "ma")
 // F-087 (ADR-048 D-212): thời gian theo Cài đặt → Bàn trống (Tắt / 15 / 30 / 60 phút), đọc mỗi lần chạy
 registerJob('close-idle-tables', { label: 'Tự trả bàn trống (thời gian theo Cài đặt)', everyMinutes: 5 }, () => sessionService.closeIdleEmpty());
+
+// F-103 (ADR-074 D-273): sao lưu CSDL + ảnh — không có lịch ở đây: jobs/backupTimer.js gọi khi đến hạn (bản gần nhất > 20 giờ,
+// sau đóng ca), nút "Sao lưu ngay" ở Cài đặt gọi trực tiếp
+registerJob(backupService.JOB_NAME, { label: 'Sao lưu dữ liệu (CSDL + ảnh)', schedule: 'Sau mỗi lần đóng ca và khi bản gần nhất quá 20 giờ' }, async () => {
+  const r = await backupService.runBackup();
+  return { file: r.file, bytes: r.bytes, seconds: r.seconds, uploads: r.uploads, copied: r.copied, removed: r.removed.length };
+});
 
 // 00:30: tổng hợp số liệu hôm qua cho dashboard chủ quán — F-043
 registerJob('daily-summary', { label: 'Tổng hợp ngày (dashboard)', at: '00:30' }, () => dashboardService.computeYesterday());

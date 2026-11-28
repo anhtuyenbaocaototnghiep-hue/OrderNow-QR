@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../ứng-dụng/máy-chủ/src/config.js';
+import { DEFAULT_WINDOWS_DIR } from '../ứng-dụng/máy-chủ/src/services/backupService.js';
 import { buildMoves, isSafeDbName, parseFileList, parseHeader } from './lib/vận-hành.js';
 
 const DRILL_DB = 'CafeQrRestoreDrill';
@@ -23,7 +24,7 @@ const drill = args.includes('--drill');
 const replace = args.includes('--replace');
 const target = drill ? DRILL_DB : argValue('--to');
 const fileArg = args.find((a, i) => a.toLowerCase().endsWith('.bak') && args[i - 1] !== '--to');
-const backupDir = process.env.BACKUP_DIR || '';
+const backupDir = process.env.BACKUP_DIR || (process.platform === 'win32' ? DEFAULT_WINDOWS_DIR : ''); // F-103 (ADR-074 D-274)
 const sqlUser = process.env.RESTORE_SQL_USER || '';
 // Đăng nhập Windows chỉ chạy qua kết nối nội bộ "." (qua 127.0.0.1,1433 bị từ chối "untrusted domain")
 const server = process.env.RESTORE_SQL_SERVER || (sqlUser ? `${config.db.server},${config.db.port}` : '.');

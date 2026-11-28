@@ -74,6 +74,7 @@ const ADMIN_ENTITY = {
   segments: 'Segment',
   campaigns: 'Campaign',
   'missed-punches': 'MissedPunch',
+  backup: 'Backup', // F-103: bấm "Sao lưu ngay"
 };
 
 // Route quầy (đường dẫn sau /api): [method, regex (nhóm 1 = id), action, entity]

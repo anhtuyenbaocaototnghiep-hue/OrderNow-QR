@@ -6,11 +6,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import sql from 'mssql';
 import { config } from '../ứng-dụng/máy-chủ/src/config.js';
+import { DEFAULT_WINDOWS_DIR } from '../ứng-dụng/máy-chủ/src/services/backupService.js';
 import { backupAgeStatus, dbSizeStatus, diskStatus, EXPRESS_LIMIT_MB, overall, stamp } from './lib/vận-hành.js';
 
 const env = process.env;
 const logDir = env.LOG_DIR || path.join(config.repoRoot, 'nhật-ký');
-const backupDir = env.BACKUP_DIR || '';
+// F-103 (ADR-074 D-274): chưa đặt BACKUP_DIR trên Windows → thư mục máy chủ app tự sao lưu vào
+const backupDir = env.BACKUP_DIR || (process.platform === 'win32' ? DEFAULT_WINDOWS_DIR : '');
 const checks = [];
 const add = (name, status, detail) => checks.push({ name, status, detail });
 const gb = (bytes) => `${(bytes / 1024 ** 3).toFixed(1)} GB`;

@@ -18,6 +18,9 @@ export function useTestDatabase() {
   process.env.ADMIN_SEED_USERNAME = 'admin';
   process.env.ADMIN_SEED_PASSWORD = 'Admin@123';
   process.env.UPLOADS_DIR = path.join(os.tmpdir(), 'cafe-qr-test-uploads'); // ảnh hóa đơn test không vào uploads/ thật
+  // F-103: sao lưu khi chạy test vào thư mục tạm — không lẫn bản CafeQrTest vào thư mục sao lưu thật (mặc định C:\CafeQr-SaoLuu)
+  process.env.BACKUP_DIR = path.join(os.tmpdir(), 'cafe-qr-test-backup');
+  process.env.BACKUP_COPY_DIR = '';
   return name;
 }
 

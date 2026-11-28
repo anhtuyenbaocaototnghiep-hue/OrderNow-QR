@@ -8,8 +8,10 @@ import { attachRealtime } from './realtime/io.js';
 import { initAvailability } from './services/menuService.js';
 import { startScheduler } from './jobs/scheduler.js';
 import { startAlertMailer } from './jobs/alertMailer.js';
+import { startBackupTimer } from './jobs/backupTimer.js';
 import { startBankFeed } from './services/bankFeedService.js';
 import * as qrCheckService from './services/qrCheckService.js';
+import { backupConfig } from './services/backupService.js';
 
 void config.jwtSecret; // kiểm tra sớm biến bắt buộc
 
@@ -53,6 +55,16 @@ server.listen(config.port, () => {
     console.log(
       `Tự xác nhận chuyển khoản: ${config.sepay.token ? 'có khóa SePay — hỏi tiền vào mỗi 5 giây khi bật ở Cài đặt' : 'chưa có SEPAY_API_TOKEN trong .env (chỉ thử được bằng Giả lập)'}`,
     );
+  // F-103 (ADR-074 D-273): tự sao lưu sau đóng ca + khi bản gần nhất quá 20 giờ (cùng công tắc JOBS_ENABLED)
+  if (startBackupTimer()) {
+    let where;
+    try {
+      where = backupConfig().dir || 'chưa đặt BACKUP_DIR trong .env — chưa tự sao lưu';
+    } catch (err) {
+      where = `cấu hình sai: ${err.message}`;
+    }
+    console.log(`Sao lưu tự động: ${where}`);
+  }
   // F-060: gửi email cảnh báo + tổng kết ngày (cùng công tắc JOBS_ENABLED)
   if (startAlertMailer())
     console.log(

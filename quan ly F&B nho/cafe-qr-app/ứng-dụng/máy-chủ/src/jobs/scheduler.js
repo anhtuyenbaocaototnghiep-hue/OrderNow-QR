@@ -13,9 +13,12 @@ const jobs = new Map(); // name → { name, label, everyMinutes?, at?, run }
 let timer = null;
 const lastRunAt = new Map(); // name → ms (job theo chu kỳ)
 
-/** everyMinutes: chạy mỗi N phút; at: 'HH:MM' giờ quán mỗi ngày. run() trả object ghi vào Info. */
-export function registerJob(name, { label, everyMinutes = null, at = null }, run) {
-  jobs.set(name, { name, label: label ?? name, everyMinutes, at, run });
+/**
+ * everyMinutes: chạy mỗi N phút; at: 'HH:MM' giờ quán mỗi ngày. run() trả object ghi vào Info.
+ * Không có cả hai: bộ lập lịch không tự chạy — nơi khác gọi runJob() (vd. sao lưu F-103 có bộ hẹn giờ riêng); `schedule` = chữ hiện ở trang Job.
+ */
+export function registerJob(name, { label, everyMinutes = null, at = null, schedule = null }, run) {
+  jobs.set(name, { name, label: label ?? name, everyMinutes, at, schedule, run });
 }
 
 async function acquire(name) {
@@ -115,6 +118,16 @@ export function stopScheduler() {
   timer = null;
 }
 
+/** Lần chạy gần nhất của job `name` có trạng thái `status` (OK / FAILED / …) → { runId, startedAt, finishedAt, info, error } hoặc null. */
+export async function lastRunOf(name, status) {
+  const r = await query('SELECT TOP 1 RunId, StartedAt, FinishedAt, Info, Error FROM dbo.JobRuns WHERE Name = @n AND Status = @s ORDER BY RunId DESC', {
+    n: [sql.VarChar(50), name],
+    s: [sql.VarChar(10), status],
+  });
+  const x = r.recordset[0];
+  return x ? { runId: Number(x.RunId), startedAt: x.StartedAt, finishedAt: x.FinishedAt, info: x.Info, error: x.Error } : null;
+}
+
 /** Trang quản lý: danh sách job + lần chạy gần nhất. */
 export async function jobStatus() {
   const r = await query(`
@@ -127,7 +140,7 @@ export async function jobStatus() {
     return {
       name: j.name,
       label: j.label,
-      schedule: j.at ? `Hằng ngày ${j.at}` : `Mỗi ${j.everyMinutes} phút`,
+      schedule: j.schedule ?? (j.at ? `Hằng ngày ${j.at}` : `Mỗi ${j.everyMinutes} phút`),
       lastRun: l ? { status: l.Status, startedAt: l.StartedAt, finishedAt: l.FinishedAt, info: l.Info, error: l.Error } : null,
     };
   });
