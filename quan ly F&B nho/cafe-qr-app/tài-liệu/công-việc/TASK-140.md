@@ -56,4 +56,7 @@ Phép dò tạm trên CSDL test, đã xóa sau khi dò.
 
 ## Kết quả chạy đủ
 
-_(ghi sau khi chạy)_
+- `npm test` (28/11/2026): **521/521 PASS** (518 cũ + 3 test DEF-036), 0 hỏng, ~10 phút.
+- `npm run lint`, `npm run format:check`: sạch.
+- `npm run test:e2e` + `npm run trace -- --check`: chạy một lần trên đỉnh chồng nhánh sau TASK-142, gồm cả mã của task này. Kết quả ghi ở [TASK-142](TASK-142.md).
+  - Lý do: E2E và `npm test` dùng chung CSDL `CafeQrTest`, không chạy song song được. Task này chỉ đổi máy chủ (luật quyền / nhật ký) và thư viện, không đổi giao diện.
