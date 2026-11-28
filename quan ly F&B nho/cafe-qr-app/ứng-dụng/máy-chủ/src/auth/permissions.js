@@ -216,11 +216,12 @@ export function requirePermission(permission) {
 // ---- Trang Quản lý (/api/admin) ----
 const pattern = (rule) => {
   const [method, p] = rule.split(' ');
-  const re = new RegExp(`^${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\/:[^/]+/g, '/[^/]+')}/?$`);
+  // DEF-036: Express 5 định tuyến không phân biệt hoa / thường → luật cũng vậy ("/members/5/Anonymize" không lách được DENY)
+  const re = new RegExp(`^${p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\/:[^/]+/g, '/[^/]+')}/?$`, 'i');
   return { method, re };
 };
 function areaKey(path) {
-  const seg = path.split('/').filter(Boolean);
+  const seg = String(path).toLowerCase().split('/').filter(Boolean); // DEF-036
   return ['reports', 'jobs'].includes(seg[0]) && seg.length > 1 ? `${seg[0]}/${seg[1]}` : (seg[0] ?? '');
 }
 const normMethod = (method) => (String(method).toUpperCase() === 'HEAD' ? 'GET' : String(method).toUpperCase());

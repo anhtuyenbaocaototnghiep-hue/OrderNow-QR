@@ -122,20 +122,24 @@ const decode = (s) => {
   }
 };
 
+// DEF-036: Express 5 định tuyến không phân biệt hoa / thường ("/Shifts/3/CLOSE" vẫn đóng ca) → mọi luật nhật ký khớp như vậy
+// (thêm cờ i ở đây để luật mới quên cờ cũng không bị lách). Mã trong đường dẫn giữ nguyên chữ (đơn vị "KG").
+const RULES_CI = RULES.map(([m, re, ...rest]) => [m, re.flags.includes('i') ? re : new RegExp(re.source, `${re.flags}i`), ...rest]);
+
 /** Tìm luật cho request: { action, entity, entityId } hoặc null. */
 export function matchRule(method, path) {
   if (!MUTATING.has(method)) return null;
-  for (const [m, re, action, entity] of RULES) {
+  for (const [m, re, action, entity] of RULES_CI) {
     const hit = m === method && re.exec(path);
     if (hit) return { action, entity, entityId: hit[1] ?? null };
   }
-  if (/\/preview$/.test(path)) return null; // xem trước (phân khúc, chia bill…) không đổi dữ liệu
-  const admin = /^\/admin\/([a-z-]+)(?:\/([^/]+))?(?:\/([a-z-]+))?/.exec(path);
+  if (/\/preview$/i.test(path)) return null; // xem trước (phân khúc, chia bill…) không đổi dữ liệu
+  const admin = /^\/admin\/([a-z-]+)(?:\/([^/]+))?(?:\/([a-z-]+))?/i.exec(path);
   if (!admin) return null;
-  const [, seg, id, sub] = admin;
+  const [seg, id, sub] = [admin[1].toLowerCase(), admin[2], admin[3]?.toLowerCase()];
   // id là số; riêng đơn vị tính / job dùng mã chữ (PUT /admin/units/th%C3%B9ng, POST /admin/jobs/prep-stats/run)
   const isId = id !== undefined && (/^\d+$/.test(id) || ['units', 'jobs'].includes(seg));
-  const verb = sub ?? (id !== undefined && !isId ? id : VERB[method]);
+  const verb = sub ?? (id !== undefined && !isId ? id.toLowerCase() : VERB[method]);
   return { action: `${seg}.${verb}`.slice(0, 60), entity: ADMIN_ENTITY[seg] ?? seg.slice(0, 40), entityId: isId ? decode(id) : null };
 }
 
